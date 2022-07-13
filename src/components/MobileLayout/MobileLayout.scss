@@ -1,0 +1,13 @@
+.dashkit-mobile-layout {
+    &__item {
+        margin-bottom: 20px;
+        position: relative;
+    }
+
+    .dashkit-item__renderer {
+        overflow-y: auto;
+        border-radius: 3px;
+        position: static;
+        user-select: none;
+    }
+}

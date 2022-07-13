@@ -1,0 +1,7 @@
+{
+    "extends": ["@yandex-cloud/eslint-config", "@yandex-cloud/eslint-config/prettier"],
+    "root": true,
+    "env": {
+        "node": true
+    }
+}

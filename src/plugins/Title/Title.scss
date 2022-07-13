@@ -1,0 +1,28 @@
+.dashkit-plugin-title {
+    display: flex;
+    align-items: flex-start;
+    height: 100%;
+    font-weight: 500;
+    padding-bottom: 5px;
+    padding-right: 5px;
+
+    &_size_l {
+        font-size: 24px;
+        line-height: 28px;
+    }
+
+    &_size_m {
+        font-size: 20px;
+        line-height: 24px;
+    }
+
+    &_size_s {
+        font-size: var(--yc-text-body-3-font-size);
+        line-height: 24px;
+    }
+
+    &_size_xs {
+        font-size: 15px;
+        line-height: 20px;
+    }
+}

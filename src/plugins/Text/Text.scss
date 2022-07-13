@@ -1,0 +1,42 @@
+.dashkit-plugin-text {
+    --rc-loader-active-color: var(--yc-color-base-special);
+    --rc-loader-off-color: var(--yc-color-base-selection-hover);
+
+    white-space: pre-wrap;
+    overflow: auto;
+    height: 100%;
+    padding-right: 5px;
+
+    &_withMarkdown {
+        white-space: normal;
+    }
+
+    &_loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    &_error {
+        padding: 10px;
+    }
+
+    &__error {
+        color: var(--yc-color-text-danger);
+    }
+
+    &__loader {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    &__loader-view {
+        padding: 0 14px;
+        margin-right: 14px;
+    }
+
+    &__loader-text {
+        font-size: 20px;
+    }
+}

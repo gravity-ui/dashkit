@@ -1,0 +1,35 @@
+$position-padding: 7px;
+
+.dashkit-overlay-controls {
+    position: absolute;
+    display: flex;
+
+    &__default-controls {
+        display: flex;
+        background: var(--yc-color-base-generic-ultralight);
+        border-radius: var(--yc-border-radius-m);
+    }
+
+    &_position {
+        &_top_right {
+            top: $position-padding;
+            right: $position-padding;
+        }
+        &_top_left {
+            top: $position-padding;
+            left: $position-padding;
+        }
+        &_bottom_right {
+            bottom: $position-padding;
+            right: $position-padding;
+        }
+        &_bottom_left {
+            bottom: $position-padding;
+            left: $position-padding;
+        }
+    }
+
+    &__item_danger {
+        color: var(--yc-color-text-danger);
+    }
+}
