@@ -5,7 +5,7 @@
 ## Установка
 
 ```bash
-npm i @yandex-cloud/dashkit
+npm i @yandex-cloud/dashkit @yandex-cloud/uikit @yandex-cloud/i18n
 ```
 
 ## Описание
@@ -74,8 +74,8 @@ interface DashKitProps {
 
   ```js
   import {DashKit} from '@yandex-cloud/dashkit';
-  import pluginTitle from '@yandex-cloud/dashkit/build/plugins/Title/Title';
-  import pluginText from '@yandex-cloud/dashkit/build/plugins/Text/Text';
+  import pluginTitle from '@yandex-cloud/dashkit/build/esm/plugins/Title/Title';
+  import pluginText from '@yandex-cloud/dashkit/build/esm/plugins/Text/Text';
 
   DashKit.registerPlugins(
     pluginTitle,
@@ -85,21 +85,159 @@ interface DashKitProps {
       },
     }),
   );
+
+  DashKit.registerPlugins({
+    type: 'custom',
+    defaultLayout: {
+      w: 10,
+      h: 8,
+    },
+    renderer: function CustomPlugin() {
+      return <div>Custom widget with custom controls</div>;
+    },
+  });
   ```
 
 ### Config
-
-[Пример конфига в DataLens](https://datalens.yandex-team.ru/docs/api/dash/scheme)
 
 ```ts
 export interface Config {
   salt: string; // для формирования уникального id
   counter: number; // для формирования уникального id, только увеличивается
   items: ConfigItem[]; //  начальные состояния виджетов
-  layout: ConfigLayout[]; // позиция виджетов на сетке
-  aliases: ConfigAliases; // алиасы для параметров
-  connections: ConfigConnection[]; // связи между виджетами
+  layout: ConfigLayout[]; // позиция виджетов на сетке https://github.com/react-grid-layout
+  aliases: ConfigAliases; // алиасы для параметров см. #Params
+  connections: ConfigConnection[]; // связи между виджетами см. #Params
 }
+```
+
+Пример конфига:
+
+```ts
+import {DashKitProps} from '@yandex-cloud/dashkit';
+
+const config: DashKitProps['config'] = {
+  salt: '0.46703554571365613',
+  counter: 4,
+  items: [
+    {
+      id: 'tT',
+      data: {
+        size: 'm',
+        text: 'Caption',
+        showInTOC: true,
+      },
+      type: 'title',
+      namespace: 'default',
+      orderId: 1,
+    },
+    {
+      id: 'Ea',
+      data: {
+        text: 'mode _editActive',
+        _editActive: true,
+      },
+      type: 'text',
+      namespace: 'default',
+    },
+    {
+      id: 'zR',
+      data: {
+        text: '### Text',
+      },
+      type: 'text',
+      namespace: 'default',
+      orderId: 0,
+    },
+    {
+      id: 'Dk',
+      data: {
+        foo: 'bar',
+      },
+      type: 'custom',
+      namespace: 'default',
+      orderId: 5,
+    },
+  ],
+  layout: [
+    {
+      h: 2,
+      i: 'tT',
+      w: 36,
+      x: 0,
+      y: 0,
+    },
+    {
+      h: 6,
+      i: 'Ea',
+      w: 12,
+      x: 0,
+      y: 2,
+    },
+    {
+      h: 6,
+      i: 'zR',
+      w: 12,
+      x: 12,
+      y: 2,
+    },
+    {
+      h: 4,
+      i: 'Dk',
+      w: 8,
+      x: 0,
+      y: 8,
+    },
+  ],
+  aliases: {},
+  connections: [],
+};
+```
+
+Добавить новый item в кофиг:
+
+```ts
+const newConfig = DashKit.setItem({
+  item: {
+    data: {
+      text: `Some text`,
+    },
+    namespace: 'default',
+    type: 'text',
+  },
+  config: config,
+});
+```
+
+Изменить существующий item в кофиге:
+
+```ts
+const newConfig = DashKit.setItem({
+  item: {
+    id: 'tT', // item.id
+    data: {
+      size: 'm',
+      text: `New caption`,
+    },
+    namespace: 'default',
+    type: 'title',
+  },
+  config: config,
+});
+```
+
+Удалить item из кофига:
+
+```ts
+import {DashKitProps} from '@yandex-cloud/dashkit';
+
+const oldItemsStateAndParams: DashKitProps['itemsStateAndParams'] = {};
+
+const {config: newConfig, itemsStateAndParams} = DashKit.removeItem({
+  id: 'tT', // item.id
+  config: config,
+  itemsStateAndParams: this.state.itemsStateAndParams,
+});
 ```
 
 ### Params
@@ -108,7 +246,7 @@ export interface Config {
 type Params = Record<string, string | string[]>;
 ```
 
-`DashKit` формирует параметры, согласно дефолтным параметрам виджетов, связам и алисам. Эти параметры необходимы для библиотеки [ChartKit](https://github.yandex-team.ru/data-ui/chartkit#доступные-свойства).
+`DashKit` формирует параметры, согласно дефолтным параметрам виджетов, связам и алисам. Эти параметры необходимы для библиотеки [ChartKit](https://github.com/yandex-cloud/chartkit).
 
 Порядок формирования:
 
@@ -146,17 +284,13 @@ interface ItemsStateAndParamsBase {
 type ItemsStateAndParams = StateAndParamsMeta & ItemsStateAndParamsBase;
 ```
 
-### Shared
-
-Код из папки shared может использоваться на серверной стороне. В DataLens используется в сервисе почтовой рассылке, чтобы на сервере сформировать параметры для виджета и снять скриншот состояния.
-
 ## Разаботка
 
 ### Build & watch
 
 - сборка зависимостей `npm ci`
 - сборка проекта `npm run build`
-- сборка storybook `npm run dev`
+- сборка storybook `npm run start`
 
 По умолчанию запускается storybook на `http://localhost:7120/`.
 Бывает, что не всегда подхватываются свежие изменения из проекта при запущенном storybook, лучше пересобрать проект вручную и перезапустить storybook.
@@ -165,14 +299,14 @@ type ItemsStateAndParams = StateAndParamsMeta & ItemsStateAndParamsBase;
 
 ```bash
 server {
-    server_name dashkit.marginy.ui.yandex-team.ru;
+    server_name dashkit.username.ru;
 
     include common/ssl;
 
-    access_log /home/marginy/logs/common.access.log;
-    error_log /home/marginy/logs/common.error.log;
+    access_log /home/username/logs/common.access.log;
+    error_log /home/username/logs/common.error.log;
 
-    root /home/marginy/projects/dashkit;
+    root /home/username/projects/dashkit;
 
     location / {
         try_files $uri @node;
@@ -185,7 +319,6 @@ server {
         proxy_pass http://127.0.0.1:7120;
         proxy_redirect off;
     }
-
 }
 
 ```
