@@ -14,12 +14,12 @@
     "*.scss",
     "*.css"
   ],
-  "main": "build/cjs/index.js",
-  "module": "build/esm/index.js",
-  "types": "build/esm/index.d.ts",
   "publishConfig": {
     "access": "public"
   },
+  "main": "build/cjs/index.js",
+  "module": "build/esm/index.js",
+  "types": "build/esm/index.d.ts",
   "scripts": {
     "lint:prettier": "prettier --check --loglevel=error '**/*.{js,jsx,ts,tsx,scss}'",
     "lint:js": "eslint src --ext .js,.jsx,.ts,.tsx",
