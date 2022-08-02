@@ -26,7 +26,7 @@ export function withContext(Component) {
             forwardedMetaRef: PropTypes.object,
             noOverlay: PropTypes.bool,
             draggableHandleClassName: PropTypes.string,
-            _preventDoubleCompact: PropTypes.bool,
+            _EXPERIMENTAL_preventDoubleCompact: PropTypes.bool,
         };
 
         // так как мы не хотим хранить параметры виджета с активированной автовысотой в сторе и на сервере, актуальный
@@ -80,7 +80,7 @@ export function withContext(Component) {
             // изменению параметра (координаты) "y" у элементов расположенных под ним, поэтому, после того, как
             // значения параметра "h" виджетов с активированной автовысотой были изменены, необходимо изменить и
             // координату "y" виджетов расположенных ниже
-            const compactedLayout = this.props._preventDoubleCompact
+            const compactedLayout = this.props._EXPERIMENTAL_preventDoubleCompact
                 ? currentLayout
                 : gridLayoutUtils.compact(
                       currentLayout,
