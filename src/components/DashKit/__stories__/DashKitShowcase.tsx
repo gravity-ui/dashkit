@@ -20,6 +20,7 @@ type DashKitDemoState = {
     lastAction: string;
     customControlsActionData: number;
     showCustomMenu: boolean;
+    _preventDoubleCompact: boolean;
 };
 
 export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
@@ -37,6 +38,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
         lastAction: 'Нет',
         customControlsActionData: 0,
         showCustomMenu: true,
+        _preventDoubleCompact: false,
     };
 
     private dashKitRef = React.createRef<DashKit>();
@@ -130,6 +132,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                         settings={this.state.settings}
                         ref={this.dashKitRef}
                         overlayControls={controls}
+                        _preventDoubleCompact={this.state._preventDoubleCompact}
                     />
                 </Demo.Row>
             </Demo>
