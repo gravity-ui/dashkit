@@ -26,6 +26,7 @@ export function withContext(Component) {
             forwardedMetaRef: PropTypes.object,
             noOverlay: PropTypes.bool,
             draggableHandleClassName: PropTypes.string,
+            _EXPERIMENTAL_preventDoubleCompact: PropTypes.bool,
         };
 
         // так как мы не хотим хранить параметры виджета с активированной автовысотой в сторе и на сервере, актуальный
@@ -73,15 +74,19 @@ export function withContext(Component) {
                 }
             });
 
+            // [experimental] if the _prevent Double Compact is enabled, then skip recalculate layout with auto height
+
             // после того, как у виждета активировали автовысоту и его параметр "h" изменился, это приведёт, также, и к
             // изменению параметра (координаты) "y" у элементов расположенных под ним, поэтому, после того, как
             // значения параметра "h" виджетов с активированной автовысотой были изменены, необходимо изменить и
             // координату "y" виджетов расположенных ниже
-            const compactedLayout = gridLayoutUtils.compact(
-                currentLayout,
-                LAYOUT_COMPACTING_TYPE,
-                this.props.registerManager.gridLayout.cols,
-            );
+            const compactedLayout = this.props._EXPERIMENTAL_preventDoubleCompact
+                ? currentLayout
+                : gridLayoutUtils.compact(
+                      currentLayout,
+                      LAYOUT_COMPACTING_TYPE,
+                      this.props.registerManager.gridLayout.cols,
+                  );
 
             const newConfig = UpdateManager.updateLayout({
                 layout: compactedLayout,
