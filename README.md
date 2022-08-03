@@ -287,7 +287,7 @@ type ItemsStateAndParams = StateAndParamsMeta & ItemsStateAndParamsBase;
 
 ### Menu
 
-You can specify custom dashkit widget overlay menu in edit mode
+You can specify custom DashKit widget overlay menu in edit mode
 
 ```ts
 type MenuItem = {
@@ -303,13 +303,6 @@ type MenuItem = {
 // use array of menu items in settings
 DashKit.setSettings({menu: [] as Array<MenuItem>});
 ```
-
-Each menu item object:
-
-1. `defaultGlobalParams`
-2. Default widget parameters `item.default`
-3. `globalParams`
-4. Parameters from [itemsStateAndParams](#itemsStateAndParams) according to the queue.
 
 ## Development
 
