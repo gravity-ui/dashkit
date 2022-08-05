@@ -218,7 +218,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                   const itemHandler = item.handler;
 
                   const itemAction =
-                      itemHandler && typeof itemHandler === 'function'
+                      typeof itemHandler === 'function'
                           ? () => itemHandler(this.props.configItem)
                           : this.getDropDownMenuItemConfig(item.id)?.action || (() => {});
 
