@@ -47,6 +47,7 @@ export interface OverlayCustomControlItem {
     icon?: MenuItemProps['icon'];
     iconSize?: number | string;
     handler?: (item: ConfigItem) => void;
+    visible?: (item: ConfigItem) => boolean;
     className?: string;
 }
 
@@ -209,13 +210,22 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                   if (typeof item === 'string') {
                       return null;
                   }
+                  // custom menu dropdown item filter
+                  if (item.visible && !item.visible(this.props.configItem)) {
+                      return null;
+                  }
+
+                  const itemHandler = item.handler;
+
+                  const itemAction =
+                      typeof itemHandler === 'function'
+                          ? () => itemHandler(this.props.configItem)
+                          : this.getDropDownMenuItemConfig(item.id)?.action || (() => {});
+
                   return {
                       text: item.title || i18n(item.id),
                       icon: item.icon,
-                      action:
-                          typeof item.handler === 'function'
-                              ? item.handler
-                              : this.getDropDownMenuItemConfig(item.id)?.action || (() => {}),
+                      action: itemAction,
                       className: item.className,
                   };
               });

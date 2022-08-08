@@ -57,7 +57,7 @@ Before using `DashKit` as a react component, it must be configured.
 
 - DashKit.setSettings
 
-  Used for global DashKit settings (such as margins between widgets and default widget sizes)
+  Used for global DashKit settings (such as margins between widgets, default widget sizes and widget overlay menu)
 
   ```js
   import {DashKit} from '@yandex-cloud/dashkit';
@@ -65,6 +65,7 @@ Before using `DashKit` as a react component, it must be configured.
   DashKit.setSettings({
     gridLayout: {margin: [8, 8]},
     isMobile: true,
+    // menu: [] as Array<MenuItem>,
   });
   ```
 
@@ -282,6 +283,25 @@ interface ItemsStateAndParamsBase {
 
 ```ts
 type ItemsStateAndParams = StateAndParamsMeta & ItemsStateAndParamsBase;
+```
+
+### Menu
+
+You can specify custom DashKit widget overlay menu in edit mode
+
+```ts
+type MenuItem = {
+  id: string; // uniq id
+  title?: string; // string title
+  icon?: ReactNode; // node of icon
+  iconSize?: number | string; // icon size in px as number or as string with units
+  handler?: (item: ConfigItem) => void; // custom item action handler
+  visible?: (item: ConfigItem) => boolean; // optional visibility handler for filtering menu items
+  className?: string; // custom class property
+};
+
+// use array of menu items in settings
+DashKit.setSettings({menu: [] as Array<MenuItem>});
 ```
 
 ## Development
