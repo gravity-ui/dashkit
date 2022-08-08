@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/yandex-cloud/dashkit/compare/v1.1.0...v1.2.0) (2022-08-08)
+
+
+### Features
+
+* add custom dropdown menu item filter in edit mode ([#8](https://github.com/yandex-cloud/dashkit/issues/8)) ([5c2824a](https://github.com/yandex-cloud/dashkit/commit/5c2824a4a9a25174eff69b2f0b7b04b74cf74e0c))
+
 ## [1.1.0](https://github.com/yandex-cloud/dashkit/compare/v1.0.0...v1.1.0) (2022-08-02)
 
 
