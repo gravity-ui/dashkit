@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/yandex-cloud/dashkit/compare/v1.2.0...v2.0.0) (2022-08-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* migrate to i18n 0.6.0 (#11)
+
+### Features
+
+* migrate to i18n 0.6.0 ([#11](https://github.com/yandex-cloud/dashkit/issues/11)) ([8cbdda6](https://github.com/yandex-cloud/dashkit/commit/8cbdda6d035411cb8f6b6c5d11f7949a997314f5))
+
 ## [1.2.0](https://github.com/yandex-cloud/dashkit/compare/v1.1.0...v1.2.0) (2022-08-08)
 
 
