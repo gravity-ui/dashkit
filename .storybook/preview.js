@@ -1,3 +1,4 @@
+// @ts-check
 import '@yandex-cloud/uikit/styles/styles.scss';
 
 import {ThemeProvider, MobileProvider} from '@yandex-cloud/uikit';
@@ -7,9 +8,9 @@ import {CloudTheme} from './theme';
 import {withTheme} from './decorators/withTheme';
 import {withMobile} from './decorators/withMobile';
 import {withLang} from './decorators/withLang';
-import {I18N} from '../src/utils/i18n';
+import {setLang} from '../src/utils/i18n';
 
-I18N.setDefaultLang(I18N.LANGS.en);
+setLang('en');
 
 const withContextProvider = (Story, context) => {
     const theme = context.globals.theme;

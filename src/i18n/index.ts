@@ -1,11 +1,15 @@
-import {i18n, I18N} from '../utils';
+import {i18n, setLang} from '../utils';
 
 import en from './en.json';
 import ru from './ru.json';
 
+export type Lang = 'ru' | 'en';
+
 const COMPONENT = 'dashkit';
 
-i18n.registerKeyset(I18N.LANGS.en, COMPONENT, en);
-i18n.registerKeyset(I18N.LANGS.ru, COMPONENT, ru);
+i18n.registerKeyset('en', COMPONENT, en);
+i18n.registerKeyset('ru', COMPONENT, ru);
+
+setLang('en');
 
 export default i18n.keyset(COMPONENT);
