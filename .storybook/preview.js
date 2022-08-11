@@ -8,9 +8,9 @@ import {CloudTheme} from './theme';
 import {withTheme} from './decorators/withTheme';
 import {withMobile} from './decorators/withMobile';
 import {withLang} from './decorators/withLang';
-import {i18n, LANGS} from '../src/utils/i18n';
+import {setLang} from '../src/utils/i18n';
 
-i18n.setLang(LANGS.En);
+setLang('en');
 
 const withContextProvider = (Story, context) => {
     const theme = context.globals.theme;
