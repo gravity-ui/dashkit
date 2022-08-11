@@ -55,6 +55,16 @@ interface DashKitProps {
 
 Before using `DashKit` as a react component, it must be configured.
 
+- setLang
+
+  Used for setting the language of DashKit provided ui elements. Currently the languages supported are: ru, en.
+
+  ```js
+  import {setLang} from '@yandex-cloud/dashkit';
+
+  setLang('en');
+  ```
+
 - DashKit.setSettings
 
   Used for global DashKit settings (such as margins between widgets, default widget sizes and widget overlay menu)
