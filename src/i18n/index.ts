@@ -3,7 +3,7 @@ import {i18n, setLang} from '../utils';
 import en from './en.json';
 import ru from './ru.json';
 
-export type LANGS = 'ru' | 'en';
+export type Lang = 'ru' | 'en';
 
 const COMPONENT = 'dashkit';
 
