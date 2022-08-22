@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/yandex-cloud/dashkit/compare/v2.0.0...v2.0.1) (2022-08-22)
+
+
+### Bug Fixes
+
+* downgrade dependent package ([#13](https://github.com/yandex-cloud/dashkit/issues/13)) ([d0a30d3](https://github.com/yandex-cloud/dashkit/commit/d0a30d3b0fbf3da6f1c82608a430f6a989b3cd3a))
+
 ## [2.0.0](https://github.com/yandex-cloud/dashkit/compare/v1.2.0...v2.0.0) (2022-08-11)
 
 
