@@ -1,6 +1,6 @@
 {
   "name": "@yandex-cloud/dashkit",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Library for rendering dashboard grid layout",
   "license": "MIT",
   "repository": {
