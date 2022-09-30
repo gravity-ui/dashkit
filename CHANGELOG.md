@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.0.0](https://github.com/yandex-cloud/dashkit/compare/v2.0.1...v3.0.0) (2022-09-30)
+
+
+### ⚠ BREAKING CHANGES
+
+* migrate to gravity-ui deps and new i18n usage (#15)
+
+### Features
+
+* migrate to gravity-ui deps and new i18n usage ([#15](https://github.com/yandex-cloud/dashkit/issues/15)) ([1b4eeb1](https://github.com/yandex-cloud/dashkit/commit/1b4eeb1165b02f37af27d11958858ae571160194))
+
 ## [2.0.1](https://github.com/yandex-cloud/dashkit/compare/v2.0.0...v2.0.1) (2022-08-22)
 
 
