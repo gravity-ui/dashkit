@@ -12,7 +12,7 @@ import {
     ButtonSize,
     IconProps,
     MenuItemProps,
-} from '@yandex-cloud/uikit';
+} from '@gravity-ui/uikit';
 import {COPIED_WIDGET_STORE_KEY, MenuItems} from '../../constants';
 import {ConfigLayout, ConfigItem, PluginBase} from '../../shared';
 import {DotsIcon} from '../../icons/DotsIcon';
@@ -328,8 +328,8 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         const {items = []} = this.props;
         const customOverlayControls = [...items, deleteControl];
         return customOverlayControls.map(
-            (item: OverlayControlItem, index: number, items: OverlayControlItem[]) =>
-                this.renderControlsItem(item, index, items.length),
+            (item: OverlayControlItem, index: number, controlItems: OverlayControlItem[]) =>
+                this.renderControlsItem(item, index, controlItems.length),
         );
     }
 }

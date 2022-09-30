@@ -1,9 +1,4 @@
-import {I18N} from '@yandex-cloud/i18n';
-
-import type {Lang} from '../i18n';
-export {Lang} from '../i18n';
-
-export const i18n = new I18N();
+import {configure, Lang} from './configure';
 
 /**
  * Preferred method to set language.
@@ -11,5 +6,5 @@ export const i18n = new I18N();
  * @return {void}
  */
 export const setLang = (lang: Lang) => {
-    i18n.setLang(lang);
+    configure({lang: lang as Lang});
 };
