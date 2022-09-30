@@ -1,6 +1,6 @@
 import React from 'react';
 import block from 'bem-cn-lite';
-import {Loader, Button} from '@yandex-cloud/uikit';
+import {Loader, Button} from '@gravity-ui/uikit';
 import i18n from '../../i18n';
 import {PluginWidgetProps, Plugin} from '../../typings';
 import './Text.scss';

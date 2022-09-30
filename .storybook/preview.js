@@ -1,7 +1,7 @@
 // @ts-check
-import '@yandex-cloud/uikit/styles/styles.scss';
+import '@gravity-ui/uikit/styles/styles.scss';
 
-import {ThemeProvider, MobileProvider} from '@yandex-cloud/uikit';
+import {ThemeProvider, MobileProvider} from '@gravity-ui/uikit';
 import React from 'react';
 import {MINIMAL_VIEWPORTS} from '@storybook/addon-viewport';
 import {CloudTheme} from './theme';

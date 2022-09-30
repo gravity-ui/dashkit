@@ -1,11 +1,12 @@
 import React from 'react';
-import {Button, Icon} from '@yandex-cloud/uikit';
+import {Button, Icon} from '@gravity-ui/uikit';
 import {DashKit, DashKitProps, MenuItems, ConfigItem} from '../../..';
 import {TickIcon} from '../../../icons/TickIcon';
 import {CogIcon} from '../../../icons/CogIcon';
 import {CopyIcon} from '../../../icons/CopyIcon';
 import {DeleteIcon} from '../../../icons/DeleteIcon';
 import {WarningIcon} from '../../../icons/WarningIcon';
+import i18n from '../../../i18n';
 import {getConfig, makeid, titleId} from './utils';
 import Demo from './Demo';
 
@@ -281,7 +282,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                     },
                     {
                         id: MenuItems.Delete,
-                        title: 'Menu setting delete',
+                        title: i18n('label_delete'), // for language change check
                         icon: <Icon data={DeleteIcon} size={16} />,
                         className: 'dashkit-overlay-controls__item_danger',
                     },

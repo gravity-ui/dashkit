@@ -5,7 +5,7 @@ A dashboard grid rendering library.
 ## Installation
 
 ```bash
-npm i @yandex-cloud/dashkit @yandex-cloud/uikit @yandex-cloud/i18n
+npm i @yandex-cloud/dashkit @gravity-ui/uikit @gravity-ui/i18n
 ```
 
 ## Description
@@ -63,6 +63,16 @@ Before using `DashKit` as a react component, it must be configured.
   import {setLang} from '@yandex-cloud/dashkit';
 
   setLang('en');
+  ```
+
+  **From version 3.0.0 the language must be set separately for each DashKit and Gravity-ui instances**
+
+  ```js
+  import {setLang} from '@yandex-cloud/dashkit';
+  import {configure as uiKitConfigure, Lang as UILang} from '@gravity-ui/uikit';
+    
+  setLang('en');
+  uiKitConfigure({lang: lang as UILang});
   ```
 
 - DashKit.setSettings

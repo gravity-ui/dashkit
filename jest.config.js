@@ -12,6 +12,6 @@ module.exports = {
         '^.+\\.(ts|tsx)$': 'ts-jest',
         '^(?!.*\\.(js|jsx|ts|tsx|json)$)': '<rootDir>/jest/fileTransform.js',
     },
-    transformIgnorePatterns: ['node_modules/(?!(@yandex-cloud)/)'],
+    transformIgnorePatterns: ['node_modules/(?!(@gravity-ui)/)'],
     snapshotSerializers: ['enzyme-to-json/serializer'],
 };
