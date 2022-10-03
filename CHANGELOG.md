@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.0.1](https://github.com/gravity-ui/dashkit/compare/v3.0.0...v3.0.1) (2022-10-03)
+
+
+### Bug Fixes
+
+* move to gravity-ui org ([#17](https://github.com/gravity-ui/dashkit/issues/17)) ([6748e5f](https://github.com/gravity-ui/dashkit/commit/6748e5f51589dfa027ef69ef5d4d59abb13e9d79))
+
 ## [3.0.0](https://github.com/yandex-cloud/dashkit/compare/v2.0.1...v3.0.0) (2022-09-30)
 
 
