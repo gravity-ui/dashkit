@@ -5,8 +5,8 @@ import i18n from '../../i18n';
 import {PluginWidgetProps, Plugin} from '../../typings';
 import './Text.scss';
 
-// стили для markdown нужно подключать отдельно
-// можно подключить из https://github.com/yandex-cloud/yfm-transform
+// need to set markdown styles separately
+// for instance can use yfm-transform
 
 const b = block('dashkit-plugin-text');
 

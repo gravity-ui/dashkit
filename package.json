@@ -1,11 +1,11 @@
 {
-  "name": "@yandex-cloud/dashkit",
+  "name": "@gravity-ui/dashkit",
   "version": "3.0.0",
   "description": "Library for rendering dashboard grid layout",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yandex-cloud/dashkit"
+    "url": "https://github.com/gravity-ui/dashkit"
   },
   "files": [
     "build"

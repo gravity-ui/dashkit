@@ -5,7 +5,7 @@ A dashboard grid rendering library.
 ## Installation
 
 ```bash
-npm i @yandex-cloud/dashkit @gravity-ui/uikit @gravity-ui/i18n
+npm i @gravity-ui/dashkit @gravity-ui/uikit @gravity-ui/i18n
 ```
 
 ## Description
@@ -60,7 +60,7 @@ Before using `DashKit` as a react component, it must be configured.
   Used for setting the language of DashKit provided ui elements. Currently the languages supported are: ru, en.
 
   ```js
-  import {setLang} from '@yandex-cloud/dashkit';
+  import {setLang} from '@gravity-ui/dashkit';
 
   setLang('en');
   ```
@@ -68,7 +68,7 @@ Before using `DashKit` as a react component, it must be configured.
   **From version 3.0.0 the language must be set separately for each DashKit and Gravity-ui instances**
 
   ```js
-  import {setLang} from '@yandex-cloud/dashkit';
+  import {setLang} from '@gravity-ui/dashkit';
   import {configure as uiKitConfigure, Lang as UILang} from '@gravity-ui/uikit';
     
   setLang('en');
@@ -80,7 +80,7 @@ Before using `DashKit` as a react component, it must be configured.
   Used for global DashKit settings (such as margins between widgets, default widget sizes and widget overlay menu)
 
   ```js
-  import {DashKit} from '@yandex-cloud/dashkit';
+  import {DashKit} from '@gravity-ui/dashkit';
 
   DashKit.setSettings({
     gridLayout: {margin: [8, 8]},
@@ -94,9 +94,9 @@ Before using `DashKit` as a react component, it must be configured.
   Registering and configuring plugins
 
   ```js
-  import {DashKit} from '@yandex-cloud/dashkit';
-  import pluginTitle from '@yandex-cloud/dashkit/build/esm/plugins/Title/Title';
-  import pluginText from '@yandex-cloud/dashkit/build/esm/plugins/Text/Text';
+  import {DashKit} from '@gravity-ui/dashkit';
+  import pluginTitle from '@gravity-ui/dashkit/build/esm/plugins/Title/Title';
+  import pluginText from '@gravity-ui/dashkit/build/esm/plugins/Text/Text';
 
   DashKit.registerPlugins(
     pluginTitle,
@@ -135,7 +135,7 @@ export interface Config {
 Config example:
 
 ```ts
-import {DashKitProps} from '@yandex-cloud/dashkit';
+import {DashKitProps} from '@gravity-ui/dashkit';
 
 const config: DashKitProps['config'] = {
   salt: '0.46703554571365613',
@@ -250,7 +250,7 @@ const newConfig = DashKit.setItem({
 Delete an item from the config:
 
 ```ts
-import {DashKitProps} from '@yandex-cloud/dashkit';
+import {DashKitProps} from '@gravity-ui/dashkit';
 
 const oldItemsStateAndParams: DashKitProps['itemsStateAndParams'] = {};
 
@@ -267,7 +267,7 @@ const {config: newConfig, itemsStateAndParams} = DashKit.removeItem({
 type Params = Record<string, string | string[]>;
 ```
 
-`DashKit` generates parameters according to the default parameters for widgets, links, and aliases. These parameters are required for the [ChartKit](https://github.com/yandex-cloud/chartkit) library.
+`DashKit` generates parameters according to the default parameters for widgets, links, and aliases. These parameters are required for the [ChartKit](https://github.com/gravity-ui/chartkit) library.
 
 Generation order:
 
