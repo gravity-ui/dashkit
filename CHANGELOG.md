@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.0.2](https://github.com/gravity-ui/dashkit/compare/v3.0.1...v3.0.2) (2022-10-04)
+
+
+### Bug Fixes
+
+* i18n deps moved from peer to deps ([#19](https://github.com/gravity-ui/dashkit/issues/19)) ([d62e7fb](https://github.com/gravity-ui/dashkit/commit/d62e7fbc6caaaaea0d5623aae7572b7e59616b53))
+
 ## [3.0.1](https://github.com/gravity-ui/dashkit/compare/v3.0.0...v3.0.1) (2022-10-03)
 
 
