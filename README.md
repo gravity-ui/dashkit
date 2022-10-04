@@ -5,7 +5,7 @@ A dashboard grid rendering library.
 ## Installation
 
 ```bash
-npm i @gravity-ui/dashkit @gravity-ui/uikit @gravity-ui/i18n
+npm i @gravity-ui/dashkit @gravity-ui/uikit
 ```
 
 ## Description
