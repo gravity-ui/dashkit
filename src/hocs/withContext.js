@@ -253,6 +253,13 @@ export function withContext(Component) {
     };
 }
 
+function useForceUpdate() {
+    const [, setState] = React.useState({});
+    return React.useCallback(() => {
+        setState({});
+    }, []);
+}
+
 function useMemoStateContext(props) {
     // так как мы не хотим хранить параметры виджета с активированной автовысотой в сторе и на сервере, актуальный
     // (видимый юзером в конкретный момент времени) лэйаут (массив объектов с данными о ширине, высоте,
@@ -262,6 +269,8 @@ function useMemoStateContext(props) {
 
     const originalLayouts = React.useRef({});
     const adjustedLayouts = React.useRef({});
+
+    const forceUpdate = useForceUpdate();
 
     const onChange = React.useCallback(
         ({config = props.config, itemsStateAndParams = props.itemsStateAndParams}) => {
@@ -355,14 +364,21 @@ function useMemoStateContext(props) {
             }
 
             adjustedLayouts.current[widgetId] = postAutoHeightLayout;
+
+            forceUpdate();
         },
-        [],
+        [forceUpdate],
     );
 
-    const revertToOriginalLayout = React.useCallback((widgetId) => {
-        delete adjustedLayouts.current[widgetId];
-        delete originalLayouts.current[widgetId];
-    }, []);
+    const revertToOriginalLayout = React.useCallback(
+        (widgetId) => {
+            delete adjustedLayouts.current[widgetId];
+            delete originalLayouts.current[widgetId];
+
+            forceUpdate();
+        },
+        [forceUpdate],
+    );
 
     const itemsParams = React.useMemo(
         () =>
