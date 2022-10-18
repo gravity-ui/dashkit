@@ -482,7 +482,7 @@ function useMemoStateContext(props) {
 }
 
 export function withMemoContext(Component) {
-    const WithMemoContext = React.memo((props) => {
+    const WithMemoContext = (props) => {
         const contextValue = useMemoStateContext(props);
 
         return (
@@ -490,7 +490,7 @@ export function withMemoContext(Component) {
                 <Component />
             </DashKitContext.Provider>
         );
-    });
+    };
 
     WithMemoContext.displayName = `withMemoContext(${
         Component.displayName || Component.name || 'Component'
