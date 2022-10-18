@@ -260,9 +260,6 @@ function useMemoStateContext(props) {
     // лэйаут без учета вижетов с активированной автовысотой, в момент "подстройки" высоты виджета значение h
     // (высота) из конфига будет запоминаться в originalLayouts, новое значение высоты в adjustedLayouts
 
-    // зачем мы это храним в стейте?
-    const [, setCurrentLayout] = React.useState(props.layout);
-
     const originalLayouts = React.useRef({});
     const adjustedLayouts = React.useRef({});
 
@@ -358,41 +355,11 @@ function useMemoStateContext(props) {
             }
 
             adjustedLayouts.current[widgetId] = postAutoHeightLayout;
-
-            setCurrentLayout(
-                props.layout.map((item) => {
-                    if (item.i in adjustedLayouts.current) {
-                        return {
-                            ...adjustedLayouts.current[item.i],
-                            w: item.w,
-                            x: item.x,
-                            y: item.y,
-                        };
-                    } else {
-                        return {...item};
-                    }
-                }),
-            );
         },
-        [props.layout],
+        [],
     );
 
     const revertToOriginalLayout = React.useCallback((widgetId) => {
-        setCurrentLayout((prevCurrentLayout) =>
-            prevCurrentLayout.map((item) => {
-                if (item.i === widgetId) {
-                    return {
-                        ...originalLayouts.current[item.i],
-                        w: item.w,
-                        x: item.x,
-                        y: item.y,
-                    };
-                } else {
-                    return {...item};
-                }
-            }),
-        );
-
         delete adjustedLayouts.current[widgetId];
         delete originalLayouts.current[widgetId];
     }, []);
