@@ -253,13 +253,6 @@ export function withContext(Component) {
     };
 }
 
-function useForceUpdate() {
-    const [, setState] = React.useState({});
-    return React.useCallback(() => {
-        setState({});
-    }, []);
-}
-
 function useMemoStateContext(props) {
     // так как мы не хотим хранить параметры виджета с активированной автовысотой в сторе и на сервере, актуальный
     // (видимый юзером в конкретный момент времени) лэйаут (массив объектов с данными о ширине, высоте,
@@ -270,7 +263,8 @@ function useMemoStateContext(props) {
     const originalLayouts = React.useRef({});
     const adjustedLayouts = React.useRef({});
 
-    const forceUpdate = useForceUpdate();
+    // TODO: need move originalLayouts, adjustedLayouts to state
+    const [layoutUpdateCounter, forceUpdateLayout] = React.useState(0);
 
     const onChange = React.useCallback(
         ({config = props.config, itemsStateAndParams = props.itemsStateAndParams}) => {
@@ -362,23 +356,18 @@ function useMemoStateContext(props) {
             if (!(widgetId in originalLayouts.current)) {
                 originalLayouts.current[widgetId] = preAutoHeightLayout;
             }
-
             adjustedLayouts.current[widgetId] = postAutoHeightLayout;
 
-            forceUpdate();
+            forceUpdateLayout((prev) => prev + 1);
         },
-        [forceUpdate],
+        [],
     );
 
-    const revertToOriginalLayout = React.useCallback(
-        (widgetId) => {
-            delete adjustedLayouts.current[widgetId];
-            delete originalLayouts.current[widgetId];
-
-            forceUpdate();
-        },
-        [forceUpdate],
-    );
+    const revertToOriginalLayout = React.useCallback((widgetId) => {
+        delete adjustedLayouts.current[widgetId];
+        delete originalLayouts.current[widgetId];
+        forceUpdateLayout((prev) => prev + 1);
+    }, []);
 
     const itemsParams = React.useMemo(
         () =>
@@ -418,7 +407,7 @@ function useMemoStateContext(props) {
             .filter(Boolean);
     }, []);
 
-    const getLayout = React.useCallback(() => {
+    const resultLayout = React.useMemo(() => {
         return props.layout.map((item) => {
             if (item.i in adjustedLayouts.current) {
                 return {
@@ -431,7 +420,11 @@ function useMemoStateContext(props) {
                 return {...item};
             }
         });
-    }, [props.layout]);
+    }, [props.layout, layoutUpdateCounter]);
+
+    // TODO: don't use getLayout when finished experiment _EXPERIMENTAL_memoContext
+    // need use resultLayout like layout props
+    const getLayout = React.useCallback(() => resultLayout, [resultLayout]);
 
     const reloadItems = React.useCallback((pluginsRefs, data) => {
         pluginsRefs.forEach((ref) => ref && ref.reload && ref.reload(data));
