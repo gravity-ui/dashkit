@@ -337,13 +337,6 @@ function useMemoStateContext(props) {
         [props.config, props.itemsStateAndParams, onChange],
     );
 
-    const onItemEdit = React.useCallback(
-        (configItem) => {
-            props.onItemEdit(configItem);
-        },
-        [props.onItemEdit],
-    );
-
     const onItemStateAndParamsChange = React.useCallback(
         (id, stateAndParams) => {
             onChange({
@@ -477,7 +470,7 @@ function useMemoStateContext(props) {
             registerManager: props.registerManager,
             onItemStateAndParamsChange,
             removeItem: onItemRemove,
-            editItem: onItemEdit,
+            editItem: props.onItemEdit,
             layoutChange: onLayoutChange,
             getItemsMeta,
             reloadItems,
@@ -500,7 +493,7 @@ function useMemoStateContext(props) {
             props.registerManager,
             onItemStateAndParamsChange,
             onItemRemove,
-            onItemEdit,
+            props.onItemEdit,
             onLayoutChange,
             getItemsMeta,
             reloadItems,
