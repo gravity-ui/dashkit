@@ -353,20 +353,31 @@ function useMemoStateContext(props) {
 
     const memorizeOriginalLayout = React.useCallback(
         (widgetId, preAutoHeightLayout, postAutoHeightLayout) => {
+            let needUpdateLayout = false;
             if (!(widgetId in originalLayouts.current)) {
                 originalLayouts.current[widgetId] = preAutoHeightLayout;
+                needUpdateLayout = true;
             }
-            adjustedLayouts.current[widgetId] = postAutoHeightLayout;
+            if (adjustedLayouts.current[widgetId] !== postAutoHeightLayout) {
+                adjustedLayouts.current[widgetId] = postAutoHeightLayout;
+                needUpdateLayout = true;
+            }
 
-            forceUpdateLayout((prev) => prev + 1);
+            if (needUpdateLayout) {
+                forceUpdateLayout((prev) => prev + 1);
+            }
         },
         [],
     );
 
     const revertToOriginalLayout = React.useCallback((widgetId) => {
+        const needUpdateLayout =
+            widgetId in adjustedLayouts.current || widgetId in originalLayouts.current;
         delete adjustedLayouts.current[widgetId];
         delete originalLayouts.current[widgetId];
-        forceUpdateLayout((prev) => prev + 1);
+        if (needUpdateLayout) {
+            forceUpdateLayout((prev) => prev + 1);
+        }
     }, []);
 
     const itemsParams = React.useMemo(
