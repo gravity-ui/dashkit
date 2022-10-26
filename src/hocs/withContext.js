@@ -221,7 +221,6 @@ export function withContext(Component) {
                 getLayout: this._getLayout,
                 config: this.props.config,
                 context: this.props.context,
-                overlayControls: this.props.overlayControls,
                 noOverlay: this.props.noOverlay,
                 defaultGlobalParams: this.props.globalParams,
                 globalParams: this.props.globalParams,
@@ -246,7 +245,7 @@ export function withContext(Component) {
         render() {
             return (
                 <DashKitContext.Provider value={this._contextValue}>
-                    <Component />
+                    <Component overlayControls={this.props.overlayControls} />
                 </DashKitContext.Provider>
             );
         }
@@ -446,7 +445,6 @@ function useMemoStateContext(props) {
             getLayout,
             config: props.config,
             context: props.context,
-            overlayControls: props.overlayControls,
             noOverlay: props.noOverlay,
             defaultGlobalParams: props.globalParams,
             globalParams: props.globalParams,
@@ -470,7 +468,6 @@ function useMemoStateContext(props) {
             getLayout,
             props.config,
             props.context,
-            props.overlayControls,
             props.noOverlay,
             props.globalParams,
             props.editMode,
@@ -498,7 +495,7 @@ export function withMemoContext(Component) {
 
         return (
             <DashKitContext.Provider value={contextValue}>
-                <Component />
+                <Component overlayControls={props.overlayControls} />
             </DashKitContext.Provider>
         );
     };

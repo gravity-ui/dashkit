@@ -60,6 +60,7 @@ interface OverlayControlsDefaultProps {
 interface OverlayControlsProps extends OverlayControlsDefaultProps {
     configItem: ConfigItem;
     items?: OverlayControlItem[];
+    overlayControls?: Record<string, OverlayControlItem[]>;
 }
 
 const DEFAULT_DROPDOWN_MENU = [MenuItems.Copy, MenuItems.Delete];
@@ -246,7 +247,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         // выбираем только items-ы у которых проставлено поле `allWidgetsControls:true`
         // те контролы, которые будут показываться слева от меню
         let controls: OverlayControlItem[] = [];
-        for (const controlItem of Object.values(this.context.overlayControls || {})) {
+        for (const controlItem of Object.values(this.props.overlayControls || {})) {
             controls = controls.concat(
                 (
                     (controlItem as OverlayControlItem[]).filter((item) => {

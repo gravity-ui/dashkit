@@ -10,7 +10,7 @@ import './DashKitView.scss';
 
 const b = block('dashkit');
 
-function DashKitView() {
+function DashKitView(props) {
     const context = React.useContext(DashKitContext);
     const {registerManager, forwardedMetaRef} = context;
     return (
@@ -18,7 +18,7 @@ function DashKitView() {
             {registerManager.settings.isMobile ? (
                 <MobileLayout />
             ) : (
-                <GridLayout ref={forwardedMetaRef} />
+                <GridLayout ref={forwardedMetaRef} overlayControls={props.overlayControls} />
             )}
         </div>
     );
