@@ -133,6 +133,7 @@ export default class GridLayout extends React.PureComponent {
                             isDragging={this.state.isDragging}
                             noOverlay={noOverlay}
                             withCustomHandle={Boolean(draggableHandleClassName)}
+                            overlayControls={this.props.overlayControls}
                         />
                     );
                 })}
