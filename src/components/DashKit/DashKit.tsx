@@ -33,6 +33,7 @@ interface DashKitDefaultProps {
     noOverlay?: boolean;
     draggableHandleClassName?: string;
     _EXPERIMENTAL_preventDoubleCompact?: boolean;
+    _EXPERIMENTAL_memoContext?: boolean;
 }
 
 export interface DashKitProps extends DashKitGeneralProps, Partial<DashKitDefaultProps> {}
@@ -54,6 +55,7 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
         },
         context: {},
         noOverlay: false,
+        _EXPERIMENTAL_memoContext: false,
     };
 
     static registerPlugins(...plugins: Plugin[]) {
