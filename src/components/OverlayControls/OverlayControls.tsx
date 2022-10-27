@@ -46,7 +46,7 @@ export interface OverlayCustomControlItem {
     title?: string;
     icon?: MenuItemProps['icon'];
     iconSize?: number | string;
-    handler?: (item: ConfigItem) => void;
+    handler?: (item: ConfigItem, params: any) => void;
     visible?: (item: ConfigItem) => boolean;
     className?: string;
 }
@@ -195,7 +195,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
     }
     private renderDropdownMenu() {
         const {view, size} = this.props;
-        const {registerManager} = this.context;
+        const {registerManager, itemsParams} = this.context;
 
         let menu = registerManager.settings.menu;
         if (!menu.length) {
@@ -219,7 +219,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
 
                   const itemAction =
                       typeof itemHandler === 'function'
-                          ? () => itemHandler(this.props.configItem)
+                          ? () => itemHandler(this.props.configItem, itemsParams)
                           : this.getDropDownMenuItemConfig(item.id)?.action || (() => {});
 
                   return {
