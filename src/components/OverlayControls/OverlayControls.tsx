@@ -14,7 +14,7 @@ import {
     MenuItemProps,
 } from '@gravity-ui/uikit';
 import {COPIED_WIDGET_STORE_KEY, MenuItems} from '../../constants';
-import {ConfigLayout, ConfigItem, PluginBase} from '../../shared';
+import {ConfigLayout, ConfigItem, PluginBase, StringParams} from '../../shared';
 import {DotsIcon} from '../../icons/DotsIcon';
 import {CogIcon} from '../../icons/CogIcon';
 import {CloseIcon} from '../../icons/CloseIcon';
@@ -46,7 +46,7 @@ export interface OverlayCustomControlItem {
     title?: string;
     icon?: MenuItemProps['icon'];
     iconSize?: number | string;
-    handler?: (item: ConfigItem) => void;
+    handler?: (item: ConfigItem, params: StringParams) => void;
     visible?: (item: ConfigItem) => boolean;
     className?: string;
 }
@@ -198,6 +198,10 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         const {view, size} = this.props;
         const {registerManager} = this.context;
 
+        const itemsParams: Record<string, StringParams> = this.context.itemsParams;
+        const configItem = this.props.configItem;
+        const itemParams = itemsParams[configItem.id];
+
         let menu = registerManager.settings.menu;
         if (!menu.length) {
             menu = DEFAULT_DROPDOWN_MENU;
@@ -212,7 +216,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                       return null;
                   }
                   // custom menu dropdown item filter
-                  if (item.visible && !item.visible(this.props.configItem)) {
+                  if (item.visible && !item.visible(configItem)) {
                       return null;
                   }
 
@@ -220,7 +224,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
 
                   const itemAction =
                       typeof itemHandler === 'function'
-                          ? () => itemHandler(this.props.configItem)
+                          ? () => itemHandler(configItem, itemParams)
                           : this.getDropDownMenuItemConfig(item.id)?.action || (() => {});
 
                   return {
