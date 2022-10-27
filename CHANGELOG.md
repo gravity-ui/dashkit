@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.0](https://github.com/gravity-ui/dashkit/compare/v3.0.2...v3.1.0) (2022-10-27)
+
+
+### Features
+
+* add experimental props for use memo context ([#21](https://github.com/gravity-ui/dashkit/issues/21)) ([b1fd5dd](https://github.com/gravity-ui/dashkit/commit/b1fd5ddfb212e4c1402244184f5e436896ef24d6))
+
 ## [3.0.2](https://github.com/gravity-ui/dashkit/compare/v3.0.1...v3.0.2) (2022-10-04)
 
 
