@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.0](https://github.com/gravity-ui/dashkit/compare/v3.1.0...v3.2.0) (2022-10-27)
+
+
+### Features
+
+* add item params to edit menu item handler ([#22](https://github.com/gravity-ui/dashkit/issues/22)) ([f220322](https://github.com/gravity-ui/dashkit/commit/f2203224699a3b5ab3e9915ed236736009dfb27a))
+
 ## [3.1.0](https://github.com/gravity-ui/dashkit/compare/v3.0.2...v3.1.0) (2022-10-27)
 
 
