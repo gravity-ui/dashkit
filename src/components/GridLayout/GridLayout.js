@@ -33,6 +33,7 @@ export default class GridLayout extends React.PureComponent {
     static contextType = DashKitContext;
 
     _timeout;
+    _lastReloadAt;
 
     onVisibilityChange = () => {
         this.setState({
@@ -76,16 +77,20 @@ export default class GridLayout extends React.PureComponent {
             reloadItems,
         } = this.context;
         const {isPageHidden} = this.state;
-        const autoupdateIntervalNumber = Number(autoupdateInterval);
-        if (autoupdateIntervalNumber) {
-            this._timeout = setTimeout(() => {
-                if (!isPageHidden) {
-                    if (!editMode) {
-                        reloadItems(this.pluginsRefs, {silentLoading, noVeil: true});
-                    }
-                    this.reloadItems();
-                }
-            }, autoupdateIntervalNumber * 1000);
+        const autoupdateIntervalMs = Number(autoupdateInterval) * 1000;
+        if (autoupdateIntervalMs) {
+            const timeSinceLastReload = new Date().getTime() - (this._lastReloadAt || 0);
+            const reloadIntervalRemains = autoupdateIntervalMs - timeSinceLastReload;
+
+            if (!isPageHidden && !editMode && reloadIntervalRemains <= 0) {
+                this._lastReloadAt = new Date().getTime();
+                reloadItems(this.pluginsRefs, {silentLoading, noVeil: true});
+            }
+
+            this._timeout = setTimeout(
+                () => this.reloadItems(),
+                reloadIntervalRemains <= 0 ? autoupdateIntervalMs : reloadIntervalRemains,
+            );
         }
     }
 
