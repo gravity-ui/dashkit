@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.0](https://github.com/gravity-ui/dashkit/compare/v3.2.0...v3.3.0) (2022-11-10)
+
+
+### Features
+
+* improve autoupdate reload logic ([#25](https://github.com/gravity-ui/dashkit/issues/25)) ([3060d92](https://github.com/gravity-ui/dashkit/commit/3060d921407d02f136d58ea1cbd3c272d9f3def7))
+
 ## [3.2.0](https://github.com/gravity-ui/dashkit/compare/v3.1.0...v3.2.0) (2022-10-27)
 
 
