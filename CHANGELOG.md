@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.0](https://github.com/gravity-ui/dashkit/compare/v3.3.0...v3.4.0) (2022-11-16)
+
+
+### Features
+
+* delete _EXPERIMENTAL_memoContext props ([#27](https://github.com/gravity-ui/dashkit/issues/27)) ([c9d6b64](https://github.com/gravity-ui/dashkit/commit/c9d6b644e0235fd6d08d24090bb959c1fe112936))
+
 ## [3.3.0](https://github.com/gravity-ui/dashkit/compare/v3.2.0...v3.3.0) (2022-11-10)
 
 
