@@ -42,7 +42,7 @@ export default class GridLayout extends React.PureComponent {
     };
 
     adjustWidgetLayout = ({widgetId, needSetDefault, adjustedWidgetLayout}) => {
-        const {getLayout, memorizeOriginalLayout, revertToOriginalLayout} = this.context;
+        const {layout, memorizeOriginalLayout, revertToOriginalLayout} = this.context;
 
         if (needSetDefault) {
             revertToOriginalLayout(widgetId);
@@ -53,7 +53,6 @@ export default class GridLayout extends React.PureComponent {
             return;
         }
 
-        const layout = getLayout();
         const correspondedLayoutItemIndex = layout.findIndex(
             (layoutItem) => layoutItem.i === widgetId,
         );
@@ -106,10 +105,10 @@ export default class GridLayout extends React.PureComponent {
     };
 
     render() {
-        const {getLayout, config, registerManager, editMode, noOverlay, draggableHandleClassName} =
+        const {layout, config, registerManager, editMode, noOverlay, draggableHandleClassName} =
             this.context;
         this.pluginsRefs.length = config.items.length;
-        const layout = getLayout();
+
         return (
             <Layout
                 {...registerManager.gridLayout}

@@ -48,7 +48,7 @@ export default class MobileLayout extends React.PureComponent {
     };
 
     render() {
-        const {config, getLayout} = this.context;
+        const {config, layout} = this.context;
 
         this.pluginsRefs.length = config.items.length;
 
@@ -68,7 +68,7 @@ export default class MobileLayout extends React.PureComponent {
                             <Item
                                 id={item.id}
                                 item={item}
-                                layout={getLayout()}
+                                layout={layout}
                                 shouldItemUpdate={false}
                                 adjustWidgetLayout={this.adjustWidgetLayout.bind(this, index)}
                                 forwardedPluginRef={(pluginRef) => {
