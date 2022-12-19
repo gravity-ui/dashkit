@@ -95,8 +95,7 @@ Before using `DashKit` as a react component, it must be configured.
 
   ```js
   import {DashKit} from '@gravity-ui/dashkit';
-  import pluginTitle from '@gravity-ui/dashkit/build/esm/plugins/Title/Title';
-  import pluginText from '@gravity-ui/dashkit/build/esm/plugins/Text/Text';
+  import {pluginTitle, pluginText}  from '@gravity-ui/dashkit';
 
   DashKit.registerPlugins(
     pluginTitle,
