@@ -126,7 +126,7 @@ export default class GridLayout extends React.PureComponent {
                 {config.items.map((item, i) => {
                     return (
                         <GridItem
-                            ref={(pluginRef) => {
+                            forwardedPluginRef={(pluginRef) => {
                                 this.pluginsRefs[i] = pluginRef;
                             }} // forwarded ref to plugin
                             key={item.id}
