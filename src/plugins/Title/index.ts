@@ -1,1 +1,2 @@
-export {PluginTitle, PluginTitleProps, default as pluginTitle} from './Title';
+export * from './Title';
+export {default as pluginTitle} from './Title';
