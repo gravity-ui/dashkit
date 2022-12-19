@@ -1,5 +1,18 @@
 # Changelog
 
+## [4.0.0](https://github.com/gravity-ui/dashkit/compare/v3.5.0...v4.0.0) (2022-12-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* rename types in plugin Text ([#33](https://github.com/gravity-ui/dashkit/issues/33))
+* change grid item forward ref behavior
+
+### Features
+
+* rename types in plugin Text ([#33](https://github.com/gravity-ui/dashkit/issues/33)) ([c55917f](https://github.com/gravity-ui/dashkit/commit/c55917f918a4592c680e4e3bf3173fb53514b185))
+* update react-grid-layout major release ([#31](https://github.com/gravity-ui/dashkit/issues/31)) ([e31ff70](https://github.com/gravity-ui/dashkit/commit/e31ff707f48038435a63d95ad34b8685c39fb1ba))
+
 ## [3.5.0](https://github.com/gravity-ui/dashkit/compare/v3.4.0...v3.5.0) (2022-12-19)
 
 
