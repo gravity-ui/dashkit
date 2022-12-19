@@ -1,5 +1,5 @@
 export {
     PluginObjectSettings as PluginTextObjectSettings,
     PluginObject as PluginTextObject,
-    default as textPlugin,
+    default as pluginText,
 } from './Text';
