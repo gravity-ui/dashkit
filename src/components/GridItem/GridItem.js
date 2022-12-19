@@ -20,6 +20,7 @@ class GridItem extends React.PureComponent {
         layout: PropTypes.array,
         overlayControls: PropTypes.object,
 
+        forwardedRef: PropTypes.any,
         forwardedPluginRef: PropTypes.any,
 
         // from react-grid-layout:
@@ -97,6 +98,7 @@ class GridItem extends React.PureComponent {
                 )}
                 data-qa="dashkit-grid-item"
                 style={style}
+                ref={this.props.forwardedRef}
                 {...reactGridLayoutProps}
             >
                 <div className={b('item', {editMode: editMode && !_editActive && !noOverlay})}>
@@ -120,5 +122,5 @@ class GridItem extends React.PureComponent {
 }
 
 export default React.forwardRef((props, ref) => {
-    return <GridItem {...props} forwardedPluginRef={ref} />;
+    return <GridItem {...props} forwardedRef={ref} />;
 });
