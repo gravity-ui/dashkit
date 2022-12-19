@@ -153,14 +153,14 @@ export class PluginText extends React.PureComponent<PluginTextProps, PluginTextS
 
 type PluginDataProps = Omit<PluginTextProps, 'apiHandler'>;
 
-export type PluginObjectSettings = {apiHandler?: PluginTextApiHandler};
+export type PluginTextObjectSettings = {apiHandler?: PluginTextApiHandler};
 
-export type PluginObject = Plugin<PluginDataProps> & {
-    setSettings: (settings: PluginObjectSettings) => PluginObject;
+export type PluginTextObject = Plugin<PluginDataProps> & {
+    setSettings: (settings: PluginTextObjectSettings) => PluginTextObject;
     _apiHandler?: PluginTextApiHandler;
 };
 
-const plugin: PluginObject = {
+const plugin: PluginTextObject = {
     type: 'text',
     defaultLayout: {w: 12, h: 6},
     setSettings(settings) {
