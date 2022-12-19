@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.0](https://github.com/gravity-ui/dashkit/compare/v3.4.0...v3.5.0) (2022-12-19)
+
+
+### Features
+
+* export plugins ([#29](https://github.com/gravity-ui/dashkit/issues/29)) ([d589546](https://github.com/gravity-ui/dashkit/commit/d5895469e9917f4c5f43aaf5802b5d8a865bd185))
+
 ## [3.4.0](https://github.com/gravity-ui/dashkit/compare/v3.3.0...v3.4.0) (2022-11-16)
 
 
