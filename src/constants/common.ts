@@ -7,3 +7,5 @@ export const MenuItems = {
     Delete: 'delete',
     Settings: 'settings',
 } as const;
+
+export const FAKE_NEW_ITEM_ID = '_fake';

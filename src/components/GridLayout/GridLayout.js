@@ -2,6 +2,7 @@ import React from 'react';
 import ReactGridLayout, {WidthProvider} from 'react-grid-layout';
 import GridItem from '../GridItem/GridItem';
 import {DashKitContext} from '../../context/DashKitContext';
+import {FAKE_NEW_ITEM_ID} from '../../constants';
 
 const Layout = WidthProvider(ReactGridLayout); // eslint-disable-line new-cap
 
@@ -93,20 +94,64 @@ export default class GridLayout extends React.PureComponent {
         }
     }
 
+    addItem = (layout) => this.context.addByDrop(layout);
+
     _onStart = () => {
         this.setState({isDragging: true});
     };
 
     _onStop = (newLayout) => {
+        this.resetHover();
         const {layoutChange} = this.context;
 
         layoutChange(newLayout);
         this.setState({isDragging: false});
     };
 
+    _onDrop = (layout, layoutItem) => {
+        this.resetHover();
+        this.addItem(layout, layoutItem);
+    };
+
+    // TODO
+    resetHover = () => {
+        /*const gridItems = document.querySelectorAll('.dashkit-grid-item__overlay') || [];
+        if (!gridItems.length) {
+            return;
+        }
+        gridItems.forEach((_item) => {
+            item.style.borderRightColor = 'rgba(0, 0, 0, 0.1)';
+        });*/
+    };
+
+    // TODO
+    hoverItem = (el) => {
+        this.resetHover();
+        if (!el) {
+            return;
+        }
+        //el.style.borderRightColor = '#f00';
+    };
+
+    // TODO
+    _onDropDragOver = () => {
+        //console.log(e);
+        const selectItem = document.querySelector(
+            '.dashkit-grid-item:nth-child(2) .dashkit-grid-item__overlay',
+        );
+        this.hoverItem(selectItem);
+    };
+
     render() {
-        const {layout, config, registerManager, editMode, noOverlay, draggableHandleClassName} =
-            this.context;
+        const {
+            layout,
+            config,
+            registerManager,
+            editMode,
+            noOverlay,
+            draggableHandleClassName,
+            dragFromOutside,
+        } = this.context;
         this.pluginsRefs.length = config.items.length;
 
         return (
@@ -119,9 +164,13 @@ export default class GridLayout extends React.PureComponent {
                 onDragStop={this._onStop}
                 onResizeStart={this._onStart}
                 onResizeStop={this._onStop}
+                onDrop={this._onDrop}
+                onDropDragOver={this._onDropDragOver}
                 {...(draggableHandleClassName
                     ? {draggableHandle: `.${draggableHandleClassName}`}
                     : null)}
+                isDroppable={Boolean(dragFromOutside)}
+                droppingItem={{i: FAKE_NEW_ITEM_ID, h: 4, w: 5}} // TODO sizes
             >
                 {config.items.map((item, i) => {
                     return (

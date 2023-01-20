@@ -22,7 +22,7 @@ import {
 } from '../shared';
 import {AddConfigItem, WidgetLayout, SetItemOptions} from '../typings';
 import {RegisterManagerPluginLayout} from './register-manager';
-import {DEFAULT_NAMESPACE} from '../constants';
+import {DEFAULT_NAMESPACE, FAKE_NEW_ITEM_ID} from '../constants';
 import {getNewId} from './get-new-id';
 
 extend('$auto', (value, object) => (object ? update(object, value) : update({}, value)));
@@ -275,6 +275,58 @@ export class UpdateManager {
         return update(config, {
             items: {$push: [newItem]},
             layout: {$push: [{...saveDefaultLayout, y: layoutY, i: newItem.id}]},
+            counter: {$set: counter},
+        });
+    }
+
+    static addItemWithLayoutUpdate({
+        item,
+        namespace = DEFAULT_NAMESPACE,
+        layout,
+        config,
+        options,
+    }: {
+        item: AddConfigItem;
+        namespace: string;
+        layout: WidgetLayout[];
+        config: Config;
+        options: SetItemOptions;
+    }) {
+        const {counter, salt} = config;
+
+        const resultData = isItemWithTabs(item)
+            ? {
+                  ...item.data,
+                  tabs: item.data.tabs.map((tab) =>
+                      tab.id
+                          ? tab
+                          : {
+                                ...tab,
+                                id: String(getNewId({config, salt, counter})),
+                            },
+                  ),
+              }
+            : item.data;
+
+        const newItem = {
+            ...item,
+            id: String(getNewId({config, salt, counter})),
+            data: resultData,
+            namespace,
+            options,
+        };
+
+        const newLayout = layout.map(({x, y, w, h, i}) => ({
+            x,
+            y,
+            w,
+            h,
+            i: i === FAKE_NEW_ITEM_ID ? String(newItem.id) : i,
+        }));
+
+        return update(config, {
+            items: {$push: [newItem]},
+            layout: {$set: newLayout},
             counter: {$set: counter},
         });
     }

@@ -12,6 +12,7 @@ import {
     Plugin,
     AddConfigItem,
     SetItemOptions,
+    WidgetLayout,
 } from '../../typings';
 import {GlobalParams, Config, ConfigItem, ItemsStateAndParams} from '../../shared';
 
@@ -25,6 +26,7 @@ interface DashKitGeneralProps {
 interface DashKitDefaultProps {
     onItemEdit: (item: ConfigItem) => void;
     onChange: (data: {config: Config; itemsStateAndParams: ItemsStateAndParams}) => void;
+    onAddByDrop: (layout: WidgetLayout[], layoutItem: WidgetLayout) => void;
     defaultGlobalParams: GlobalParams;
     globalParams: GlobalParams;
     itemsStateAndParams: ItemsStateAndParams;
@@ -33,6 +35,7 @@ interface DashKitDefaultProps {
     overlayControls?: Record<string, OverlayControlItem[]>;
     noOverlay?: boolean;
     draggableHandleClassName?: string;
+    dragFromOutside?: boolean;
 }
 
 export interface DashKitProps extends DashKitGeneralProps, Partial<DashKitDefaultProps> {}
@@ -45,6 +48,7 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
     static defaultProps: DashKitDefaultProps = {
         onItemEdit: noop,
         onChange: noop,
+        onAddByDrop: noop,
         defaultGlobalParams: {},
         globalParams: {},
         itemsStateAndParams: {},
@@ -54,6 +58,7 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
         },
         context: {},
         noOverlay: false,
+        dragFromOutside: false,
     };
 
     static registerPlugins(...plugins: Plugin[]) {
@@ -66,21 +71,34 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
         registerManager.setSettings(settings);
     }
 
-    static setItem({
-        item: setItem,
-        namespace = DEFAULT_NAMESPACE,
-        config,
-        options = {},
-    }: {
-        item: SetConfigItem;
-        namespace?: string;
-        config: Config;
-        options?: SetItemOptions;
-    }): Config {
+    static setItem(
+        {
+            item: setItem,
+            namespace = DEFAULT_NAMESPACE,
+            config,
+            options = {},
+        }: {
+            item: SetConfigItem;
+            namespace?: string;
+            config: Config;
+            options?: SetItemOptions;
+        },
+        changedLayout?: WidgetLayout[],
+    ): Config {
         if (setItem.id) {
             return UpdateManager.editItem({item: setItem, namespace, config, options});
         } else {
             const item = setItem as AddConfigItem;
+            if (changedLayout) {
+                return UpdateManager.addItemWithLayoutUpdate({
+                    item,
+                    namespace,
+                    config,
+                    layout: changedLayout,
+                    options,
+                });
+            }
+
             const layout = {...registerManager.getItem(item.type).defaultLayout};
 
             if (item.layout) {
