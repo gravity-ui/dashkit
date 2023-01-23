@@ -28,9 +28,9 @@
     "test": "jest",
     "clean": "gulp clean",
     "build": "gulp",
-    "start": "start-storybook -p 7120",
+    "start": "env TS_NODE_PROJECT=.storybook/tsconfig.json start-storybook -p 7120",
     "typecheck": "tsc --noEmit",
-    "build-storybook": "build-storybook -c .storybook -o storybook-static",
+    "build-storybook": "env TS_NODE_PROJECT=.storybook/tsconfig.json build-storybook -c .storybook -o storybook-static",
     "prepare": "husky install",
     "prepublishOnly": "npm run lint && npm run test && npm run build"
   },
