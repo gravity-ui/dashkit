@@ -32,7 +32,6 @@ interface DashKitDefaultProps {
     overlayControls?: Record<string, OverlayControlItem[]>;
     noOverlay?: boolean;
     draggableHandleClassName?: string;
-    _EXPERIMENTAL_preventDoubleCompact?: boolean;
 }
 
 export interface DashKitProps extends DashKitGeneralProps, Partial<DashKitDefaultProps> {}
