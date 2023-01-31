@@ -3,9 +3,6 @@ import {DashKitContext} from '../context/DashKitContext';
 import {UpdateManager} from '../utils';
 import {getItemsParams, getItemsState} from '../shared';
 import isEqual from 'lodash/isEqual';
-import {utils as gridLayoutUtils} from 'react-grid-layout';
-
-const LAYOUT_COMPACTING_TYPE = 'vertical';
 
 function useMemoStateContext(props) {
     // так как мы не хотим хранить параметры виджета с активированной автовысотой в сторе и на сервере, актуальный
@@ -53,21 +50,8 @@ function useMemoStateContext(props) {
                 }
             });
 
-            // [experimental] if the _prevent Double Compact is enabled, then skip recalculate layout with auto height
-            // после того, как у виждета активировали автовысоту и его параметр "h" изменился, это приведёт, также, и к
-            // изменению параметра (координаты) "y" у элементов расположенных под ним, поэтому, после того, как
-            // значения параметра "h" виджетов с активированной автовысотой были изменены, необходимо изменить и
-            // координату "y" виджетов расположенных ниже
-            const compactedLayout = props._EXPERIMENTAL_preventDoubleCompact
-                ? currentInnerLayout
-                : gridLayoutUtils.compact(
-                      currentInnerLayout,
-                      LAYOUT_COMPACTING_TYPE,
-                      props.registerManager.gridLayout.cols,
-                  );
-
             const newConfig = UpdateManager.updateLayout({
-                layout: compactedLayout,
+                layout: currentInnerLayout,
                 config: props.config,
             });
 
@@ -75,7 +59,7 @@ function useMemoStateContext(props) {
                 onChange({config: newConfig});
             }
         },
-        [props._EXPERIMENTAL_preventDoubleCompact, props.registerManager, props.config, onChange],
+        [props.config, onChange],
     );
 
     const onItemRemove = React.useCallback(
