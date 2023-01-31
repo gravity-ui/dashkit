@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.1.0](https://github.com/gravity-ui/dashkit/compare/v4.0.0...v4.1.0) (2023-01-31)
+
+
+### Features
+
+* remove preventDoubleCompact flag ([#37](https://github.com/gravity-ui/dashkit/issues/37)) ([9b95e61](https://github.com/gravity-ui/dashkit/commit/9b95e61b7939a9883fda832947e70728b8f66410))
+
 ## [4.0.0](https://github.com/gravity-ui/dashkit/compare/v3.5.0...v4.0.0) (2022-12-19)
 
 
