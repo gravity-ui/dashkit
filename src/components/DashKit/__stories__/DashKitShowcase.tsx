@@ -8,7 +8,7 @@ import {DeleteIcon} from '../../../icons/DeleteIcon';
 import {WarningIcon} from '../../../icons/WarningIcon';
 import i18n from '../../../i18n';
 import {getConfig, makeid, titleId} from './utils';
-import Demo from './Demo';
+import {Demo, DemoRow} from './Demo';
 
 type DashKitDemoState = {
     editMode: boolean;
@@ -83,7 +83,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
 
         return (
             <Demo title="DashKit">
-                <Demo.Row title="Внешнее взаимодействие">
+                <DemoRow title="Внешнее взаимодействие">
                     <Button
                         view="normal"
                         size="m"
@@ -117,9 +117,9 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                     <Button view="action" size="m" onClick={this.getItemsMeta}>
                         {'ref.getItemsMeta'}
                     </Button>
-                </Demo.Row>
-                <Demo.Row title="Изменения из DashKit">{this.state.lastAction}</Demo.Row>
-                <Demo.Row title="Компонент">
+                </DemoRow>
+                <DemoRow title="Изменения из DashKit">{this.state.lastAction}</DemoRow>
+                <DemoRow title="Компонент">
                     <DashKit
                         config={this.state.config}
                         editMode={editMode}
@@ -132,7 +132,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                         ref={this.dashKitRef}
                         overlayControls={controls}
                     />
-                </Demo.Row>
+                </DemoRow>
             </Demo>
         );
     }
