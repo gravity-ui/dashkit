@@ -14,7 +14,8 @@ import {
     MenuItemProps,
 } from '@gravity-ui/uikit';
 import {COPIED_WIDGET_STORE_KEY, MenuItems} from '../../constants';
-import {ConfigLayout, ConfigItem, PluginBase, StringParams} from '../../shared';
+import {ConfigLayout, ConfigItem, PluginBase, StringParams, Config} from '../../shared';
+import type {RegisterManager} from '../../utils/register-manager';
 import {DotsIcon} from '../../icons/DotsIcon';
 import {CogIcon} from '../../icons/CogIcon';
 import {CloseIcon} from '../../icons/CloseIcon';
@@ -63,6 +64,14 @@ interface OverlayControlsProps extends OverlayControlsDefaultProps {
     overlayControls?: Record<string, OverlayControlItem[]>;
 }
 
+type DashKitCtx = React.Context<{
+    registerManager: RegisterManager;
+    itemsParams: Record<string, StringParams>;
+    editItem: (item: ConfigItem) => void;
+    removeItem: (id: string) => void;
+    config: Config;
+}>;
+
 const DEFAULT_DROPDOWN_MENU = [MenuItems.Copy, MenuItems.Delete];
 
 class OverlayControls extends React.Component<OverlayControlsProps> {
@@ -72,6 +81,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         view: 'normal',
         size: 'm',
     };
+    context!: React.ContextType<DashKitCtx>;
     render() {
         const {items = [], position} = this.props;
         const hasCustomControlsWithWidgets = items.length > 0;
@@ -196,13 +206,12 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
     }
     private renderDropdownMenu() {
         const {view, size} = this.props;
-        const {registerManager} = this.context;
+        const {registerManager, itemsParams} = this.context;
 
-        const itemsParams: Record<string, StringParams> = this.context.itemsParams;
         const configItem = this.props.configItem;
         const itemParams = itemsParams[configItem.id];
 
-        let menu = registerManager.settings.menu;
+        let menu = registerManager.settings.menu as any;
         if (!menu.length) {
             menu = DEFAULT_DROPDOWN_MENU;
         }
@@ -289,8 +298,8 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
             defaults: this.props.configItem.defaults,
             namespace: this.props.configItem.namespace,
             layout: {
-                w: correspondedItemLayout.w,
-                h: correspondedItemLayout.h,
+                w: correspondedItemLayout!.w,
+                h: correspondedItemLayout!.h,
             },
         };
 
