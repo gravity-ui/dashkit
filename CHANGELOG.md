@@ -1,5 +1,16 @@
 # Changelog
 
+## [5.0.0](https://github.com/gravity-ui/dashkit/compare/v4.1.0...v5.0.0) (2023-02-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* up @gravity-ui/uikit to 4 version ([#39](https://github.com/gravity-ui/dashkit/issues/39))
+
+### Features
+
+* up @gravity-ui/uikit to 4 version ([#39](https://github.com/gravity-ui/dashkit/issues/39)) ([8b4c123](https://github.com/gravity-ui/dashkit/commit/8b4c123a69009918518d4c296af3c315f811afd9))
+
 ## [4.1.0](https://github.com/gravity-ui/dashkit/compare/v4.0.0...v4.1.0) (2023-01-31)
 
 
