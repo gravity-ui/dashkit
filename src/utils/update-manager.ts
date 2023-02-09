@@ -1,5 +1,4 @@
 import update, {extend, Spec, CustomCommands} from 'immutability-helper';
-import Hashids from 'hashids';
 import omit from 'lodash/omit';
 import pick from 'lodash/pick';
 import {
@@ -19,9 +18,10 @@ import {
     resolveItemInnerId,
     getItemsStateAndParamsMeta,
 } from '../shared';
-import {AddConfigItem, WidgetLayout} from '../typings';
+import {AddConfigItem, WidgetLayout, SetItemOptions} from '../typings';
 import {RegisterManagerPluginLayout} from './register-manager';
 import {DEFAULT_NAMESPACE} from '../constants';
+import {getNewId} from './get-new-id';
 
 extend('$auto', (value, object) => (object ? update(object, value) : update({}, value)));
 type AutoExtendCommand = CustomCommands<{$auto: object}>;
@@ -198,35 +198,64 @@ function changeStateAndParamsVersion1({
     }
 }
 
+type GetNewItemDataArgs = {
+    item: AddConfigItem | ConfigItem;
+    config: Config;
+    salt: Config['salt'];
+    counter: Config['counter'];
+    options: SetItemOptions;
+};
+
+function getNewItemData({item, config, counter: argsCounter, salt, options}: GetNewItemDataArgs) {
+    const excludeIds = [...(options.excludeIds || [])];
+    let counter = argsCounter;
+
+    let data = item.data;
+
+    if (isItemWithTabs(item)) {
+        const tabs = item.data.tabs.map((tab) => {
+            if (tab.id) {
+                return tab;
+            }
+
+            const newIdTabData = getNewId({config, salt, counter, ids: excludeIds});
+            counter = newIdTabData.counter;
+            excludeIds.push(newIdTabData.id);
+
+            return {...tab, id: newIdTabData.id};
+        });
+
+        data = {...item.data, tabs};
+    }
+    return {data, counter, excludeIds};
+}
+
 export class UpdateManager {
-    // TODO: проверять, что id нового элемента уникальный
     static addItem({
         item,
         namespace = DEFAULT_NAMESPACE,
         layout,
         config,
+        options,
     }: {
         item: AddConfigItem;
         namespace: string;
         layout: RegisterManagerPluginLayout;
         config: Config;
+        options: SetItemOptions;
     }) {
         const layoutY = Math.max(0, ...config.layout.map(({h, y}) => h + y));
         const saveDefaultLayout = pick(layout, ['h', 'w', 'x', 'y']);
 
-        const hashids = new Hashids(config.salt);
-        let counter = config.counter;
+        const salt = config.salt;
 
-        const resultData = isItemWithTabs(item)
-            ? {
-                  ...item.data,
-                  tabs: item.data.tabs.map((tab) =>
-                      tab.id ? tab : {...tab, id: hashids.encode(++counter)},
-                  ),
-              }
-            : item.data;
+        const newItemData = getNewItemData({item, config, salt, counter: config.counter, options});
+        let counter = newItemData.counter;
 
-        const newItem = {...item, id: hashids.encode(++counter), data: resultData, namespace};
+        const newIdData = getNewId({config, salt, counter, ids: newItemData.excludeIds});
+        counter = newIdData.counter;
+
+        const newItem = {...item, id: newIdData.id, data: newItemData.data, namespace};
 
         return update(config, {
             items: {$push: [newItem]},
@@ -239,27 +268,25 @@ export class UpdateManager {
         item,
         namespace = DEFAULT_NAMESPACE,
         config,
+        options,
     }: {
         item: ConfigItem;
         namespace: string;
         config: Config;
+        options: SetItemOptions;
     }) {
-        const hashids = new Hashids(config.salt);
-        let counter = config.counter;
-
         const itemIndex = config.items.findIndex(({id}) => item.id === id);
 
-        const resultData = isItemWithTabs(item)
-            ? {
-                  ...item.data,
-                  tabs: item.data.tabs.map((tab) =>
-                      tab.id ? tab : {...tab, id: hashids.encode(++counter)},
-                  ),
-              }
-            : item.data;
+        const {counter, data} = getNewItemData({
+            item,
+            config,
+            salt: config.salt,
+            counter: config.counter,
+            options,
+        });
 
         return update(config, {
-            items: {[itemIndex]: {$set: {...item, data: resultData, namespace}}},
+            items: {[itemIndex]: {$set: {...item, data, namespace}}},
             counter: {$set: counter},
         });
     }
