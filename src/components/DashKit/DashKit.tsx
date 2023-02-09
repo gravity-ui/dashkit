@@ -11,6 +11,7 @@ import {
     ContextProps,
     Plugin,
     AddConfigItem,
+    SetItemOptions,
 } from '../../typings';
 import {GlobalParams, Config, ConfigItem, ItemsStateAndParams} from '../../shared';
 
@@ -69,13 +70,15 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
         item: setItem,
         namespace = DEFAULT_NAMESPACE,
         config,
+        options = {},
     }: {
         item: SetConfigItem;
         namespace?: string;
         config: Config;
+        options?: SetItemOptions;
     }): Config {
         if (setItem.id) {
-            return UpdateManager.editItem({item: setItem, namespace, config});
+            return UpdateManager.editItem({item: setItem, namespace, config, options});
         } else {
             const item = setItem as AddConfigItem;
             const layout = {...registerManager.getItem(item.type).defaultLayout};
@@ -89,6 +92,7 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
                 namespace,
                 config,
                 layout,
+                options,
             });
         }
     }
