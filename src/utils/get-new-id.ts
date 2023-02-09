@@ -4,10 +4,10 @@ type GetNewIdArgs = {
     config: Config;
     salt: Config['salt'];
     counter: Config['counter'];
-    ids?: string[];
+    excludeIds?: string[];
 };
 
-export function getNewId({config, salt, counter, ids = []}: GetNewIdArgs) {
-    const allIds = [...extractIdsFromConfig(config), ...ids];
+export function getNewId({config, salt, counter, excludeIds = []}: GetNewIdArgs) {
+    const allIds = [...extractIdsFromConfig(config), ...excludeIds];
     return generateUniqId({salt, counter, ids: allIds});
 }

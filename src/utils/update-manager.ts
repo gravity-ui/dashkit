@@ -218,7 +218,7 @@ function getNewItemData({item, config, counter: argsCounter, salt, options}: Get
                 return tab;
             }
 
-            const newIdTabData = getNewId({config, salt, counter, ids: excludeIds});
+            const newIdTabData = getNewId({config, salt, counter, excludeIds});
             counter = newIdTabData.counter;
             excludeIds.push(newIdTabData.id);
 
@@ -252,7 +252,7 @@ export class UpdateManager {
         const newItemData = getNewItemData({item, config, salt, counter: config.counter, options});
         let counter = newItemData.counter;
 
-        const newIdData = getNewId({config, salt, counter, ids: newItemData.excludeIds});
+        const newIdData = getNewId({config, salt, counter, excludeIds: newItemData.excludeIds});
         counter = newIdData.counter;
 
         const newItem = {...item, id: newIdData.id, data: newItemData.data, namespace};
