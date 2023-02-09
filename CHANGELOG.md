@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.1.0](https://github.com/gravity-ui/dashkit/compare/v5.0.0...v5.1.0) (2023-02-09)
+
+
+### Features
+
+* generating a unique id for config ([#41](https://github.com/gravity-ui/dashkit/issues/41)) ([062c8d0](https://github.com/gravity-ui/dashkit/commit/062c8d015e334061fac193cf8c0a549a932e3a87))
+
 ## [5.0.0](https://github.com/gravity-ui/dashkit/compare/v4.1.0...v5.0.0) (2023-02-01)
 
 
