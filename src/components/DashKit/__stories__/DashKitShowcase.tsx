@@ -1,4 +1,5 @@
 import React from 'react';
+import block from 'bem-cn-lite';
 import {Button, Icon} from '@gravity-ui/uikit';
 import {DashKit, DashKitProps, MenuItems, ConfigItem} from '../../..';
 import {TickIcon} from '../../../icons/TickIcon';
@@ -9,6 +10,9 @@ import {WarningIcon} from '../../../icons/WarningIcon';
 import i18n from '../../../i18n';
 import {getConfig, makeid, titleId} from './utils';
 import {Demo, DemoRow} from './Demo';
+import './DashKitShowcase.scss';
+
+const b = block('stories-dashkit-showcase');
 
 type DashKitDemoState = {
     editMode: boolean;
@@ -26,7 +30,7 @@ type DashKitDemoState = {
 export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
     state: DashKitDemoState = {
         config: getConfig(),
-        editMode: false,
+        editMode: true,
         settings: {
             silentLoading: true,
             autoupdateInterval: 0,
@@ -35,7 +39,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
         defaultGlobalParams: {},
         globalParams: {},
 
-        lastAction: 'Нет',
+        lastAction: 'Nothing',
         customControlsActionData: 0,
         showCustomMenu: true,
     };
@@ -43,7 +47,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
     private dashKitRef = React.createRef<DashKit>();
 
     componentDidMount() {
-        this.toggleCustomMenu();
+        this.toggleCustomMenu(true);
     }
 
     render() {
@@ -83,43 +87,71 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
 
         return (
             <Demo title="DashKit">
-                <DemoRow title="Внешнее взаимодействие">
+                <DemoRow title="Controls">
                     <Button
-                        view="normal"
+                        view="action"
                         size="m"
                         onClick={() => this.setState({editMode: !editMode})}
                     >
-                        {editMode ? 'Отключить редактирование' : 'Включить редактирование'}
+                        {editMode ? 'Disable editMode' : 'Enable editMode'}
                     </Button>
-                    &nbsp;&nbsp;
-                    <Button view="normal" size="m" onClick={this.toggleCustomMenu}>
-                        {this.state.showCustomMenu
-                            ? 'Отключить кастомное меню'
-                            : 'Включить кастомное меню'}
-                    </Button>
-                    &nbsp;&nbsp;
-                    <Button view="normal" size="m" onClick={this.addText}>
-                        {'Добавить текст'}
-                    </Button>
-                    &nbsp;&nbsp;
-                    <Button view="normal" size="m" onClick={this.addTitle}>
-                        {'Добавить тайтл'}
-                    </Button>
-                    &nbsp;&nbsp;
-                    <Button view="normal" size="m" onClick={this.changeTitle}>
-                        {'Поменять текст заголовка'}
-                    </Button>
-                    &nbsp;&nbsp;
-                    <Button view="normal" size="m" onClick={this.removeTitle}>
-                        {'Удалить заголовок'}
-                    </Button>
-                    &nbsp;&nbsp;
-                    <Button view="action" size="m" onClick={this.getItemsMeta}>
-                        {'ref.getItemsMeta'}
-                    </Button>
+                    <div className={b('controls-line')}>
+                        <Button
+                            view="normal"
+                            size="m"
+                            onClick={() => this.toggleCustomMenu(false)}
+                            className={b('btn-contol')}
+                            disabled={!editMode}
+                        >
+                            {this.state.showCustomMenu
+                                ? 'Disable custom menu'
+                                : 'Enable custom menu'}
+                        </Button>
+                        <Button
+                            view="normal"
+                            size="m"
+                            onClick={this.addText}
+                            className={b('btn-contol')}
+                        >
+                            Add widget Text
+                        </Button>
+                        <Button
+                            view="normal"
+                            size="m"
+                            onClick={this.addTitle}
+                            className={b('btn-contol')}
+                        >
+                            Add widget Title
+                        </Button>
+                        <Button
+                            view="normal"
+                            size="m"
+                            onClick={this.changeTitle}
+                            className={b('btn-contol')}
+                        >
+                            Change widget Title text
+                        </Button>
+                        <Button
+                            view="normal"
+                            size="m"
+                            onClick={this.removeTitle}
+                            className={b('btn-contol')}
+                            disabled={!this.isTitleInConfig()}
+                        >
+                            Delete widget Title
+                        </Button>
+                        <Button
+                            view="outlined"
+                            size="m"
+                            onClick={this.getItemsMeta}
+                            className={b('btn-contol')}
+                        >
+                            ref.getItemsMeta
+                        </Button>
+                    </div>
                 </DemoRow>
-                <DemoRow title="Изменения из DashKit">{this.state.lastAction}</DemoRow>
-                <DemoRow title="Компонент">
+                <DemoRow title="Last action in DashKit">{this.state.lastAction}</DemoRow>
+                <DemoRow title="Component view">
                     <DashKit
                         config={this.state.config}
                         editMode={editMode}
@@ -152,7 +184,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
         console.log('namespace', namespace);
         console.log('data', data);
         this.setState({
-            lastAction: `Редактировать виджет (id = '${id}'): ${new Date().toISOString()}`,
+            lastAction: `[onItemEdit] Widget (id = '${id}') has been changed: ${new Date().toISOString()}`,
         });
     };
 
@@ -167,7 +199,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
         console.log('itemsStateAndParams', itemsStateAndParams);
 
         this.setState({
-            lastAction: `Изменился config или itemsStateAndParams: ${new Date().toISOString()}`,
+            lastAction: `[onChange] config or itemsStateAndParams has been changed: ${new Date().toISOString()}`,
         });
 
         if (config) {
@@ -187,7 +219,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                 id: titleId,
                 data: {
                     size: 'm',
-                    text: `Заголовок rand-${makeid(4)}`,
+                    text: `Title rand-${makeid(4)}`,
                     showInTOC: true,
                 },
                 namespace: 'default',
@@ -195,7 +227,10 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
             },
             config: this.state.config,
         });
-        this.setState({config});
+        this.setState({
+            config,
+            lastAction: `[DashKit.setItem] widget Title changed: ${new Date().toISOString()}`,
+        });
     };
 
     private removeTitle = () => {
@@ -208,7 +243,11 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
             itemsStateAndParams: this.state.itemsStateAndParams,
         });
 
-        this.setState({config, itemsStateAndParams});
+        this.setState({
+            config,
+            itemsStateAndParams,
+            lastAction: `[DashKit.removeItem] widget Title deleted: ${new Date().toISOString()}`,
+        });
     };
 
     private addText = () => {
@@ -222,7 +261,10 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
             },
             config: this.state.config,
         });
-        this.setState({config});
+        this.setState({
+            config,
+            lastAction: `[DashKit.setItem] add  new widget Text: ${new Date().toISOString()}`,
+        });
     };
 
     private addTitle = () => {
@@ -238,15 +280,18 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
             namespace: 'default',
             config: this.state.config,
         });
-        this.setState({config});
+        this.setState({
+            config,
+            lastAction: `[DashKit.setItem] add  new widget Title: ${new Date().toISOString()}`,
+        });
     };
 
     private getItemsMeta = async () => {
-        // Получаем meta из плагинов, если у них есть публичный метод getMeta(),
-        // который вернет Promise, таким образом, можно получить информацию из экземпляра плагина
+        // Get meta from plugins if they have a public method  getMeta(),
+        // which will return a Promise, so you can get information from the plugin instance
         if (this.dashKitRef.current) {
             const itemsMetas = await Promise.all(this.dashKitRef.current.getItemsMeta());
-            // В плагине Title и Text нет такого метода
+            // There is no such method in the Title and Text plugin
             console.log(itemsMetas);
         }
     };
@@ -255,7 +300,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
         return Boolean(this.state.config.items.find((item) => item.id === titleId));
     }
 
-    private toggleCustomMenu = () => {
+    private toggleCustomMenu = (init = false) => {
         const {showCustomMenu} = this.state;
         if (showCustomMenu) {
             DashKit.setSettings({menu: []});
@@ -284,6 +329,11 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                 ],
             });
         }
-        this.setState({showCustomMenu: !showCustomMenu});
+        this.setState({
+            showCustomMenu: !showCustomMenu,
+            lastAction: init
+                ? this.state.lastAction
+                : `[DashKit.setSettings] toggle show custom widget menu: ${new Date().toISOString()}`,
+        });
     };
 }

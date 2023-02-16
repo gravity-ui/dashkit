@@ -1,0 +1,13 @@
+.stories-dashkit-showcase {
+    &__controls-line {
+        display: flex;
+        margin-top: 10px;
+        flex-wrap: wrap;
+        max-width: 800px;
+    }
+
+    &__btn-contol {
+        margin-bottom: 10px;
+        margin-right: 10px;
+    }
+}
