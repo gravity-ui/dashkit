@@ -20,7 +20,7 @@ export const getConfig = (): DashKitProps['config'] => ({
             id: titleId,
             data: {
                 size: 'm',
-                text: 'Заголовок',
+                text: 'Title widget',
                 showInTOC: true,
             },
             type: 'title',
@@ -30,7 +30,7 @@ export const getConfig = (): DashKitProps['config'] => ({
         {
             id: 'Ea',
             data: {
-                text: 'режим _editActive',
+                text: 'special mode _editActive',
                 _editActive: true,
             },
             type: 'text',
@@ -39,7 +39,7 @@ export const getConfig = (): DashKitProps['config'] => ({
         {
             id: 'zR',
             data: {
-                text: '### Текст',
+                text: 'Text widget',
             },
             type: 'text',
             namespace: 'default',
@@ -78,9 +78,9 @@ export const getConfig = (): DashKitProps['config'] => ({
             y: 2,
         },
         {
-            h: 4,
+            h: 10,
             i: 'Dk',
-            w: 8,
+            w: 10,
             x: 0,
             y: 8,
         },
