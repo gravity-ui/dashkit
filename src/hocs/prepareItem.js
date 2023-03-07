@@ -39,14 +39,22 @@ export function prepareItem(Component) {
 
         render() {
             const {id, width, height, item, adjustWidgetLayout, layout} = this.props;
-            const {itemsState, itemsParams, registerManager, settings, context, editMode} =
-                this.context;
+            const {
+                itemsState,
+                itemsParams,
+                itemsActionParams,
+                registerManager,
+                settings,
+                context,
+                editMode,
+            } = this.context;
             const {type, data, defaults, namespace} = item;
             const rendererProps = {
                 data,
                 editMode,
                 params: itemsParams[id],
                 state: itemsState[id],
+                actionParams: itemsActionParams[id],
                 onStateAndParamsChange: this._onStateAndParamsChange,
                 width,
                 height,

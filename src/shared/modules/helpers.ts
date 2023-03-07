@@ -177,18 +177,13 @@ export function getMapItemsIgnores({
     }, {});
 }
 
-export function mergeParamsWithAliases({
-    aliases,
-    namespace,
-    params,
-}: {
-    aliases: ConfigAliases;
-    namespace: string;
-    params: StringParams;
-}): StringParams {
-    const aliasesByNamespace = get(aliases, [namespace], []) as string[][];
-    return Object.keys(params).reduce((matchedParams: StringParams, paramKey) => {
-        const paramValue = params[paramKey];
+function mergeParamsItemsWithAliases(
+    aliasesByNamespace: string[][],
+    items: StringParams,
+    additionalItems = {},
+): StringParams {
+    return Object.keys(items).reduce((matchedParams: StringParams, paramKey) => {
+        const paramValue = items[paramKey];
         const collectAliasesParamsKeys = aliasesByNamespace.reduce(
             (collect, group) => {
                 return group.includes(paramKey) ? collect.concat(group) : collect;
@@ -200,8 +195,84 @@ export function mergeParamsWithAliases({
             ...collectAliasesParamsKeys.reduce((acc: StringParams, matchedKey) => {
                 return {...acc, [matchedKey]: paramValue};
             }, {}),
+            ...additionalItems,
         };
     }, {});
+}
+
+export function mergeParamsWithAliases({
+    aliases,
+    namespace,
+    params,
+    actionParams,
+}: {
+    aliases: ConfigAliases;
+    namespace: string;
+    params: StringParams;
+    actionParams?: StringParams;
+}): StringParams {
+    const aliasesByNamespace = get(aliases, [namespace], []) as string[][];
+
+    let actionParamsWithAliases = {};
+    if (actionParams && Object.entries(actionParams).length) {
+        actionParamsWithAliases = mergeParamsItemsWithAliases(aliasesByNamespace, actionParams);
+    }
+
+    return mergeParamsItemsWithAliases(aliasesByNamespace, params, actionParamsWithAliases);
+}
+
+export function mergeParamsNamesWithAliases({
+    aliases,
+    namespace,
+    paramsNames,
+}: {
+    aliases: ConfigAliases;
+    namespace: string;
+    paramsNames: Array<string>;
+}): Array<string> {
+    const aliasesByNamespace = get(aliases, [namespace], []) as string[][];
+    return Array.from(
+        new Set([
+            ...paramsNames.reduce((matchedParams: Array<string>, paramKey: string) => {
+                const collectAliasesParamsKeys = aliasesByNamespace.reduce(
+                    (collect, group) => {
+                        return group.includes(paramKey) ? collect.concat(group) : collect;
+                    },
+                    [paramKey],
+                );
+                return [...matchedParams, ...collectAliasesParamsKeys];
+            }, []),
+        ]),
+    );
+}
+
+export function mergeParamsNamesWithPairAliases({
+    aliases,
+    namespace,
+    paramsNames,
+}: {
+    aliases: ConfigAliases;
+    namespace: string;
+    paramsNames: Array<string>;
+}): Array<Array<string>> {
+    const aliasesByNamespace = get(aliases, [namespace], []) as Array<Array<string>>;
+    const res = [] as Array<Array<string>>; // string[][];
+    paramsNames.forEach((paramName) => {
+        res.push(...aliasesByNamespace.filter((item) => item.includes(paramName)));
+    });
+    /*const tmpRes = paramsNames.reduce((matchedParams: Array<string>, paramKey: string) => {
+        const collectAliasesParamsKeys = aliasesByNamespace.reduce(
+            (collect, group) => {
+                debugger;
+                return group.includes(paramKey) ? collect.concat(group) : collect;
+            },
+            [paramKey],
+        );
+        return [...matchedParams, ...collectAliasesParamsKeys];
+    }, []);
+    const tmpSet = new Set([...tmpRes]);*/
+    //const res = Array.from(tmpSet);
+    return res;
 }
 
 export function getInitialItemsStateAndParamsMeta(): StateAndParamsMetaData {

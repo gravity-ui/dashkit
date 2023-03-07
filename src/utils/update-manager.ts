@@ -1,6 +1,7 @@
 import update, {extend, Spec, CustomCommands} from 'immutability-helper';
 import omit from 'lodash/omit';
 import pick from 'lodash/pick';
+import isEmpty from 'lodash/isEmpty';
 import {
     mergeParamsWithAliases,
     isItemWithTabs,
@@ -17,6 +18,9 @@ import {
     getInitialItemsStateAndParamsMeta,
     resolveItemInnerId,
     getItemsStateAndParamsMeta,
+    getItemsActionParams,
+    //mergeParamsNamesWithAliases,
+    mergeParamsNamesWithPairAliases,
 } from '../shared';
 import {AddConfigItem, WidgetLayout, SetItemOptions} from '../typings';
 import {RegisterManagerPluginLayout} from './register-manager';
@@ -103,6 +107,7 @@ function getAllowableChangedParams(
     item: ConfigItem,
     stateAndParams: ItemStateAndParams,
     itemsStateAndParams: ItemsStateAndParams,
+    paramsTypeName: 'params' | 'actionParams' = 'params',
 ): StringParams {
     let allowedParams: StringParams = {};
     if (isItemWithTabs(item)) {
@@ -114,14 +119,18 @@ function getAllowableChangedParams(
             const tabId = resolveItemInnerId({item, itemsStateAndParams});
             tab = item.data.tabs.find(({id}) => id === tabId);
         }
-        allowedParams = pick(stateAndParams.params, Object.keys(tab?.params || {})) as StringParams;
+        const stateParams = stateAndParams[paramsTypeName];
+        allowedParams = pick(stateParams, Object.keys(tab?.params || {})) as StringParams;
     } else {
         allowedParams = pick(
-            stateAndParams.params,
+            stateAndParams[paramsTypeName],
             Object.keys(item.defaults || {}),
         ) as StringParams;
     }
-    if (Object.keys(allowedParams).length !== Object.keys(stateAndParams.params || {}).length) {
+    if (
+        Object.keys(allowedParams || {}).length !==
+        Object.keys(stateAndParams[paramsTypeName] || {}).length
+    ) {
         console.warn('Параметры, которых нет в defaults, будут проигнорированы!');
     }
     return allowedParams;
@@ -354,7 +363,7 @@ export class UpdateManager {
             });
         }
         const hasState = 'state' in stateAndParams;
-        const {items} = config;
+        const {items, aliases} = config;
         const itemsIds = items.map(({id: itemId}) => itemId);
         const itemsStateAndParamsIds = Object.keys(omit(itemsStateAndParams, [META_KEY]));
         const unusedIds = itemsStateAndParamsIds.filter((id) => !itemsIds.includes(id));
@@ -362,12 +371,175 @@ export class UpdateManager {
         const newTabId: string | undefined = stateAndParams.state?.tabId;
         const isTabSwitched = isItemWithTabs(initiatorItem) && Boolean(newTabId);
         const currentMeta = getItemsStateAndParamsMeta(itemsStateAndParams);
-        if ('params' in stateAndParams) {
+        const hasChangedActionParams = 'actionParams' in stateAndParams;
+        const actionParamsAll =
+            getItemsActionParams({
+                config,
+                itemsStateAndParams,
+            }) || {};
+        const notEmptyActionParams = {} as Record<string, StringParams>;
+        for (const [key, val] of Object.entries(actionParamsAll)) {
+            if (!isEmpty(val)) {
+                notEmptyActionParams[key] = val;
+            }
+        }
+        //console.log('notEmptyActionParams', notEmptyActionParams);
+
+        /*
+        Q8:
+            Country: "Россия",
+            Year: 2017,
+            //d079937f-6bc4-4133-9171-40092bb20d6f: "Россия"
+        */
+
+        if ('actionParams' in stateAndParams) {
+            const allowableActionParams = getAllowableChangedParams(
+                initiatorItem,
+                stateAndParams,
+                itemsStateAndParams,
+                'actionParams',
+            );
+            const actionParamsWithAliasesNames = {} as Record<string, Array<string>>;
+            for (const [widgetIdKey, itemActionParams] of Object.entries(notEmptyActionParams)) {
+                console.log('widgetIdKey', widgetIdKey);
+                const aliasesNames = mergeParamsNamesWithPairAliases({
+                    aliases,
+                    namespace: initiatorItem.namespace,
+                    paramsNames: Object.keys(itemActionParams),
+                });
+                console.log('aliasesNames', aliasesNames);
+                actionParamsWithAliasesNames[widgetIdKey as string] = [];
+                // убрать все триггеры, которые есть в aliasesNames
+                if (aliasesNames.length) {
+                    actionParamsWithAliasesNames[widgetIdKey as string] =
+                        // @ts-ignore
+                        actionParamsWithAliasesNames[widgetIdKey as string].concat(aliasesNames);
+                }
+            }
+            //console.log('actionParamsWithAliasesNames', actionParamsWithAliasesNames);
+
+            const tabId: string | undefined = isItemWithTabs(initiatorItem)
+                ? newTabId || resolveItemInnerId({item: initiatorItem, itemsStateAndParams})
+                : undefined;
+            const meta = addToQueue({id: initiatorId, tabId, config, itemsStateAndParams});
+
+            const paramsFromStateAndParams = (itemsStateAndParams as ItemsStateAndParamsBase)?.[
+                initiatorId
+            ]?.params;
+            const newParams = paramsFromStateAndParams ? {params: paramsFromStateAndParams} : {};
+
+            const obj = {
+                [initiatorId]: {
+                    $set: {
+                        ...newParams,
+                        actionParams: allowableActionParams,
+                        ...(hasState ? {state: {$set: stateAndParams.state}} : {}),
+                    },
+                },
+                [META_KEY]: {$set: meta},
+            };
+            //debugger;
+            //console.log('obj', obj);
+            const res = update(itemsStateAndParams, obj);
+            return res;
+        } else if ('params' in stateAndParams) {
             const allowableParams = getAllowableChangedParams(
                 initiatorItem,
                 stateAndParams,
                 itemsStateAndParams,
             );
+
+            const allowableActionParams = getAllowableChangedParams(
+                initiatorItem,
+                stateAndParams,
+                itemsStateAndParams,
+                'actionParams',
+            );
+
+            const actionParamsWithAliasesNames = {} as Record<string, Array<string>>;
+            for (const [widgetIdKey, itemActionParams] of Object.entries(notEmptyActionParams)) {
+                //console.log('widgetIdKey', widgetIdKey);
+                /*const actionParamsNamesToClear = intersection(
+                    Object.keys(allowableParams),
+                    Object.keys(itemActionParams),
+                );
+                if (actionParamsNamesToClear.length) {
+                    actionParamsNamesToClear.forEach(actionParamsNamesToClear => {
+                        // find AliasName
+                    });
+                }*/
+                //const allowableParamsKeys = Object.keys(allowableParams);
+                /*Object.keys(itemActionParams).forEach((itemActionParamsParamName) => {
+                    debugger;
+                    if (allowableParamsKeys.includes(itemActionParamsParamName)) {
+                        if (!actionParamsToClear[widgetIdKey]) {
+                            actionParamsToClear[widgetIdKey] = [];
+                        }
+                        actionParamsToClear[widgetIdKey].push(itemActionParamsParamName);
+                    }
+                    // get all aliases from itemActionParamsParamName & push them
+                });*/
+                const aliasesNames = mergeParamsNamesWithPairAliases({
+                    aliases,
+                    namespace: initiatorItem.namespace,
+                    paramsNames: Object.keys(itemActionParams),
+                });
+                //console.log('aliasesNames', aliasesNames);
+                /*
+                Q8:
+                    Country: "Россия",
+                    123: Россия
+                    Year: 2017,
+                    456: 2017
+                * */
+
+                actionParamsWithAliasesNames[widgetIdKey as string] = [];
+                // убрать все триггеры, которые есть в aliasesNames
+                if (aliasesNames.length) {
+                    actionParamsWithAliasesNames[widgetIdKey as string] =
+                        // @ts-ignore
+                        actionParamsWithAliasesNames[widgetIdKey as string].concat(aliasesNames);
+                }
+                /*
+                Q8:
+                    [Country, 123]
+                    [Year, 456]
+                * */
+            }
+            //console.log('actionParamsWithAliasesNames', actionParamsWithAliasesNames);
+            let actionParamsToClear = {} as Record<string, any>;
+
+            Object.keys(allowableParams).forEach((paramName) => {
+                for (const [widgetIdKey, itemActionParams] of Object.entries(
+                    actionParamsWithAliasesNames,
+                )) {
+                    itemActionParams.forEach((it) => {
+                        if (it.includes(paramName)) {
+                            // @ts-ignore
+                            it.forEach((i) => {
+                                notEmptyActionParams[widgetIdKey][i] = '';
+                            }); //delete notEmptyActionParams[widgetIdKey][i]);
+                        }
+                    });
+
+                    actionParamsToClear = {
+                        [widgetIdKey as string]: notEmptyActionParams[widgetIdKey],
+                    };
+                }
+            });
+            //console.log('actionParamsToClear', actionParamsToClear);
+
+            for (const [widgetIdKey, itemActionParams] of Object.entries(actionParamsToClear)) {
+                actionParamsToClear[widgetIdKey] = {
+                    $merge: {
+                        //@ts-ignore
+                        ...itemsStateAndParams[widgetIdKey],
+                        actionParams: itemActionParams,
+                    },
+                };
+            }
+            //debugger;
+
             const tabId: string | undefined = isItemWithTabs(initiatorItem)
                 ? newTabId || resolveItemInnerId({item: initiatorItem, itemsStateAndParams})
                 : undefined;
@@ -380,18 +552,106 @@ export class UpdateManager {
             if (isTabSwitched) {
                 commandUpdateParams = '$set';
             }
-            return update(itemsStateAndParams, {
+            const actionParamsCommand = (itemsStateAndParams as ItemsStateAndParamsBase)
+                ?.actionParams
+                ? '$merge'
+                : '$set';
+
+            /*const actionParamsIdCommand =
+                (itemsStateAndParams as ItemsStateAndParamsBase)?.actionParams &&
+                ((itemsStateAndParams as ItemsStateAndParamsBase)?.actionParams as any).length
+                    ? '$merge'
+                    : '$set';
+            // ((itemsStateAndParams as ItemsStateAndParamsBase)?.actionParams as any)[initiatorId] || (itemsStateAndParams as ItemsStateAndParamsBase)?.actionParams as any).length)
+console.log('actionParamsIdCommand',actionParamsIdCommand);*/
+            let setObj = null;
+            if (commandUpdateParams === '$set' && actionParamsCommand === '$set') {
+                setObj = {
+                    params: allowableParams,
+                    actionParams: hasChangedActionParams ? allowableActionParams : {},
+                    /*actionParams: Object.keys(allowableParams) /!*{
+                        [initiatorId]: allowableParams,
+                    },*!/,*/
+                };
+            }
+
+            /*const actionParamsToClear: Record<string, Record<string, Array<string>>> = {};
+            for (const [key, val] of Object.entries(itemsStateAndParams)) {
+                if (Object.keys(val?.actionParams || {}).length && initiatorId !== key) {
+                    debugger;
+                    Object.keys(allowableParams).forEach((newTriggerItem) => {
+                        // для каждого ключа триггера ищем алиасы и оставляем параметры без них
+                        const triggerItemWithAliases = mergeParamsNamesWithAliases({
+                            aliases,
+                            namespace: initiatorItem.namespace,
+                            paramsNames: [newTriggerItem],
+                        });
+                        if (intersection(val.actionParams, triggerItemWithAliases)) {
+                            actionParamsToClear[key] = {
+                                $set: {
+                                    // @ts-ignore
+                                    actionParams: [],
+                                    // @ts-ignore
+                                    params: itemsStateAndParams[key].params,
+                                },
+                                /!*$merge: {
+                                    // @ts-ignore
+                                    actionParams: val.actionParams.filter(
+                                        (filt: string) => !triggerItemWithAliases.includes(filt),
+                                    ),
+                                },*!/
+                            };
+                        }
+                    });
+                }
+            }
+            console.log('actionParamsToClear', actionParamsToClear);*/
+            const obj = {
                 $unset: unusedIds,
+                //...actionParamsToClear,
                 [initiatorId]: {
                     $auto: {
-                        params: {
-                            [commandUpdateParams]: allowableParams,
-                        },
+                        ...(setObj
+                            ? {
+                                  $set: setObj,
+                              }
+                            : {
+                                  params: {
+                                      $merge: allowableParams,
+                                  },
+                                  actionParams: {
+                                      [actionParamsCommand]: allowableActionParams,
+                                  },
+                                  /*actionParams: {[actionParamsIdCommand]: Object.keys(allowableParams)} /!*{
+                                    [initiatorId]: {
+                                        [actionParamsIdCommand]: allowableParams,
+                                    },
+                                },*!/,*/
+                              }),
+                        /*...(hasTriggers
+                            ? {
+                                  actionParams: {
+                                      [initiatorId]: {
+                                          [actionParamsIdCommand]: allowableParams,
+                                      },
+                                  },
+                              }
+                            : {
+                                  $set: {
+                                      actionParams: {
+                                          [initiatorId]: allowableParams,
+                                      },
+                                  },
+                              }),*/
                         ...(hasState ? {state: {$set: stateAndParams.state}} : {}),
                     },
                 },
+                ...actionParamsToClear,
                 [META_KEY]: {$set: meta},
-            });
+            };
+            //console.log('obj', obj);
+            const res = update(itemsStateAndParams, obj);
+            return res;
         } else if (hasState) {
             let metaSpec: Spec<ItemsStateAndParams> = {};
             if (currentMeta && isTabSwitched) {
