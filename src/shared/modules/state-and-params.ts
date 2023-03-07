@@ -44,7 +44,7 @@ export function getItemsParams({
             config,
             itemsStateAndParams,
         }) || {};
-    //console.log('getItemsParams::actionParams', actionParams);
+
     const items = prerenderItems({items: config.items, plugins});
     const isFirstVersion = getCurrentVersion(itemsStateAndParams) === 1;
     const queueData: FormedQueueData[] = isFirstVersion
@@ -141,78 +141,11 @@ export function getItemsActionParams({
     config: Config;
     itemsStateAndParams: ItemsStateAndParams;
 }): GetItemsParamsReturn {
-    //console.log('itemsStateAndParams', itemsStateAndParams);
-
-    //const {aliases} = config;
-
-    /*const getMergedParams = (params: StringParams, namespace: string) =>
-        mergeParamsWithAliases({aliases, namespace, params: params || {}}) || {};*/
-    //console.log('getMergedParams', getMergedParams);
-
     const res = config.items.reduce((acc, {id}) => {
         // @ts-ignore
         acc = {...acc, [id]: itemsStateAndParams?.[id]?.actionParams || {}};
         return acc;
     }, {});
-
-    /*7o:
-        params: {50927ab0-3a7e-11ec-965f-71d239562ffc: Array(2)}
-    triggers: {}
-    [[Prototype]]: Object
-    Q8:
-        params: {Year: Array(2), Country: ''}
-    triggers: {Country: 'Беларусь'}
-    [[Prototype]]: Object
-    __meta__: {queue: Array(2), version: 2}*/
-
-    //const;
-    // itemsStateAndParams = {
-    // Q8: {
-    //      params: {Year: '2018', Country: 'Италия'}
-    //      triggers: {Q8: {…}}
-    // }
-    // __meta__: {queue: Array(1), version: 2}
-
-    /*const rrres = config.items.reduce((acc: Record<string, any>, {id, namespace}) => {
-        const tmp = (itemsStateAndParams as ItemsStateAndParamsBase)?.[id]?.triggers || {};
-        //@ts-ignore
-        const tmp2 = (tmp?.[id] && getMergedParams(tmp[id], 'default')) || {};
-        console.log('tmp2', tmp2);
-        /!*Object.keys(tmp2);*!/
-        const res = getMergedParams(tmp2, namespace);
-        console.log('res', res);
-        acc = {...acc, [id]: res};
-        //@ts-ignore
-        console.log('acc', acc);
-        return acc;
-    }, {});*/
-
-    /*const rrres = config.items.reduce((acc: Record<string, any>, {id, namespace}) => {
-        const tmp = (itemsStateAndParams as ItemsStateAndParamsBase)?.[id]?.triggers || {};
-        //@ts-ignore
-        /!*const tmp2 = (tmp?.length && getMergedParams(tmp, namespace)) || [];
-        console.log('tmp2', tmp2);
-        /!*Object.keys(tmp2);*!/
-        //const res = getMergedParams(tmp2, namespace);
-        //console.log('res', res);*!/
-        // acc = {...acc, [id]: (Object.keys(tmp || {}).length && getMergedParams(tmp, namespace)) || {}};
-        console.log('tmp', tmp);
-        console.log('getMergedParams(tmp, namespace)', getMergedParams(tmp, namespace));
-        console.log('(itemsStateAndParams as ItemsStateAndParamsBase)?.[id]?.triggers || {}', (itemsStateAndParams as ItemsStateAndParamsBase)?.[id]?.triggers || {});
-        /!*const itemParams = Object.assign(
-            {},
-                ...getMergedParams(tmp, namespace),
-            (itemsStateAndParams as ItemsStateAndParamsBase)?.[id]?.triggers || {},
-        );*!/
-        return {
-            ...acc,
-            //[id]: itemParams,
-        };
-        //@ts-ignore
-        //console.log('acc', acc);
-        //return acc;
-    }, {});
-    console.log(rrres);*/
     return res;
 }
 
@@ -245,7 +178,7 @@ export function getItemsStateAndParams({
     });
     const state = getItemsState({config, itemsStateAndParams});
     const uniqIds = new Set([...Object.keys(params), ...Object.keys(state)]);
-    //console.log('getItemsStateAndParams::get actionParams');
+
     const actionParams = getItemsActionParams({config, itemsStateAndParams});
     const result: ItemsStateAndParams = Array.from(uniqIds).reduce(
         (acc: ItemsStateAndParams, id) => {

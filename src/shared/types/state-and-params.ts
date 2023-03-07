@@ -22,9 +22,7 @@ export type StateAndParamsMeta = {
 export type ItemStateAndParams = {
     params?: StringParams;
     state?: ItemState;
-    actionParams?: StringParams /*Array<string> /*{
-        [key: string]: StringParams; // widgetId: paramName - какой виджет привёл к обновлению и список параметров с обновлением
-    }*/;
+    actionParams?: StringParams;
 };
 
 export type ItemsStateAndParamsBase = Record<string, ItemStateAndParams>;

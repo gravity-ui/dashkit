@@ -221,31 +221,6 @@ export function mergeParamsWithAliases({
     return mergeParamsItemsWithAliases(aliasesByNamespace, params, actionParamsWithAliases);
 }
 
-export function mergeParamsNamesWithAliases({
-    aliases,
-    namespace,
-    paramsNames,
-}: {
-    aliases: ConfigAliases;
-    namespace: string;
-    paramsNames: Array<string>;
-}): Array<string> {
-    const aliasesByNamespace = get(aliases, [namespace], []) as string[][];
-    return Array.from(
-        new Set([
-            ...paramsNames.reduce((matchedParams: Array<string>, paramKey: string) => {
-                const collectAliasesParamsKeys = aliasesByNamespace.reduce(
-                    (collect, group) => {
-                        return group.includes(paramKey) ? collect.concat(group) : collect;
-                    },
-                    [paramKey],
-                );
-                return [...matchedParams, ...collectAliasesParamsKeys];
-            }, []),
-        ]),
-    );
-}
-
 export function mergeParamsNamesWithPairAliases({
     aliases,
     namespace,
@@ -256,22 +231,10 @@ export function mergeParamsNamesWithPairAliases({
     paramsNames: Array<string>;
 }): Array<Array<string>> {
     const aliasesByNamespace = get(aliases, [namespace], []) as Array<Array<string>>;
-    const res = [] as Array<Array<string>>; // string[][];
+    const res = [] as Array<Array<string>>;
     paramsNames.forEach((paramName) => {
         res.push(...aliasesByNamespace.filter((item) => item.includes(paramName)));
     });
-    /*const tmpRes = paramsNames.reduce((matchedParams: Array<string>, paramKey: string) => {
-        const collectAliasesParamsKeys = aliasesByNamespace.reduce(
-            (collect, group) => {
-                debugger;
-                return group.includes(paramKey) ? collect.concat(group) : collect;
-            },
-            [paramKey],
-        );
-        return [...matchedParams, ...collectAliasesParamsKeys];
-    }, []);
-    const tmpSet = new Set([...tmpRes]);*/
-    //const res = Array.from(tmpSet);
     return res;
 }
 

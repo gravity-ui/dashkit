@@ -19,7 +19,6 @@ import {
     resolveItemInnerId,
     getItemsStateAndParamsMeta,
     getItemsActionParams,
-    //mergeParamsNamesWithAliases,
     mergeParamsNamesWithPairAliases,
 } from '../shared';
 import {AddConfigItem, WidgetLayout, SetItemOptions} from '../typings';
@@ -383,14 +382,6 @@ export class UpdateManager {
                 notEmptyActionParams[key] = val;
             }
         }
-        //console.log('notEmptyActionParams', notEmptyActionParams);
-
-        /*
-        Q8:
-            Country: "Россия",
-            Year: 2017,
-            //d079937f-6bc4-4133-9171-40092bb20d6f: "Россия"
-        */
 
         if ('actionParams' in stateAndParams) {
             const allowableActionParams = getAllowableChangedParams(
@@ -416,7 +407,6 @@ export class UpdateManager {
                         actionParamsWithAliasesNames[widgetIdKey as string].concat(aliasesNames);
                 }
             }
-            //console.log('actionParamsWithAliasesNames', actionParamsWithAliasesNames);
 
             const tabId: string | undefined = isItemWithTabs(initiatorItem)
                 ? newTabId || resolveItemInnerId({item: initiatorItem, itemsStateAndParams})
@@ -438,8 +428,7 @@ export class UpdateManager {
                 },
                 [META_KEY]: {$set: meta},
             };
-            //debugger;
-            //console.log('obj', obj);
+
             const res = update(itemsStateAndParams, obj);
             return res;
         } else if ('params' in stateAndParams) {
@@ -458,40 +447,11 @@ export class UpdateManager {
 
             const actionParamsWithAliasesNames = {} as Record<string, Array<string>>;
             for (const [widgetIdKey, itemActionParams] of Object.entries(notEmptyActionParams)) {
-                //console.log('widgetIdKey', widgetIdKey);
-                /*const actionParamsNamesToClear = intersection(
-                    Object.keys(allowableParams),
-                    Object.keys(itemActionParams),
-                );
-                if (actionParamsNamesToClear.length) {
-                    actionParamsNamesToClear.forEach(actionParamsNamesToClear => {
-                        // find AliasName
-                    });
-                }*/
-                //const allowableParamsKeys = Object.keys(allowableParams);
-                /*Object.keys(itemActionParams).forEach((itemActionParamsParamName) => {
-                    debugger;
-                    if (allowableParamsKeys.includes(itemActionParamsParamName)) {
-                        if (!actionParamsToClear[widgetIdKey]) {
-                            actionParamsToClear[widgetIdKey] = [];
-                        }
-                        actionParamsToClear[widgetIdKey].push(itemActionParamsParamName);
-                    }
-                    // get all aliases from itemActionParamsParamName & push them
-                });*/
                 const aliasesNames = mergeParamsNamesWithPairAliases({
                     aliases,
                     namespace: initiatorItem.namespace,
                     paramsNames: Object.keys(itemActionParams),
                 });
-                //console.log('aliasesNames', aliasesNames);
-                /*
-                Q8:
-                    Country: "Россия",
-                    123: Россия
-                    Year: 2017,
-                    456: 2017
-                * */
 
                 actionParamsWithAliasesNames[widgetIdKey as string] = [];
                 // убрать все триггеры, которые есть в aliasesNames
@@ -500,13 +460,8 @@ export class UpdateManager {
                         // @ts-ignore
                         actionParamsWithAliasesNames[widgetIdKey as string].concat(aliasesNames);
                 }
-                /*
-                Q8:
-                    [Country, 123]
-                    [Year, 456]
-                * */
             }
-            //console.log('actionParamsWithAliasesNames', actionParamsWithAliasesNames);
+
             let actionParamsToClear = {} as Record<string, any>;
 
             Object.keys(allowableParams).forEach((paramName) => {
@@ -527,7 +482,6 @@ export class UpdateManager {
                     };
                 }
             });
-            //console.log('actionParamsToClear', actionParamsToClear);
 
             for (const [widgetIdKey, itemActionParams] of Object.entries(actionParamsToClear)) {
                 actionParamsToClear[widgetIdKey] = {
@@ -538,7 +492,6 @@ export class UpdateManager {
                     },
                 };
             }
-            //debugger;
 
             const tabId: string | undefined = isItemWithTabs(initiatorItem)
                 ? newTabId || resolveItemInnerId({item: initiatorItem, itemsStateAndParams})
@@ -557,58 +510,16 @@ export class UpdateManager {
                 ? '$merge'
                 : '$set';
 
-            /*const actionParamsIdCommand =
-                (itemsStateAndParams as ItemsStateAndParamsBase)?.actionParams &&
-                ((itemsStateAndParams as ItemsStateAndParamsBase)?.actionParams as any).length
-                    ? '$merge'
-                    : '$set';
-            // ((itemsStateAndParams as ItemsStateAndParamsBase)?.actionParams as any)[initiatorId] || (itemsStateAndParams as ItemsStateAndParamsBase)?.actionParams as any).length)
-console.log('actionParamsIdCommand',actionParamsIdCommand);*/
             let setObj = null;
             if (commandUpdateParams === '$set' && actionParamsCommand === '$set') {
                 setObj = {
                     params: allowableParams,
                     actionParams: hasChangedActionParams ? allowableActionParams : {},
-                    /*actionParams: Object.keys(allowableParams) /!*{
-                        [initiatorId]: allowableParams,
-                    },*!/,*/
                 };
             }
 
-            /*const actionParamsToClear: Record<string, Record<string, Array<string>>> = {};
-            for (const [key, val] of Object.entries(itemsStateAndParams)) {
-                if (Object.keys(val?.actionParams || {}).length && initiatorId !== key) {
-                    debugger;
-                    Object.keys(allowableParams).forEach((newTriggerItem) => {
-                        // для каждого ключа триггера ищем алиасы и оставляем параметры без них
-                        const triggerItemWithAliases = mergeParamsNamesWithAliases({
-                            aliases,
-                            namespace: initiatorItem.namespace,
-                            paramsNames: [newTriggerItem],
-                        });
-                        if (intersection(val.actionParams, triggerItemWithAliases)) {
-                            actionParamsToClear[key] = {
-                                $set: {
-                                    // @ts-ignore
-                                    actionParams: [],
-                                    // @ts-ignore
-                                    params: itemsStateAndParams[key].params,
-                                },
-                                /!*$merge: {
-                                    // @ts-ignore
-                                    actionParams: val.actionParams.filter(
-                                        (filt: string) => !triggerItemWithAliases.includes(filt),
-                                    ),
-                                },*!/
-                            };
-                        }
-                    });
-                }
-            }
-            console.log('actionParamsToClear', actionParamsToClear);*/
             const obj = {
                 $unset: unusedIds,
-                //...actionParamsToClear,
                 [initiatorId]: {
                     $auto: {
                         ...(setObj
@@ -622,34 +533,13 @@ console.log('actionParamsIdCommand',actionParamsIdCommand);*/
                                   actionParams: {
                                       [actionParamsCommand]: allowableActionParams,
                                   },
-                                  /*actionParams: {[actionParamsIdCommand]: Object.keys(allowableParams)} /!*{
-                                    [initiatorId]: {
-                                        [actionParamsIdCommand]: allowableParams,
-                                    },
-                                },*!/,*/
                               }),
-                        /*...(hasTriggers
-                            ? {
-                                  actionParams: {
-                                      [initiatorId]: {
-                                          [actionParamsIdCommand]: allowableParams,
-                                      },
-                                  },
-                              }
-                            : {
-                                  $set: {
-                                      actionParams: {
-                                          [initiatorId]: allowableParams,
-                                      },
-                                  },
-                              }),*/
                         ...(hasState ? {state: {$set: stateAndParams.state}} : {}),
                     },
                 },
                 ...actionParamsToClear,
                 [META_KEY]: {$set: meta},
             };
-            //console.log('obj', obj);
             const res = update(itemsStateAndParams, obj);
             return res;
         } else if (hasState) {
