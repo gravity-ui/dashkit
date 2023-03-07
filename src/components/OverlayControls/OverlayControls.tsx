@@ -40,6 +40,7 @@ export interface OverlayControlItem {
     allWidgetsControls?: boolean; // флаг кастомного контрола (без кастомного виджета), которые показываются не в списке меню
     excludeWidgetsTypes?: Array<PluginBase['type']>; // массив с типами виджетов (плагинов), которые исключаем из отображения контрола по настройке allWidgetsControls
     id?: string; // id дефолтного пункта меню для возможноти использования дефолтного action в кастомных контролах
+    qa?: string;
 }
 
 export interface OverlayCustomControlItem {
@@ -50,6 +51,7 @@ export interface OverlayCustomControlItem {
     handler?: (item: ConfigItem, params: StringParams) => void;
     visible?: (item: ConfigItem) => boolean;
     className?: string;
+    qa?: string;
 }
 
 interface OverlayControlsDefaultProps {
@@ -94,7 +96,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
     }
     private renderControlsItem = (item: OverlayControlItem, index: number, length: number) => {
         const {view, size} = this.props;
-        const {title, handler, icon, iconSize} = item;
+        const {title, handler, icon, iconSize, qa} = item;
 
         const onItemClickHandler = typeof handler === 'function' ? handler : noop;
         return (
@@ -105,6 +107,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                 title={title}
                 pin={this.getControlItemPinStyle(index, length)}
                 onClick={() => onItemClickHandler(this.props.configItem)}
+                qa={qa}
             >
                 <Icon data={icon || CogIcon} size={icon ? iconSize : 24} />
             </Button>
@@ -181,7 +184,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
             Array.isArray(registerManager.settings.menu) && registerManager.settings.menu.length;
 
         return (
-            <>
+            <React.Fragment>
                 {withMenu ? (
                     this.renderDropdownMenu()
                 ) : (
@@ -196,7 +199,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                         <Icon data={CloseIcon} size="12" />
                     </Button>
                 )}
-            </>
+            </React.Fragment>
         );
     }
     private isDefaultMenu(menu: Settings['menu']) {
@@ -241,6 +244,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                       icon: item.icon,
                       action: itemAction,
                       className: item.className,
+                      qa: item.qa,
                   };
               });
         items = items.filter(Boolean);
@@ -249,7 +253,12 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
             <DropdownMenu
                 items={items}
                 switcher={
-                    <Button view={view} size={size} pin="brick-round">
+                    <Button
+                        view={view}
+                        size={size}
+                        pin="brick-round"
+                        qa="dashkit-overlay-control-menu"
+                    >
                         <Icon data={DotsIcon} size="16" />
                     </Button>
                 }
