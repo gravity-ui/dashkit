@@ -180,7 +180,6 @@ export function getMapItemsIgnores({
 function mergeParamsItemsWithAliases(
     aliasesByNamespace: string[][],
     items: StringParams,
-    additionalItems = {},
 ): StringParams {
     return Object.keys(items).reduce((matchedParams: StringParams, paramKey) => {
         const paramValue = items[paramKey];
@@ -195,7 +194,6 @@ function mergeParamsItemsWithAliases(
             ...collectAliasesParamsKeys.reduce((acc: StringParams, matchedKey) => {
                 return {...acc, [matchedKey]: paramValue};
             }, {}),
-            ...additionalItems,
         };
     }, {});
 }
@@ -218,7 +216,10 @@ export function mergeParamsWithAliases({
         actionParamsWithAliases = mergeParamsItemsWithAliases(aliasesByNamespace, actionParams);
     }
 
-    return mergeParamsItemsWithAliases(aliasesByNamespace, params, actionParamsWithAliases);
+    return mergeParamsItemsWithAliases(aliasesByNamespace, {
+        ...(params || {}),
+        ...actionParamsWithAliases,
+    });
 }
 
 export function mergeParamsNamesWithPairAliases({

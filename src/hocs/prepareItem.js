@@ -1,6 +1,8 @@
 import React from 'react';
+import isEmpty from 'lodash/isEmpty';
 import {DashKitContext} from '../context/DashKitContext';
 import PropTypes from 'prop-types';
+import {transformParamsToActionParams} from '../shared';
 
 export function prepareItem(Component) {
     return class PrepareItem extends React.Component {
@@ -48,13 +50,18 @@ export function prepareItem(Component) {
                 context,
                 editMode,
             } = this.context;
+
+            const actionParams = transformParamsToActionParams(itemsActionParams[id]);
+            const resultParams = isEmpty(actionParams)
+                ? itemsParams[id]
+                : {...itemsParams[id], ...actionParams};
+
             const {type, data, defaults, namespace} = item;
             const rendererProps = {
                 data,
                 editMode,
-                params: itemsParams[id],
+                params: resultParams,
                 state: itemsState[id],
-                actionParams: itemsActionParams[id],
                 onStateAndParamsChange: this._onStateAndParamsChange,
                 width,
                 height,

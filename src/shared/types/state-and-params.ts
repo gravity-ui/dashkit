@@ -22,7 +22,6 @@ export type StateAndParamsMeta = {
 export type ItemStateAndParams = {
     params?: StringParams;
     state?: ItemState;
-    actionParams?: StringParams;
 };
 
 export type ItemsStateAndParamsBase = Record<string, ItemStateAndParams>;
