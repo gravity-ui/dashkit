@@ -404,17 +404,18 @@ export class UpdateManager {
             );
             const actionParamsWithAliasesNames = {} as Record<string, Array<string>>;
             for (const [widgetIdKey, itemActionParams] of Object.entries(notEmptyActionParams)) {
-                const aliasesNames = mergeParamsNamesWithPairAliases({
+                const aliasesNames: Array<Array<string>> = mergeParamsNamesWithPairAliases({
                     aliases,
                     namespace: initiatorItem.namespace,
                     paramsNames: Object.keys(itemActionParams),
                 });
-                actionParamsWithAliasesNames[widgetIdKey as string] = [];
-                // убрать все триггеры, которые есть в aliasesNames
+                actionParamsWithAliasesNames[widgetIdKey] = [];
+                // remove all actionParams that is in aliasesNames
                 if (aliasesNames.length) {
-                    actionParamsWithAliasesNames[widgetIdKey as string] =
-                        // @ts-ignore
-                        actionParamsWithAliasesNames[widgetIdKey as string].concat(aliasesNames);
+                    actionParamsWithAliasesNames[widgetIdKey] = [
+                        ...actionParamsWithAliasesNames[widgetIdKey],
+                        ...aliasesNames,
+                    ] as Array<string>;
                 }
             }
 
@@ -463,42 +464,38 @@ export class UpdateManager {
                     paramsNames: Object.keys(itemActionParams),
                 });
 
-                actionParamsWithAliasesNames[widgetIdKey as string] = [];
-                // убрать все триггеры, которые есть в aliasesNames
+                actionParamsWithAliasesNames[widgetIdKey] = [];
+                // remove all actionParams that is in aliasesNames
                 if (aliasesNames.length) {
-                    actionParamsWithAliasesNames[widgetIdKey as string] =
-                        // @ts-ignore
-                        actionParamsWithAliasesNames[widgetIdKey as string].concat(aliasesNames);
+                    actionParamsWithAliasesNames[widgetIdKey] = [
+                        ...actionParamsWithAliasesNames[widgetIdKey],
+                        ...aliasesNames,
+                    ] as Array<string>;
                 }
             }
 
-            let actionParamsToClear = {} as Record<string, any>;
-            const actionParamsToDelete = {};
+            let actionParamsToClear = {} as Record<string, StringParams>;
+            const actionParamsToDelete = {} as Record<string, StringParams>;
             Object.keys(allowableParams).forEach((paramName) => {
                 for (const [widgetIdKey, itemActionParams] of Object.entries(
                     notEmptyActionParams,
                 )) {
                     for (const [paramKey, paramVal] of Object.entries(itemActionParams)) {
-                        // paramKey: Year; Country
                         const actionParamInAliases =
                             actionParamsWithAliasesNames[widgetIdKey].find((row) =>
                                 row.includes(paramKey),
-                            ) || [];
-                        // @ts-ignore
+                            ) || ([] as Array<string>);
+
                         const hasAllowableParamInAliases = actionParamInAliases.includes(paramName);
 
                         if (
                             hasAllowableParamInAliases &&
                             notEmptyActionParams[widgetIdKey][paramKey]
                         ) {
-                            // @ts-ignore
                             if (!actionParamsToDelete[widgetIdKey]) {
-                                // @ts-ignore
                                 actionParamsToDelete[widgetIdKey] = {};
                             }
-                            // @ts-ignore
                             actionParamsToDelete[widgetIdKey] = {
-                                // @ts-ignore
                                 ...actionParamsToDelete[widgetIdKey],
                                 [`${ACTION_PARAM_PREFIX}${paramKey}`]: paramVal,
                             };
@@ -514,18 +511,18 @@ export class UpdateManager {
             for (const [widgetIdKey, itemActionParams] of Object.entries(actionParamsToClear)) {
                 const itemActionParamsWithPrefix = transformParamsToActionParams(itemActionParams);
 
-                let updatingParams = {};
-                // @ts-ignore
-                if (!isEmpty(itemsStateAndParams[widgetIdKey]?.params)) {
-                    // @ts-ignore
-                    updatingParams = {...itemsStateAndParams[widgetIdKey].params};
+                let updatingParams = {} as StringParams;
+                if (
+                    !isEmpty((itemsStateAndParams as ItemsStateAndParamsBase)[widgetIdKey]?.params)
+                ) {
+                    updatingParams = {
+                        ...(itemsStateAndParams as ItemsStateAndParamsBase)[widgetIdKey].params,
+                    };
 
                     if (!isEmpty(actionParamsToDelete)) {
-                        // @ts-ignore
                         Object.keys(actionParamsToDelete[widgetIdKey] || []).forEach(
                             (keyToDelete) => {
                                 if (keyToDelete in updatingParams) {
-                                    // @ts-ignore
                                     delete updatingParams[keyToDelete];
                                 }
                             },
@@ -536,13 +533,13 @@ export class UpdateManager {
                 const newParamsWithClear = {
                     ...updatingParams,
                     ...itemActionParamsWithPrefix,
-                };
+                } as StringParams;
 
                 actionParamsToClear[widgetIdKey] = {
                     $set: {
                         params: newParamsWithClear,
                     },
-                };
+                } as never;
             }
 
             const tabId: string | undefined = isItemWithTabs(initiatorItem)
