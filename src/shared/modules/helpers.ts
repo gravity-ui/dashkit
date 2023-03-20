@@ -176,19 +176,12 @@ export function getMapItemsIgnores({
         };
     }, {});
 }
-
-export function mergeParamsWithAliases({
-    aliases,
-    namespace,
-    params,
-}: {
-    aliases: ConfigAliases;
-    namespace: string;
-    params: StringParams;
-}): StringParams {
-    const aliasesByNamespace = get(aliases, [namespace], []) as string[][];
-    return Object.keys(params).reduce((matchedParams: StringParams, paramKey) => {
-        const paramValue = params[paramKey];
+function mergeParamsItemsWithAliases(
+    aliasesByNamespace: string[][],
+    items: StringParams,
+): StringParams {
+    return Object.keys(items).reduce((matchedParams: StringParams, paramKey) => {
+        const paramValue = items[paramKey];
         const collectAliasesParamsKeys = aliasesByNamespace.reduce(
             (collect, group) => {
                 return group.includes(paramKey) ? collect.concat(group) : collect;
@@ -202,6 +195,47 @@ export function mergeParamsWithAliases({
             }, {}),
         };
     }, {});
+}
+
+export function mergeParamsWithAliases({
+    aliases,
+    namespace,
+    params,
+    actionParams,
+}: {
+    aliases: ConfigAliases;
+    namespace: string;
+    params: StringParams;
+    actionParams?: StringParams;
+}): StringParams {
+    const aliasesByNamespace = get(aliases, [namespace], []) as string[][];
+
+    let actionParamsWithAliases = {};
+    if (actionParams && Object.entries(actionParams).length) {
+        actionParamsWithAliases = mergeParamsItemsWithAliases(aliasesByNamespace, actionParams);
+    }
+
+    return mergeParamsItemsWithAliases(aliasesByNamespace, {
+        ...(params || {}),
+        ...actionParamsWithAliases,
+    });
+}
+
+export function mergeParamsNamesWithPairAliases({
+    aliases,
+    namespace,
+    paramsNames,
+}: {
+    aliases: ConfigAliases;
+    namespace: string;
+    paramsNames: Array<string>;
+}): Array<Array<string>> {
+    const aliasesByNamespace = get(aliases, [namespace], []) as Array<Array<string>>;
+    const res = [] as Array<Array<string>>;
+    paramsNames.forEach((paramName) => {
+        res.push(...aliasesByNamespace.filter((item) => item.includes(paramName)));
+    });
+    return res;
 }
 
 export function getInitialItemsStateAndParamsMeta(): StateAndParamsMetaData {

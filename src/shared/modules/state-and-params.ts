@@ -1,4 +1,6 @@
 import groupBy from 'lodash/groupBy';
+import isEmpty from 'lodash/isEmpty';
+import {ACTION_PARAM_PREFIX, META_KEY} from '../constants';
 import {
     GlobalParams,
     Config,
@@ -19,7 +21,6 @@ import {
     mergeParamsWithAliases,
     getCurrentVersion,
 } from './helpers';
-import {META_KEY} from '../constants';
 
 export interface GetItemsParamsArg {
     defaultGlobalParams: GlobalParams;
@@ -39,6 +40,11 @@ export function getItemsParams({
     plugins,
 }: GetItemsParamsArg): GetItemsParamsReturn {
     const {aliases, connections} = config;
+    const actionParams =
+        getItemsActionParams({
+            config,
+            itemsStateAndParams,
+        }) || {};
     const items = prerenderItems({items: config.items, plugins});
     const isFirstVersion = getCurrentVersion(itemsStateAndParams) === 1;
     const queueData: FormedQueueData[] = isFirstVersion
@@ -63,8 +69,25 @@ export function getItemsParams({
 
     return items.reduce((itemsParams: Record<string, StringParams>, item) => {
         const {id, namespace} = item;
-        const getMergedParams = (params: StringParams) =>
-            mergeParamsWithAliases({aliases, namespace, params: params || {}});
+
+        let actions: StringParams = {};
+        for (const [key, val] of Object.entries(actionParams)) {
+            if (!actions) {
+                actions = {};
+            }
+            if (key !== id) {
+                actions = {...actions, ...val};
+            }
+        }
+
+        const getMergedParams = (params: StringParams, actions?: StringParams) =>
+            mergeParamsWithAliases({
+                aliases,
+                namespace,
+                params: params || {},
+                actionParams: actions,
+            });
+
         const itemIgnores = mapItemsIgnores[id];
         const affectingItemsWithDefaults = itemsWithDefaultsByNamespace[namespace].filter(
             (itemWithDefaults) => !itemIgnores.includes(itemWithDefaults.id),
@@ -99,7 +122,7 @@ export function getItemsParams({
                     }
                     return {
                         ...queueParams,
-                        ...getMergedParams(data.params),
+                        ...getMergedParams(data.params, actions),
                     };
                 }, {}),
             );
@@ -107,6 +130,24 @@ export function getItemsParams({
         return {
             ...itemsParams,
             [id]: itemParams,
+        };
+    }, {});
+}
+
+export function getItemsActionParams({
+    config,
+    itemsStateAndParams,
+    settings,
+}: {
+    config: Config;
+    itemsStateAndParams: ItemsStateAndParams;
+    settings?: {returnPrefix: boolean};
+}): GetItemsParamsReturn {
+    return config.items.reduce((acc, {id}) => {
+        const params = (itemsStateAndParams as ItemsStateAndParamsBase)?.[id]?.params;
+        return {
+            ...acc,
+            [id]: pickActionParamsFromParams(params, Boolean(settings?.returnPrefix)) || {},
         };
     }, {});
 }
@@ -140,6 +181,14 @@ export function getItemsStateAndParams({
     });
     const state = getItemsState({config, itemsStateAndParams});
     const uniqIds = new Set([...Object.keys(params), ...Object.keys(state)]);
+
+    const actionParams = getItemsActionParams({
+        config,
+        itemsStateAndParams,
+        settings: {
+            returnPrefix: true,
+        },
+    });
     const result: ItemsStateAndParams = Array.from(uniqIds).reduce(
         (acc: ItemsStateAndParams, id) => {
             const data = {} as ItemStateAndParams;
@@ -148,6 +197,15 @@ export function getItemsStateAndParams({
             }
             if (id in state) {
                 data.state = state[id];
+            }
+            if (id in actionParams) {
+                if (!data.params) {
+                    data.params = {};
+                }
+                data.params = {
+                    ...data.params,
+                    ...actionParams[id],
+                };
             }
             return {
                 ...acc,
@@ -167,4 +225,77 @@ export function getItemsStateAndParams({
         ...meta,
         ...result,
     };
+}
+
+export function pickActionParamsFromParams(
+    params: ItemStateAndParams['params'],
+    returnWithPrefix?: boolean,
+) {
+    if (!params || isEmpty(params)) {
+        return {};
+    }
+
+    const actionParams: StringParams = {};
+    for (const [key, val] of Object.entries(params)) {
+        // starts with actionParams prefix (from'_ap_')
+        if (key.indexOf(ACTION_PARAM_PREFIX) === 0) {
+            const paramName = returnWithPrefix ? key : key.substr(ACTION_PARAM_PREFIX.length);
+            actionParams[paramName] = val;
+        }
+    }
+    return actionParams;
+}
+
+/**
+ * public function for getting params from object without actionParams
+ * @param params
+ */
+export function pickExceptActionParamsFromParams(params: ItemStateAndParams['params']) {
+    if (!params || isEmpty(params)) {
+        return {};
+    }
+
+    const onlyParams: StringParams = {};
+    for (const [key, val] of Object.entries(params)) {
+        if (!key.includes(ACTION_PARAM_PREFIX)) {
+            onlyParams[key] = val;
+        }
+    }
+    return onlyParams;
+}
+
+/**
+ * public function for transforming object to actionParams format
+ * @param params
+ */
+export function transformParamsToActionParams(params: ItemStateAndParams['params']) {
+    if (!params || isEmpty(params)) {
+        return {};
+    }
+
+    const actionParams: StringParams = {};
+    for (const [key, val] of Object.entries(params)) {
+        actionParams[`${ACTION_PARAM_PREFIX}${key}`] = val;
+    }
+    return actionParams;
+}
+
+/**
+ * check if object contains actionParams
+ * @param conf
+ */
+function hasActionParam(conf?: StringParams) {
+    return Boolean(Object.keys(conf || {}).find((key) => key.indexOf(ACTION_PARAM_PREFIX) === 0));
+}
+
+/**
+ * check if ItemStateAndParams object has actionParams in params or state field
+ * @param stateAndParams
+ */
+export function hasActionParams(stateAndParams: ItemStateAndParams) {
+    if (!stateAndParams || isEmpty(stateAndParams)) {
+        return {};
+    }
+
+    return hasActionParam(stateAndParams.params) || hasActionParam(stateAndParams.state);
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import {DashKitContext} from '../context/DashKitContext';
 import {UpdateManager} from '../utils';
-import {getItemsParams, getItemsState} from '../shared';
+import {getItemsParams, getItemsState, getItemsActionParams} from '../shared';
 import isEqual from 'lodash/isEqual';
 
 function useMemoStateContext(props) {
@@ -145,6 +145,15 @@ function useMemoStateContext(props) {
         [props.config, props.itemsStateAndParams],
     );
 
+    const itemsActionParams = React.useMemo(
+        () =>
+            getItemsActionParams({
+                config: props.config,
+                itemsStateAndParams: props.itemsStateAndParams,
+            }),
+        [props.config, props.itemsStateAndParams],
+    );
+
     const getItemsMeta = React.useCallback((pluginsRefs) => {
         return pluginsRefs
             .map((ref) => {
@@ -187,6 +196,7 @@ function useMemoStateContext(props) {
             settings: props.settings,
             itemsState,
             itemsParams,
+            itemsActionParams,
             registerManager: props.registerManager,
             onItemStateAndParamsChange,
             removeItem: onItemRemove,
@@ -209,6 +219,7 @@ function useMemoStateContext(props) {
             props.settings,
             itemsState,
             itemsParams,
+            itemsActionParams,
             props.registerManager,
             onItemStateAndParamsChange,
             onItemRemove,
