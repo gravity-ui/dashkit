@@ -402,9 +402,9 @@ export class UpdateManager {
                 itemsStateAndParams,
                 {type: 'actionParams', returnPrefix: true},
             );
-            const actionParamsWithAliasesNames = {} as Record<string, Array<string>>;
+            const actionParamsWithAliasesNames = {} as Record<string, string[]>;
             for (const [widgetIdKey, itemActionParams] of Object.entries(notEmptyActionParams)) {
-                const aliasesNames: Array<Array<string>> = mergeParamsNamesWithPairAliases({
+                const aliasesNames: string[][] = mergeParamsNamesWithPairAliases({
                     aliases,
                     namespace: initiatorItem.namespace,
                     paramsNames: Object.keys(itemActionParams),
@@ -415,7 +415,7 @@ export class UpdateManager {
                     actionParamsWithAliasesNames[widgetIdKey] = [
                         ...actionParamsWithAliasesNames[widgetIdKey],
                         ...aliasesNames,
-                    ] as Array<string>;
+                    ] as string[];
                 }
             }
 
@@ -440,8 +440,7 @@ export class UpdateManager {
                 [META_KEY]: {$set: meta},
             };
 
-            const res = update(itemsStateAndParams, obj);
-            return res;
+            return update(itemsStateAndParams, obj);
         } else if ('params' in stateAndParams) {
             const allowableParams = getAllowableChangedParams(
                 initiatorItem,
@@ -456,7 +455,7 @@ export class UpdateManager {
                 {type: 'actionParams', returnPrefix: true},
             );
 
-            const actionParamsWithAliasesNames = {} as Record<string, Array<string>>;
+            const actionParamsWithAliasesNames = {} as Record<string, string[]>;
             for (const [widgetIdKey, itemActionParams] of Object.entries(notEmptyActionParams)) {
                 const aliasesNames = mergeParamsNamesWithPairAliases({
                     aliases,
@@ -470,7 +469,7 @@ export class UpdateManager {
                     actionParamsWithAliasesNames[widgetIdKey] = [
                         ...actionParamsWithAliasesNames[widgetIdKey],
                         ...aliasesNames,
-                    ] as Array<string>;
+                    ] as string[];
                 }
             }
 
@@ -484,7 +483,7 @@ export class UpdateManager {
                         const actionParamInAliases =
                             actionParamsWithAliasesNames[widgetIdKey].find((row) =>
                                 row.includes(paramKey),
-                            ) || ([] as Array<string>);
+                            ) || ([] as string[]);
 
                         const hasAllowableParamInAliases = actionParamInAliases.includes(paramName);
 

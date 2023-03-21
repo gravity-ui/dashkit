@@ -229,10 +229,10 @@ export function mergeParamsNamesWithPairAliases({
 }: {
     aliases: ConfigAliases;
     namespace: string;
-    paramsNames: Array<string>;
-}): Array<Array<string>> {
-    const aliasesByNamespace = get(aliases, [namespace], []) as Array<Array<string>>;
-    const res = [] as Array<Array<string>>;
+    paramsNames: string[];
+}): string[][] {
+    const aliasesByNamespace = get(aliases, [namespace], []) as string[][];
+    const res = [] as string[][];
     paramsNames.forEach((paramName) => {
         res.push(...aliasesByNamespace.filter((item) => item.includes(paramName)));
     });
