@@ -72,20 +72,17 @@ export function getItemsParams({
 
         let actions: StringParams = {};
         for (const [key, val] of Object.entries(actionParams)) {
-            if (!actions) {
-                actions = {};
-            }
             if (key !== id) {
                 actions = {...actions, ...val};
             }
         }
 
-        const getMergedParams = (params: StringParams, actions?: StringParams) =>
+        const getMergedParams = (params: StringParams, actionsArg?: StringParams) =>
             mergeParamsWithAliases({
                 aliases,
                 namespace,
                 params: params || {},
-                actionParams: actions,
+                actionParams: actionsArg || {},
             });
 
         const itemIgnores = mapItemsIgnores[id];
@@ -238,7 +235,7 @@ export function pickActionParamsFromParams(
     const actionParams: StringParams = {};
     for (const [key, val] of Object.entries(params)) {
         // starts with actionParams prefix (from'_ap_')
-        if (key.indexOf(ACTION_PARAM_PREFIX) === 0) {
+        if (key.startsWith(ACTION_PARAM_PREFIX)) {
             const paramName = returnWithPrefix ? key : key.substr(ACTION_PARAM_PREFIX.length);
             actionParams[paramName] = val;
         }
@@ -257,7 +254,7 @@ export function pickExceptActionParamsFromParams(params: ItemStateAndParams['par
 
     const onlyParams: StringParams = {};
     for (const [key, val] of Object.entries(params)) {
-        if (!key.includes(ACTION_PARAM_PREFIX)) {
+        if (!key.startsWith(ACTION_PARAM_PREFIX)) {
             onlyParams[key] = val;
         }
     }
@@ -284,8 +281,8 @@ export function transformParamsToActionParams(params: ItemStateAndParams['params
  * check if object contains actionParams
  * @param conf
  */
-function hasActionParam(conf?: StringParams) {
-    return Boolean(Object.keys(conf || {}).find((key) => key.indexOf(ACTION_PARAM_PREFIX) === 0));
+function hasActionParam(conf?: StringParams): boolean {
+    return Boolean(Object.keys(conf || {}).find((key) => key.startsWith(ACTION_PARAM_PREFIX)));
 }
 
 /**
