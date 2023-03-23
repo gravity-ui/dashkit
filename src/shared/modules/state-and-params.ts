@@ -1,6 +1,5 @@
 import groupBy from 'lodash/groupBy';
-import isEmpty from 'lodash/isEmpty';
-import {ACTION_PARAM_PREFIX, META_KEY} from '../constants';
+import {META_KEY} from '../constants';
 import {
     GlobalParams,
     Config,
@@ -20,6 +19,7 @@ import {
     getMapItemsIgnores,
     mergeParamsWithAliases,
     getCurrentVersion,
+    pickActionParamsFromParams,
 } from './helpers';
 
 export interface GetItemsParamsArg {
@@ -222,77 +222,4 @@ export function getItemsStateAndParams({
         ...meta,
         ...result,
     };
-}
-
-export function pickActionParamsFromParams(
-    params: ItemStateAndParams['params'],
-    returnWithPrefix?: boolean,
-) {
-    if (!params || isEmpty(params)) {
-        return {};
-    }
-
-    const actionParams: StringParams = {};
-    for (const [key, val] of Object.entries(params)) {
-        // starts with actionParams prefix (from'_ap_')
-        if (key.startsWith(ACTION_PARAM_PREFIX)) {
-            const paramName = returnWithPrefix ? key : key.substr(ACTION_PARAM_PREFIX.length);
-            actionParams[paramName] = val;
-        }
-    }
-    return actionParams;
-}
-
-/**
- * public function for getting params from object without actionParams
- * @param params
- */
-export function pickExceptActionParamsFromParams(params: ItemStateAndParams['params']) {
-    if (!params || isEmpty(params)) {
-        return {};
-    }
-
-    const onlyParams: StringParams = {};
-    for (const [key, val] of Object.entries(params)) {
-        if (!key.startsWith(ACTION_PARAM_PREFIX)) {
-            onlyParams[key] = val;
-        }
-    }
-    return onlyParams;
-}
-
-/**
- * public function for transforming object to actionParams format
- * @param params
- */
-export function transformParamsToActionParams(params: ItemStateAndParams['params']) {
-    if (!params || isEmpty(params)) {
-        return {};
-    }
-
-    const actionParams: StringParams = {};
-    for (const [key, val] of Object.entries(params)) {
-        actionParams[`${ACTION_PARAM_PREFIX}${key}`] = val;
-    }
-    return actionParams;
-}
-
-/**
- * check if object contains actionParams
- * @param conf
- */
-function hasActionParam(conf?: StringParams): boolean {
-    return Boolean(Object.keys(conf || {}).find((key) => key.startsWith(ACTION_PARAM_PREFIX)));
-}
-
-/**
- * check if ItemStateAndParams object has actionParams in params or state field
- * @param stateAndParams
- */
-export function hasActionParams(stateAndParams: ItemStateAndParams) {
-    if (!stateAndParams || isEmpty(stateAndParams)) {
-        return {};
-    }
-
-    return hasActionParam(stateAndParams.params) || hasActionParam(stateAndParams.state);
 }
