@@ -1,6 +1,11 @@
 import {ConfigItem, StringParams, ItemsStateAndParams, ConfigItemData} from '../../types';
-import {META_KEY} from '../../constants';
-import {formQueueData} from '../helpers';
+import {ACTION_PARAM_PREFIX, META_KEY} from '../../constants';
+import {
+    formQueueData,
+    hasActionParams,
+    pickExceptActionParamsFromParams,
+    transformParamsToActionParams,
+} from '../helpers';
 
 const DEFAULT_CONTROL_ID = 'controlId';
 const DEFAULT_WIDGET_ID = 'widgetId';
@@ -26,6 +31,72 @@ const getMockedControlItem = ({
 type MockedWidgetItemArgs = {
     id?: string;
     tabs?: ConfigItemData['tabs'];
+};
+
+const stateAndParamsWithParamsOnly = {
+    params: {
+        paramName: 'param1',
+    },
+};
+
+const stateAndParamsWithStateOnly = {
+    state: {
+        paramName: 'param1',
+    },
+};
+
+const stateAndParamsWithActionParamsInParamsOnly = {
+    params: {
+        _ap_paramName: 'param1',
+    },
+};
+
+const stateAndParamsWithActionParamsInStateOnly = {
+    state: {
+        _ap_paramName: 'param1',
+    },
+};
+
+const stateAndParamsWithStateAndActionParamsInParams = {
+    state: {
+        paramName2: 'param2',
+    },
+    params: {
+        _ap_paramName: 'param1',
+    },
+};
+
+const stateAndParamsWithParamsAndActionParamsInParams = {
+    params: {
+        paramName2: 'param2',
+        _ap_paramName: 'param1',
+    },
+};
+
+const paramsToTransform = {
+    in: {
+        param1: 'val 1',
+        param2: 'val 2',
+    },
+    out: {
+        [`${ACTION_PARAM_PREFIX}param1`]: 'val 1',
+        [`${ACTION_PARAM_PREFIX}param2`]: 'val 2',
+    },
+};
+
+const exeptActionParam1 = {
+    in: stateAndParamsWithParamsOnly.params,
+    out: stateAndParamsWithParamsOnly.params,
+};
+const exeptActionParam2 = {
+    in: stateAndParamsWithActionParamsInParamsOnly.params,
+    out: {},
+};
+const exeptActionParam3 = {
+    in: stateAndParamsWithParamsAndActionParamsInParams.params,
+    out: {
+        paramName2: 'param2',
+    },
 };
 
 const getMockedWidgetItem = ({id = DEFAULT_WIDGET_ID, tabs}: MockedWidgetItemArgs): ConfigItem => ({
@@ -252,6 +323,53 @@ describe('modules.helpers', () => {
                     items: [widgetItem2, widgetItem3, control1, widgetItem1, control2],
                     itemsStateAndParams,
                 }),
+            );
+        });
+    });
+
+    describe('actionParams helpers', () => {
+        it('check hasActionParams', () => {
+            const empty = hasActionParams({});
+            expect(empty).toBeFalsy();
+
+            const withParamsOnly = hasActionParams(stateAndParamsWithParamsOnly);
+            expect(withParamsOnly).toBeFalsy();
+
+            const withStateOnly = hasActionParams(stateAndParamsWithStateOnly);
+            expect(withStateOnly).toBeFalsy();
+
+            const withAPinParams = hasActionParams(stateAndParamsWithActionParamsInParamsOnly);
+            expect(withAPinParams).toBeTruthy();
+
+            const withAPinState = hasActionParams(stateAndParamsWithActionParamsInStateOnly);
+            expect(withAPinState).toBeTruthy();
+
+            const withAPinParamsNState = hasActionParams(
+                stateAndParamsWithStateAndActionParamsInParams,
+            );
+            expect(withAPinParamsNState).toBeTruthy();
+
+            const withParamsAndAPinParams = hasActionParams(
+                stateAndParamsWithParamsAndActionParamsInParams,
+            );
+            expect(withParamsAndAPinParams).toBeTruthy();
+        });
+
+        it('check transformParamsToActionParams', () => {
+            expect(paramsToTransform.out).toEqual(
+                transformParamsToActionParams(paramsToTransform.in),
+            );
+        });
+
+        it('check pickExceptActionParamsFromParams', () => {
+            expect(exeptActionParam1.out).toEqual(
+                pickExceptActionParamsFromParams(exeptActionParam1.in),
+            );
+            expect(exeptActionParam2.out).toEqual(
+                pickExceptActionParamsFromParams(exeptActionParam2.in),
+            );
+            expect(exeptActionParam3.out).toEqual(
+                pickExceptActionParamsFromParams(exeptActionParam3.in),
             );
         });
     });
