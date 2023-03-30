@@ -1,5 +1,13 @@
 # Changelog
 
+## [5.2.0](https://github.com/gravity-ui/dashkit/compare/v5.1.0...v5.2.0) (2023-03-27)
+
+
+### Features
+
+* add custom qa attribute for overlay controls ([#45](https://github.com/gravity-ui/dashkit/issues/45)) ([738ce14](https://github.com/gravity-ui/dashkit/commit/738ce14a7883a88d3096ed4c9bd21bcc16f3fd20))
+* export OverlayControlItem type ([#50](https://github.com/gravity-ui/dashkit/issues/50)) ([a68cc5c](https://github.com/gravity-ui/dashkit/commit/a68cc5cb4e4470278220e18f79f9b82dc6a7cfba))
+
 ## [5.1.0](https://github.com/gravity-ui/dashkit/compare/v5.0.0...v5.1.0) (2023-02-09)
 
 
