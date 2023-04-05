@@ -1,271 +1,377 @@
 {
-  "configs": [
-    {
-      "salt": "0.15001683029798918",
-      "counter": 17,
-      "items": [
+    "configs": [
         {
-          "id": "WZ",
-          "data": {
-            "tabs": [
-              {
-                "id": "9X",
-                "title": "gender",
-                "params": {
-                  "ss": "10"
+            "salt": "0.15001683029798918",
+            "counter": 17,
+            "items": [
+                {
+                    "id": "WZ",
+                    "data": {
+                        "tabs": [
+                            {
+                                "id": "9X",
+                                "title": "gender",
+                                "params": {
+                                    "ss": "10"
+                                },
+                                "chartId": "cs873ry7hon29",
+                                "isDefault": true,
+                                "autoHeight": false
+                            },
+                            {
+                                "id": "2m",
+                                "title": "alignment",
+                                "params": {},
+                                "chartId": "6m210exic4fa3",
+                                "autoHeight": false
+                            }
+                        ],
+                        "hideTitle": false
+                    },
+                    "type": "widget",
+                    "namespace": "default"
                 },
-                "chartId": "cs873ry7hon29",
-                "isDefault": true,
-                "autoHeight": false
-              },
-              {
-                "id": "2m",
-                "title": "alignment",
-                "params": {},
-                "chartId": "6m210exic4fa3",
-                "autoHeight": false
-              }
+                {
+                    "id": "qM",
+                    "data": {
+                        "title": "Name",
+                        "source": {
+                            "datasetId": "c2gdxbk2aoie7",
+                            "elementType": "select",
+                            "datasetFieldId": "b147d8f0-30b0-41ba-a93c-d99897f473ed"
+                        },
+                        "sourceType": "dataset"
+                    },
+                    "type": "control",
+                    "defaults": {
+                        "b147d8f0-30b0-41ba-a93c-d99897f473ed": ""
+                    },
+                    "namespace": "default"
+                },
+                {
+                    "id": "Zb",
+                    "data": {
+                        "tabs": [
+                            {
+                                "id": "b3",
+                                "title": "click table",
+                                "params": {
+                                    "min": "1"
+                                },
+                                "chartId": "e4p97ocemole9",
+                                "isDefault": true,
+                                "autoHeight": false
+                            },
+                            {
+                                "id": "om",
+                                "title": "click table 2",
+                                "params": {
+                                    "min": "40"
+                                },
+                                "chartId": "e4p97ocemole9",
+                                "autoHeight": false
+                            }
+                        ],
+                        "hideTitle": false
+                    },
+                    "type": "widget",
+                    "namespace": "default"
+                },
+                {
+                    "id": "JX",
+                    "data": {
+                        "title": "min",
+                        "source": {
+                            "fieldName": "min",
+                            "elementType": "input",
+                            "defaultValue": "2"
+                        },
+                        "sourceType": "manual"
+                    },
+                    "type": "control",
+                    "defaults": {
+                        "min": "2"
+                    },
+                    "namespace": "default"
+                },
+                {
+                    "id": "0g",
+                    "data": {
+                        "title": "Gender",
+                        "source": {
+                            "datasetId": "c2gdxbk2aoie7",
+                            "elementType": "select",
+                            "datasetFieldId": "60487355-b211-4b64-977d-49db609b1106"
+                        },
+                        "sourceType": "dataset"
+                    },
+                    "type": "control",
+                    "defaults": {
+                        "60487355-b211-4b64-977d-49db609b1106": ""
+                    },
+                    "namespace": "default"
+                },
+                {
+                    "id": "V8",
+                    "data": {
+                        "size": "l",
+                        "text": "Заголовок",
+                        "showInTOC": true
+                    },
+                    "type": "title",
+                    "namespace": "default"
+                }
             ],
-            "hideTitle": false
-          },
-          "type": "widget",
-          "namespace": "default"
-        },
-        {
-          "id": "qM",
-          "data": {
-            "title": "Name",
-            "source": {
-              "datasetId": "c2gdxbk2aoie7",
-              "elementType": "select",
-              "datasetFieldId": "b147d8f0-30b0-41ba-a93c-d99897f473ed"
-            },
-            "sourceType": "dataset"
-          },
-          "type": "control",
-          "defaults": {
-            "b147d8f0-30b0-41ba-a93c-d99897f473ed": ""
-          },
-          "namespace": "default"
-        },
-        {
-          "id": "Zb",
-          "data": {
-            "tabs": [
-              {
-                "id": "b3",
-                "title": "click table",
-                "params": {
-                  "min": "1"
+            "layout": [
+                {
+                    "h": 12,
+                    "i": "WZ",
+                    "w": 12,
+                    "x": 0,
+                    "y": 2
                 },
-                "chartId": "e4p97ocemole9",
-                "isDefault": true,
-                "autoHeight": false
-              },
-              {
-                "id": "om",
-                "title": "click table 2",
-                "params": {
-                  "min": "40"
+                {
+                    "h": 2,
+                    "i": "qM",
+                    "w": 8,
+                    "x": 0,
+                    "y": 0
                 },
-                "chartId": "e4p97ocemole9",
-                "autoHeight": false
-              }
+                {
+                    "h": 12,
+                    "i": "Zb",
+                    "w": 12,
+                    "x": 12,
+                    "y": 4
+                },
+                {
+                    "h": 2,
+                    "i": "JX",
+                    "w": 8,
+                    "x": 12,
+                    "y": 2
+                },
+                {
+                    "h": 2,
+                    "i": "0g",
+                    "w": 8,
+                    "x": 8,
+                    "y": 0
+                },
+                {
+                    "h": 2,
+                    "i": "V8",
+                    "w": 36,
+                    "x": 0,
+                    "y": 16
+                }
             ],
-            "hideTitle": false
-          },
-          "type": "widget",
-          "namespace": "default"
+            "aliases": {},
+            "connections": [
+                {
+                    "to": "9X",
+                    "from": "qM",
+                    "kind": "ignore"
+                },
+                {
+                    "to": "qM",
+                    "from": "9X",
+                    "kind": "ignore"
+                }
+            ]
         },
         {
-          "id": "JX",
-          "data": {
-            "title": "min",
-            "source": {
-              "fieldName": "min",
-              "elementType": "input",
-              "defaultValue": "2"
+            "salt": "0.15001683029798918",
+            "counter": 26,
+            "items": [
+                {
+                    "id": "AD",
+                    "data": {
+                        "title": "A",
+                        "source": {
+                            "fieldName": "a",
+                            "showTitle": true,
+                            "elementType": "input",
+                            "defaultValue": "10"
+                        },
+                        "sourceType": "manual"
+                    },
+                    "type": "control",
+                    "defaults": {
+                        "a": "10"
+                    },
+                    "namespace": "default"
+                },
+                {
+                    "id": "yd",
+                    "data": {
+                        "title": "B",
+                        "source": {
+                            "fieldName": "b",
+                            "showTitle": true,
+                            "elementType": "input",
+                            "defaultValue": "20"
+                        },
+                        "sourceType": "manual"
+                    },
+                    "type": "control",
+                    "defaults": {
+                        "b": "20"
+                    },
+                    "namespace": "default"
+                },
+                {
+                    "id": "lA",
+                    "data": {
+                        "title": "C",
+                        "source": {
+                            "fieldName": "c",
+                            "showTitle": true,
+                            "elementType": "input",
+                            "defaultValue": "30"
+                        },
+                        "sourceType": "manual"
+                    },
+                    "type": "control",
+                    "defaults": {
+                        "c": "30"
+                    },
+                    "namespace": "default"
+                }
+            ],
+            "layout": [
+                {
+                    "h": 2,
+                    "i": "AD",
+                    "w": 8,
+                    "x": 0,
+                    "y": 0
+                },
+                {
+                    "h": 2,
+                    "i": "yd",
+                    "w": 8,
+                    "x": 0,
+                    "y": 2
+                },
+                {
+                    "h": 2,
+                    "i": "lA",
+                    "w": 8,
+                    "x": 0,
+                    "y": 4
+                }
+            ],
+            "aliases": {
+                "default": [
+                    [
+                        "a",
+                        "b",
+                        "c"
+                    ]
+                ]
             },
-            "sourceType": "manual"
-          },
-          "type": "control",
-          "defaults": {
-            "min": "2"
-          },
-          "namespace": "default"
+            "connections": []
         },
         {
-          "id": "0g",
-          "data": {
-            "title": "Gender",
-            "source": {
-              "datasetId": "c2gdxbk2aoie7",
-              "elementType": "select",
-              "datasetFieldId": "60487355-b211-4b64-977d-49db609b1106"
+            "salt": "0.09852189776033704",
+            "counter": 14,
+            "items": [
+                {
+                    "id": "al",
+                    "data": {
+                        "tabs": [
+                            {
+                                "id": "Jn",
+                                "title": "Заголовок 1",
+                                "params": {},
+                                "chartId": "h8hfbffyo3dg8",
+                                "isDefault": true,
+                                "autoHeight": false
+                            }
+                        ],
+                        "hideTitle": true
+                    },
+                    "type": "widget",
+                    "namespace": "default"
+                },
+                {
+                    "id": "Q8",
+                    "data": {
+                        "tabs": [
+                            {
+                                "id": "K0",
+                                "title": "filtering_charts_table (charteditor)",
+                                "params": {
+                                    "Year": "",
+                                    "Country": "",
+                                    "_ap_Country": ""
+                                },
+                                "chartId": "245z37u4ylvet",
+                                "isDefault": true,
+                                "autoHeight": false
+                            }
+                        ],
+                        "hideTitle": false
+                    },
+                    "type": "widget",
+                    "namespace": "default"
+                },
+                {
+                    "id": "L5",
+                    "data": {
+                        "title": "Country",
+                        "source": {
+                            "datasetId": "gyrnhj945gum9",
+                            "fieldType": "string",
+                            "showTitle": true,
+                            "innerTitle": "Inner title",
+                            "elementType": "select",
+                            "datasetFieldId": "d079937f-6bc4-4133-9171-40092bb20d6f",
+                            "showInnerTitle": false,
+                            "datasetFieldType": "DIMENSION"
+                        },
+                        "sourceType": "dataset"
+                    },
+                    "type": "control",
+                    "defaults": {
+                        "d079937f-6bc4-4133-9171-40092bb20d6f": ""
+                    },
+                    "namespace": "default"
+                }
+            ],
+            "layout": [
+                {
+                    "h": 4,
+                    "i": "al",
+                    "w": 4,
+                    "x": 8,
+                    "y": 0
+                },
+                {
+                    "h": 16,
+                    "i": "Q8",
+                    "w": 12,
+                    "x": 12,
+                    "y": 0
+                },
+                {
+                    "h": 2,
+                    "i": "L5",
+                    "w": 8,
+                    "x": 0,
+                    "y": 2
+                }
+            ],
+            "aliases": {
+                "default": [
+                    [
+                        "d079937f-6bc4-4133-9171-40092bb20d6f",
+                        "Country"
+                    ]
+                ]
             },
-            "sourceType": "dataset"
-          },
-          "type": "control",
-          "defaults": {
-            "60487355-b211-4b64-977d-49db609b1106": ""
-          },
-          "namespace": "default"
-        },
-        {
-          "id": "V8",
-          "data": {
-            "size": "l",
-            "text": "Заголовок",
-            "showInTOC": true
-          },
-          "type": "title",
-          "namespace": "default"
+            "connections": []
         }
-      ],
-      "layout": [
-        {
-          "h": 12,
-          "i": "WZ",
-          "w": 12,
-          "x": 0,
-          "y": 2
-        },
-        {
-          "h": 2,
-          "i": "qM",
-          "w": 8,
-          "x": 0,
-          "y": 0
-        },
-        {
-          "h": 12,
-          "i": "Zb",
-          "w": 12,
-          "x": 12,
-          "y": 4
-        },
-        {
-          "h": 2,
-          "i": "JX",
-          "w": 8,
-          "x": 12,
-          "y": 2
-        },
-        {
-          "h": 2,
-          "i": "0g",
-          "w": 8,
-          "x": 8,
-          "y": 0
-        },
-        {
-          "h": 2,
-          "i": "V8",
-          "w": 36,
-          "x": 0,
-          "y": 16
-        }
-      ],
-      "aliases": {},
-      "connections": [
-        {
-          "to": "9X",
-          "from": "qM",
-          "kind": "ignore"
-        },
-        {
-          "to": "qM",
-          "from": "9X",
-          "kind": "ignore"
-        }
-      ]
-    },
-    {
-      "salt": "0.15001683029798918",
-      "counter": 26,
-      "items": [
-        {
-          "id": "AD",
-          "data": {
-            "title": "A",
-            "source": {
-              "fieldName": "a",
-              "showTitle": true,
-              "elementType": "input",
-              "defaultValue": "10"
-            },
-            "sourceType": "manual"
-          },
-          "type": "control",
-          "defaults": {
-            "a": "10"
-          },
-          "namespace": "default"
-        },
-        {
-          "id": "yd",
-          "data": {
-            "title": "B",
-            "source": {
-              "fieldName": "b",
-              "showTitle": true,
-              "elementType": "input",
-              "defaultValue": "20"
-            },
-            "sourceType": "manual"
-          },
-          "type": "control",
-          "defaults": {
-            "b": "20"
-          },
-          "namespace": "default"
-        },
-        {
-          "id": "lA",
-          "data": {
-            "title": "C",
-            "source": {
-              "fieldName": "c",
-              "showTitle": true,
-              "elementType": "input",
-              "defaultValue": "30"
-            },
-            "sourceType": "manual"
-          },
-          "type": "control",
-          "defaults": {
-            "c": "30"
-          },
-          "namespace": "default"
-        }
-      ],
-      "layout": [
-        {
-          "h": 2,
-          "i": "AD",
-          "w": 8,
-          "x": 0,
-          "y": 0
-        },
-        {
-          "h": 2,
-          "i": "yd",
-          "w": 8,
-          "x": 0,
-          "y": 2
-        },
-        {
-          "h": 2,
-          "i": "lA",
-          "w": 8,
-          "x": 0,
-          "y": 4
-        }
-      ],
-      "aliases": {
-        "default": [["a", "b", "c"]]
-      },
-      "connections": []
-    }
-  ]
+    ]
 }
