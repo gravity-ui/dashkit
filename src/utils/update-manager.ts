@@ -1,7 +1,6 @@
 import update, {extend, Spec, CustomCommands} from 'immutability-helper';
 import omit from 'lodash/omit';
 import pick from 'lodash/pick';
-import isEmpty from 'lodash/isEmpty';
 import {
     mergeParamsWithAliases,
     isItemWithTabs,
@@ -18,12 +17,8 @@ import {
     getInitialItemsStateAndParamsMeta,
     resolveItemInnerId,
     getItemsStateAndParamsMeta,
-    getItemsActionParams,
-    mergeParamsNamesWithPairAliases,
-    hasActionParams,
     pickActionParamsFromParams,
     transformParamsToActionParams,
-    ACTION_PARAM_PREFIX,
 } from '../shared';
 import {AddConfigItem, WidgetLayout, SetItemOptions} from '../typings';
 import {RegisterManagerPluginLayout} from './register-manager';
@@ -374,7 +369,7 @@ export class UpdateManager {
             });
         }
         const hasState = 'state' in stateAndParams;
-        const {items, aliases} = config;
+        const {items} = config;
         const itemsIds = items.map(({id: itemId}) => itemId);
         const itemsStateAndParamsIds = Object.keys(omit(itemsStateAndParams, [META_KEY]));
         const unusedIds = itemsStateAndParamsIds.filter((id) => !itemsIds.includes(id));
@@ -382,66 +377,7 @@ export class UpdateManager {
         const newTabId: string | undefined = stateAndParams.state?.tabId;
         const isTabSwitched = isItemWithTabs(initiatorItem) && Boolean(newTabId);
         const currentMeta = getItemsStateAndParamsMeta(itemsStateAndParams);
-        const hasChangedActionParams = hasActionParams(stateAndParams);
-        const actionParamsAll =
-            getItemsActionParams({
-                config,
-                itemsStateAndParams,
-            }) || {};
-        const notEmptyActionParams = {} as Record<string, StringParams>;
-        for (const [key, val] of Object.entries(actionParamsAll)) {
-            if (!isEmpty(val)) {
-                notEmptyActionParams[key] = val;
-            }
-        }
-
-        if (hasChangedActionParams) {
-            const allowableActionParams = getAllowableChangedParams(
-                initiatorItem,
-                stateAndParams,
-                itemsStateAndParams,
-                {type: 'actionParams', returnPrefix: true},
-            );
-            const actionParamsWithAliasesNames = {} as Record<string, string[]>;
-            for (const [widgetIdKey, itemActionParams] of Object.entries(notEmptyActionParams)) {
-                const aliasesNames: string[][] = mergeParamsNamesWithPairAliases({
-                    aliases,
-                    namespace: initiatorItem.namespace,
-                    paramsNames: Object.keys(itemActionParams),
-                });
-                actionParamsWithAliasesNames[widgetIdKey] = [];
-                // remove all actionParams that is in aliasesNames
-                if (aliasesNames.length) {
-                    actionParamsWithAliasesNames[widgetIdKey] = [
-                        ...actionParamsWithAliasesNames[widgetIdKey],
-                        ...aliasesNames,
-                    ] as string[];
-                }
-            }
-
-            const tabId: string | undefined = isItemWithTabs(initiatorItem)
-                ? newTabId || resolveItemInnerId({item: initiatorItem, itemsStateAndParams})
-                : undefined;
-            const meta = addToQueue({id: initiatorId, tabId, config, itemsStateAndParams});
-
-            const paramsFromStateAndParams =
-                (itemsStateAndParams as ItemsStateAndParamsBase)?.[initiatorId]?.params || {};
-            const newParams =
-                !isEmpty(paramsFromStateAndParams) || !isEmpty(allowableActionParams)
-                    ? {params: {...paramsFromStateAndParams, ...allowableActionParams}}
-                    : {};
-            const obj = {
-                [initiatorId]: {
-                    $set: {
-                        ...newParams,
-                        ...(hasState ? {state: {$set: stateAndParams.state}} : {}),
-                    },
-                },
-                [META_KEY]: {$set: meta},
-            };
-
-            return update(itemsStateAndParams, obj);
-        } else if ('params' in stateAndParams) {
+        if ('params' in stateAndParams) {
             const allowableParams = getAllowableChangedParams(
                 initiatorItem,
                 stateAndParams,
@@ -455,92 +391,6 @@ export class UpdateManager {
                 {type: 'actionParams', returnPrefix: true},
             );
 
-            const actionParamsWithAliasesNames = {} as Record<string, string[]>;
-            for (const [widgetIdKey, itemActionParams] of Object.entries(notEmptyActionParams)) {
-                const aliasesNames = mergeParamsNamesWithPairAliases({
-                    aliases,
-                    namespace: initiatorItem.namespace,
-                    paramsNames: Object.keys(itemActionParams),
-                });
-
-                actionParamsWithAliasesNames[widgetIdKey] = [];
-                // remove all actionParams that is in aliasesNames
-                if (aliasesNames.length) {
-                    actionParamsWithAliasesNames[widgetIdKey] = [
-                        ...actionParamsWithAliasesNames[widgetIdKey],
-                        ...aliasesNames,
-                    ] as string[];
-                }
-            }
-
-            let actionParamsToClear = {} as Record<string, StringParams>;
-            const actionParamsToDelete = {} as Record<string, StringParams>;
-            Object.keys(allowableParams).forEach((paramName) => {
-                for (const [widgetIdKey, itemActionParams] of Object.entries(
-                    notEmptyActionParams,
-                )) {
-                    for (const [paramKey, paramVal] of Object.entries(itemActionParams)) {
-                        const actionParamInAliases =
-                            actionParamsWithAliasesNames[widgetIdKey].find((row) =>
-                                row.includes(paramKey),
-                            ) || ([] as string[]);
-
-                        const hasAllowableParamInAliases = actionParamInAliases.includes(paramName);
-
-                        if (
-                            hasAllowableParamInAliases &&
-                            notEmptyActionParams[widgetIdKey][paramKey]
-                        ) {
-                            if (!actionParamsToDelete[widgetIdKey]) {
-                                actionParamsToDelete[widgetIdKey] = {};
-                            }
-                            actionParamsToDelete[widgetIdKey] = {
-                                ...actionParamsToDelete[widgetIdKey],
-                                [`${ACTION_PARAM_PREFIX}${paramKey}`]: paramVal,
-                            };
-                            delete notEmptyActionParams[widgetIdKey][paramKey];
-                        }
-                    }
-                    actionParamsToClear = {
-                        [widgetIdKey as string]: notEmptyActionParams[widgetIdKey],
-                    };
-                }
-            });
-
-            for (const [widgetIdKey, itemActionParams] of Object.entries(actionParamsToClear)) {
-                const itemActionParamsWithPrefix = transformParamsToActionParams(itemActionParams);
-
-                let updatingParams = {} as StringParams;
-                if (
-                    !isEmpty((itemsStateAndParams as ItemsStateAndParamsBase)[widgetIdKey]?.params)
-                ) {
-                    updatingParams = {
-                        ...(itemsStateAndParams as ItemsStateAndParamsBase)[widgetIdKey].params,
-                    };
-
-                    if (!isEmpty(actionParamsToDelete)) {
-                        Object.keys(actionParamsToDelete[widgetIdKey] || []).forEach(
-                            (keyToDelete) => {
-                                if (keyToDelete in updatingParams) {
-                                    delete updatingParams[keyToDelete];
-                                }
-                            },
-                        );
-                    }
-                }
-
-                const newParamsWithClear = {
-                    ...updatingParams,
-                    ...itemActionParamsWithPrefix,
-                } as StringParams;
-
-                actionParamsToClear[widgetIdKey] = {
-                    $set: {
-                        params: newParamsWithClear,
-                    },
-                } as never;
-            }
-
             const tabId: string | undefined = isItemWithTabs(initiatorItem)
                 ? newTabId || resolveItemInnerId({item: initiatorItem, itemsStateAndParams})
                 : undefined;
@@ -553,46 +403,23 @@ export class UpdateManager {
             if (isTabSwitched) {
                 commandUpdateParams = '$set';
             }
-            const actionParamsCommand = hasActionParams(
-                (itemsStateAndParams as ItemsStateAndParamsBase)[initiatorId],
-            )
-                ? '$merge'
-                : '$set';
-
-            let setObj = null;
-            if (commandUpdateParams === '$set' && actionParamsCommand === '$set') {
-                setObj = {
-                    params: {
-                        ...allowableParams,
-                        ...(hasChangedActionParams ? allowableActionParams : {}),
-                    },
-                };
-            }
 
             const obj = {
                 $unset: unusedIds,
                 [initiatorId]: {
                     $auto: {
-                        ...(setObj
-                            ? {
-                                  $set: setObj,
-                              }
-                            : {
-                                  params: {
-                                      [commandUpdateParams]: {
-                                          ...allowableParams,
-                                          ...allowableActionParams,
-                                      },
-                                  },
-                              }),
+                        params: {
+                            [commandUpdateParams]: {
+                                ...allowableParams,
+                                ...allowableActionParams,
+                            },
+                        },
                         ...(hasState ? {state: {$set: stateAndParams.state}} : {}),
                     },
                 },
-                ...actionParamsToClear,
                 [META_KEY]: {$set: meta},
             };
-            const res = update(itemsStateAndParams, obj);
-            return res;
+            return update(itemsStateAndParams, obj);
         } else if (hasState) {
             let metaSpec: Spec<ItemsStateAndParams> = {};
             if (currentMeta && isTabSwitched) {

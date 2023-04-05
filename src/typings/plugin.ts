@@ -8,7 +8,6 @@ export interface PluginWidgetProps {
     editMode: boolean;
     params: StringParams;
     state: ItemState;
-    actionParams: StringParams;
     onStateAndParamsChange: (stateAndParams: ItemStateAndParams) => void;
     width: number;
     height: number;

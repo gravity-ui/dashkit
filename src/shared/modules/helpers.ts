@@ -107,10 +107,20 @@ export function formQueueData({
             }
 
             const itemQueueParams: StringParams = get(itemsStateAndParams, [item.id, 'params'], {});
+            const filteredParamsByDefaults = pick(itemQueueParams, Object.keys(itemDefaultParams));
+            const actionParams = pickActionParamsFromParams(itemQueueParams, false) || {};
+            const filteredActionParamsByDefaults = pick(
+                actionParams,
+                Object.keys(itemDefaultParams),
+            );
+            const resParams = {
+                ...filteredParamsByDefaults,
+                ...transformParamsToActionParams(filteredActionParamsByDefaults),
+            };
             return {
                 id: item.id,
                 namespace: item.namespace,
-                params: pick(itemQueueParams, Object.keys(itemDefaultParams)),
+                params: resParams,
             };
         })
         .filter(nonNullable);
@@ -299,7 +309,7 @@ export function pickActionParamsFromParams(
     for (const [key, val] of Object.entries(params)) {
         // starts with actionParams prefix (from'_ap_')
         if (key.startsWith(ACTION_PARAM_PREFIX)) {
-            const paramName = returnWithPrefix ? key : key.substr(ACTION_PARAM_PREFIX.length);
+            const paramName = returnWithPrefix ? key : key.slice(ACTION_PARAM_PREFIX.length);
             actionParams[paramName] = val;
         }
     }
@@ -344,7 +354,7 @@ export function transformParamsToActionParams(params: ItemStateAndParams['params
  * check if object contains actionParams
  * @param conf
  */
-function hasActionParam(conf?: StringParams): boolean {
+export function hasActionParam(conf?: StringParams): boolean {
     return Boolean(Object.keys(conf || {}).find((key) => key.startsWith(ACTION_PARAM_PREFIX)));
 }
 
