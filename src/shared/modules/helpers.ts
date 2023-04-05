@@ -355,7 +355,7 @@ export function transformParamsToActionParams(params: ItemStateAndParams['params
  * @param conf
  */
 export function hasActionParam(conf?: StringParams): boolean {
-    return Boolean(Object.keys(conf || {}).find((key) => key.startsWith(ACTION_PARAM_PREFIX)));
+    return Object.keys(conf || {}).some((key) => key.startsWith(ACTION_PARAM_PREFIX));
 }
 
 /**
