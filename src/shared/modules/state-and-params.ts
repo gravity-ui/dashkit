@@ -96,7 +96,7 @@ export function getItemsParams({
                 (itemsStateAndParams as ItemsStateAndParamsBase)?.[id]?.params || {},
             );
         } else {
-            // Параметры согласно очереди применения параметров
+            // params according to queue of its applying
             let prevQueueDataWithActionParams = {};
             let queueDataItems: StringParams = {};
             for (const data of Object.values(queueData)) {

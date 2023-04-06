@@ -78,7 +78,7 @@ export type FormedQueueData = {
     params: StringParams;
 };
 
-// Массив параметров, которые исходят от виджетов, согласно очереди
+// Array of parameters from widgets according to queue
 export function formQueueData({
     items,
     itemsStateAndParams,
@@ -108,19 +108,32 @@ export function formQueueData({
 
             const itemQueueParams: StringParams = get(itemsStateAndParams, [item.id, 'params'], {});
             const filteredParamsByDefaults = pick(itemQueueParams, Object.keys(itemDefaultParams));
+
+            /**
+             * filtering actionParams without prefixes by defaults params
+             * ex.:
+             * itemDefaultParams contains 'Country' in defaults
+             * and we receive '_ap_Country' and '_ap_City' in itemQueueParams
+             * we need to ignore '_ap_City' param because we don't have actionParam without prefix ('City') in defaults
+             */
             const actionParams = pickActionParamsFromParams(itemQueueParams, false) || {};
             const filteredActionParamsByDefaults = pick(
                 actionParams,
                 Object.keys(itemDefaultParams),
             );
-            const resParams = {
+
+            /**
+             * merging filtered params and filtered actionParams with prefixes
+             */
+            const params = {
                 ...filteredParamsByDefaults,
                 ...transformParamsToActionParams(filteredActionParamsByDefaults),
             };
+
             return {
                 id: item.id,
                 namespace: item.namespace,
-                params: resParams,
+                params,
             };
         })
         .filter(nonNullable);
@@ -268,6 +281,14 @@ export function deleteFromQueue(data: ChangeQueueArg): StateAndParamsMetaData {
     };
 }
 
+/**
+ * public function for getting only actionParams from object (all fields with keys that contains prefix)
+ * @param params - object for pick fields
+ * @param returnWithPrefix - format of returning actionParams fields (with actionParams prefix or without them)
+ *
+ * ex1: pickActionParamsFromParams({City: 'NY', _ap_Year: '2023'}, true) returns {_ap_Year: '2023'}
+ * ex2: pickActionParamsFromParams({City: 'NY', _ap_Year: '2023'}) returns {Year: '2023'}
+ */
 export function pickActionParamsFromParams(
     params: ItemStateAndParams['params'],
     returnWithPrefix?: boolean,
