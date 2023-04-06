@@ -101,7 +101,7 @@ export function getItemsParams({
             let queueDataItems: StringParams = {};
             for (const data of Object.values(queueData)) {
                 if (data.namespace !== namespace || itemIgnores.includes(data.id)) {
-                    queueDataItems = {...queueDataItems};
+                    continue;
                 }
 
                 let actionParams;
