@@ -17,6 +17,8 @@ import {
     getInitialItemsStateAndParamsMeta,
     resolveItemInnerId,
     getItemsStateAndParamsMeta,
+    pickActionParamsFromParams,
+    transformParamsToActionParams,
 } from '../shared';
 import {AddConfigItem, WidgetLayout, SetItemOptions} from '../typings';
 import {RegisterManagerPluginLayout} from './register-manager';
@@ -103,8 +105,19 @@ function getAllowableChangedParams(
     item: ConfigItem,
     stateAndParams: ItemStateAndParams,
     itemsStateAndParams: ItemsStateAndParams,
+    paramsSettings?: {
+        type?: 'params' | 'actionParams';
+        returnPrefix: boolean;
+    },
 ): StringParams {
+    const paramsTypeName = paramsSettings?.type || 'params';
+    const isActionParamsMode = paramsTypeName === 'actionParams';
+
     let allowedParams: StringParams = {};
+    const stateParamsConf = isActionParamsMode
+        ? pickActionParamsFromParams(stateAndParams.params, false)
+        : stateAndParams.params;
+
     if (isItemWithTabs(item)) {
         let tab;
         if ('state' in stateAndParams && stateAndParams.state?.tabId) {
@@ -114,15 +127,17 @@ function getAllowableChangedParams(
             const tabId = resolveItemInnerId({item, itemsStateAndParams});
             tab = item.data.tabs.find(({id}) => id === tabId);
         }
-        allowedParams = pick(stateAndParams.params, Object.keys(tab?.params || {})) as StringParams;
+        allowedParams = pick(stateParamsConf, Object.keys(tab?.params || {})) as StringParams;
     } else {
-        allowedParams = pick(
-            stateAndParams.params,
-            Object.keys(item.defaults || {}),
-        ) as StringParams;
+        allowedParams = pick(stateParamsConf, Object.keys(item.defaults || {})) as StringParams;
     }
-    if (Object.keys(allowedParams).length !== Object.keys(stateAndParams.params || {}).length) {
+    if (Object.keys(allowedParams || {}).length !== Object.keys(stateParamsConf || {}).length) {
         console.warn('Параметры, которых нет в defaults, будут проигнорированы!');
+    }
+    if (isActionParamsMode) {
+        return paramsSettings?.returnPrefix
+            ? transformParamsToActionParams(allowedParams)
+            : allowedParams;
     }
     return allowedParams;
 }
@@ -368,6 +383,14 @@ export class UpdateManager {
                 stateAndParams,
                 itemsStateAndParams,
             );
+
+            const allowableActionParams = getAllowableChangedParams(
+                initiatorItem,
+                stateAndParams,
+                itemsStateAndParams,
+                {type: 'actionParams', returnPrefix: true},
+            );
+
             const tabId: string | undefined = isItemWithTabs(initiatorItem)
                 ? newTabId || resolveItemInnerId({item: initiatorItem, itemsStateAndParams})
                 : undefined;
@@ -380,18 +403,23 @@ export class UpdateManager {
             if (isTabSwitched) {
                 commandUpdateParams = '$set';
             }
-            return update(itemsStateAndParams, {
+
+            const obj = {
                 $unset: unusedIds,
                 [initiatorId]: {
                     $auto: {
                         params: {
-                            [commandUpdateParams]: allowableParams,
+                            [commandUpdateParams]: {
+                                ...allowableParams,
+                                ...allowableActionParams,
+                            },
                         },
                         ...(hasState ? {state: {$set: stateAndParams.state}} : {}),
                     },
                 },
                 [META_KEY]: {$set: meta},
-            });
+            };
+            return update(itemsStateAndParams, obj);
         } else if (hasState) {
             let metaSpec: Spec<ItemsStateAndParams> = {};
             if (currentMeta && isTabSwitched) {

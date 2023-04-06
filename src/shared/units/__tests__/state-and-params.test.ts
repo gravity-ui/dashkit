@@ -262,6 +262,120 @@ export const stateAndParams3 = {
     },
 };
 
+const stateAndParamsForAP1 = {
+    in: {
+        Q8: {params: {_ap_Country: 'Italy'}},
+        __meta__: {queue: [{id: 'Q8', tabId: 'K0'}], version: 2},
+    },
+    out: {
+        L5: {
+            params: {Country: 'Italy', 'd079937f-6bc4-4133-9171-40092bb20d6f': 'Italy'},
+            state: {},
+        },
+        Q8: {
+            params: {
+                Country: '',
+                _ap_Country: 'Italy',
+                'd079937f-6bc4-4133-9171-40092bb20d6f': '',
+            },
+            state: {},
+        },
+        al: {
+            params: {Country: 'Italy', 'd079937f-6bc4-4133-9171-40092bb20d6f': 'Italy'},
+            state: {},
+        },
+    },
+};
+
+const stateAndParamsForAP2 = {
+    in: {
+        L5: {
+            params: {'d079937f-6bc4-4133-9171-40092bb20d6f': 'Belgium'},
+        },
+        Q8: {
+            params: {_ap_Country: 'Italy'},
+        },
+        __meta__: {queue: [{id: 'Q8', tabId: 'K0'}, {id: 'L5'}], version: 2},
+    },
+    out: {
+        L5: {
+            params: {Country: 'Belgium', 'd079937f-6bc4-4133-9171-40092bb20d6f': 'Belgium'},
+            state: {},
+        },
+        Q8: {
+            params: {Country: 'Belgium', 'd079937f-6bc4-4133-9171-40092bb20d6f': 'Belgium'},
+            state: {},
+        },
+        al: {
+            params: {Country: 'Belgium', 'd079937f-6bc4-4133-9171-40092bb20d6f': 'Belgium'},
+            state: {},
+        },
+    },
+};
+
+const stateAndParamsForAP3 = {
+    in: {
+        Q8: {params: {_ap_Country: 'Italy'}},
+        L5: {params: {'d079937f-6bc4-4133-9171-40092bb20d6f': ''}},
+        __meta__: {queue: [{id: 'Q8', tabId: 'K0'}, {id: 'L5'}], version: 2},
+    },
+    out: {
+        L5: {
+            params: {
+                Country: '',
+                'd079937f-6bc4-4133-9171-40092bb20d6f': '',
+            },
+            state: {},
+        },
+        Q8: {
+            params: {
+                Country: '',
+                'd079937f-6bc4-4133-9171-40092bb20d6f': '',
+            },
+            state: {},
+        },
+        al: {
+            params: {
+                Country: '',
+                'd079937f-6bc4-4133-9171-40092bb20d6f': '',
+            },
+            state: {},
+        },
+    },
+};
+
+const stateAndParamsForAP4 = {
+    in: {
+        Q8: {params: {_ap_Country: ''}},
+        L5: {params: {'d079937f-6bc4-4133-9171-40092bb20d6f': ''}},
+        __meta__: {queue: [{id: 'L5'}, {id: 'Q8', tabId: 'K0'}], version: 2},
+    },
+    out: {
+        L5: {
+            params: {
+                Country: '',
+                'd079937f-6bc4-4133-9171-40092bb20d6f': '',
+            },
+            state: {},
+        },
+        Q8: {
+            params: {
+                Country: '',
+                _ap_Country: '',
+                'd079937f-6bc4-4133-9171-40092bb20d6f': '',
+            },
+            state: {},
+        },
+        al: {
+            params: {
+                Country: '',
+                'd079937f-6bc4-4133-9171-40092bb20d6f': '',
+            },
+            state: {},
+        },
+    },
+};
+
 const configs = mockConfigs.configs as unknown as Config[];
 
 describe('getItemsStateAndParamsDL', () => {
@@ -301,6 +415,60 @@ describe('getItemsStateAndParamsDL', () => {
 
         it('return stateAndParams3.out', () => {
             expect(resultItemsStateAndParams).toEqual(omit(stateAndParams3.out, META_KEY));
+        });
+    });
+});
+
+describe('getItemsStateAndParams actionParams variants check', () => {
+    describe('action and params state 1', () => {
+        const resultItemsStateAndParams = getItemsStateAndParamsDL({
+            defaultGlobalParams: {},
+            globalParams: {},
+            config: configs[2],
+            itemsStateAndParams: stateAndParamsForAP1.in,
+        });
+
+        it('return stateAndParamsForAP1.out', () => {
+            expect(resultItemsStateAndParams).toEqual(omit(stateAndParamsForAP1.out, META_KEY));
+        });
+    });
+
+    describe('action and params state 2', () => {
+        const resultItemsStateAndParams = getItemsStateAndParamsDL({
+            defaultGlobalParams: {},
+            globalParams: {},
+            config: configs[2],
+            itemsStateAndParams: stateAndParamsForAP2.in,
+        });
+
+        it('return stateAndParamsForAP2.out', () => {
+            expect(resultItemsStateAndParams).toEqual(omit(stateAndParamsForAP2.out, META_KEY));
+        });
+    });
+
+    describe('action and params state 3', () => {
+        const resultItemsStateAndParams = getItemsStateAndParamsDL({
+            defaultGlobalParams: {},
+            globalParams: {},
+            config: configs[2],
+            itemsStateAndParams: stateAndParamsForAP3.in,
+        });
+
+        it('return stateAndParamsForAP3.out', () => {
+            expect(resultItemsStateAndParams).toEqual(omit(stateAndParamsForAP3.out, META_KEY));
+        });
+    });
+
+    describe('action and params state 4', () => {
+        const resultItemsStateAndParams = getItemsStateAndParamsDL({
+            defaultGlobalParams: {},
+            globalParams: {},
+            config: configs[2],
+            itemsStateAndParams: stateAndParamsForAP4.in,
+        });
+
+        it('return stateAndParamsForAP4.out', () => {
+            expect(resultItemsStateAndParams).toEqual(omit(stateAndParamsForAP4.out, META_KEY));
         });
     });
 });

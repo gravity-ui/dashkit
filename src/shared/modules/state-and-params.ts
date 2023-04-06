@@ -1,4 +1,7 @@
 import groupBy from 'lodash/groupBy';
+import intersection from 'lodash/intersection';
+import omit from 'lodash/omit';
+import {META_KEY} from '../constants';
 import {
     GlobalParams,
     Config,
@@ -18,8 +21,11 @@ import {
     getMapItemsIgnores,
     mergeParamsWithAliases,
     getCurrentVersion,
+    pickActionParamsFromParams,
+    hasActionParam,
+    pickExceptActionParamsFromParams,
+    transformParamsToActionParams,
 } from './helpers';
-import {META_KEY} from '../constants';
 
 export interface GetItemsParamsArg {
     defaultGlobalParams: GlobalParams;
@@ -63,8 +69,8 @@ export function getItemsParams({
 
     return items.reduce((itemsParams: Record<string, StringParams>, item) => {
         const {id, namespace} = item;
-        const getMergedParams = (params: StringParams) =>
-            mergeParamsWithAliases({aliases, namespace, params: params || {}});
+        const getMergedParams = (params: StringParams, actionParams?: StringParams) =>
+            mergeParamsWithAliases({aliases, namespace, params: params || {}, actionParams});
         const itemIgnores = mapItemsIgnores[id];
         const affectingItemsWithDefaults = itemsWithDefaultsByNamespace[namespace].filter(
             (itemWithDefaults) => !itemIgnores.includes(itemWithDefaults.id),
@@ -90,20 +96,47 @@ export function getItemsParams({
                 (itemsStateAndParams as ItemsStateAndParamsBase)?.[id]?.params || {},
             );
         } else {
-            itemParams = Object.assign(
-                itemParams,
-                // Параметры согласно очереди применения параметров
-                queueData.reduce((queueParams: StringParams, data) => {
-                    if (data.namespace !== namespace || itemIgnores.includes(data.id)) {
-                        return queueParams;
-                    }
-                    return {
-                        ...queueParams,
-                        ...getMergedParams(data.params),
-                    };
-                }, {}),
-            );
+            // params according to queue of its applying
+            let prevQueueDataWithActionParams = {};
+            let queueDataItems: StringParams = {};
+            for (const data of Object.values(queueData)) {
+                if (data.namespace !== namespace || itemIgnores.includes(data.id)) {
+                    continue;
+                }
+
+                let actionParams;
+                let params = data.params;
+                const needAliasesForActionParams = data.id !== id && hasActionParam(data.params);
+                if (needAliasesForActionParams) {
+                    actionParams = pickActionParamsFromParams(data.params);
+                    params = pickExceptActionParamsFromParams(data.params);
+                }
+
+                const mergedParams = getMergedParams(params, actionParams);
+
+                const actionParamKeyToClear = intersection(
+                    Object.keys(transformParamsToActionParams(mergedParams)),
+                    Object.keys(prevQueueDataWithActionParams),
+                );
+
+                let queueDataRes = {...queueDataItems};
+                if (actionParamKeyToClear.length) {
+                    queueDataRes = omit(queueDataItems, actionParamKeyToClear);
+                }
+
+                queueDataItems = {
+                    ...queueDataRes,
+                    ...mergedParams,
+                };
+
+                prevQueueDataWithActionParams = hasActionParam(queueDataItems)
+                    ? pickActionParamsFromParams(data.params, true)
+                    : {};
+            }
+
+            itemParams = Object.assign(itemParams, queueDataItems);
         }
+
         return {
             ...itemsParams,
             [id]: itemParams,
@@ -140,6 +173,7 @@ export function getItemsStateAndParams({
     });
     const state = getItemsState({config, itemsStateAndParams});
     const uniqIds = new Set([...Object.keys(params), ...Object.keys(state)]);
+
     const result: ItemsStateAndParams = Array.from(uniqIds).reduce(
         (acc: ItemsStateAndParams, id) => {
             const data = {} as ItemStateAndParams;

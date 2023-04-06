@@ -3,7 +3,7 @@ import get from 'lodash/get';
 import invert from 'lodash/invert';
 import isEmpty from 'lodash/isEmpty';
 import pick from 'lodash/pick';
-import {META_KEY, CURRENT_VERSION} from '../constants';
+import {META_KEY, CURRENT_VERSION, ACTION_PARAM_PREFIX} from '../constants';
 import {
     PluginBase,
     ConfigItem,
@@ -16,6 +16,7 @@ import {
     ConfigItemWithTabs,
     Config,
     QueueItem,
+    ItemStateAndParams,
 } from '../types';
 
 function getNormalizedPlugins(plugins: PluginBase[]) {
@@ -77,7 +78,7 @@ export type FormedQueueData = {
     params: StringParams;
 };
 
-// Массив параметров, которые исходят от виджетов, согласно очереди
+// Array of parameters from widgets according to queue
 export function formQueueData({
     items,
     itemsStateAndParams,
@@ -106,10 +107,33 @@ export function formQueueData({
             }
 
             const itemQueueParams: StringParams = get(itemsStateAndParams, [item.id, 'params'], {});
+            const filteredParamsByDefaults = pick(itemQueueParams, Object.keys(itemDefaultParams));
+
+            /**
+             * filtering actionParams without prefixes by defaults params
+             * ex.:
+             * itemDefaultParams contains 'Country' in defaults
+             * and we receive '_ap_Country' and '_ap_City' in itemQueueParams
+             * we need to ignore '_ap_City' param because we don't have actionParam without prefix ('City') in defaults
+             */
+            const actionParams = pickActionParamsFromParams(itemQueueParams, false) || {};
+            const filteredActionParamsByDefaults = pick(
+                actionParams,
+                Object.keys(itemDefaultParams),
+            );
+
+            /**
+             * merging filtered params and filtered actionParams with prefixes
+             */
+            const params = {
+                ...filteredParamsByDefaults,
+                ...transformParamsToActionParams(filteredActionParamsByDefaults),
+            };
+
             return {
                 id: item.id,
                 namespace: item.namespace,
-                params: pick(itemQueueParams, Object.keys(itemDefaultParams)),
+                params,
             };
         })
         .filter(nonNullable);
@@ -181,14 +205,20 @@ export function mergeParamsWithAliases({
     aliases,
     namespace,
     params,
+    actionParams,
 }: {
     aliases: ConfigAliases;
     namespace: string;
     params: StringParams;
+    actionParams?: StringParams;
 }): StringParams {
     const aliasesByNamespace = get(aliases, [namespace], []) as string[][];
-    return Object.keys(params).reduce((matchedParams: StringParams, paramKey) => {
-        const paramValue = params[paramKey];
+    const items = {
+        ...(params || {}),
+        ...(actionParams || {}),
+    };
+    return Object.keys(items).reduce((matchedParams: StringParams, paramKey) => {
+        const paramValue = items[paramKey];
         const collectAliasesParamsKeys = aliasesByNamespace.reduce(
             (collect, group) => {
                 return group.includes(paramKey) ? collect.concat(group) : collect;
@@ -249,4 +279,85 @@ export function deleteFromQueue(data: ChangeQueueArg): StateAndParamsMetaData {
         ...meta,
         queue: meta.queue.slice(0, -1),
     };
+}
+
+/**
+ * public function for getting only actionParams from object (all fields with keys that contains prefix)
+ * @param params - object for pick fields
+ * @param returnWithPrefix - format of returning actionParams fields (with actionParams prefix or without them)
+ *
+ * ex1: pickActionParamsFromParams({City: 'NY', _ap_Year: '2023'}, true) returns {_ap_Year: '2023'}
+ * ex2: pickActionParamsFromParams({City: 'NY', _ap_Year: '2023'}) returns {Year: '2023'}
+ */
+export function pickActionParamsFromParams(
+    params: ItemStateAndParams['params'],
+    returnWithPrefix?: boolean,
+) {
+    if (!params || isEmpty(params)) {
+        return {};
+    }
+
+    const actionParams: StringParams = {};
+    for (const [key, val] of Object.entries(params)) {
+        // starts with actionParams prefix (from'_ap_')
+        if (key.startsWith(ACTION_PARAM_PREFIX)) {
+            const paramName = returnWithPrefix ? key : key.slice(ACTION_PARAM_PREFIX.length);
+            actionParams[paramName] = val;
+        }
+    }
+    return actionParams;
+}
+
+/**
+ * public function for getting params from object without actionParams
+ * @param params
+ */
+export function pickExceptActionParamsFromParams(params: ItemStateAndParams['params']) {
+    if (!params || isEmpty(params)) {
+        return {};
+    }
+
+    const onlyParams: StringParams = {};
+    for (const [key, val] of Object.entries(params)) {
+        if (!key.startsWith(ACTION_PARAM_PREFIX)) {
+            onlyParams[key] = val;
+        }
+    }
+    return onlyParams;
+}
+
+/**
+ * public function for transforming object to actionParams format
+ * @param params
+ */
+export function transformParamsToActionParams(params: ItemStateAndParams['params']) {
+    if (!params || isEmpty(params)) {
+        return {};
+    }
+
+    const actionParams: StringParams = {};
+    for (const [key, val] of Object.entries(params)) {
+        actionParams[`${ACTION_PARAM_PREFIX}${key}`] = val;
+    }
+    return actionParams;
+}
+
+/**
+ * check if object contains actionParams
+ * @param conf
+ */
+export function hasActionParam(conf?: StringParams): boolean {
+    return Object.keys(conf || {}).some((key) => key.startsWith(ACTION_PARAM_PREFIX));
+}
+
+/**
+ * check if ItemStateAndParams object has actionParams in params or state field
+ * @param stateAndParams
+ */
+export function hasActionParams(stateAndParams: ItemStateAndParams) {
+    if (!stateAndParams || isEmpty(stateAndParams)) {
+        return false;
+    }
+
+    return hasActionParam(stateAndParams.params);
 }
