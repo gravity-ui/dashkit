@@ -41,7 +41,7 @@ const stateAndParamsWithParamsOnly = {
 
 const stateAndParamsWithStateOnly = {
     state: {
-        paramName: 'param1',
+        tabId: 'tabId1',
     },
 };
 
@@ -51,15 +51,9 @@ const stateAndParamsWithActionParamsInParamsOnly = {
     },
 };
 
-const stateAndParamsWithActionParamsInStateOnly = {
-    state: {
-        _ap_paramName: 'param1',
-    },
-};
-
 const stateAndParamsWithStateAndActionParamsInParams = {
     state: {
-        paramName2: 'param2',
+        tabId: 'tabId1',
     },
     params: {
         _ap_paramName: 'param1',
@@ -340,9 +334,6 @@ describe('modules.helpers', () => {
 
             const withAPinParams = hasActionParams(stateAndParamsWithActionParamsInParamsOnly);
             expect(withAPinParams).toBeTruthy();
-
-            const withAPinState = hasActionParams(stateAndParamsWithActionParamsInStateOnly);
-            expect(withAPinState).toBeTruthy();
 
             const withAPinParamsNState = hasActionParams(
                 stateAndParamsWithStateAndActionParamsInParams,

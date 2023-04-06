@@ -367,5 +367,5 @@ export function hasActionParams(stateAndParams: ItemStateAndParams) {
         return false;
     }
 
-    return hasActionParam(stateAndParams.params) || hasActionParam(stateAndParams.state);
+    return hasActionParam(stateAndParams.params);
 }
