@@ -233,23 +233,6 @@ export function mergeParamsWithAliases({
     });
 }
 
-export function mergeParamsNamesWithPairAliases({
-    aliases,
-    namespace,
-    paramsNames,
-}: {
-    aliases: ConfigAliases;
-    namespace: string;
-    paramsNames: string[];
-}): string[][] {
-    const aliasesByNamespace = get(aliases, [namespace], []) as string[][];
-    const res = [] as string[][];
-    paramsNames.forEach((paramName) => {
-        res.push(...aliasesByNamespace.filter((item) => item.includes(paramName)));
-    });
-    return res;
-}
-
 export function getInitialItemsStateAndParamsMeta(): StateAndParamsMetaData {
     return {
         queue: [],
