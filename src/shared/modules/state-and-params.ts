@@ -1,4 +1,6 @@
 import groupBy from 'lodash/groupBy';
+import intersection from 'lodash/intersection';
+import omit from 'lodash/omit';
 import {META_KEY} from '../constants';
 import {
     GlobalParams,
@@ -24,7 +26,6 @@ import {
     pickExceptActionParamsFromParams,
     transformParamsToActionParams,
 } from './helpers';
-import {intersection, omit} from 'lodash';
 
 export interface GetItemsParamsArg {
     defaultGlobalParams: GlobalParams;
@@ -100,7 +101,7 @@ export function getItemsParams({
             let queueDataItems: StringParams = {};
             for (const data of Object.values(queueData)) {
                 if (data.namespace !== namespace || itemIgnores.includes(data.id)) {
-                    queueDataItems = {...queueDataItems, ...queueDataItems};
+                    queueDataItems = {...queueDataItems};
                 }
 
                 let actionParams;
