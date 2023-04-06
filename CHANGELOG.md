@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.3.0](https://github.com/gravity-ui/dashkit/compare/v5.2.0...v5.3.0) (2023-04-06)
+
+
+### Features
+
+* add actionParams support ([#47](https://github.com/gravity-ui/dashkit/issues/47)) ([0c78ae2](https://github.com/gravity-ui/dashkit/commit/0c78ae2b96d9882ea27a7e7742d40728fadcfa84))
+
 ## [5.2.0](https://github.com/gravity-ui/dashkit/compare/v5.1.0...v5.2.0) (2023-03-27)
 
 
