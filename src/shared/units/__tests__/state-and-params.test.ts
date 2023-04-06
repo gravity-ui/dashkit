@@ -264,24 +264,24 @@ export const stateAndParams3 = {
 
 const stateAndParamsForAP1 = {
     in: {
-        Q8: {params: {_ap_Country: 'Италия'}},
+        Q8: {params: {_ap_Country: 'Italy'}},
         __meta__: {queue: [{id: 'Q8', tabId: 'K0'}], version: 2},
     },
     out: {
         L5: {
-            params: {Country: 'Италия', 'd079937f-6bc4-4133-9171-40092bb20d6f': 'Италия'},
+            params: {Country: 'Italy', 'd079937f-6bc4-4133-9171-40092bb20d6f': 'Italy'},
             state: {},
         },
         Q8: {
             params: {
                 Country: '',
-                _ap_Country: 'Италия',
+                _ap_Country: 'Italy',
                 'd079937f-6bc4-4133-9171-40092bb20d6f': '',
             },
             state: {},
         },
         al: {
-            params: {Country: 'Италия', 'd079937f-6bc4-4133-9171-40092bb20d6f': 'Италия'},
+            params: {Country: 'Italy', 'd079937f-6bc4-4133-9171-40092bb20d6f': 'Italy'},
             state: {},
         },
     },
@@ -290,24 +290,24 @@ const stateAndParamsForAP1 = {
 const stateAndParamsForAP2 = {
     in: {
         L5: {
-            params: {'d079937f-6bc4-4133-9171-40092bb20d6f': 'Бельгия'},
+            params: {'d079937f-6bc4-4133-9171-40092bb20d6f': 'Belgium'},
         },
         Q8: {
-            params: {_ap_Country: 'Италия'},
+            params: {_ap_Country: 'Italy'},
         },
         __meta__: {queue: [{id: 'Q8', tabId: 'K0'}, {id: 'L5'}], version: 2},
     },
     out: {
         L5: {
-            params: {Country: 'Бельгия', 'd079937f-6bc4-4133-9171-40092bb20d6f': 'Бельгия'},
+            params: {Country: 'Belgium', 'd079937f-6bc4-4133-9171-40092bb20d6f': 'Belgium'},
             state: {},
         },
         Q8: {
-            params: {Country: 'Бельгия', 'd079937f-6bc4-4133-9171-40092bb20d6f': 'Бельгия'},
+            params: {Country: 'Belgium', 'd079937f-6bc4-4133-9171-40092bb20d6f': 'Belgium'},
             state: {},
         },
         al: {
-            params: {Country: 'Бельгия', 'd079937f-6bc4-4133-9171-40092bb20d6f': 'Бельгия'},
+            params: {Country: 'Belgium', 'd079937f-6bc4-4133-9171-40092bb20d6f': 'Belgium'},
             state: {},
         },
     },
@@ -315,7 +315,7 @@ const stateAndParamsForAP2 = {
 
 const stateAndParamsForAP3 = {
     in: {
-        Q8: {params: {_ap_Country: 'Италия'}},
+        Q8: {params: {_ap_Country: 'Italy'}},
         L5: {params: {'d079937f-6bc4-4133-9171-40092bb20d6f': ''}},
         __meta__: {queue: [{id: 'Q8', tabId: 'K0'}, {id: 'L5'}], version: 2},
     },
