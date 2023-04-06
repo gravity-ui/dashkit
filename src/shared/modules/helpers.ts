@@ -188,10 +188,22 @@ export function getMapItemsIgnores({
     }, {});
 }
 
-function mergeParamsItemsWithAliases(
-    aliasesByNamespace: string[][],
-    items: StringParams,
-): StringParams {
+export function mergeParamsWithAliases({
+    aliases,
+    namespace,
+    params,
+    actionParams,
+}: {
+    aliases: ConfigAliases;
+    namespace: string;
+    params: StringParams;
+    actionParams?: StringParams;
+}): StringParams {
+    const aliasesByNamespace = get(aliases, [namespace], []) as string[][];
+    const items = {
+        ...(params || {}),
+        ...(actionParams || {}),
+    };
     return Object.keys(items).reduce((matchedParams: StringParams, paramKey) => {
         const paramValue = items[paramKey];
         const collectAliasesParamsKeys = aliasesByNamespace.reduce(
@@ -207,30 +219,6 @@ function mergeParamsItemsWithAliases(
             }, {}),
         };
     }, {});
-}
-
-export function mergeParamsWithAliases({
-    aliases,
-    namespace,
-    params,
-    actionParams,
-}: {
-    aliases: ConfigAliases;
-    namespace: string;
-    params: StringParams;
-    actionParams?: StringParams;
-}): StringParams {
-    const aliasesByNamespace = get(aliases, [namespace], []) as string[][];
-
-    let actionParamsWithAliases = {};
-    if (actionParams && Object.entries(actionParams).length) {
-        actionParamsWithAliases = mergeParamsItemsWithAliases(aliasesByNamespace, actionParams);
-    }
-
-    return mergeParamsItemsWithAliases(aliasesByNamespace, {
-        ...(params || {}),
-        ...actionParamsWithAliases,
-    });
 }
 
 export function getInitialItemsStateAndParamsMeta(): StateAndParamsMetaData {
