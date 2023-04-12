@@ -13,6 +13,7 @@ import {
     ItemsStateAndParamsBase,
     StateAndParamsMetaData,
     ItemStateAndParams,
+    ConfigItemDataWithTabs,
 } from '../types';
 import {
     prerenderItems,
@@ -25,6 +26,8 @@ import {
     hasActionParam,
     pickExceptActionParamsFromParams,
     transformParamsToActionParams,
+    isItemWithTabs,
+    resolveItemInnerId,
 } from './helpers';
 
 export interface GetItemsParamsArg {
@@ -50,7 +53,8 @@ export function getItemsParams({
     const queueData: FormedQueueData[] = isFirstVersion
         ? []
         : formQueueData({items, itemsStateAndParams});
-    // В будущем учитывать не только игноры, когда такой kind появится
+
+    // to consider other kind types in future (not only ignore)
     const mapItemsIgnores = getMapItemsIgnores({
         items,
         ignores: connections.filter(({kind}) => kind === 'ignore'),
@@ -61,24 +65,36 @@ export function getItemsParams({
     const itemsWithDefaultsByNamespace = Object.keys(groupByNamespace).reduce((acc, namespace) => {
         return {
             ...acc,
-            // Сейчас дефолты только у Селектов, затем для виджетов нужно доставать из item.data.tabs[].defaults
-            // но определиться с порядком их применения
+            // there are defaults only in selectors by now, need to get them from item.data.tabs[].defaults for widgets
+            // but make a decision about there's order first
             [namespace]: groupByNamespace[namespace].filter((item) => item.defaults),
         };
     }, {} as Record<string, ConfigItem[]>);
 
     return items.reduce((itemsParams: Record<string, StringParams>, item) => {
         const {id, namespace} = item;
+
+        let widgetDefaults: StringParams = {};
+        if (isItemWithTabs(item)) {
+            const currentWidgetTabId = resolveItemInnerId({item, itemsStateAndParams});
+            const itemTabs: ConfigItemDataWithTabs['tabs'] = item.data.tabs;
+            widgetDefaults =
+                itemTabs.find((tabItem) => tabItem?.id === currentWidgetTabId)?.params || {};
+        } else {
+            widgetDefaults = item.defaults || {};
+        }
+
         const getMergedParams = (params: StringParams, actionParams?: StringParams) =>
             mergeParamsWithAliases({aliases, namespace, params: params || {}, actionParams});
         const itemIgnores = mapItemsIgnores[id];
         const affectingItemsWithDefaults = itemsWithDefaultsByNamespace[namespace].filter(
             (itemWithDefaults) => !itemIgnores.includes(itemWithDefaults.id),
         );
+
         let itemParams: StringParams = Object.assign(
             {},
             getMergedParams(defaultGlobalParams),
-            // Стартовые дефолтные параметры
+            // default parameters to begin with
             affectingItemsWithDefaults.reduceRight(
                 (defaultParams: StringParams, itemWithDefaults) => {
                     return {
@@ -139,7 +155,7 @@ export function getItemsParams({
 
         return {
             ...itemsParams,
-            [id]: itemParams,
+            [id]: {...widgetDefaults, ...itemParams},
         };
     }, {});
 }
