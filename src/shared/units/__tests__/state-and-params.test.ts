@@ -275,6 +275,7 @@ const stateAndParamsForAP1 = {
         Q8: {
             params: {
                 Country: '',
+                Year: '',
                 _ap_Country: 'Italy',
                 'd079937f-6bc4-4133-9171-40092bb20d6f': '',
             },
@@ -303,7 +304,12 @@ const stateAndParamsForAP2 = {
             state: {},
         },
         Q8: {
-            params: {Country: 'Belgium', 'd079937f-6bc4-4133-9171-40092bb20d6f': 'Belgium'},
+            params: {
+                Country: 'Belgium',
+                Year: '',
+                _ap_Country: '',
+                'd079937f-6bc4-4133-9171-40092bb20d6f': 'Belgium',
+            },
             state: {},
         },
         al: {
@@ -330,6 +336,8 @@ const stateAndParamsForAP3 = {
         Q8: {
             params: {
                 Country: '',
+                Year: '',
+                _ap_Country: '',
                 'd079937f-6bc4-4133-9171-40092bb20d6f': '',
             },
             state: {},
@@ -361,6 +369,7 @@ const stateAndParamsForAP4 = {
         Q8: {
             params: {
                 Country: '',
+                Year: '',
                 _ap_Country: '',
                 'd079937f-6bc4-4133-9171-40092bb20d6f': '',
             },
