@@ -28,6 +28,7 @@ import {
     transformParamsToActionParams,
     isItemWithTabs,
     resolveItemInnerId,
+    getDefaultsActionParamsToClear,
 } from './helpers';
 
 export interface GetItemsParamsArg {
@@ -148,6 +149,16 @@ export function getItemsParams({
                 prevQueueDataWithActionParams = hasActionParam(queueDataItems)
                     ? pickActionParamsFromParams(data.params, true)
                     : {};
+            }
+
+            const clearActionParams = getDefaultsActionParamsToClear({
+                widgetDefaults,
+                queueDataItems,
+                itemParams,
+            });
+
+            if (clearActionParams.length) {
+                widgetDefaults = omit(widgetDefaults, clearActionParams);
             }
 
             itemParams = Object.assign(itemParams, queueDataItems);

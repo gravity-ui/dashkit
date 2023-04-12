@@ -372,6 +372,106 @@
                 ]
             },
             "connections": []
+        },
+        {
+            "salt": "0.09852189776033704",
+            "counter": 14,
+            "items": [
+                {
+                    "id": "al",
+                    "data": {
+                        "tabs": [
+                            {
+                                "id": "Jn",
+                                "title": "Заголовок 1",
+                                "params": {},
+                                "chartId": "h8hfbffyo3dg8",
+                                "isDefault": true,
+                                "autoHeight": false
+                            }
+                        ],
+                        "hideTitle": true
+                    },
+                    "type": "widget",
+                    "namespace": "default"
+                },
+                {
+                    "id": "Q8",
+                    "data": {
+                        "tabs": [
+                            {
+                                "id": "K0",
+                                "title": "filtering_charts_table (charteditor)",
+                                "params": {
+                                    "Year": "",
+                                    "Country": "",
+                                    "_ap_Country": "Belgium"
+                                },
+                                "chartId": "245z37u4ylvet",
+                                "isDefault": true,
+                                "autoHeight": false
+                            }
+                        ],
+                        "hideTitle": false
+                    },
+                    "type": "widget",
+                    "namespace": "default"
+                },
+                {
+                    "id": "L5",
+                    "data": {
+                        "title": "Country",
+                        "source": {
+                            "datasetId": "gyrnhj945gum9",
+                            "fieldType": "string",
+                            "showTitle": true,
+                            "innerTitle": "Inner title",
+                            "elementType": "select",
+                            "datasetFieldId": "d079937f-6bc4-4133-9171-40092bb20d6f",
+                            "showInnerTitle": false,
+                            "datasetFieldType": "DIMENSION"
+                        },
+                        "sourceType": "dataset"
+                    },
+                    "type": "control",
+                    "defaults": {
+                        "d079937f-6bc4-4133-9171-40092bb20d6f": ["Italy", "France"]
+                    },
+                    "namespace": "default"
+                }
+            ],
+            "layout": [
+                {
+                    "h": 4,
+                    "i": "al",
+                    "w": 4,
+                    "x": 8,
+                    "y": 0
+                },
+                {
+                    "h": 16,
+                    "i": "Q8",
+                    "w": 12,
+                    "x": 12,
+                    "y": 0
+                },
+                {
+                    "h": 2,
+                    "i": "L5",
+                    "w": 8,
+                    "x": 0,
+                    "y": 2
+                }
+            ],
+            "aliases": {
+                "default": [
+                    [
+                        "d079937f-6bc4-4133-9171-40092bb20d6f",
+                        "Country"
+                    ]
+                ]
+            },
+            "connections": []
         }
     ]
 }

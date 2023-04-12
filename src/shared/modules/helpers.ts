@@ -3,6 +3,7 @@ import get from 'lodash/get';
 import invert from 'lodash/invert';
 import isEmpty from 'lodash/isEmpty';
 import pick from 'lodash/pick';
+import intersection from 'lodash/intersection';
 import {META_KEY, CURRENT_VERSION, ACTION_PARAM_PREFIX} from '../constants';
 import {
     PluginBase,
@@ -360,4 +361,65 @@ export function hasActionParams(stateAndParams: ItemStateAndParams) {
     }
 
     return hasActionParam(stateAndParams.params);
+}
+
+/**
+ * Collect array of actionParams keys with prefix (_ap_) that must be cleared from widget defaults
+ * @param widgetDefaults
+ * @param queueDataItems
+ * @param itemParams
+ */
+export function getDefaultsActionParamsToClear({
+    widgetDefaults,
+    queueDataItems,
+    itemParams,
+}: {
+    widgetDefaults: StringParams;
+    queueDataItems: StringParams;
+    itemParams: StringParams;
+}) {
+    const widgetDefaultsWithActionParams = hasActionParam(widgetDefaults)
+        ? pickActionParamsFromParams(widgetDefaults)
+        : null;
+
+    if (!widgetDefaultsWithActionParams) {
+        return [];
+    }
+
+    // clear default actionParams if some param with the same name without prefix affected on current widget
+    // ex.: queueDataItems contain {Year: 1970} and default actionParams contain {_ap_Year: 2000}
+    const actionParamKeyToClear: string[] = intersection(
+        Object.keys(queueDataItems),
+        Object.keys(widgetDefaultsWithActionParams),
+    );
+
+    // if itemParams contain {Year: 1970} and actionParam has default widget value {_ap_Year: 2000}
+    // than clear such actionParam
+    const keysForCheckDefaultAvailableValues = intersection(
+        Object.keys(itemParams),
+        Object.keys(widgetDefaultsWithActionParams),
+    );
+
+    keysForCheckDefaultAvailableValues.forEach((key) => {
+        const normalizedItemVal: string[] = Array.isArray(itemParams[key])
+            ? (itemParams[key] as string[])
+            : ([itemParams[key]] as string[]);
+
+        const normalizedDefaultVal: string[] = Array.isArray(widgetDefaultsWithActionParams[key])
+            ? (widgetDefaultsWithActionParams[key] as string[])
+            : ([widgetDefaultsWithActionParams[key]] as string[]);
+
+        // check that all values in actionParams defaults are contained in itemParams by same key
+        // else need to clear
+        for (let i = 0; i < normalizedDefaultVal.length; i++) {
+            if (!normalizedDefaultVal[i] || !normalizedItemVal.includes(normalizedDefaultVal[i])) {
+                actionParamKeyToClear.push(key);
+                continue;
+            }
+        }
+    });
+
+    return actionParamKeyToClear.length
+        ? actionParamKeyToClear.map((key) => `${ACTION_PARAM_PREFIX}${key}`)
+        : [];
 }

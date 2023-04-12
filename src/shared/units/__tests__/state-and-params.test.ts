@@ -307,7 +307,6 @@ const stateAndParamsForAP2 = {
             params: {
                 Country: 'Belgium',
                 Year: '',
-                _ap_Country: '',
                 'd079937f-6bc4-4133-9171-40092bb20d6f': 'Belgium',
             },
             state: {},
@@ -337,7 +336,6 @@ const stateAndParamsForAP3 = {
             params: {
                 Country: '',
                 Year: '',
-                _ap_Country: '',
                 'd079937f-6bc4-4133-9171-40092bb20d6f': '',
             },
             state: {},
@@ -379,6 +377,38 @@ const stateAndParamsForAP4 = {
             params: {
                 Country: '',
                 'd079937f-6bc4-4133-9171-40092bb20d6f': '',
+            },
+            state: {},
+        },
+    },
+};
+
+const stateAndParamsForAP5 = {
+    in: {
+        Q8: {params: {}},
+        L5: {params: {}},
+        __meta__: {queue: [], version: 2},
+    },
+    out: {
+        L5: {
+            params: {
+                Country: ['Italy', 'France'],
+                'd079937f-6bc4-4133-9171-40092bb20d6f': ['Italy', 'France'],
+            },
+            state: {},
+        },
+        Q8: {
+            params: {
+                Country: ['Italy', 'France'],
+                Year: '',
+                'd079937f-6bc4-4133-9171-40092bb20d6f': ['Italy', 'France'],
+            },
+            state: {},
+        },
+        al: {
+            params: {
+                Country: ['Italy', 'France'],
+                'd079937f-6bc4-4133-9171-40092bb20d6f': ['Italy', 'France'],
             },
             state: {},
         },
@@ -478,6 +508,19 @@ describe('getItemsStateAndParams actionParams variants check', () => {
 
         it('return stateAndParamsForAP4.out', () => {
             expect(resultItemsStateAndParams).toEqual(omit(stateAndParamsForAP4.out, META_KEY));
+        });
+    });
+
+    describe('action and params state 5', () => {
+        const resultItemsStateAndParams = getItemsStateAndParamsDL({
+            defaultGlobalParams: {},
+            globalParams: {},
+            config: configs[3],
+            itemsStateAndParams: stateAndParamsForAP5.in,
+        });
+
+        it('return stateAndParamsForAP5.out', () => {
+            expect(resultItemsStateAndParams).toEqual(omit(stateAndParamsForAP5.out, META_KEY));
         });
     });
 });
