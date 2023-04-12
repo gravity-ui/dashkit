@@ -1,4 +1,5 @@
 import {Plugin, PluginDefaultLayout, Settings} from '../typings';
+import type {ReactGridLayoutProps} from 'react-grid-layout';
 
 interface RegisterManagerDefaultLayout {
     x: number;
@@ -15,13 +16,6 @@ export interface RegisterManagerPlugin extends Omit<Plugin, 'defaultLayout'> {
     defaultLayout: RegisterManagerDefaultLayout & Plugin['defaultLayout'];
 }
 
-export type RegisterManagerGridLayout = {
-    margin: [number, number];
-    rowHeight: number;
-    cols: number;
-    containerPadding: [number, number];
-} & Settings['gridLayout'];
-
 export type RegisterManagerSettings = {theme: string} & Settings;
 
 export class RegisterManager {
@@ -34,7 +28,7 @@ export class RegisterManager {
         minW: 4,
         minH: 2,
     };
-    private _gridLayout: RegisterManagerGridLayout = {
+    private _gridLayout: ReactGridLayoutProps = {
         rowHeight: 18,
         cols: 36,
         margin: [2, 2],

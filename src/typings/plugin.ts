@@ -1,7 +1,8 @@
 import React from 'react';
 import {ContextProps, SettingsProps, WidgetLayout} from './common';
 import {StringParams, ConfigItem, ItemState, ItemStateAndParams, PluginBase} from '../shared';
-import {RegisterManagerGridLayout} from '../utils/register-manager';
+
+import type {ReactGridLayoutProps} from 'react-grid-layout';
 
 export interface PluginWidgetProps {
     id: string;
@@ -17,7 +18,7 @@ export interface PluginWidgetProps {
     settings: SettingsProps;
     context: ContextProps;
     layout: WidgetLayout[];
-    gridLayout: RegisterManagerGridLayout;
+    gridLayout: ReactGridLayoutProps;
     adjustWidgetLayout: (data: {
         widgetId: string;
         needSetDefault?: boolean;
