@@ -1,5 +1,13 @@
 # Changelog
 
+## [5.4.0](https://github.com/gravity-ui/dashkit/compare/v5.3.0...v5.4.0) (2023-04-13)
+
+
+### Features
+
+* add widget defaults ([#52](https://github.com/gravity-ui/dashkit/issues/52)) ([a6e512d](https://github.com/gravity-ui/dashkit/commit/a6e512d132e6c9f0fc93d63527f233656863831e))
+* clear default actionParams ([#55](https://github.com/gravity-ui/dashkit/issues/55)) ([4184b82](https://github.com/gravity-ui/dashkit/commit/4184b828228c6faae21a9c9731fee544f7dd5362))
+
 ## [5.3.0](https://github.com/gravity-ui/dashkit/compare/v5.2.0...v5.3.0) (2023-04-06)
 
 
