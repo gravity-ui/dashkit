@@ -367,16 +367,13 @@ export function hasActionParams(stateAndParams: ItemStateAndParams) {
  * Collect array of actionParams keys with prefix (_ap_) that must be cleared from widget defaults
  * @param defaultWidgetParams
  * @param queueWidgetParams
- * @param itemParams
  */
 export function getDefaultsActionParamsToClear({
     defaultWidgetParams,
     queueWidgetParams,
-    itemParams,
 }: {
     defaultWidgetParams: StringParams;
     queueWidgetParams: StringParams;
-    itemParams: StringParams;
 }) {
     const widgetDefaultsWithActionParams = hasActionParam(defaultWidgetParams)
         ? pickActionParamsFromParams(defaultWidgetParams)
@@ -392,32 +389,6 @@ export function getDefaultsActionParamsToClear({
         Object.keys(queueWidgetParams),
         Object.keys(widgetDefaultsWithActionParams),
     );
-
-    // if itemParams contain {Year: 1970} and actionParam has default widget value {_ap_Year: 2000}
-    // than clear such actionParam
-    const keysForCheckDefaultAvailableValues = intersection(
-        Object.keys(itemParams),
-        Object.keys(widgetDefaultsWithActionParams),
-    );
-
-    keysForCheckDefaultAvailableValues.forEach((key) => {
-        const normalizedItemVal: string[] = Array.isArray(itemParams[key])
-            ? (itemParams[key] as string[])
-            : ([itemParams[key]] as string[]);
-
-        const normalizedDefaultVal: string[] = Array.isArray(widgetDefaultsWithActionParams[key])
-            ? (widgetDefaultsWithActionParams[key] as string[])
-            : ([widgetDefaultsWithActionParams[key]] as string[]);
-
-        // check that all values in actionParams defaults are contained in itemParams by same key
-        // else need to clear
-        for (let i = 0; i < normalizedDefaultVal.length; i++) {
-            if (!normalizedDefaultVal[i] || !normalizedItemVal.includes(normalizedDefaultVal[i])) {
-                actionParamKeyToClear.push(key);
-                continue;
-            }
-        }
-    });
 
     return actionParamKeyToClear.length
         ? actionParamKeyToClear.map((key) => `${ACTION_PARAM_PREFIX}${key}`)

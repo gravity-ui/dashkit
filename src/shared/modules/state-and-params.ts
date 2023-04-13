@@ -154,7 +154,6 @@ export function getItemsParams({
             const clearActionParams = getDefaultsActionParamsToClear({
                 defaultWidgetParams,
                 queueWidgetParams: queueDataItems,
-                itemParams,
             });
 
             if (clearActionParams.length) {
