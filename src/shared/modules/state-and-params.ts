@@ -75,14 +75,14 @@ export function getItemsParams({
     return items.reduce((itemsParams: Record<string, StringParams>, item) => {
         const {id, namespace} = item;
 
-        let widgetDefaults: StringParams = {};
+        let defaultWidgetParams: StringParams = {};
         if (isItemWithTabs(item)) {
             const currentWidgetTabId = resolveItemInnerId({item, itemsStateAndParams});
             const itemTabs: ConfigItemDataWithTabs['tabs'] = item.data.tabs;
-            widgetDefaults =
+            defaultWidgetParams =
                 itemTabs.find((tabItem) => tabItem?.id === currentWidgetTabId)?.params || {};
         } else {
-            widgetDefaults = item.defaults || {};
+            defaultWidgetParams = item.defaults || {};
         }
 
         const getMergedParams = (params: StringParams, actionParams?: StringParams) =>
@@ -152,13 +152,13 @@ export function getItemsParams({
             }
 
             const clearActionParams = getDefaultsActionParamsToClear({
-                widgetDefaults,
-                queueDataItems,
+                defaultWidgetParams,
+                queueWidgetParams: queueDataItems,
                 itemParams,
             });
 
             if (clearActionParams.length) {
-                widgetDefaults = omit(widgetDefaults, clearActionParams);
+                defaultWidgetParams = omit(defaultWidgetParams, clearActionParams);
             }
 
             itemParams = Object.assign(itemParams, queueDataItems);
@@ -166,7 +166,7 @@ export function getItemsParams({
 
         return {
             ...itemsParams,
-            [id]: {...widgetDefaults, ...itemParams},
+            [id]: {...defaultWidgetParams, ...itemParams},
         };
     }, {});
 }

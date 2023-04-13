@@ -365,21 +365,21 @@ export function hasActionParams(stateAndParams: ItemStateAndParams) {
 
 /**
  * Collect array of actionParams keys with prefix (_ap_) that must be cleared from widget defaults
- * @param widgetDefaults
- * @param queueDataItems
+ * @param defaultWidgetParams
+ * @param queueWidgetParams
  * @param itemParams
  */
 export function getDefaultsActionParamsToClear({
-    widgetDefaults,
-    queueDataItems,
+    defaultWidgetParams,
+    queueWidgetParams,
     itemParams,
 }: {
-    widgetDefaults: StringParams;
-    queueDataItems: StringParams;
+    defaultWidgetParams: StringParams;
+    queueWidgetParams: StringParams;
     itemParams: StringParams;
 }) {
-    const widgetDefaultsWithActionParams = hasActionParam(widgetDefaults)
-        ? pickActionParamsFromParams(widgetDefaults)
+    const widgetDefaultsWithActionParams = hasActionParam(defaultWidgetParams)
+        ? pickActionParamsFromParams(defaultWidgetParams)
         : null;
 
     if (!widgetDefaultsWithActionParams) {
@@ -387,9 +387,9 @@ export function getDefaultsActionParamsToClear({
     }
 
     // clear default actionParams if some param with the same name without prefix affected on current widget
-    // ex.: queueDataItems contain {Year: 1970} and default actionParams contain {_ap_Year: 2000}
+    // ex.: queueWidgetParams contain {Year: 1970} and default actionParams contain {_ap_Year: 2000}
     const actionParamKeyToClear: string[] = intersection(
-        Object.keys(queueDataItems),
+        Object.keys(queueWidgetParams),
         Object.keys(widgetDefaultsWithActionParams),
     );
 
