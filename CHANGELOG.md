@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.5.0](https://github.com/gravity-ui/dashkit/compare/v5.4.0...v5.5.0) (2023-04-17)
+
+
+### Features
+
+* support all props from react-grid-layout ([#54](https://github.com/gravity-ui/dashkit/issues/54)) ([7e3d316](https://github.com/gravity-ui/dashkit/commit/7e3d316a4cc0fbbf24a23f52408c4fa10f69a4b5))
+
 ## [5.4.0](https://github.com/gravity-ui/dashkit/compare/v5.3.0...v5.4.0) (2023-04-13)
 
 
