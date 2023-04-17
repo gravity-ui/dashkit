@@ -1,13 +1,10 @@
 import {OverlayCustomControlItem} from '../components/OverlayControls/OverlayControls';
 import {MenuItems} from '../constants';
 
+import type {ReactGridLayoutProps} from 'react-grid-layout';
+
 export interface Settings {
-    gridLayout?: {
-        margin?: [number, number];
-        rowHeight?: number;
-        cols?: number;
-        containerPadding?: [number, number];
-    };
+    gridLayout?: ReactGridLayoutProps;
     theme?: string;
     isMobile?: boolean;
     menu?: Array<MenuItem>;
