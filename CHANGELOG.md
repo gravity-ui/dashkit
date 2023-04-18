@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.6.0](https://github.com/gravity-ui/dashkit/compare/v5.5.0...v5.6.0) (2023-04-18)
+
+
+### Features
+
+* add item state to overlay dropdown menu action handler ([#57](https://github.com/gravity-ui/dashkit/issues/57)) ([78b13fa](https://github.com/gravity-ui/dashkit/commit/78b13fa4107e94abd93c6e469a36840b61b6a10a))
+
 ## [5.5.0](https://github.com/gravity-ui/dashkit/compare/v5.4.0...v5.5.0) (2023-04-17)
 
 
