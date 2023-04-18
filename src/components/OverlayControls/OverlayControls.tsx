@@ -14,7 +14,7 @@ import {
     MenuItemProps,
 } from '@gravity-ui/uikit';
 import {COPIED_WIDGET_STORE_KEY, MenuItems} from '../../constants';
-import {ConfigLayout, ConfigItem, PluginBase, StringParams, Config} from '../../shared';
+import {ConfigLayout, ConfigItem, PluginBase, StringParams, Config, ItemState} from '../../shared';
 import type {RegisterManager} from '../../utils/register-manager';
 import {DotsIcon} from '../../icons/DotsIcon';
 import {CogIcon} from '../../icons/CogIcon';
@@ -48,7 +48,7 @@ export interface OverlayCustomControlItem {
     title?: string;
     icon?: MenuItemProps['icon'];
     iconSize?: number | string;
-    handler?: (item: ConfigItem, params: StringParams) => void;
+    handler?: (item: ConfigItem, params: StringParams, state: ItemState) => void;
     visible?: (item: ConfigItem) => boolean;
     className?: string;
     qa?: string;
@@ -69,6 +69,7 @@ interface OverlayControlsProps extends OverlayControlsDefaultProps {
 type DashKitCtx = React.Context<{
     registerManager: RegisterManager;
     itemsParams: Record<string, StringParams>;
+    itemsState: Record<string, ItemState>;
     editItem: (item: ConfigItem) => void;
     removeItem: (id: string) => void;
     config: Config;
@@ -209,10 +210,11 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
     }
     private renderDropdownMenu() {
         const {view, size} = this.props;
-        const {registerManager, itemsParams} = this.context;
+        const {registerManager, itemsParams, itemsState} = this.context;
 
         const configItem = this.props.configItem;
         const itemParams = itemsParams[configItem.id];
+        const itemState = itemsState[configItem.id];
 
         let menu = registerManager.settings.menu as any;
         if (!menu.length) {
@@ -236,7 +238,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
 
                   const itemAction =
                       typeof itemHandler === 'function'
-                          ? () => itemHandler(configItem, itemParams)
+                          ? () => itemHandler(configItem, itemParams, itemState)
                           : this.getDropDownMenuItemConfig(item.id)?.action || (() => {});
 
                   return {
