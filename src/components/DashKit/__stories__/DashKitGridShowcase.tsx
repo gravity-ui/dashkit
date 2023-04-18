@@ -9,7 +9,7 @@ import {DeleteIcon} from '../../../icons/DeleteIcon';
 import {WarningIcon} from '../../../icons/WarningIcon';
 import i18n from '../../../i18n';
 import {getConfig, gridItemsShowcase, gridLayoutShowcase, makeid} from './utils';
-import Demo from './Demo';
+import {Demo, DemoRow} from './Demo';
 
 import './DashKitGridShowcase.scss';
 
@@ -89,9 +89,9 @@ export class DashKitGridShowcase extends React.Component<{}, DashKitDemoState> {
 
         return (
             <Demo title="DashKit">
-                <Demo.Row title="Режим редактирования"></Demo.Row>
-                <Demo.Row title="Изменения из DashKit">{this.state.lastAction}</Demo.Row>
-                <Demo.Row title="Компонент">
+                <DemoRow title="Режим редактирования"></DemoRow>
+                <DemoRow title="Изменения из DashKit">{this.state.lastAction}</DemoRow>
+                <DemoRow title="Компонент">
                     <div
                         className={b('out')}
                         draggable={true}
@@ -113,11 +113,8 @@ export class DashKitGridShowcase extends React.Component<{}, DashKitDemoState> {
                         settings={this.state.settings}
                         ref={this.dashKitRef}
                         overlayControls={controls}
-                        _EXPERIMENTAL_preventDoubleCompact={
-                            this.state._EXPERIMENTAL_preventDoubleCompact
-                        }
                     />
-                </Demo.Row>
+                </DemoRow>
             </Demo>
         );
     }
