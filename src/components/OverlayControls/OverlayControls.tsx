@@ -61,6 +61,7 @@ interface OverlayControlsDefaultProps {
 }
 
 interface OverlayControlsProps extends OverlayControlsDefaultProps {
+    isDragging?: boolean;
     configItem: ConfigItem;
     items?: OverlayControlItem[];
     overlayControls?: Record<string, OverlayControlItem[]>;
@@ -160,9 +161,9 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         );
         const controls = hasCustomOverlayLeftControls
             ? customLeftControls.map(
-                  (item: OverlayControlItem, index: number, items: OverlayControlItem[]) =>
-                      this.renderControlsItem(item, index, items.length + 1),
-              )
+                (item: OverlayControlItem, index: number, items: OverlayControlItem[]) =>
+                    this.renderControlsItem(item, index, items.length + 1),
+            )
             : defaultControl;
 
         const menu = this.renderMenu();
@@ -226,29 +227,29 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         let items = isDefaultMenu
             ? (menu || []).map((name: string) => this.getDropDownMenuItemConfig(name, true))
             : menu.map((item: OverlayCustomControlItem) => {
-                  if (typeof item === 'string') {
-                      return null;
-                  }
-                  // custom menu dropdown item filter
-                  if (item.visible && !item.visible(configItem)) {
-                      return null;
-                  }
+                if (typeof item === 'string') {
+                    return null;
+                }
+                // custom menu dropdown item filter
+                if (item.visible && !item.visible(configItem)) {
+                    return null;
+                }
 
-                  const itemHandler = item.handler;
+                const itemHandler = item.handler;
 
-                  const itemAction =
-                      typeof itemHandler === 'function'
-                          ? () => itemHandler(configItem, itemParams, itemState)
-                          : this.getDropDownMenuItemConfig(item.id)?.action || (() => {});
+                const itemAction =
+                    typeof itemHandler === 'function'
+                        ? () => itemHandler(configItem, itemParams, itemState)
+                        : this.getDropDownMenuItemConfig(item.id)?.action || (() => {});
 
-                  return {
-                      text: item.title || i18n(item.id),
-                      icon: item.icon,
-                      action: itemAction,
-                      className: item.className,
-                      qa: item.qa,
-                  };
-              });
+                return {
+                    text: item.title || i18n(item.id),
+                    icon: item.icon,
+                    action: itemAction,
+                    className: item.className,
+                    qa: item.qa,
+                };
+            });
         items = items.filter(Boolean);
 
         return (
@@ -320,6 +321,11 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         this.context.editItem(this.props.configItem);
     };
     private onRemoveItem = () => {
+        // Otherwise it will crush an app dute to the issue in react-grid-layout
+        // https://github.com/react-grid-layout/react-grid-layout/issues/1836
+        if (this.props.isDragging) {
+            return;
+        }
         const {id} = this.props.configItem;
         this.context.removeItem(id);
     };
