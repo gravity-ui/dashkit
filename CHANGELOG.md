@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.6.1](https://github.com/gravity-ui/dashkit/compare/v5.6.0...v5.6.1) (2023-06-15)
+
+
+### Bug Fixes
+
+* **react-grid-layout:** fixed react-grid-layout issue ([#59](https://github.com/gravity-ui/dashkit/issues/59)) ([bdb3f87](https://github.com/gravity-ui/dashkit/commit/bdb3f87731cf82b8267c913bb0010c65f7014018))
+
 ## [5.6.0](https://github.com/gravity-ui/dashkit/compare/v5.5.0...v5.6.0) (2023-04-18)
 
 
