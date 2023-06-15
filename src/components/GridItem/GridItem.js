@@ -38,7 +38,7 @@ class GridItem extends React.PureComponent {
     static contextType = DashKitContext;
 
     renderOverlay() {
-        const {overlayControls} = this.props;
+        const {overlayControls, isDragging} = this.props;
         const {editMode} = this.context;
 
         if (!editMode || this.props.item.data._editActive) {
@@ -54,6 +54,7 @@ class GridItem extends React.PureComponent {
                 <OverlayControls
                     configItem={item}
                     items={controls}
+                    isDragging={isDragging}
                     overlayControls={overlayControls}
                 />
             </React.Fragment>
