@@ -61,7 +61,6 @@ interface OverlayControlsDefaultProps {
 }
 
 interface OverlayControlsProps extends OverlayControlsDefaultProps {
-    isDragging?: boolean;
     configItem: ConfigItem;
     items?: OverlayControlItem[];
     overlayControls?: Record<string, OverlayControlItem[]>;
@@ -321,11 +320,6 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         this.context.editItem(this.props.configItem);
     };
     private onRemoveItem = () => {
-        // Otherwise it will crush an app dute to the issue in react-grid-layout
-        // https://github.com/react-grid-layout/react-grid-layout/issues/1836
-        if (this.props.isDragging) {
-            return;
-        }
         const {id} = this.props.configItem;
         this.context.removeItem(id);
     };
