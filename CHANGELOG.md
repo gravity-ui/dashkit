@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.6.2](https://github.com/gravity-ui/dashkit/compare/v5.6.1...v5.6.2) (2023-06-16)
+
+
+### Bug Fixes
+
+* **husky:** commit msg ([#62](https://github.com/gravity-ui/dashkit/issues/62)) ([3948520](https://github.com/gravity-ui/dashkit/commit/39485207bbffe26eff3302d2087631fb001978c7))
+
 ## [5.6.1](https://github.com/gravity-ui/dashkit/compare/v5.6.0...v5.6.1) (2023-06-15)
 
 
