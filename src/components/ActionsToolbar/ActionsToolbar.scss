@@ -1,0 +1,33 @@
+.actions-toolbar {
+    display: flex;
+    position: fixed;
+
+    width: fit-content;
+    padding: 8px;
+
+    border-radius: var(--yc-border-radius-l);
+    background-color: var(--yc-color-base-background);
+    box-shadow: 0px 5px 6px 0px var(--yc-color-sfx-shadow);
+
+    &__button {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+
+        width: 98px;
+        height: 68px;
+
+        cursor: pointer;
+
+        border-radius: var(--yc-border-radius-s);
+    }
+
+    &__button:hover {
+        background-color: var(--yc-color-base-generic);
+    }
+
+    &__icon {
+        margin-bottom: 10px;
+    }
+}
