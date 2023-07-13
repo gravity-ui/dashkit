@@ -10,7 +10,7 @@ export interface Settings {
     menu?: Array<MenuItem>;
 }
 
-export type MenuItem = typeof MenuItems[keyof typeof MenuItems] | OverlayCustomControlItem;
+export type MenuItem = (typeof MenuItems)[keyof typeof MenuItems] | OverlayCustomControlItem;
 
 export interface SettingsProps {
     autoupdateInterval: number;

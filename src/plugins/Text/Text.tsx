@@ -52,6 +52,7 @@ export class PluginText extends React.PureComponent<PluginTextProps, PluginTextS
     private _isUnmounted = false;
 
     componentDidMount() {
+        this._isUnmounted = false;
         this.getMarkdown();
     }
 
@@ -121,6 +122,7 @@ export class PluginText extends React.PureComponent<PluginTextProps, PluginTextS
             return;
         }
         this.setState({status: LoadStatus.Pending});
+
         try {
             let htmlText = '';
             if (this.state.text && this.state.text.trim()) {
