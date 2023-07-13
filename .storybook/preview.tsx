@@ -1,7 +1,6 @@
 import React from 'react';
 import {MINIMAL_VIEWPORTS} from '@storybook/addon-viewport';
 import type {Decorator} from '@storybook/react';
-import {themes} from './theme';
 import {withMobile} from './decorators/withMobile';
 import {withLang} from './decorators/withLang';
 import {ThemeProvider, MobileProvider, configure, Lang} from '@gravity-ui/uikit';
@@ -27,10 +26,6 @@ const withContextProvider: Decorator = (Story, context) => {
 export const decorators = [withMobile, withLang, withContextProvider];
 
 export const parameters = {
-    docs: {
-        theme: themes.light,
-        // container: DocsDecorator,
-    },
     jsx: {showFunctions: true}, // To show functions in sources
     viewport: {
         viewports: MINIMAL_VIEWPORTS,
