@@ -1,6 +1,6 @@
 import {create} from '@storybook/theming';
 
-export const CloudTheme = create({
+export const CloudThemeLight = create({
     base: 'light',
 
     colorPrimary: '#027bf3',
@@ -18,6 +18,7 @@ export const CloudTheme = create({
     // Toolbar default and active colors
     barTextColor: 'silver',
     barSelectedColor: '#027bf3',
+    // barBg: '#027bf3',
 
     // Form colors
     inputBg: 'white',
@@ -25,7 +26,16 @@ export const CloudTheme = create({
     inputTextColor: 'black',
     inputBorderRadius: 4,
 
-    brandUrl: 'https://github.com/gravity-ui/dashkit',
-    brandTitle: `<div style="font-size: 18px; color: #027bf3; font-weight: 600; margin-top: -6px; margin-bottom: 2px;">DashKit</div>
-                <div style="font-size: 14px;color: #7d7d7d;font-weight: 400;">Dashkit Component</div>`,
+    brandUrl: 'https://github.com/gravity-ui/chartkit',
+    brandTitle: `<div style="font-size: 18px; color: #027bf3; font-weight: 600; margin-top: -6px; margin-bottom: 2px;">ChartKit</div>
+                <div style="font-size: 14px;color: #7d7d7d;font-weight: 400;">ChartKit Plugins</div>`,
 });
+
+export const CloudThemeDark = create({
+    base: 'dark',
+});
+
+export const themes = {
+    light: CloudThemeLight,
+    dark: CloudThemeDark,
+};
