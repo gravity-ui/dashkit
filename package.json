@@ -30,7 +30,7 @@
     "build": "gulp",
     "start": "storybook dev -p 7120",
     "typecheck": "tsc --noEmit",
-    "build-storybook": "env TS_NODE_PROJECT=.storybook/tsconfig.json build-storybook -c .storybook -o storybook-static",
+    "build-storybook": "sb build -c .storybook -o storybook-static",
     "prepare": "husky install",
     "prepublishOnly": "npm run lint && npm run test && npm run build"
   },
@@ -92,6 +92,7 @@
     "storybook": "^7.0.18",
     "style-loader": "^3.3.3",
     "stylelint": "^14.6.0",
+    "terser-webpack-plugin": "^4.2.3",
     "ts-jest": "^26.5.3",
     "typescript": "^4.9.5"
   },
