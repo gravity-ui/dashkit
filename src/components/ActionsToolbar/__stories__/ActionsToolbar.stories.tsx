@@ -1,16 +1,16 @@
 import React from 'react';
 import {noop} from 'lodash';
-import cn from 'bem-cn-lite';
+import block from 'bem-cn-lite';
 
 import {Meta, Story} from '@storybook/react';
-import {CogIcon} from '../../../icons/CogIcon';
+import {Megaphone} from '@gravity-ui/icons';
 
 import {ActionsToolbar, ActionsToolbarProps} from '../ActionsToolbar';
 
 import '../ActionsToolbar.scss';
 import './ActionsToolbarStory.scss';
 
-const b = cn('actions-toolbar-story');
+const b = block('actions-toolbar-story');
 
 export default {
     title: 'Components/ActionsToolbar',
@@ -18,22 +18,22 @@ export default {
     args: {
         controls: [
             {
-                icon: CogIcon,
+                icon: Megaphone,
                 text: 'Button 1',
                 handler: noop(),
             },
             {
-                icon: CogIcon,
+                icon: Megaphone,
                 text: 'Button 2',
                 handler: noop(),
             },
             {
-                icon: CogIcon,
+                icon: Megaphone,
                 text: 'Button 3',
                 handler: noop(),
             },
             {
-                icon: CogIcon,
+                icon: Megaphone,
                 text: 'Button 4',
                 handler: noop(),
             },

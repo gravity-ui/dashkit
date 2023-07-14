@@ -1,11 +1,11 @@
 import React from 'react';
-import cn from 'bem-cn-lite';
+import block from 'bem-cn-lite';
 
 import {Icon, Text, IconProps} from '@gravity-ui/uikit';
 
 import './ActionsToolbar.scss';
 
-const b = cn('actions-toolbar');
+const b = block('actions-toolbar');
 
 export interface ActionsToolbarProps {
     controls: ActionsToolbarButton[];
