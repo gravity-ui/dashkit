@@ -6,8 +6,8 @@ $position-padding: 7px;
 
     &__default-controls {
         display: flex;
-        background: var(--yc-color-base-generic-ultralight);
-        border-radius: var(--yc-border-radius-m);
+        background: var(--g-color-base-generic-ultralight);
+        border-radius: var(--g-border-radius-m);
     }
 
     &_position {
@@ -30,6 +30,6 @@ $position-padding: 7px;
     }
 
     &__item_danger {
-        color: var(--yc-color-text-danger);
+        color: var(--g-color-text-danger);
     }
 }
