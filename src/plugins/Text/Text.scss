@@ -1,6 +1,6 @@
 .dashkit-plugin-text {
-    --rc-loader-active-color: var(--yc-color-base-special);
-    --rc-loader-off-color: var(--yc-color-base-selection-hover);
+    --rc-loader-active-color: var(--g-color-base-brand);
+    --rc-loader-off-color: var(--g-color-base-selection-hover);
 
     white-space: pre-wrap;
     overflow: auto;
@@ -22,7 +22,7 @@
     }
 
     &__error {
-        color: var(--yc-color-text-danger);
+        color: var(--g-color-text-danger);
     }
 
     &__loader {
