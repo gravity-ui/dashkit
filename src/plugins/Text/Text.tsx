@@ -1,14 +1,14 @@
 import React from 'react';
-import block from 'bem-cn-lite';
 import {Loader, Button} from '@gravity-ui/uikit';
 import i18n from '../../i18n';
+import {cn} from '../../utils/cn';
 import {PluginWidgetProps, Plugin} from '../../typings';
 import './Text.scss';
 
 // need to set markdown styles separately
 // for instance can use yfm-transform
 
-const b = block('dashkit-plugin-text');
+const b = cn('dashkit-plugin-text');
 
 enum LoadStatus {
     Pending = 'pending',

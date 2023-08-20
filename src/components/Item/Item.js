@@ -1,10 +1,10 @@
 import React from 'react';
-import block from 'bem-cn-lite';
 import PropTypes from 'prop-types';
 import {prepareItem} from '../../hocs/prepareItem';
+import {cn} from '../../utils/cn';
 import './Item.scss';
 
-const b = block('dashkit-item');
+const b = cn('dashkit-item');
 
 // TODO: getDerivedStateFromError и заглушка с ошибкой
 

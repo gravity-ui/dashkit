@@ -1,5 +1,5 @@
 import React from 'react';
-import block from 'bem-cn-lite';
+import {cn} from '../../utils/cn';
 import {PluginWidgetProps, Plugin} from '../../typings';
 import './Title.scss';
 
@@ -11,7 +11,7 @@ export interface PluginTitleProps extends PluginWidgetProps {
     } & PluginWidgetProps['data'];
 }
 
-const b = block('dashkit-plugin-title');
+const b = cn('dashkit-plugin-title');
 
 export class PluginTitle extends React.Component<PluginTitleProps> {
     render() {

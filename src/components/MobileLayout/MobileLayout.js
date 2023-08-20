@@ -1,13 +1,13 @@
 import React from 'react';
-import block from 'bem-cn-lite';
 
 import Item from '../Item/Item';
 import {DashKitContext} from '../../context/DashKitContext';
+import {cn} from '../../utils/cn';
 import {getSortedConfigItems} from './helpers';
 
 import './MobileLayout.scss';
 
-const b = block('dashkit-mobile-layout');
+const b = cn('dashkit-mobile-layout');
 
 export default class MobileLayout extends React.PureComponent {
     static contextType = DashKitContext;

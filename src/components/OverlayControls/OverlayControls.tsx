@@ -1,5 +1,4 @@
 import React from 'react';
-import block from 'bem-cn-lite';
 import i18n from '../../i18n';
 import noop from 'lodash/noop';
 
@@ -19,11 +18,12 @@ import type {RegisterManager} from '../../utils/register-manager';
 import {DotsIcon} from '../../icons/DotsIcon';
 import {CogIcon} from '../../icons/CogIcon';
 import {CloseIcon} from '../../icons/CloseIcon';
+import {cn} from '../../utils/cn';
 
 import './OverlayControls.scss';
 import {Settings} from '../../typings';
 
-const b = block('dashkit-overlay-controls');
+const b = cn('dashkit-overlay-controls');
 
 export enum OverlayControlsPosition {
     TopRight = 'top_right',

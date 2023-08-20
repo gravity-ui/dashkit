@@ -1,15 +1,15 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import block from 'bem-cn-lite';
 
 import Item from '../Item/Item';
 import {DashKitContext} from '../../context/DashKitContext';
+import {cn} from '../../utils/cn';
 
 import './GridItem.scss';
 
 import OverlayControls from '../OverlayControls/OverlayControls';
 
-const b = block('dashkit-grid-item');
+const b = cn('dashkit-grid-item');
 
 class GridItem extends React.PureComponent {
     static propTypes = {

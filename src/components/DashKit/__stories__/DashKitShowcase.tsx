@@ -1,5 +1,4 @@
 import React from 'react';
-import block from 'bem-cn-lite';
 import {Button, Icon} from '@gravity-ui/uikit';
 import {DashKit, DashKitProps, MenuItems, ConfigItem} from '../../..';
 import {TickIcon} from '../../../icons/TickIcon';
@@ -8,11 +7,12 @@ import {CopyIcon} from '../../../icons/CopyIcon';
 import {DeleteIcon} from '../../../icons/DeleteIcon';
 import {WarningIcon} from '../../../icons/WarningIcon';
 import i18n from '../../../i18n';
+import {cn} from '../../../utils/cn';
 import {getConfig, makeid, titleId} from './utils';
 import {Demo, DemoRow} from './Demo';
 import './DashKitShowcase.scss';
 
-const b = block('stories-dashkit-showcase');
+const b = cn('stories-dashkit-showcase');
 
 type DashKitDemoState = {
     editMode: boolean;

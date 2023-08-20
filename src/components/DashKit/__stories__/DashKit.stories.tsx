@@ -1,5 +1,5 @@
 import React from 'react';
-import block from 'bem-cn-lite';
+import {cn} from '../../../utils/cn';
 import {Meta, Story} from '@storybook/react';
 import {DashKit, DashKitProps} from '../DashKit';
 import pluginTitle from '../../../plugins/Title/Title';
@@ -8,7 +8,7 @@ import {DashKitShowcase} from './DashKitShowcase';
 import {getConfig} from './utils';
 import './DashKit.stories.scss';
 
-const b = block('stories-dashkit');
+const b = cn('stories-dashkit');
 
 // window.initialized helps to prevent registration of a plugin that is already registered
 
