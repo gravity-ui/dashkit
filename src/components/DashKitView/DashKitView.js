@@ -1,14 +1,14 @@
 import React from 'react';
-import block from 'bem-cn-lite';
 import {DashKitContext} from '../../context/DashKitContext';
 import GridLayout from '../GridLayout/GridLayout';
 import MobileLayout from '../MobileLayout/MobileLayout';
 import {withContext} from '../../hocs/withContext';
 import {useCalcPropsLayout} from '../../hooks/useCalcLayout';
+import {cn} from '../../utils/cn';
 
 import './DashKitView.scss';
 
-const b = block('dashkit');
+const b = cn('dashkit');
 
 function DashKitView(props) {
     const context = React.useContext(DashKitContext);

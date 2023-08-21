@@ -1,5 +1,5 @@
 import React from 'react';
-import block from 'bem-cn-lite';
+import {cn} from '../../../utils/cn';
 import './Demo.scss';
 
 export type DemoProps = React.PropsWithChildren<{
@@ -10,7 +10,7 @@ export type DemoRowProps = React.PropsWithChildren<{
     title: string;
 }>;
 
-const b = block('dashkit-demo');
+const b = cn('dashkit-demo');
 
 export const Demo = ({title, children}: DemoProps) => {
     return (
