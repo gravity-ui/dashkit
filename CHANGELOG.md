@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.1.0](https://github.com/gravity-ui/dashkit/compare/v6.0.0...v6.1.0) (2023-08-25)
+
+
+### Features
+
+* migrate to @bem-react/classname ([#79](https://github.com/gravity-ui/dashkit/issues/79)) ([bdfca24](https://github.com/gravity-ui/dashkit/commit/bdfca24fbb3359dbdc373314da9ab2992bacce7f))
+
 ## [6.0.0](https://github.com/gravity-ui/dashkit/compare/v5.6.2...v6.0.0) (2023-07-17)
 
 
