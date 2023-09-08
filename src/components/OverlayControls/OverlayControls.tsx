@@ -11,6 +11,7 @@ import {
     ButtonSize,
     IconProps,
     MenuItemProps,
+    DropdownMenuItem,
 } from '@gravity-ui/uikit';
 import {COPIED_WIDGET_STORE_KEY, MenuItems} from '../../constants';
 import {ConfigLayout, ConfigItem, PluginBase, StringParams, Config, ItemState} from '../../shared';
@@ -114,18 +115,23 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
             </Button>
         );
     };
-    private getDropDownMenuItemConfig(menuName: string, isDefaultMenu?: boolean) {
+    private getDropDownMenuItemConfig(
+        menuName: string,
+        isDefaultMenu?: boolean,
+    ): DropdownMenuItem | null {
         switch (menuName) {
             case MenuItems.Copy: {
                 return {
                     action: this.onCopyItem,
                     text: i18n('label_copy'),
+                    qa: 'dashkit-overlay-control-default-menu-copy',
                 };
             }
             case MenuItems.Delete: {
                 return {
                     action: this.onRemoveItem,
                     text: i18n('label_delete'),
+                    qa: 'dashkit-overlay-control-default-menu-delete',
                 };
             }
             case MenuItems.Settings: {
@@ -136,6 +142,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                 return {
                     action: this.onEditItem,
                     text: i18n('label_settings'),
+                    qa: 'dashkit-overlay-control-menu-settings',
                 };
             }
         }
@@ -285,12 +292,12 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                     if (!item?.id) {
                         return item;
                     }
+
+                    const defaultHandler = (this.getDropDownMenuItemConfig(item.id)?.action ||
+                        (() => {})) as unknown as OverlayControlItem['handler'];
                     return {
                         ...item,
-                        handler:
-                            typeof item.handler === 'function'
-                                ? item.handler
-                                : this.getDropDownMenuItemConfig(item.id)?.action || (() => {}),
+                        handler: typeof item.handler === 'function' ? item.handler : defaultHandler,
                     };
                 }),
             );
