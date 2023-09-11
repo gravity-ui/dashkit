@@ -3,12 +3,12 @@ $position-padding: 7px;
 .dashkit-overlay-controls {
     position: absolute;
     display: flex;
+    background-color: var(--g-color-base-float);
+    border-radius: var(--g-border-radius-m);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
 
     &__default-controls {
         display: flex;
-        background-color: var(--g-color-base-float);
-        border-radius: var(--g-border-radius-m);
-        box-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
     }
 
     &_position {

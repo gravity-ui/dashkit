@@ -7,8 +7,9 @@ import './ActionPanel.scss';
 export type ActionPanelItem = {
     id: string;
     icon: React.ReactNode;
-    title: string | React.ReactNode;
+    title: string;
     onClick?: () => void;
+    className?: string;
 };
 
 type ActionPanelProps = {
@@ -23,12 +24,15 @@ export const ActionPanel = (props: ActionPanelProps) => {
             {props.items.map((item) => {
                 return (
                     <div
-                        className={b('item')}
+                        role="button"
+                        className={b('item', item.className)}
                         key={`dk-action-panel-${item.id}`}
                         onClick={item.onClick}
                     >
                         <div className={b('icon')}>{item.icon}</div>
-                        <div className={b('title')}>{item.title}</div>
+                        <div className={b('title')} title={item.title}>
+                            {item.title}
+                        </div>
                     </div>
                 );
             })}

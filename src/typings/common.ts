@@ -2,14 +2,14 @@ import {OverlayCustomControlItem} from '../components/OverlayControls/OverlayCon
 import {MenuItems} from '../constants';
 
 import type {ReactGridLayoutProps} from 'react-grid-layout';
-import {EditPanelPanelItem} from '../components/ActionPanel/ActionPanel';
+import {ActionPanelItem} from '../components/ActionPanel/ActionPanel';
 
 export interface Settings {
     gridLayout?: ReactGridLayoutProps;
     theme?: string;
     isMobile?: boolean;
     menu?: Array<MenuItem>;
-    actionPanel?: EditPanelPanelItem[];
+    actionPanel?: ActionPanelItem[];
 }
 
 export type MenuItem = (typeof MenuItems)[keyof typeof MenuItems] | OverlayCustomControlItem;
