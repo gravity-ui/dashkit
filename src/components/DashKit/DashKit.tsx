@@ -16,6 +16,7 @@ import {
 import {GlobalParams, Config, ConfigItem, ItemsStateAndParams} from '../../shared';
 
 import {OverlayControlItem} from '../OverlayControls/OverlayControls';
+import {EditPanelPanelItem} from '../ActionPanel/ActionPanel';
 
 interface DashKitGeneralProps {
     config: Config;
@@ -33,6 +34,7 @@ interface DashKitDefaultProps {
     overlayControls?: Record<string, OverlayControlItem[]>;
     noOverlay?: boolean;
     draggableHandleClassName?: string;
+    actionPanel?: EditPanelPanelItem[];
 }
 
 export interface DashKitProps extends DashKitGeneralProps, Partial<DashKitDefaultProps> {}

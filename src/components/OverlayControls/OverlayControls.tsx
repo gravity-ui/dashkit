@@ -81,7 +81,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
     static contextType = DashKitContext;
     static defaultProps: OverlayControlsDefaultProps = {
         position: OverlayControlsPosition.TopRight,
-        view: 'normal',
+        view: 'flat',
         size: 'm',
     };
     context!: React.ContextType<DashKitCtx>;

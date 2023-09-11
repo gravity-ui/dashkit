@@ -5,6 +5,7 @@ import MobileLayout from '../MobileLayout/MobileLayout';
 import {withContext} from '../../hocs/withContext';
 import {useCalcPropsLayout} from '../../hooks/useCalcLayout';
 import {cn} from '../../utils/cn';
+import {ActionPanel} from '../ActionPanel/ActionPanel';
 
 import './DashKitView.scss';
 
@@ -12,13 +13,16 @@ const b = cn('dashkit');
 
 function DashKitView(props) {
     const context = React.useContext(DashKitContext);
-    const {registerManager, forwardedMetaRef} = context;
+    const {registerManager, forwardedMetaRef, editMode} = context;
     return (
         <div className={b({theme: registerManager.settings.theme})}>
             {registerManager.settings.isMobile ? (
                 <MobileLayout />
             ) : (
                 <GridLayout ref={forwardedMetaRef} overlayControls={props.overlayControls} />
+            )}
+            {Boolean(props.actionPanel?.length && editMode) && (
+                <ActionPanel items={props.actionPanel} />
             )}
         </div>
     );
