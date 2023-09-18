@@ -16,7 +16,7 @@ import {
 import {GlobalParams, Config, ConfigItem, ItemsStateAndParams} from '../../shared';
 
 import {OverlayControlItem} from '../OverlayControls/OverlayControls';
-import {ActionPanelItem} from '../ActionPanel/ActionPanel';
+import type {ActionPanelItem} from '../ActionPanel/ActionPanel';
 
 interface DashKitGeneralProps {
     config: Config;

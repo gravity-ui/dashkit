@@ -12,13 +12,13 @@ export type ActionPanelItem = {
     className?: string;
 };
 
-type ActionPanelProps = {
+export type ActionPanelProps = {
     items: ActionPanelItem[];
 };
 
 const b = cn('dashkit-action-panel');
 
-export const ActionPanel = (props: ActionPanelProps) => {
+const ActionPanel = (props: ActionPanelProps) => {
     return (
         <div className={b()}>
             {props.items.map((item) => {
@@ -39,3 +39,5 @@ export const ActionPanel = (props: ActionPanelProps) => {
         </div>
     );
 };
+
+export default ActionPanel;

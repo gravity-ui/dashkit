@@ -5,7 +5,7 @@ import MobileLayout from '../MobileLayout/MobileLayout';
 import {withContext} from '../../hocs/withContext';
 import {useCalcPropsLayout} from '../../hooks/useCalcLayout';
 import {cn} from '../../utils/cn';
-import {ActionPanel} from '../ActionPanel/ActionPanel';
+import ActionPanel from '../ActionPanel/ActionPanel';
 
 import './DashKitView.scss';
 

@@ -2,7 +2,7 @@ import {OverlayCustomControlItem} from '../components/OverlayControls/OverlayCon
 import {MenuItems} from '../constants';
 
 import type {ReactGridLayoutProps} from 'react-grid-layout';
-import {ActionPanelItem} from '../components/ActionPanel/ActionPanel';
+import type {ActionPanelItem} from '../components/ActionPanel/ActionPanel';
 
 export interface Settings {
     gridLayout?: ReactGridLayoutProps;
