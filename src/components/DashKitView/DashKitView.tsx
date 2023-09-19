@@ -5,15 +5,20 @@ import MobileLayout from '../MobileLayout/MobileLayout';
 import {withContext} from '../../hocs/withContext';
 import {useCalcPropsLayout} from '../../hooks/useCalcLayout';
 import {cn} from '../../utils/cn';
-import ActionPanel from '../ActionPanel/ActionPanel';
+import type {RegisterManager} from '../../utils';
+import type {DashKitProps} from '../DashKit';
 
 import './DashKitView.scss';
 
 const b = cn('dashkit');
 
-function DashKitView(props) {
+type DashKitViewProps = DashKitProps & {
+    registerManager: RegisterManager;
+};
+
+function DashKitView(props: DashKitViewProps) {
     const context = React.useContext(DashKitContext);
-    const {registerManager, forwardedMetaRef, editMode} = context;
+    const {registerManager, forwardedMetaRef} = context;
     return (
         <div className={b({theme: registerManager.settings.theme})}>
             {registerManager.settings.isMobile ? (
@@ -21,16 +26,13 @@ function DashKitView(props) {
             ) : (
                 <GridLayout ref={forwardedMetaRef} overlayControls={props.overlayControls} />
             )}
-            {Boolean(props.actionPanel?.length && editMode) && (
-                <ActionPanel items={props.actionPanel} />
-            )}
         </div>
     );
 }
 
 const DashKitViewWithContext = withContext(DashKitView);
 
-const DashKitViewForwardedMeta = React.forwardRef((props, ref) => {
+const DashKitViewForwardedMeta = React.forwardRef((props: DashKitViewProps, ref) => {
     const layout = useCalcPropsLayout(props.config, props.registerManager);
     return <DashKitViewWithContext {...props} layout={layout} forwardedMetaRef={ref} />;
 });
