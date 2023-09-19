@@ -1,6 +1,6 @@
 import React from 'react';
 import {Button, Icon} from '@gravity-ui/uikit';
-import {DashKit, DashKitProps, MenuItems, ConfigItem} from '../../..';
+import {DashKit, DashKitProps, MenuItems, ConfigItem, ActionPanel} from '../../..';
 import {TickIcon} from '../../../icons/TickIcon';
 import {CogIcon} from '../../../icons/CogIcon';
 import {CopyIcon} from '../../../icons/CopyIcon';
@@ -174,6 +174,9 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                 </DemoRow>
                 <DemoRow title="Last action in DashKit">{this.state.lastAction}</DemoRow>
                 <DemoRow title="Component view">
+                    {Boolean(this.state.enableActionPanel) && (
+                        <ActionPanel items={this.getActionPanelItems()} />
+                    )}
                     <DashKit
                         config={this.state.config}
                         editMode={editMode}
@@ -185,9 +188,6 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                         settings={this.state.settings}
                         ref={this.dashKitRef}
                         overlayControls={controls}
-                        actionPanel={
-                            this.state.enableActionPanel ? this.getActionPanelItems() : undefined
-                        }
                     />
                 </DemoRow>
             </Demo>

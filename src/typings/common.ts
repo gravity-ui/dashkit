@@ -2,14 +2,12 @@ import {OverlayCustomControlItem} from '../components/OverlayControls/OverlayCon
 import {MenuItems} from '../constants';
 
 import type {ReactGridLayoutProps} from 'react-grid-layout';
-import type {ActionPanelItem} from '../components/ActionPanel/ActionPanel';
 
 export interface Settings {
     gridLayout?: ReactGridLayoutProps;
     theme?: string;
     isMobile?: boolean;
     menu?: Array<MenuItem>;
-    actionPanel?: ActionPanelItem[];
 }
 
 export type MenuItem = (typeof MenuItems)[keyof typeof MenuItems] | OverlayCustomControlItem;

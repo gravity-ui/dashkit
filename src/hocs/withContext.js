@@ -230,10 +230,7 @@ export function withContext(Component) {
 
         return (
             <DashKitContext.Provider value={contextValue}>
-                <Component
-                    overlayControls={props.overlayControls}
-                    actionPanel={props.actionPanel}
-                />
+                <Component overlayControls={props.overlayControls} />
             </DashKitContext.Provider>
         );
     };
