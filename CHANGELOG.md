@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.2.0](https://github.com/gravity-ui/dashkit/compare/v6.1.0...v6.2.0) (2023-09-20)
+
+
+### Features
+
+* **ActionPanel:** add ActionPanel in editMode ([#82](https://github.com/gravity-ui/dashkit/issues/82)) ([b8cfe51](https://github.com/gravity-ui/dashkit/commit/b8cfe51af6c063ab802f9e0a3a344cb2d7866018))
+
 ## [6.1.0](https://github.com/gravity-ui/dashkit/compare/v6.0.0...v6.1.0) (2023-08-25)
 
 
