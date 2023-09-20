@@ -1,0 +1,47 @@
+.dashkit-action-panel {
+    background-color: var(--g-color-base-float);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
+    position: fixed;
+    bottom: 20px;
+    display: flex;
+    border-radius: 8px;
+    padding: 8px;
+    gap: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1;
+
+    &__item {
+        height: 68px;
+        width: 98px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        transition: 0.3s background-color ease-in-out;
+        border-radius: 6px;
+        padding: 0 12px;
+        box-sizing: border-box;
+        white-space: nowrap;
+        overflow: hidden;
+
+        &:hover {
+            cursor: pointer;
+            background-color: var(--g-color-base-simple-hover);
+        }
+    }
+
+    &__icon {
+        margin-bottom: 4px;
+    }
+
+    &__title {
+        font-size: 13px;
+        font-weight: 400;
+        line-height: 16px;
+        max-width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}

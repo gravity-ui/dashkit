@@ -1,6 +1,6 @@
 import React from 'react';
 import {Button, Icon} from '@gravity-ui/uikit';
-import {DashKit, DashKitProps, MenuItems, ConfigItem} from '../../..';
+import {DashKit, DashKitProps, MenuItems, ConfigItem, ActionPanel} from '../../..';
 import {TickIcon} from '../../../icons/TickIcon';
 import {CogIcon} from '../../../icons/CogIcon';
 import {CopyIcon} from '../../../icons/CopyIcon';
@@ -10,6 +10,15 @@ import i18n from '../../../i18n';
 import {cn} from '../../../utils/cn';
 import {getConfig, makeid, titleId} from './utils';
 import {Demo, DemoRow} from './Demo';
+import {
+    ChartColumn,
+    Heading,
+    Layers3Diagonal,
+    PlugConnection,
+    Sliders,
+    TextAlignLeft,
+} from '@gravity-ui/icons';
+
 import './DashKitShowcase.scss';
 
 const b = cn('stories-dashkit-showcase');
@@ -25,6 +34,7 @@ type DashKitDemoState = {
     lastAction: string;
     customControlsActionData: number;
     showCustomMenu: boolean;
+    enableActionPanel: boolean;
 };
 
 export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
@@ -42,6 +52,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
         lastAction: 'Nothing',
         customControlsActionData: 0,
         showCustomMenu: true,
+        enableActionPanel: false,
     };
 
     private dashKitRef = React.createRef<DashKit>();
@@ -148,10 +159,24 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                         >
                             ref.getItemsMeta
                         </Button>
+                        <Button
+                            view="normal"
+                            size="m"
+                            onClick={() => this.toggleActionPanel()}
+                            className={b('btn-contol')}
+                            disabled={!editMode}
+                        >
+                            {this.state.enableActionPanel
+                                ? 'Disable action panel'
+                                : 'Enable action panel'}
+                        </Button>
                     </div>
                 </DemoRow>
                 <DemoRow title="Last action in DashKit">{this.state.lastAction}</DemoRow>
                 <DemoRow title="Component view">
+                    {Boolean(this.state.enableActionPanel) && (
+                        <ActionPanel items={this.getActionPanelItems()} />
+                    )}
                     <DashKit
                         config={this.state.config}
                         editMode={editMode}
@@ -336,4 +361,44 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                 : `[DashKit.setSettings] toggle show custom widget menu: ${new Date().toISOString()}`,
         });
     };
+
+    private toggleActionPanel() {
+        this.setState({enableActionPanel: !this.state.enableActionPanel});
+    }
+
+    private getActionPanelItems() {
+        return [
+            {
+                id: 'chart',
+                icon: <Icon data={ChartColumn} />,
+                title: 'Chart',
+                className: 'test',
+            },
+            {
+                id: 'selector',
+                icon: <Icon data={Sliders} />,
+                title: 'Selector',
+            },
+            {
+                id: 'text',
+                icon: <Icon data={TextAlignLeft} />,
+                title: 'Text',
+            },
+            {
+                id: 'header',
+                icon: <Icon data={Heading} />,
+                title: 'Header',
+            },
+            {
+                id: 'links',
+                icon: <Icon data={PlugConnection} />,
+                title: 'Links',
+            },
+            {
+                id: 'tabs',
+                icon: <Icon data={Layers3Diagonal} />,
+                title: 'Tabs',
+            },
+        ];
+    }
 }
