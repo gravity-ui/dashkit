@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.2.1](https://github.com/gravity-ui/dashkit/compare/v6.2.0...v6.2.1) (2023-09-21)
+
+
+### Bug Fixes
+
+* add fire storage event ([#84](https://github.com/gravity-ui/dashkit/issues/84)) ([130395a](https://github.com/gravity-ui/dashkit/commit/130395a465cf46dfb680e7d02cf6a65946e83600))
+
 ## [6.2.0](https://github.com/gravity-ui/dashkit/compare/v6.1.0...v6.2.0) (2023-09-20)
 
 
