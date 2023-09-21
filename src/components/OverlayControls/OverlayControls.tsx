@@ -315,6 +315,8 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         };
 
         localStorage.setItem(COPIED_WIDGET_STORE_KEY, JSON.stringify(options));
+        // https://stackoverflow.com/questions/35865481/storage-event-not-firing
+        window.dispatchEvent(new Event('storage'));
     };
     private onEditItem = () => {
         this.context.editItem(this.props.configItem);
