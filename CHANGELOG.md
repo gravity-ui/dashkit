@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.3.0](https://github.com/gravity-ui/dashkit/compare/v6.2.1...v6.3.0) (2023-09-28)
+
+
+### Features
+
+* add qa attribute for action panel item ([#86](https://github.com/gravity-ui/dashkit/issues/86)) ([3a52024](https://github.com/gravity-ui/dashkit/commit/3a520249fabae2314a4ffe1df2e7cedfebc90dd9))
+
 ## [6.2.1](https://github.com/gravity-ui/dashkit/compare/v6.2.0...v6.2.1) (2023-09-21)
 
 
