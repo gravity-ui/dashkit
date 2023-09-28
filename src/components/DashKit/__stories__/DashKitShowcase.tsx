@@ -373,11 +373,13 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                 icon: <Icon data={ChartColumn} />,
                 title: 'Chart',
                 className: 'test',
+                qa: 'chart',
             },
             {
                 id: 'selector',
                 icon: <Icon data={Sliders} />,
                 title: 'Selector',
+                qa: 'selector',
             },
             {
                 id: 'text',

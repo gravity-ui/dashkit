@@ -10,6 +10,7 @@ export type ActionPanelItem = {
     title: string;
     onClick?: () => void;
     className?: string;
+    qa?: string;
 };
 
 export type ActionPanelProps = {
@@ -29,6 +30,7 @@ export const ActionPanel = (props: ActionPanelProps) => {
                         className={b('item', item.className)}
                         key={`dk-action-panel-${item.id}`}
                         onClick={item.onClick}
+                        data-qa={item.qa}
                     >
                         <div className={b('icon')}>{item.icon}</div>
                         <div className={b('title')} title={item.title}>
