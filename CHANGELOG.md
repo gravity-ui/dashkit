@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.4.0](https://github.com/gravity-ui/dashkit/compare/v6.3.0...v6.4.0) (2023-10-03)
+
+
+### Features
+
+* add experimental props _experimentDisableItemAnimation ([#88](https://github.com/gravity-ui/dashkit/issues/88)) ([d17f4dc](https://github.com/gravity-ui/dashkit/commit/d17f4dcc708cc377bdbb2356f7914d9a65a1f593))
+
 ## [6.3.0](https://github.com/gravity-ui/dashkit/compare/v6.2.1...v6.3.0) (2023-09-28)
 
 
