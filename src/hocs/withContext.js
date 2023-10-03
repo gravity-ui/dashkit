@@ -198,6 +198,7 @@ function useMemoStateContext(props) {
             revertToOriginalLayout,
             forwardedMetaRef: props.forwardedMetaRef,
             draggableHandleClassName: props.draggableHandleClassName,
+            _experimentDisableItemAnimation: props._experimentDisableItemAnimation,
         }),
         [
             resultLayout,
@@ -220,6 +221,7 @@ function useMemoStateContext(props) {
             revertToOriginalLayout,
             props.forwardedMetaRef,
             props.draggableHandleClassName,
+            props._experimentDisableItemAnimation,
         ],
     );
 }

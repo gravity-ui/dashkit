@@ -41,6 +41,10 @@
 .react-grid-item {
     transition: all 200ms ease;
     transition-property: left, top;
+
+    &.dashkit-grid-item_disable-animation {
+        transition: none;
+    }
 }
 
 .react-grid-item.cssTransforms {

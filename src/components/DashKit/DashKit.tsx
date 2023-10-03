@@ -20,6 +20,8 @@ import {OverlayControlItem} from '../OverlayControls/OverlayControls';
 interface DashKitGeneralProps {
     config: Config;
     editMode: boolean;
+    draggableHandleClassName?: string;
+    overlayControls?: Record<string, OverlayControlItem[]>;
 }
 
 interface DashKitDefaultProps {
@@ -30,9 +32,9 @@ interface DashKitDefaultProps {
     itemsStateAndParams: ItemsStateAndParams;
     settings: SettingsProps;
     context: ContextProps;
-    overlayControls?: Record<string, OverlayControlItem[]>;
-    noOverlay?: boolean;
-    draggableHandleClassName?: string;
+    noOverlay: boolean;
+    // it will be deleted soon
+    _experimentDisableItemAnimation: boolean;
 }
 
 export interface DashKitProps extends DashKitGeneralProps, Partial<DashKitDefaultProps> {}
@@ -54,6 +56,7 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
         },
         context: {},
         noOverlay: false,
+        _experimentDisableItemAnimation: false,
     };
 
     static registerPlugins(...plugins: Plugin[]) {
