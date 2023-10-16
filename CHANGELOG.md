@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.5.0](https://github.com/gravity-ui/dashkit/compare/v6.4.0...v6.5.0) (2023-10-16)
+
+
+### Features
+
+* Removed react-grid-item css animation ([#91](https://github.com/gravity-ui/dashkit/issues/91)) ([b76b221](https://github.com/gravity-ui/dashkit/commit/b76b22181eaec7c5d1e09666321173c60c702aed))
+
 ## [6.4.0](https://github.com/gravity-ui/dashkit/compare/v6.3.0...v6.4.0) (2023-10-03)
 
 
