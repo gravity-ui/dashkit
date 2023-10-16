@@ -33,8 +33,6 @@ interface DashKitDefaultProps {
     settings: SettingsProps;
     context: ContextProps;
     noOverlay: boolean;
-    // it will be deleted soon
-    _experimentDisableItemAnimation: boolean;
 }
 
 export interface DashKitProps extends DashKitGeneralProps, Partial<DashKitDefaultProps> {}
@@ -56,7 +54,6 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
         },
         context: {},
         noOverlay: false,
-        _experimentDisableItemAnimation: false,
     };
 
     static registerPlugins(...plugins: Plugin[]) {

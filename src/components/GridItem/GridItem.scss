@@ -1,11 +1,6 @@
 .dashkit-grid-item {
     position: relative;
 
-    &_is-dragging {
-        // https://github.com/STRML/react-grid-layout/issues/221#issuecomment-519844166
-        //user-select: none;
-    }
-
     &__overlay {
         position: absolute;
         top: 0;
@@ -36,15 +31,6 @@
 .react-grid-layout {
     position: relative;
     transition: height 200ms ease;
-}
-
-.react-grid-item {
-    transition: all 200ms ease;
-    transition-property: left, top;
-
-    &.dashkit-grid-item_disable-animation {
-        transition: none;
-    }
 }
 
 .react-grid-item.cssTransforms {
