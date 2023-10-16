@@ -75,7 +75,7 @@ class GridItem extends React.PureComponent {
             noOverlay,
             withCustomHandle,
         } = this.props;
-        const {editMode, _experimentDisableItemAnimation} = this.context;
+        const {editMode} = this.context;
         const width = Number.parseInt(style.width, 10);
         const height = Number.parseInt(style.height, 10);
         const transform = style.transform;
@@ -93,7 +93,6 @@ class GridItem extends React.PureComponent {
                     {
                         'is-dragging': isDragging,
                         'with-custom-handle': withCustomHandle,
-                        'disable-animation': _experimentDisableItemAnimation,
                     },
                     preparedClassName,
                 )}
