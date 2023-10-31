@@ -69,6 +69,12 @@ export default class GridLayout extends React.PureComponent {
         return getItemsMeta(this.pluginsRefs);
     };
 
+    hideWidgetOverlayControl = (args) => {
+        const {hideWidgetOverlayControl} = this.context;
+        const plugin = this.pluginsRefs.find((item) => item.props.id);
+        return hideWidgetOverlayControl({...args, plugin});
+    };
+
     reloadItems() {
         const {
             editMode,

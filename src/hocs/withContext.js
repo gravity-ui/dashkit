@@ -14,6 +14,10 @@ function useMemoStateContext(props) {
     const originalLayouts = React.useRef({});
     const adjustedLayouts = React.useRef({});
 
+    const [filteredOverlayControls, setFilteredOverlayControls] = React.useState(
+        props.overlayControls || [],
+    );
+
     // TODO: need move originalLayouts, adjustedLayouts to state
     const [layoutUpdateCounter, forceUpdateLayout] = React.useState(0);
 
@@ -156,6 +160,19 @@ function useMemoStateContext(props) {
             .filter(Boolean);
     }, []);
 
+    const hideWidgetOverlayControl = React.useCallback(
+        (args) => {
+            const newOverlayControls = props.overlayControls.allWidgetsControls.filter(
+                (item) => item.id !== args.controlId,
+            );
+            setFilteredOverlayControls({
+                ...props.overlayControls,
+                allWidgetsControls: newOverlayControls,
+            });
+        },
+        [props.overlayControls],
+    );
+
     const resultLayout = React.useMemo(() => {
         return props.layout.map((item) => {
             if (item.i in adjustedLayouts.current) {
@@ -193,6 +210,8 @@ function useMemoStateContext(props) {
             editItem: props.onItemEdit,
             layoutChange: onLayoutChange,
             getItemsMeta,
+            hideWidgetOverlayControl,
+            filteredOverlayControls,
             reloadItems,
             memorizeOriginalLayout,
             revertToOriginalLayout,
@@ -215,6 +234,8 @@ function useMemoStateContext(props) {
             props.onItemEdit,
             onLayoutChange,
             getItemsMeta,
+            hideWidgetOverlayControl,
+            filteredOverlayControls,
             reloadItems,
             memorizeOriginalLayout,
             revertToOriginalLayout,
@@ -227,10 +248,11 @@ function useMemoStateContext(props) {
 export function withContext(Component) {
     const WithContext = (props) => {
         const contextValue = useMemoStateContext(props);
+        const overlayControls = contextValue.filteredOverlayControls;
 
         return (
             <DashKitContext.Provider value={contextValue}>
-                <Component overlayControls={props.overlayControls} />
+                <Component overlayControls={overlayControls} />
             </DashKitContext.Provider>
         );
     };

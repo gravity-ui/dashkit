@@ -33,6 +33,7 @@ interface DashKitDefaultProps {
     settings: SettingsProps;
     context: ContextProps;
     noOverlay: boolean;
+    hideWidgetOverlayControl: (args: {id: string; controlId: string}) => void;
 }
 
 export interface DashKitProps extends DashKitGeneralProps, Partial<DashKitDefaultProps> {}
@@ -45,6 +46,7 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
     static defaultProps: DashKitDefaultProps = {
         onItemEdit: noop,
         onChange: noop,
+        hideWidgetOverlayControl: noop,
         defaultGlobalParams: {},
         globalParams: {},
         itemsStateAndParams: {},
@@ -124,5 +126,14 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
 
     getItemsMeta() {
         return this.metaRef.current?.getItemsMeta();
+    }
+
+    /**
+     * public method for hiding overlayControl item by id
+     * for ex. can be triggered after data render
+     * @param args
+     */
+    hideWidgetOverlayControl(args: {id: string; controlId: string}) {
+        return this.metaRef.current?.hideWidgetOverlayControl(args);
     }
 }

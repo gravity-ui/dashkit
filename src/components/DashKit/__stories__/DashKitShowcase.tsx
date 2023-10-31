@@ -170,6 +170,17 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                                 ? 'Disable action panel'
                                 : 'Enable action panel'}
                         </Button>
+                        <Button
+                            view="normal"
+                            size="m"
+                            onClick={() =>
+                                this.hideWidgetOverlayControl({id: 'Ea', controlId: 'settings'})
+                            }
+                            className={b('btn-contol')}
+                            disabled={!editMode}
+                        >
+                            hide custom setting from widget item
+                        </Button>
                     </div>
                 </DemoRow>
                 <DemoRow title="Last action in DashKit">{this.state.lastAction}</DemoRow>
@@ -364,6 +375,12 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
 
     private toggleActionPanel() {
         this.setState({enableActionPanel: !this.state.enableActionPanel});
+    }
+
+    private hideWidgetOverlayControl(args: {id: string; controlId: string}) {
+        if (this.dashKitRef.current) {
+            this.dashKitRef.current.hideWidgetOverlayControl(args);
+        }
     }
 
     private getActionPanelItems() {
