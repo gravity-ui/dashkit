@@ -2,6 +2,7 @@ import React from 'react';
 import ReactGridLayout, {WidthProvider} from 'react-grid-layout';
 import GridItem from '../GridItem/GridItem';
 import {DashKitContext} from '../../context/DashKitContext';
+import {CLASS_NAME_OVERLAY_CONTROLS} from '../../constants';
 
 const Layout = WidthProvider(ReactGridLayout); // eslint-disable-line new-cap
 
@@ -122,6 +123,7 @@ export default class GridLayout extends React.PureComponent {
                 {...(draggableHandleClassName
                     ? {draggableHandle: `.${draggableHandleClassName}`}
                     : null)}
+                draggableCancel={`.${CLASS_NAME_OVERLAY_CONTROLS}`}
             >
                 {config.items.map((item, i) => {
                     return (
