@@ -12,7 +12,7 @@ import {
     IconProps,
     MenuItemProps,
 } from '@gravity-ui/uikit';
-import {COPIED_WIDGET_STORE_KEY, MenuItems} from '../../constants';
+import {COPIED_WIDGET_STORE_KEY, OVERLAY_CONTROLS_CLASS_NAME, MenuItems} from '../../constants';
 import {ConfigLayout, ConfigItem, PluginBase, StringParams, Config, ItemState} from '../../shared';
 import type {RegisterManager} from '../../utils/register-manager';
 import {DotsIcon} from '../../icons/DotsIcon';
@@ -23,7 +23,7 @@ import {cn} from '../../utils/cn';
 import './OverlayControls.scss';
 import {Settings} from '../../typings';
 
-const b = cn('dashkit-overlay-controls');
+const b = cn(OVERLAY_CONTROLS_CLASS_NAME);
 
 export enum OverlayControlsPosition {
     TopRight = 'top_right',
