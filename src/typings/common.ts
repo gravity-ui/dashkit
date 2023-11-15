@@ -15,6 +15,7 @@ export type MenuItem = (typeof MenuItems)[keyof typeof MenuItems] | OverlayCusto
 export interface SettingsProps {
     autoupdateInterval: number;
     silentLoading: boolean;
+    realtimeMode?: boolean;
 }
 
 export interface ContextProps {
