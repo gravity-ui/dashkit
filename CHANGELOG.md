@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.5.1](https://github.com/gravity-ui/dashkit/compare/v6.5.0...v6.5.1) (2023-11-15)
+
+
+### Bug Fixes
+
+* touch tap to overlay controls ([#95](https://github.com/gravity-ui/dashkit/issues/95)) ([cdf5fbc](https://github.com/gravity-ui/dashkit/commit/cdf5fbc9b84c4bd5de67dcd2f1c529ee54a3c710))
+
 ## [6.5.0](https://github.com/gravity-ui/dashkit/compare/v6.4.0...v6.5.0) (2023-10-16)
 
 
