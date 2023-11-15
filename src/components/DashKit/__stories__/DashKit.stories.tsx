@@ -6,6 +6,7 @@ import pluginTitle from '../../../plugins/Title/Title';
 import pluginText from '../../../plugins/Text/Text';
 import {DashKitShowcase} from './DashKitShowcase';
 import {getConfig} from './utils';
+import {DashKitUpdateItems} from './DashKitUpodateItems/DashKitUpodateItems';
 import './DashKit.stories.scss';
 
 const b = cn('stories-dashkit');
@@ -69,3 +70,6 @@ export const Default = DefaultTemplate.bind({});
 
 const ShowcaseTemplate: Story = () => <DashKitShowcase />;
 export const Showcase = ShowcaseTemplate.bind({});
+
+const DashKitUpdateItemsTempl = () => <DashKitUpdateItems />;
+export const UpdateItems = DashKitUpdateItemsTempl.bind({});
