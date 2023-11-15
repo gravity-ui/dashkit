@@ -172,7 +172,8 @@ function useMemoStateContext(props) {
     }, [props.layout, layoutUpdateCounter]);
 
     const reloadItems = React.useCallback((pluginsRefs, data) => {
-        pluginsRefs.forEach((ref) => ref && ref.reload && ref.reload(data));
+        const promises = pluginsRefs.map((ref) => ref && ref.reload && ref.reload(data));
+        return Promise.all(promises);
     }, []);
 
     return React.useMemo(
