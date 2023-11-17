@@ -22,8 +22,7 @@ export default class GridLayout extends React.PureComponent {
     }
 
     componentDidUpdate() {
-        clearTimeout(this._timeout);
-        this.reloadItems();
+        this.forceReloadItems();
     }
 
     componentWillUnmount() {
@@ -76,13 +75,6 @@ export default class GridLayout extends React.PureComponent {
         return autoupdateIntervalMs;
     }
 
-    getReloadIntervalRemains() {
-        const autoupdateIntervalMs = this.getAutoupdateIntervalMs();
-        const timeSinceLastReload = new Date().getTime() - (this._lastReloadAt || 0);
-        const reloadIntervalRemains = autoupdateIntervalMs - timeSinceLastReload;
-        return reloadIntervalRemains;
-    }
-
     startReloadItems() {
         const {editMode, settings: {silentLoading} = {}, reloadItems} = this.context;
         const {isPageHidden} = this.state;
@@ -96,10 +88,18 @@ export default class GridLayout extends React.PureComponent {
     }
 
     startReloadItemsTimeout(timeoutMs) {
-        this._timeout = setTimeout(() => this.reloadItems(), timeoutMs);
+        this._timeout = setTimeout(() => this.forceReloadItems(), timeoutMs);
+    }
+
+    forceReloadItems() {
+        clearTimeout(this._timeout);
+        this._timeout = undefined;
+        this.reloadItems();
     }
 
     reloadItems() {
+        if (this._timeout) return;
+
         const {settings: {realtimeMode, realtimeModeDelayMs = 5000} = {}} = this.context;
 
         if (realtimeMode) {
@@ -108,15 +108,9 @@ export default class GridLayout extends React.PureComponent {
         }
 
         const autoupdateIntervalMs = this.getAutoupdateIntervalMs();
-        const reloadIntervalRemains = this.getReloadIntervalRemains();
         if (autoupdateIntervalMs) {
-            if (reloadIntervalRemains <= 0) {
-                this.startReloadItems();
-            }
-
-            this.startReloadItemsTimeout(
-                reloadIntervalRemains <= 0 ? autoupdateIntervalMs : reloadIntervalRemains,
-            );
+            this.startReloadItems();
+            this.startReloadItemsTimeout(autoupdateIntervalMs);
         }
     }
 
