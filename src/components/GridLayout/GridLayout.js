@@ -95,11 +95,15 @@ export default class GridLayout extends React.PureComponent {
         return Promise.resolve();
     }
 
+    startReloadItemsTimeout(timeoutMs) {
+        this._timeout = setTimeout(() => this.reloadItems(), timeoutMs);
+    }
+
     reloadItems() {
-        const {settings: {realtimeMode} = {}} = this.context;
+        const {settings: {realtimeMode, realtimeModeDelayMs = 5000} = {}} = this.context;
 
         if (realtimeMode) {
-            this.startReloadItems().then(() => this.reloadItems());
+            this.startReloadItems().then(() => this.startReloadItemsTimeout(realtimeModeDelayMs));
             return;
         }
 
@@ -110,8 +114,7 @@ export default class GridLayout extends React.PureComponent {
                 this.startReloadItems();
             }
 
-            this._timeout = setTimeout(
-                () => this.reloadItems(),
+            this.startReloadItemsTimeout(
                 reloadIntervalRemains <= 0 ? autoupdateIntervalMs : reloadIntervalRemains,
             );
         }
