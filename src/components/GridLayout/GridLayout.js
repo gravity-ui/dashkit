@@ -103,7 +103,9 @@ export default class GridLayout extends React.PureComponent {
         const {settings: {realtimeMode, realtimeModeDelayMs = 5000} = {}} = this.context;
 
         if (realtimeMode) {
-            this.startReloadItems().then(() => this.startReloadItemsTimeout(realtimeModeDelayMs));
+            this.startReloadItems().then(() => {
+                this.startReloadItemsTimeout(realtimeModeDelayMs);
+            });
             return;
         }
 

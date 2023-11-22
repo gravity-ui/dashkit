@@ -1,7 +1,7 @@
 import React, {useEffect} from 'react';
 import {Demo, DemoRow} from '../Demo';
 import {DashKit} from '../../DashKit';
-import {Plugin} from '../../../../typings';
+import {Plugin, SettingsProps} from '../../../../typings';
 import {PluginTitleProps} from '../../../../../src/plugins';
 import {TitleWithReq, TitleWithReqProps} from './TitleWithReq/TitleWithReq';
 import {RadioGroup} from '@gravity-ui/uikit';
@@ -87,10 +87,14 @@ const config = {
     ],
 };
 
+const settingsByMode: Record<string, Partial<SettingsProps>> = {
+    realtime: {realtimeMode: true},
+    update1s: {autoupdateInterval: 1},
+    update10s: {autoupdateInterval: 10},
+};
+
 export const DashKitUpdateItems = () => {
-    const [autoUpdateMode, setAutoUpdateMode] = React.useState('update10s');
-    const [autoupdateInterval, setAutoupdateInterval] = React.useState(10);
-    const [realtimeMode, setRealtimeMode] = React.useState(false);
+    const [autoUpdateMode, setAutoUpdateMode] = React.useState('realtime');
 
     useEffect(() => {
         initStore();
@@ -106,17 +110,6 @@ export const DashKitUpdateItems = () => {
                     value={autoUpdateMode}
                     onUpdate={(value) => {
                         setAutoUpdateMode(value);
-                        switch (value) {
-                            case 'update10s':
-                                setAutoupdateInterval(10);
-                                break;
-                            case 'update1s':
-                                setAutoupdateInterval(1);
-                                break;
-                            case 'realtime':
-                                setRealtimeMode(true);
-                                break;
-                        }
                     }}
                     options={[
                         {value: 'update10s', content: 'Set autoupdate interval to 10s'},
@@ -128,7 +121,10 @@ export const DashKitUpdateItems = () => {
             <DashKit
                 config={config}
                 editMode={false}
-                settings={{autoupdateInterval, realtimeMode, silentLoading: false}}
+                settings={{
+                    silentLoading: false,
+                    ...settingsByMode[autoUpdateMode],
+                }}
             />
         </Demo>
     );

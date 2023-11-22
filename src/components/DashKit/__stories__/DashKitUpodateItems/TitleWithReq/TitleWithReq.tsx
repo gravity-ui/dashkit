@@ -5,11 +5,17 @@ import {getStore} from '../MockStore/MockStore';
 import {Card, Flex, Text} from '@gravity-ui/uikit';
 import '../styles.scss';
 
+const resOreRej = () => Math.round(Math.random());
+
 const getData = (timeout = 1000) => {
-    return new Promise<string | number>((res) => {
+    return new Promise<string | number>((res, rej) => {
         const counter = getStore().counter;
         setTimeout(() => {
-            res(counter);
+            if (resOreRej()) {
+                res(counter);
+            } else {
+                rej();
+            }
         }, timeout);
     });
 };
@@ -20,16 +26,17 @@ export type TitleWithReqProps = {
 type TitleWithReqState = {
     isLoading: boolean;
     counter?: string | number;
+    error: boolean;
 };
 
 export class TitleWithReq extends React.Component<TitleWithReqProps, TitleWithReqState> {
-    componentDidMount(): void {
-        this.reload();
-    }
-
     render() {
         return (
-            <Card theme="normal" view="filled" className="cardLayout">
+            <Card
+                theme={this.state?.error ? 'danger' : 'normal'}
+                view="filled"
+                className="cardLayout"
+            >
                 <div>
                     <Text variant="display-1">{this.props.data.text}</Text>
                     <Flex justifyContent="space-between">
@@ -44,10 +51,14 @@ export class TitleWithReq extends React.Component<TitleWithReqProps, TitleWithRe
         );
     }
 
-    async reload() {
+    reload() {
         this.setState({isLoading: true});
-        await getData(this.props.data.reqDelay * 1000).then((counter) => {
-            this.setState({counter, isLoading: false});
-        });
+        return getData(this.props.data.reqDelay * 1000)
+            .then((counter) => {
+                this.setState({counter, isLoading: false, error: false});
+            })
+            .catch(() => {
+                this.setState({counter: undefined, isLoading: false, error: true});
+            });
     }
 }

@@ -6,7 +6,7 @@ import {Card, Flex, Text} from '@gravity-ui/uikit';
 import '../styles.scss';
 
 export const StorageWidget = (props: PluginTitleProps) => {
-    const [storeState, setStoreState] = React.useState<any>(getStore());
+    const [storeState, setStoreState] = React.useState<ReturnType<typeof getStore>>(getStore());
 
     React.useEffect(() => {
         storeOnUpdateSubscribe((store) => {
