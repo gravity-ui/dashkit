@@ -58,7 +58,7 @@ export class TitleWithReq extends React.Component<TitleWithReqProps, TitleWithRe
                 this.setState({counter, isLoading: false, error: false});
             })
             .catch(() => {
-                this.setState({counter: undefined, isLoading: false, error: true});
+                this.setState({counter: 'Failed request', isLoading: false, error: true});
             });
     }
 }
