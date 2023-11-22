@@ -13,9 +13,10 @@ export interface Settings {
 export type MenuItem = (typeof MenuItems)[keyof typeof MenuItems] | OverlayCustomControlItem;
 
 export interface SettingsProps {
-    autoupdateInterval: number;
+    autoupdateInterval?: number;
     silentLoading: boolean;
     realtimeMode?: boolean;
+    realtimeModeDelayMs?: number;
 }
 
 export interface ContextProps {
