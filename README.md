@@ -120,6 +120,21 @@ Before using `DashKit` as a react component, it must be configured.
   });
   ```
 
+## Settings
+
+### Autoupdate
+
+This functionality allows you to automatically update the items of the Dash. All items that should participate in the auto-update cycle must have the `reload` method.
+There are two auto-update scenarios available, the first - the classic interval to enable which is enough to pass the `autoupdateInterval` parameter and the second - the so-called `realtimeMode`.
+`realtimeMode` is useful in cases where dash items are updated at different rates and you cannot guarantee data consistency at a given time. `realtimeMode` is based on `Promise.allSettled`.
+
+| Name                | Description                                                                            |    Type   | Default |
+|:--------------------|:---------------------------------------------------------------------------------------|:---------:|:-------:|
+| autoupdateInterval  | The time, in **seconds**, the dash should delay in between executions auto-update      |  `number` |         |
+| realtimeMode        | Enable realtime mode                                                                   | `boolean` |         |
+| realtimeModeDelayMs | The time, in **milliseconds**, the dash should delay after all items have been updated |  `number` |   5000  |
+| silentLoading       | Items update status indicator. It will be passed into the Item `reload` method         | `boolean` |  false  |
+
 ### Config
 
 ```ts
