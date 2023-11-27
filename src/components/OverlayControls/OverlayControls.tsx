@@ -74,7 +74,7 @@ type PreparedCopyItemOptionsArg = Pick<ConfigItem, 'data' | 'type' | 'defaults' 
     };
 };
 
-type PreparedCopyItemOptions = PreparedCopyItemOptionsArg;
+export type PreparedCopyItemOptions = PreparedCopyItemOptionsArg;
 
 type DashKitCtx = React.Context<{
     context: Record<string, any>;
