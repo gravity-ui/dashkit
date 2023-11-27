@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.6.1](https://github.com/gravity-ui/dashkit/compare/v6.6.0...v6.6.1) (2023-11-27)
+
+
+### Bug Fixes
+
+* add import type for prepare copied item fn args ([#100](https://github.com/gravity-ui/dashkit/issues/100)) ([6336510](https://github.com/gravity-ui/dashkit/commit/6336510ae5f66a83c7e8c53b674c87b9a14502fb))
+
 ## [6.6.0](https://github.com/gravity-ui/dashkit/compare/v6.5.1...v6.6.0) (2023-11-27)
 
 
