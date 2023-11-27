@@ -36,9 +36,16 @@ export default class GridLayout extends React.PureComponent {
     _lastReloadAt;
 
     onVisibilityChange = () => {
-        this.setState({
-            isPageHidden: document.hidden,
-        });
+        this.setState(
+            {
+                isPageHidden: document.hidden,
+            },
+            () => {
+                if (!this.state.isPageHidden) {
+                    this.forceReloadItems();
+                }
+            },
+        );
     };
 
     adjustWidgetLayout = ({widgetId, needSetDefault, adjustedWidgetLayout}) => {
