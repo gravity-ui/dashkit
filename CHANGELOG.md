@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.6.0](https://github.com/gravity-ui/dashkit/compare/v6.5.1...v6.6.0) (2023-11-27)
+
+
+### Features
+
+* add prepare options cb on copy before adding to localStorage ([#98](https://github.com/gravity-ui/dashkit/issues/98)) ([b0ad064](https://github.com/gravity-ui/dashkit/commit/b0ad0647ba6d8e57739c506ebce1588c187be7f7))
+
 ## [6.5.1](https://github.com/gravity-ui/dashkit/compare/v6.5.0...v6.5.1) (2023-11-15)
 
 
