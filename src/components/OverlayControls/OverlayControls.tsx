@@ -66,7 +66,18 @@ interface OverlayControlsProps extends OverlayControlsDefaultProps {
     overlayControls?: Record<string, OverlayControlItem[]>;
 }
 
+type PreparedCopyItemOptionsArg = Pick<ConfigItem, 'data' | 'type' | 'defaults' | 'namespace'> & {
+    timestamp: number;
+    layout: {
+        w: number;
+        h: number;
+    };
+};
+
+type PreparedCopyItemOptions = PreparedCopyItemOptionsArg;
+
 type DashKitCtx = React.Context<{
+    context: Record<string, any>;
     registerManager: RegisterManager;
     itemsParams: Record<string, StringParams>;
     itemsState: Record<string, ItemState>;
@@ -302,7 +313,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
             return item.i === this.props.configItem.id;
         });
 
-        const options = {
+        let options: PreparedCopyItemOptions = {
             timestamp: Date.now(),
             data: this.props.configItem.data,
             type: this.props.configItem.type,
@@ -313,6 +324,10 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                 h: correspondedItemLayout!.h,
             },
         };
+
+        if (typeof this.context.context?.getPreparedCopyItemOptions === 'function') {
+            options = this.context.context.getPreparedCopyItemOptions(options);
+        }
 
         localStorage.setItem(COPIED_WIDGET_STORE_KEY, JSON.stringify(options));
         // https://stackoverflow.com/questions/35865481/storage-event-not-firing
