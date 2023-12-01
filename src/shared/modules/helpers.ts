@@ -3,7 +3,6 @@ import get from 'lodash/get';
 import invert from 'lodash/invert';
 import isEmpty from 'lodash/isEmpty';
 import pick from 'lodash/pick';
-import intersection from 'lodash/intersection';
 import {META_KEY, CURRENT_VERSION, ACTION_PARAM_PREFIX} from '../constants';
 import {
     PluginBase,
@@ -361,36 +360,4 @@ export function hasActionParams(stateAndParams: ItemStateAndParams) {
     }
 
     return hasActionParam(stateAndParams.params);
-}
-
-/**
- * Collect array of actionParams keys with prefix (_ap_) that must be cleared from widget defaults
- * @param defaultWidgetParams
- * @param queueWidgetParams
- */
-export function getDefaultsActionParamsToClear({
-    defaultWidgetParams,
-    queueWidgetParams,
-}: {
-    defaultWidgetParams: StringParams;
-    queueWidgetParams: StringParams;
-}) {
-    const widgetDefaultsWithActionParams = hasActionParam(defaultWidgetParams)
-        ? pickActionParamsFromParams(defaultWidgetParams)
-        : null;
-
-    if (!widgetDefaultsWithActionParams) {
-        return [];
-    }
-
-    // clear default actionParams if some param with the same name without prefix affected on current widget
-    // ex.: queueWidgetParams contain {Year: 1970} and default actionParams contain {_ap_Year: 2000}
-    const actionParamKeyToClear: string[] = intersection(
-        Object.keys(queueWidgetParams),
-        Object.keys(widgetDefaultsWithActionParams),
-    );
-
-    return actionParamKeyToClear.length
-        ? actionParamKeyToClear.map((key) => `${ACTION_PARAM_PREFIX}${key}`)
-        : [];
 }

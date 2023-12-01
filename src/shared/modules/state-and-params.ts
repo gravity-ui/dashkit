@@ -1,6 +1,4 @@
 import groupBy from 'lodash/groupBy';
-import intersection from 'lodash/intersection';
-import omit from 'lodash/omit';
 import {META_KEY} from '../constants';
 import {
     GlobalParams,
@@ -25,10 +23,8 @@ import {
     pickActionParamsFromParams,
     hasActionParam,
     pickExceptActionParamsFromParams,
-    transformParamsToActionParams,
     isItemWithTabs,
     resolveItemInnerId,
-    getDefaultsActionParamsToClear,
 } from './helpers';
 
 export interface GetItemsParamsArg {
@@ -114,8 +110,7 @@ export function getItemsParams({
             );
         } else {
             // params according to queue of its applying
-            let prevQueueDataWithActionParams = {};
-            let queueDataItems: StringParams = {};
+            let queueDataItemsParams: StringParams = {};
             for (const data of Object.values(queueData)) {
                 if (data.namespace !== namespace || itemIgnores.includes(data.id)) {
                     continue;
@@ -131,36 +126,13 @@ export function getItemsParams({
 
                 const mergedParams = getMergedParams(params, actionParams);
 
-                const actionParamKeyToClear = intersection(
-                    Object.keys(transformParamsToActionParams(mergedParams)),
-                    Object.keys(prevQueueDataWithActionParams),
-                );
-
-                let queueDataRes = {...queueDataItems};
-                if (actionParamKeyToClear.length) {
-                    queueDataRes = omit(queueDataItems, actionParamKeyToClear);
-                }
-
-                queueDataItems = {
-                    ...queueDataRes,
+                queueDataItemsParams = {
+                    ...queueDataItemsParams,
                     ...mergedParams,
                 };
-
-                prevQueueDataWithActionParams = hasActionParam(queueDataItems)
-                    ? pickActionParamsFromParams(data.params, true)
-                    : {};
             }
 
-            const clearActionParams = getDefaultsActionParamsToClear({
-                defaultWidgetParams,
-                queueWidgetParams: queueDataItems,
-            });
-
-            if (clearActionParams.length) {
-                defaultWidgetParams = omit(defaultWidgetParams, clearActionParams);
-            }
-
-            itemParams = Object.assign(itemParams, queueDataItems);
+            itemParams = Object.assign(itemParams, queueDataItemsParams);
         }
 
         return {
