@@ -400,7 +400,14 @@ export class UpdateManager {
             ]?.params
                 ? '$merge'
                 : '$set';
-            if (isTabSwitched) {
+            const initialedStateAndParams =
+                initiatorId in itemsStateAndParams &&
+                (itemsStateAndParams as ItemsStateAndParamsBase)[initiatorId];
+            const needResetCurrentAP =
+                initialedStateAndParams &&
+                Object.keys(pickActionParamsFromParams(initialedStateAndParams.params)).length &&
+                !Object.keys(allowableActionParams).length;
+            if (isTabSwitched || needResetCurrentAP) {
                 commandUpdateParams = '$set';
             }
 
