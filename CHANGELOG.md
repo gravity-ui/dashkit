@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.7.1](https://github.com/gravity-ui/dashkit/compare/v6.7.0...v6.7.1) (2023-12-12)
+
+
+### Bug Fixes
+
+* refact getItemsParams for action params ([#102](https://github.com/gravity-ui/dashkit/issues/102)) ([1fc1f75](https://github.com/gravity-ui/dashkit/commit/1fc1f7558b9234eb452346a9b64011b1fc059860))
+
 ## [6.7.0](https://github.com/gravity-ui/dashkit/compare/v6.6.1...v6.7.0) (2023-12-12)
 
 
