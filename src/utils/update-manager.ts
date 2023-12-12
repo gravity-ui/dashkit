@@ -9,6 +9,7 @@ import {
     ItemsStateAndParams,
     ItemStateAndParams,
     ItemsStateAndParamsBase,
+    ItemStateAndParamsChangeOptions,
     StringParams,
     getCurrentVersion,
     META_KEY,
@@ -114,9 +115,14 @@ function getAllowableChangedParams(
     const isActionParamsMode = paramsTypeName === 'actionParams';
 
     let allowedParams: StringParams = {};
-    const stateParamsConf = isActionParamsMode
-        ? pickActionParamsFromParams(stateAndParams.params, false)
-        : stateAndParams.params;
+    if (isActionParamsMode) {
+        allowedParams = pickActionParamsFromParams(stateAndParams.params, false);
+        return paramsSettings?.returnPrefix
+            ? transformParamsToActionParams(allowedParams)
+            : allowedParams;
+    }
+
+    const stateParamsConf = stateAndParams.params;
 
     if (isItemWithTabs(item)) {
         let tab;
@@ -134,11 +140,6 @@ function getAllowableChangedParams(
     if (Object.keys(allowedParams || {}).length !== Object.keys(stateParamsConf || {}).length) {
         console.warn('Параметры, которых нет в defaults, будут проигнорированы!');
     }
-    if (isActionParamsMode) {
-        return paramsSettings?.returnPrefix
-            ? transformParamsToActionParams(allowedParams)
-            : allowedParams;
-    }
     return allowedParams;
 }
 
@@ -147,6 +148,7 @@ interface ChangeStateAndParamsArg {
     config: Config;
     itemsStateAndParams: ItemsStateAndParams;
     stateAndParams: ItemStateAndParams;
+    options?: ItemStateAndParamsChangeOptions;
 }
 
 function changeStateAndParamsVersion1({
@@ -359,6 +361,7 @@ export class UpdateManager {
         config,
         stateAndParams,
         itemsStateAndParams,
+        options,
     }: ChangeStateAndParamsArg): ItemsStateAndParams {
         if (getCurrentVersion(itemsStateAndParams) === 1) {
             return changeStateAndParamsVersion1({
@@ -368,6 +371,8 @@ export class UpdateManager {
                 itemsStateAndParams,
             });
         }
+
+        const action = options?.action;
         const hasState = 'state' in stateAndParams;
         const {items} = config;
         const itemsIds = items.map(({id: itemId}) => itemId);
@@ -377,6 +382,22 @@ export class UpdateManager {
         const newTabId: string | undefined = stateAndParams.state?.tabId;
         const isTabSwitched = isItemWithTabs(initiatorItem) && Boolean(newTabId);
         const currentMeta = getItemsStateAndParamsMeta(itemsStateAndParams);
+
+        if (action === 'remove') {
+            return update(itemsStateAndParams, {
+                $unset: [...unusedIds, initiatorId],
+                [META_KEY]: {
+                    $set: currentMeta
+                        ? deleteFromQueue({
+                              id: initiatorId,
+                              itemsStateAndParams,
+                              config,
+                          })
+                        : getInitialItemsStateAndParamsMeta(),
+                },
+            });
+        }
+
         if ('params' in stateAndParams) {
             const allowableParams = getAllowableChangedParams(
                 initiatorItem,
@@ -400,7 +421,7 @@ export class UpdateManager {
             ]?.params
                 ? '$merge'
                 : '$set';
-            if (isTabSwitched) {
+            if (isTabSwitched || action === 'setParams') {
                 commandUpdateParams = '$set';
             }
 

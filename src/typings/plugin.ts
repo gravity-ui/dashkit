@@ -1,6 +1,13 @@
 import React from 'react';
 import {ContextProps, SettingsProps, WidgetLayout} from './common';
-import {StringParams, ConfigItem, ItemState, ItemStateAndParams, PluginBase} from '../shared';
+import {
+    StringParams,
+    ConfigItem,
+    ItemState,
+    ItemStateAndParams,
+    PluginBase,
+    ItemStateAndParamsChangeOptions,
+} from '../shared';
 
 import type {ReactGridLayoutProps} from 'react-grid-layout';
 
@@ -9,7 +16,10 @@ export interface PluginWidgetProps {
     editMode: boolean;
     params: StringParams;
     state: ItemState;
-    onStateAndParamsChange: (stateAndParams: ItemStateAndParams) => void;
+    onStateAndParamsChange: (
+        stateAndParams: ItemStateAndParams,
+        options?: ItemStateAndParamsChangeOptions,
+    ) => void;
     width: number;
     height: number;
     data: ConfigItem['data'];
