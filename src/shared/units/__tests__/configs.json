@@ -472,6 +472,103 @@
                 ]
             },
             "connections": []
+        },
+        {
+            "salt": "0.09852189776033704",
+            "counter": 14,
+            "items": [
+                {
+                    "id": "al",
+                    "data": {
+                        "tabs": [
+                            {
+                                "id": "Jn",
+                                "title": "Заголовок 1",
+                                "params": {},
+                                "chartId": "h8hfbffyo3dg8",
+                                "isDefault": true,
+                                "autoHeight": false
+                            }
+                        ],
+                        "hideTitle": true
+                    },
+                    "type": "widget",
+                    "namespace": "default"
+                },
+                {
+                    "id": "Q8",
+                    "data": {
+                        "tabs": [
+                            {
+                                "id": "K0",
+                                "title": "chart 1",
+                                "params": {
+                                    "Year": "",
+                                    "Country": "",
+                                    "Name": "",
+                                    "Price": ""
+                                },
+                                "chartId": "245z37u4ylvet",
+                                "enableActionParams": true,
+                                "isDefault": true,
+                                "autoHeight": false
+                            }
+                        ],
+                        "hideTitle": false
+                    },
+                    "type": "widget",
+                    "namespace": "default"
+                },
+                {
+                    "id": "L5",
+                    "data": {
+                        "tabs": [
+                            {
+                                "id": "K1",
+                                "title": "chart 2",
+                                "params": {
+                                    "Year": "",
+                                    "Country": "",
+                                    "Name": "",
+                                    "Price": ""
+                                },
+                                "chartId": "r77ztfu4yl5ew",
+                                "enableActionParams": true,
+                                "isDefault": true,
+                                "autoHeight": false
+                            }
+                        ],
+                        "hideTitle": false
+                    },
+                    "type": "widget",
+                    "namespace": "default"
+                }
+            ],
+            "layout": [
+                {
+                    "h": 4,
+                    "i": "al",
+                    "w": 4,
+                    "x": 8,
+                    "y": 0
+                },
+                {
+                    "h": 16,
+                    "i": "Q8",
+                    "w": 12,
+                    "x": 12,
+                    "y": 0
+                },
+                {
+                    "h": 2,
+                    "i": "L5",
+                    "w": 8,
+                    "x": 0,
+                    "y": 2
+                }
+            ],
+            "aliases": {},
+            "connections": []
         }
     ]
 }

@@ -308,6 +308,7 @@ const stateAndParamsForAP2 = {
                 Country: 'Belgium',
                 Year: '',
                 'd079937f-6bc4-4133-9171-40092bb20d6f': 'Belgium',
+                _ap_Country: 'Italy',
             },
             state: {},
         },
@@ -337,6 +338,7 @@ const stateAndParamsForAP3 = {
                 Country: '',
                 Year: '',
                 'd079937f-6bc4-4133-9171-40092bb20d6f': '',
+                _ap_Country: 'Italy',
             },
             state: {},
         },
@@ -410,6 +412,65 @@ const stateAndParamsForAP5 = {
             params: {
                 Country: ['Italy', 'France'],
                 'd079937f-6bc4-4133-9171-40092bb20d6f': ['Italy', 'France'],
+            },
+            state: {},
+        },
+    },
+};
+
+const stateAndParamsForAP6 = {
+    in: {
+        Q8: {
+            params: {
+                _ap_Year: '2021',
+                _ap_Country: 'Russia',
+            },
+        },
+        L5: {
+            params: {
+                _ap_Country: 'Russia',
+                _ap_Name: 'Alex',
+                _ap_Price: '1000',
+            },
+        },
+        __meta__: {
+            queue: [
+                {id: 'Q8', tabId: 'K0'},
+                {id: 'L5', tabId: 'K1'},
+            ],
+            version: 2,
+        },
+    },
+    out: {
+        L5: {
+            params: {
+                Name: '',
+                Price: '',
+                Year: '2021',
+                Country: 'Russia',
+                _ap_Country: 'Russia',
+                _ap_Name: 'Alex',
+                _ap_Price: '1000',
+            },
+            state: {},
+        },
+        Q8: {
+            params: {
+                Year: '',
+                Country: 'Russia',
+                Name: 'Alex',
+                Price: '1000',
+                _ap_Year: '2021',
+                _ap_Country: 'Russia',
+            },
+            state: {},
+        },
+        al: {
+            params: {
+                Country: 'Russia',
+                Name: 'Alex',
+                Price: '1000',
+                Year: '2021',
             },
             state: {},
         },
@@ -522,6 +583,19 @@ describe('getItemsStateAndParams actionParams variants check', () => {
 
         it('return stateAndParamsForAP5.out', () => {
             expect(resultItemsStateAndParams).toEqual(omit(stateAndParamsForAP5.out, META_KEY));
+        });
+    });
+
+    describe('action and params state 6', () => {
+        const resultItemsStateAndParams = getItemsStateAndParamsDL({
+            defaultGlobalParams: {},
+            globalParams: {},
+            config: configs[4],
+            itemsStateAndParams: stateAndParamsForAP6.in,
+        });
+
+        it('return stateAndParamsForAP6.out', () => {
+            expect(resultItemsStateAndParams).toEqual(omit(stateAndParamsForAP6.out, META_KEY));
         });
     });
 });
