@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.7.0](https://github.com/gravity-ui/dashkit/compare/v6.6.1...v6.7.0) (2023-12-12)
+
+
+### Features
+
+* added options to plugin onStateAndParamsChange ([#105](https://github.com/gravity-ui/dashkit/issues/105)) ([67b574a](https://github.com/gravity-ui/dashkit/commit/67b574a5fc9a1c40cc2dcba66e8967be4d5dbca6))
+
 ## [6.6.1](https://github.com/gravity-ui/dashkit/compare/v6.6.0...v6.6.1) (2023-11-27)
 
 
