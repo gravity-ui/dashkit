@@ -24,6 +24,10 @@ export type ItemStateAndParams = {
     state?: ItemState;
 };
 
+export type ItemStateAndParamsChangeOptions = {
+    action: 'setParams' | 'removeItem';
+};
+
 export type ItemsStateAndParamsBase = Record<string, ItemStateAndParams>;
 
 export type ItemsStateAndParams = ItemsStateAndParamsBase | StateAndParamsMeta;

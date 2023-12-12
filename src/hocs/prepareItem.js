@@ -33,8 +33,8 @@ export function prepareItem(Component) {
 
         static contextType = DashKitContext;
 
-        _onStateAndParamsChange = (stateAndParams) => {
-            this.context.onItemStateAndParamsChange(this.props.id, stateAndParams);
+        _onStateAndParamsChange = (stateAndParams, options) => {
+            this.context.onItemStateAndParamsChange(this.props.id, stateAndParams, options);
         };
 
         render() {

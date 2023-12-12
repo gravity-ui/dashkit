@@ -349,7 +349,7 @@ describe('UpdateManager', () => {
             });
         });
 
-        it('filtering_charts_table cannot set action params not from defaults', () => {
+        it('filtering_charts_table can set action params not from defaults', () => {
             expect(
                 UpdateManager.changeStateAndParams({
                     id: 'Q8',
@@ -373,10 +373,134 @@ describe('UpdateManager', () => {
                     },
                     params: {
                         _ap_Country: 'Germany',
+                        _ap_Brand: 'Pule',
                         _ap_Year: '2020',
                     },
                 },
                 __meta__: {queue: [{id: 'Q8', tabId: 'K0'}], version: 2},
+            });
+        });
+
+        it('the item is correctly removed from the queue', () => {
+            expect(
+                UpdateManager.changeStateAndParams({
+                    id: 'Q8',
+                    config,
+                    itemsStateAndParams: {
+                        L5: {
+                            params: {
+                                d079: ['Russia'],
+                            },
+                        },
+                        Q8: {
+                            state: {
+                                tabId: 'K0',
+                            },
+                            params: {
+                                _ap_Country: 'Germany',
+                                _ap_Year: '2020',
+                            },
+                        },
+                        Unk: {
+                            params: {
+                                Country: 'Unknown',
+                            },
+                        },
+                        __meta__: {
+                            queue: [{id: 'Q8', tabId: 'K0'}, {id: 'Unk'}, {id: 'L5'}],
+                            version: 2,
+                        },
+                    },
+                    stateAndParams: {},
+                    options: {action: 'removeItem'},
+                }),
+            ).toEqual({
+                L5: {
+                    params: {
+                        d079: ['Russia'],
+                    },
+                },
+                __meta__: {queue: [{id: 'L5'}], version: 2},
+            });
+
+            expect(
+                UpdateManager.changeStateAndParams({
+                    id: 'Q8',
+                    config,
+                    itemsStateAndParams: {
+                        L5: {
+                            params: {
+                                d079: ['Russia'],
+                            },
+                        },
+                        __meta__: {
+                            queue: [{id: 'L5'}],
+                            version: 2,
+                        },
+                    },
+                    stateAndParams: {},
+                    options: {action: 'removeItem'},
+                }),
+            ).toEqual({
+                L5: {
+                    params: {
+                        d079: ['Russia'],
+                    },
+                },
+                __meta__: {queue: [{id: 'L5'}], version: 2},
+            });
+        });
+
+        it('the item is correctly setParams using additional options', () => {
+            expect(
+                UpdateManager.changeStateAndParams({
+                    id: 'Q8',
+                    config,
+                    itemsStateAndParams: {
+                        L5: {
+                            params: {
+                                d079: ['Russia'],
+                            },
+                        },
+                        Q8: {
+                            state: {
+                                tabId: 'K0',
+                            },
+                            params: {
+                                _ap_Country: 'Germany',
+                                _ap_Year: '2020',
+                            },
+                        },
+                        __meta__: {
+                            queue: [{id: 'Q8', tabId: 'K0'}, {id: 'L5'}],
+                            version: 2,
+                        },
+                    },
+                    stateAndParams: {
+                        state: {
+                            tabId: 'K0',
+                        },
+                        params: {
+                            _ap_Country: 'Russia',
+                        },
+                    },
+                    options: {action: 'setParams'},
+                }),
+            ).toEqual({
+                L5: {
+                    params: {
+                        d079: ['Russia'],
+                    },
+                },
+                Q8: {
+                    state: {
+                        tabId: 'K0',
+                    },
+                    params: {
+                        _ap_Country: 'Russia',
+                    },
+                },
+                __meta__: {queue: [{id: 'L5'}, {id: 'Q8', tabId: 'K0'}], version: 2},
             });
         });
     });

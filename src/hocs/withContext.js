@@ -76,13 +76,14 @@ function useMemoStateContext(props) {
     );
 
     const onItemStateAndParamsChange = React.useCallback(
-        (id, stateAndParams) => {
+        (id, stateAndParams, options) => {
             onChange({
                 itemsStateAndParams: UpdateManager.changeStateAndParams({
                     id,
                     config: props.config,
                     stateAndParams,
                     itemsStateAndParams: props.itemsStateAndParams,
+                    options,
                 }),
             });
         },
