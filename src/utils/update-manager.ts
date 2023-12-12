@@ -383,7 +383,7 @@ export class UpdateManager {
         const isTabSwitched = isItemWithTabs(initiatorItem) && Boolean(newTabId);
         const currentMeta = getItemsStateAndParamsMeta(itemsStateAndParams);
 
-        if (action === 'remove') {
+        if (action === 'removeItem') {
             return update(itemsStateAndParams, {
                 $unset: [...unusedIds, initiatorId],
                 [META_KEY]: {

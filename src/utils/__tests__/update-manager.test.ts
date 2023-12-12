@@ -412,7 +412,7 @@ describe('UpdateManager', () => {
                         },
                     },
                     stateAndParams: {},
-                    options: {action: 'remove'},
+                    options: {action: 'removeItem'},
                 }),
             ).toEqual({
                 L5: {
@@ -439,7 +439,7 @@ describe('UpdateManager', () => {
                         },
                     },
                     stateAndParams: {},
-                    options: {action: 'remove'},
+                    options: {action: 'removeItem'},
                 }),
             ).toEqual({
                 L5: {
