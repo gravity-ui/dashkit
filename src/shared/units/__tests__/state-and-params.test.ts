@@ -599,3 +599,155 @@ describe('getItemsStateAndParams actionParams variants check', () => {
         });
     });
 });
+
+const config = {
+    id: '7kw',
+    items: [
+        {
+            id: 'nvp',
+            data: {
+                tabs: [
+                    {
+                        id: 'rkq',
+                        title: 'test',
+                        params: {},
+                        chartId: 'some-chart',
+                        isDefault: true,
+                        autoHeight: false,
+                        description: '',
+                        enableActionParams: true,
+                    },
+                ],
+                hideTitle: true,
+            },
+            type: 'widget',
+            layout: {
+                h: 12,
+                w: 12,
+            },
+            namespace: 'default',
+        },
+        {
+            id: 'Q9K',
+            data: {
+                title: 'Year',
+                source: {},
+            },
+            type: 'control',
+            layout: {
+                h: 2,
+                w: 8,
+            },
+            defaults: {
+                year_some_id: '',
+            },
+            namespace: 'default',
+        },
+    ],
+    title: 'test',
+    layout: [
+        {
+            h: 12,
+            i: 'nvp',
+            w: 12,
+            x: 0,
+            y: 0,
+        },
+        {
+            h: 2,
+            i: 'Q9K',
+            w: 8,
+            x: 12,
+            y: 0,
+        },
+    ],
+    aliases: {},
+    connections: [],
+    salt: '123',
+    counter: 1,
+};
+const itemsStateAndParamsActionParamTest1 = {
+    nvp: {
+        params: {
+            _ap_year_some_id: ['2022'],
+        },
+    },
+    __meta__: {
+        queue: [
+            {
+                id: 'nvp',
+                tabId: 'rkq',
+            },
+        ],
+        version: 2,
+    },
+};
+const stateAndParamsActionParamsRes1 = {
+    Q9K: {
+        params: {
+            year_some_id: ['2022'],
+        },
+        state: {},
+    },
+    nvp: {
+        params: {
+            _ap_year_some_id: ['2022'],
+            year_some_id: '',
+        },
+        state: {},
+    },
+};
+
+const itemsStateAndParamsActionParamTest2 = {
+    nvp: {
+        params: {
+            _ap_another: ['2022'],
+        },
+    },
+    __meta__: {
+        queue: [
+            {
+                id: 'nvp',
+                tabId: 'rkq',
+            },
+        ],
+        version: 2,
+    },
+};
+
+const stateAndParamsActionParamsRes2 = {
+    Q9K: {
+        params: {
+            another: ['2022'],
+            year_some_id: '',
+        },
+        state: {},
+    },
+    nvp: {
+        params: {
+            _ap_another: ['2022'],
+            year_some_id: '',
+        },
+        state: {},
+    },
+};
+
+describe('state and params with actionParams', () => {
+    it('check state', () => {
+        const res1 = getItemsStateAndParamsDL({
+            defaultGlobalParams: {},
+            globalParams: {},
+            config,
+            itemsStateAndParams: itemsStateAndParamsActionParamTest1,
+        });
+        expect(res1).toEqual(stateAndParamsActionParamsRes1);
+
+        const res2 = getItemsStateAndParamsDL({
+            defaultGlobalParams: {},
+            globalParams: {},
+            config,
+            itemsStateAndParams: itemsStateAndParamsActionParamTest2,
+        });
+        expect(res2).toEqual(stateAndParamsActionParamsRes2);
+    });
+});
