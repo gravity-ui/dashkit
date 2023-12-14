@@ -6,6 +6,7 @@ import {
     pickExceptActionParamsFromParams,
     transformParamsToActionParams,
 } from '../helpers';
+import {getItemsParams} from '../state-and-params';
 
 const DEFAULT_CONTROL_ID = 'controlId';
 const DEFAULT_WIDGET_ID = 'widgetId';
@@ -92,6 +93,149 @@ const exeptActionParam3 = {
         paramName2: 'param2',
     },
 };
+
+const config = {
+    id: '7kw',
+    items: [
+        {
+            id: 'nvp',
+            data: {
+                tabs: [
+                    {
+                        id: 'rkq',
+                        title: 'test',
+                        params: {},
+                        chartId: 'some-chart',
+                        isDefault: true,
+                        autoHeight: false,
+                        description: '',
+                        enableActionParams: true,
+                    },
+                ],
+                hideTitle: true,
+            },
+            type: 'widget',
+            layout: {
+                h: 12,
+                w: 12,
+            },
+            namespace: 'default',
+        },
+        {
+            id: 'Q9K',
+            data: {
+                title: 'Year',
+                source: {},
+            },
+            type: 'control',
+            layout: {
+                h: 2,
+                w: 8,
+            },
+            defaults: {
+                year_some_id: '',
+            },
+            namespace: 'default',
+        },
+    ],
+    title: 'test',
+    layout: [
+        {
+            h: 12,
+            i: 'nvp',
+            w: 12,
+            x: 0,
+            y: 0,
+        },
+        {
+            h: 2,
+            i: 'Q9K',
+            w: 8,
+            x: 12,
+            y: 0,
+        },
+    ],
+    aliases: {},
+    connections: [],
+    salt: '123',
+    counter: 1,
+};
+const itemsStateAndParamsActionParamTest1 = {
+    nvp: {
+        params: {
+            _ap_year_some_id: ['2022'],
+        },
+    },
+    __meta__: {
+        queue: [
+            {
+                id: 'nvp',
+                tabId: 'rkq',
+            },
+        ],
+        version: 2,
+    },
+};
+
+const stateAndParamsActionParamsRes1 = {
+    Q9K: {
+        year_some_id: ['2022'],
+    },
+    nvp: {
+        _ap_year_some_id: ['2022'],
+        year_some_id: '',
+    },
+};
+
+const plugins = [
+    {
+        type: 'title',
+        defaultLayout: {
+            x: 0,
+            y: null,
+            w: 36,
+            h: 2,
+            minW: 4,
+            minH: 2,
+        },
+    },
+    {
+        type: 'text',
+        defaultLayout: {
+            x: 0,
+            y: null,
+            w: 12,
+            h: 6,
+            minW: 4,
+            minH: 2,
+        },
+    },
+    {
+        getDistincts: {
+            promise: {},
+        },
+        type: 'control',
+        defaultLayout: {
+            x: 0,
+            y: null,
+            w: 8,
+            h: 2,
+            minW: 4,
+            minH: 2,
+        },
+    },
+    {
+        type: 'widget',
+        defaultLayout: {
+            x: 0,
+            y: null,
+            w: 12,
+            h: 12,
+            minW: 4,
+            minH: 2,
+        },
+    },
+];
 
 const getMockedWidgetItem = ({id = DEFAULT_WIDGET_ID, tabs}: MockedWidgetItemArgs): ConfigItem => ({
     id,
@@ -362,6 +506,19 @@ describe('modules.helpers', () => {
             expect(exeptActionParam3.out).toEqual(
                 pickExceptActionParamsFromParams(exeptActionParam3.in),
             );
+        });
+    });
+
+    describe('state and params with actionParams', () => {
+        it('check state 1', () => {
+            const res = getItemsParams({
+                defaultGlobalParams: {},
+                globalParams: {},
+                config,
+                itemsStateAndParams: itemsStateAndParamsActionParamTest1,
+                plugins,
+            });
+            expect(res).toEqual(stateAndParamsActionParamsRes1);
         });
     });
 });
