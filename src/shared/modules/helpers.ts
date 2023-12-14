@@ -110,24 +110,11 @@ export function formQueueData({
             const filteredParamsByDefaults = pick(itemQueueParams, Object.keys(itemDefaultParams));
 
             /**
-             * filtering actionParams without prefixes by defaults params
-             * ex.:
-             * itemDefaultParams contains 'Country' in defaults
-             * and we receive '_ap_Country' and '_ap_City' in itemQueueParams
-             * we need to ignore '_ap_City' param because we don't have actionParam without prefix ('City') in defaults
-             */
-            const actionParams = pickActionParamsFromParams(itemQueueParams, false) || {};
-            const filteredActionParamsByDefaults = pick(
-                actionParams,
-                Object.keys(itemDefaultParams),
-            );
-
-            /**
              * merging filtered params and filtered actionParams with prefixes
              */
             const params = {
                 ...filteredParamsByDefaults,
-                ...transformParamsToActionParams(filteredActionParamsByDefaults),
+                ...(pickActionParamsFromParams(itemQueueParams, true) || {}),
             };
 
             return {
