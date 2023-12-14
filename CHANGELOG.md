@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.7.2](https://github.com/gravity-ui/dashkit/compare/v6.7.1...v6.7.2) (2023-12-14)
+
+
+### Bug Fixes
+
+* filtering action params logic, add test ([#108](https://github.com/gravity-ui/dashkit/issues/108)) ([5deded9](https://github.com/gravity-ui/dashkit/commit/5deded96d51d38472c4edb9f0e6fedd75412cc32))
+
 ## [6.7.1](https://github.com/gravity-ui/dashkit/compare/v6.7.0...v6.7.1) (2023-12-12)
 
 
