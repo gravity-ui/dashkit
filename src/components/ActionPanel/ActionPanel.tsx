@@ -2,6 +2,7 @@ import React from 'react';
 
 import {cn} from '../../utils/cn';
 
+import {useCssTransitionWatcher, useMount} from './hooks';
 import './ActionPanel.scss';
 
 export type ActionPanelItem = {
@@ -16,13 +17,39 @@ export type ActionPanelItem = {
 export type ActionPanelProps = {
     items: ActionPanelItem[];
     className?: string;
+    slideAnimation?: boolean;
+    hide?: boolean;
 };
 
 const b = cn('dashkit-action-panel');
 
 export const ActionPanel = (props: ActionPanelProps) => {
+    const isMounted = useMount();
+    const isAnimationEnabled = (props.slideAnimation ?? true) && isMounted;
+    const isHidden = props.hide ?? !isMounted;
+
+    const ref = React.useRef<HTMLDivElement | null>(null);
+    const {isReadyToBeRemoved, hiddenState, isPending} = useCssTransitionWatcher({
+        isEnabled: isAnimationEnabled,
+        isHidden,
+        ref,
+    });
+
+    if (isReadyToBeRemoved && isMounted) {
+        return null;
+    }
+
     return (
-        <div className={b(null, props.className)}>
+        <div
+            ref={ref}
+            className={b(
+                {
+                    hidden: hiddenState,
+                    'slide-animation': isAnimationEnabled && isPending,
+                },
+                props.className,
+            )}
+        >
             {props.items.map((item) => {
                 return (
                     <div

@@ -1,15 +1,24 @@
 .dashkit-action-panel {
     background-color: var(--g-color-base-float);
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
     position: fixed;
     bottom: 20px;
     display: flex;
-    border-radius: 8px;
+    border-radius: 10px;
+    border: 3px solid var(--g-color-base-brand);
     padding: 8px;
     gap: 0;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%) translateY(0);
     z-index: 1;
+
+    &_slide-animation {
+        will-change: transform;
+        transition: transform 0.5s ease-in-out;
+    }
+
+    &_hidden {
+        transform: translateX(-50%) translateY(calc(100% + 20px));
+    }
 
     &__item {
         height: 68px;
