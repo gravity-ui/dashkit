@@ -1,23 +1,38 @@
 .dashkit-action-panel {
+    $show_panel_transform: translateX(-50%) translateY(0);
+    $hide_panel_transform: translateX(-50%) translateY(calc(100% + 20px));
+    $selector: #{&};
+
     background-color: var(--g-color-base-float);
     position: fixed;
     bottom: 20px;
     display: flex;
     border-radius: 10px;
-    border: 3px solid var(--g-color-base-brand);
+    border: 2px solid var(--g-color-base-brand);
     padding: 8px;
     gap: 0;
     left: 50%;
-    transform: translateX(-50%) translateY(0);
+    transform: $show_panel_transform;
     z-index: 1;
 
-    &_slide-animation {
+    &-enter {
+        transform: $hide_panel_transform;
         will-change: transform;
-        transition: transform 0.5s ease-in-out;
+
+        &-active {
+            transform: $show_panel_transform;
+            transition: transform 300ms ease-in-out;
+        }
     }
 
-    &_hidden {
-        transform: translateX(-50%) translateY(calc(100% + 20px));
+    &-exit {
+        transform: $show_panel_transform;
+        will-change: transform;
+
+        &-active {
+            transform: $hide_panel_transform;
+            transition: transform 300ms ease-in-out;
+        }
     }
 
     &__item {

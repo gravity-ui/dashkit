@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import {CSSTransition} from 'react-transition-group';
 
 import Item from '../Item/Item';
 import {DashKitContext} from '../../context/DashKitContext';
@@ -37,26 +38,43 @@ class GridItem extends React.PureComponent {
 
     static contextType = DashKitContext;
 
+    overlayRef = React.createRef(null);
+    controlsRef = React.createRef();
+
     renderOverlay() {
         const {overlayControls} = this.props;
         const {editMode} = this.context;
-
-        if (!editMode || this.props.item.data._editActive) {
-            return null;
-        }
+        const isHidden = !editMode || this.props.item.data._editActive;
 
         const {item} = this.props;
         const controls = overlayControls && overlayControls[item.type];
 
         return (
-            <React.Fragment>
-                <div className={b('overlay')} />
-                <OverlayControls
-                    configItem={item}
-                    items={controls}
-                    overlayControls={overlayControls}
-                />
-            </React.Fragment>
+            <>
+                <CSSTransition
+                    in={!isHidden}
+                    nodeRef={this.overlayRef}
+                    classNames={b('overlay')}
+                    timeout={500}
+                    unmountOnExit
+                >
+                    <div ref={this.overlayRef} className={b('overlay')} />
+                </CSSTransition>
+                <CSSTransition
+                    in={!isHidden}
+                    nodeRef={this.controlsRef}
+                    classNames={b('controls')}
+                    timeout={500}
+                    unmountOnExit
+                >
+                    <OverlayControls
+                        configItem={item}
+                        items={controls}
+                        overlayControls={overlayControls}
+                        forwardRef={this.controlsRef}
+                    />
+                </CSSTransition>
+            </>
         );
     }
 

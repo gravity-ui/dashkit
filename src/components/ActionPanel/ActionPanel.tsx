@@ -1,8 +1,8 @@
 import React from 'react';
+import {CSSTransition} from 'react-transition-group';
 
 import {cn} from '../../utils/cn';
 
-import {useCssTransitionWatcher, useMount} from './hooks';
 import './ActionPanel.scss';
 
 export type ActionPanelItem = {
@@ -17,39 +17,17 @@ export type ActionPanelItem = {
 export type ActionPanelProps = {
     items: ActionPanelItem[];
     className?: string;
-    slideAnimation?: boolean;
-    hide?: boolean;
+    enable?: boolean;
 };
 
 const b = cn('dashkit-action-panel');
 
 export const ActionPanel = (props: ActionPanelProps) => {
-    const isMounted = useMount();
-    const isAnimationEnabled = (props.slideAnimation ?? true) && isMounted;
-    const isHidden = props.hide ?? !isMounted;
+    const isHidden = props.enable;
+    const nodeRef = React.useRef<HTMLDivElement | null>(null);
 
-    const ref = React.useRef<HTMLDivElement | null>(null);
-    const {isReadyToBeRemoved, hiddenState, isPending} = useCssTransitionWatcher({
-        isEnabled: isAnimationEnabled,
-        isHidden,
-        ref,
-    });
-
-    if (isReadyToBeRemoved && isMounted) {
-        return null;
-    }
-
-    return (
-        <div
-            ref={ref}
-            className={b(
-                {
-                    hidden: hiddenState,
-                    'slide-animation': isAnimationEnabled && isPending,
-                },
-                props.className,
-            )}
-        >
+    const content = (
+        <div ref={nodeRef} className={b(null, props.className)}>
             {props.items.map((item) => {
                 return (
                     <div
@@ -67,5 +45,17 @@ export const ActionPanel = (props: ActionPanelProps) => {
                 );
             })}
         </div>
+    );
+
+    return (
+        <CSSTransition
+            in={!isHidden}
+            nodeRef={nodeRef}
+            classNames={b(null)}
+            timeout={600}
+            unmountOnExit
+        >
+            {content}
+        </CSSTransition>
     );
 };
