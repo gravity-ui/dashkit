@@ -17,13 +17,15 @@ export type ActionPanelItem = {
 export type ActionPanelProps = {
     items: ActionPanelItem[];
     className?: string;
-    enable?: boolean;
+    disable?: boolean;
+    toggleAnimation?: boolean;
 };
 
 const b = cn('dashkit-action-panel');
 
 export const ActionPanel = (props: ActionPanelProps) => {
-    const isHidden = !props.enable;
+    const isDisabled = props.disable ?? false;
+    const isAnimated = props.toggleAnimation ?? false;
     const nodeRef = React.useRef<HTMLDivElement | null>(null);
 
     const content = (
@@ -47,15 +49,19 @@ export const ActionPanel = (props: ActionPanelProps) => {
         </div>
     );
 
-    return (
-        <CSSTransition
-            in={!isHidden}
-            nodeRef={nodeRef}
-            classNames={b(null)}
-            timeout={600}
-            unmountOnExit
-        >
-            {content}
-        </CSSTransition>
-    );
+    if (isAnimated) {
+        return (
+            <CSSTransition
+                in={!isDisabled}
+                nodeRef={nodeRef}
+                classNames={b(null)}
+                timeout={300}
+                unmountOnExit
+            >
+                {content}
+            </CSSTransition>
+        );
+    } else {
+        return isDisabled ? null : content;
+    }
 };

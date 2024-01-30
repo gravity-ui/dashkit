@@ -35,6 +35,7 @@ type DashKitDemoState = {
     customControlsActionData: number;
     showCustomMenu: boolean;
     enableActionPanel: boolean;
+    enableAnimations: boolean;
 };
 
 export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
@@ -53,6 +54,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
         customControlsActionData: 0,
         showCustomMenu: true,
         enableActionPanel: false,
+        enableAnimations: true,
     };
 
     private dashKitRef = React.createRef<DashKit>();
@@ -107,6 +109,17 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                         {editMode ? 'Disable editMode' : 'Enable editMode'}
                     </Button>
                     <div className={b('controls-line')}>
+                        <Button
+                            view="normal"
+                            size="m"
+                            onClick={() => this.toggleAnimations()}
+                            className={b('btn-contol')}
+                            disabled={!editMode}
+                        >
+                            {this.state.enableAnimations
+                                ? 'Disable animations'
+                                : 'Enable animations'}
+                        </Button>
                         <Button
                             view="normal"
                             size="m"
@@ -175,12 +188,14 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                 <DemoRow title="Last action in DashKit">{this.state.lastAction}</DemoRow>
                 <DemoRow title="Component view">
                     <ActionPanel
-                        enable={editMode ? this.state.enableActionPanel : false}
                         items={this.getActionPanelItems()}
+                        toggleAnimation={this.state.enableAnimations}
+                        disable={editMode ? !this.state.enableActionPanel : true}
                     />
                     <DashKit
                         config={this.state.config}
                         editMode={editMode}
+                        editModeAnimation={this.state.enableAnimations}
                         itemsStateAndParams={this.state.itemsStateAndParams}
                         defaultGlobalParams={this.state.defaultGlobalParams}
                         globalParams={this.state.globalParams}
@@ -365,6 +380,10 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
 
     private toggleActionPanel() {
         this.setState({enableActionPanel: !this.state.enableActionPanel});
+    }
+
+    private toggleAnimations() {
+        this.setState({enableAnimations: !this.state.enableAnimations});
     }
 
     private getActionPanelItems() {

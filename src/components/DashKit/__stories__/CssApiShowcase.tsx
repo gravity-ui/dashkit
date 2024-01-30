@@ -104,7 +104,7 @@ export const CssApiShowcase: React.FC = () => {
             </style>
             <Demo title="CSS API">
                 <DemoRow title="Component view">
-                    <ActionPanel enable={true} items={items} />
+                    <ActionPanel items={items} />
                     <DashKit editMode={true} config={getConfig()} />
                 </DemoRow>
             </Demo>

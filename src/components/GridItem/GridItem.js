@@ -43,30 +43,45 @@ class GridItem extends React.PureComponent {
 
     renderOverlay() {
         const {overlayControls} = this.props;
-        const {editMode} = this.context;
+        const {editMode, editModeAnimation} = this.context;
         const isHidden = !editMode || this.props.item.data._editActive;
 
         const {item} = this.props;
         const controls = overlayControls && overlayControls[item.type];
 
-        return (
-            <>
-                <CSSTransition
-                    in={!isHidden}
-                    nodeRef={this.overlayRef}
-                    classNames={b('overlay')}
-                    timeout={300}
-                    unmountOnExit
-                >
+        if (editModeAnimation) {
+            return (
+                <>
+                    <CSSTransition
+                        in={!isHidden}
+                        nodeRef={this.overlayRef}
+                        classNames={b('overlay')}
+                        timeout={300}
+                        unmountOnExit
+                    >
+                        <div ref={this.overlayRef} className={b('overlay')} />
+                    </CSSTransition>
+                    <CSSTransition
+                        in={!isHidden}
+                        nodeRef={this.controlsRef}
+                        classNames={b('controls')}
+                        timeout={300}
+                        unmountOnExit
+                    >
+                        <OverlayControls
+                            ref={this.controlsRef}
+                            configItem={item}
+                            items={controls}
+                            overlayControls={overlayControls}
+                            className={b('controls')}
+                        />
+                    </CSSTransition>
+                </>
+            );
+        } else {
+            return isHidden ? null : (
+                <>
                     <div ref={this.overlayRef} className={b('overlay')} />
-                </CSSTransition>
-                <CSSTransition
-                    in={!isHidden}
-                    nodeRef={this.controlsRef}
-                    classNames={b('controls')}
-                    timeout={300}
-                    unmountOnExit
-                >
                     <OverlayControls
                         ref={this.controlsRef}
                         configItem={item}
@@ -74,9 +89,9 @@ class GridItem extends React.PureComponent {
                         overlayControls={overlayControls}
                         className={b('controls')}
                     />
-                </CSSTransition>
-            </>
-        );
+                </>
+            );
+        }
     }
 
     render() {
@@ -94,7 +109,7 @@ class GridItem extends React.PureComponent {
             noOverlay,
             withCustomHandle,
         } = this.props;
-        const {editMode} = this.context;
+        const {editMode, editModeAnimation} = this.context;
         const width = Number.parseInt(style.width, 10);
         const height = Number.parseInt(style.height, 10);
         const transform = style.transform;
@@ -120,7 +135,12 @@ class GridItem extends React.PureComponent {
                 ref={this.props.forwardedRef}
                 {...reactGridLayoutProps}
             >
-                <div className={b('item', {editMode: editMode && !_editActive && !noOverlay})}>
+                <div
+                    className={b('item', {
+                        editMode: editMode && !_editActive && !noOverlay,
+                        animate: editModeAnimation,
+                    })}
+                >
                     <Item
                         id={this.props.id}
                         item={this.props.item}

@@ -22,6 +22,7 @@ interface DashKitGeneralProps {
     editMode: boolean;
     draggableHandleClassName?: string;
     overlayControls?: Record<string, OverlayControlItem[]>;
+    editModeAnimation?: boolean;
 }
 
 interface DashKitDefaultProps {
