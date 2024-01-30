@@ -65,6 +65,7 @@ interface OverlayControlsProps extends OverlayControlsDefaultProps {
     items?: OverlayControlItem[];
     overlayControls?: Record<string, OverlayControlItem[]>;
     forwardRef?: React.ForwardedRef<HTMLDivElement>;
+    className?: string;
 }
 
 type PreparedCopyItemOptionsArg = Pick<ConfigItem, 'data' | 'type' | 'defaults' | 'namespace'> & {
@@ -97,9 +98,9 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         size: 'm',
     };
     context!: React.ContextType<DashKitCtx>;
-    ref = null;
+
     render() {
-        const {items = [], position} = this.props;
+        const {items = [], position, className} = this.props;
         const hasCustomControlsWithWidgets = items.length > 0;
 
         const controls = hasCustomControlsWithWidgets
@@ -107,7 +108,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
             : this.renderControls();
 
         return (
-            <div ref={this.ref || this.props.forwardRef} className={b({position})}>
+            <div ref={this.props.forwardRef} className={b({position}, className)}>
                 {controls}
             </div>
         );

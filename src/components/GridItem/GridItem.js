@@ -39,7 +39,7 @@ class GridItem extends React.PureComponent {
     static contextType = DashKitContext;
 
     overlayRef = React.createRef(null);
-    controlsRef = React.createRef();
+    controlsRef = React.createRef(null);
 
     renderOverlay() {
         const {overlayControls} = this.props;
@@ -68,10 +68,11 @@ class GridItem extends React.PureComponent {
                     unmountOnExit
                 >
                     <OverlayControls
+                        ref={this.controlsRef}
                         configItem={item}
                         items={controls}
                         overlayControls={overlayControls}
-                        forwardRef={this.controlsRef}
+                        className={b('controls')}
                     />
                 </CSSTransition>
             </>
