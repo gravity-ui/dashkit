@@ -1,34 +1,43 @@
 .dashkit-grid-item {
     position: relative;
+    $_border-radius: 3px;
 
     &__overlay {
+        --_-dashkit-overlay-color: var(--dashkit-overlay-color, var(--g-color-base-generic));
+        --_-dashkit-overlay-border-color: var(--dashkit-overlay-border-color, rgba(0, 0, 0, 0.1));
+        --_-dashkit-overlay-opacity: var(--dashkit-overlay-opacity, 1);
+        --_-dashkit-overlay-border-radius: var(
+            --dashkit-grid-item-border-radius,
+            #{$_border-radius}
+        );
+
         position: absolute;
         top: 0;
         bottom: 0;
         left: 0;
         right: 0;
-        border-radius: 3px;
-        background-color: var(--g-color-base-generic);
-        border: solid 1px rgba(0, 0, 0, 0.1);
-        // opacity: 0.5;
+        border-radius: var(--_-dashkit-overlay-border-radius);
+        background-color: var(--_-dashkit-overlay-color);
+        border: solid 1px var(--_-dashkit-overlay-border-color);
+        opacity: var(--_-dashkit-overlay-opacity);
 
         &-enter {
             opacity: 0;
             will-change: opacity;
 
             &-active {
-                opacity: 1;
-                transition: opacity 300ms ease-in-out;
+                opacity: var(--_-dashkit-overlay-opacity);
+                transition: opacity 300ms ease;
             }
         }
 
         &-exit {
-            opacity: 1;
+            opacity: var(--_-dashkit-overlay-opacity);
             will-change: opacity;
 
             &-active {
                 opacity: 0;
-                transition: opacity 300ms ease-in-out;
+                transition: opacity 300ms ease;
             }
         }
     }
@@ -40,7 +49,7 @@
 
             &-active {
                 opacity: 1;
-                transition: opacity 300ms ease-in-out;
+                transition: opacity 300ms ease;
             }
         }
 
@@ -50,23 +59,34 @@
 
             &-active {
                 opacity: 0;
-                transition: opacity 300ms ease-in-out;
+                transition: opacity 300ms ease;
             }
         }
     }
 
     &__item {
+        --_-dashkit-grid-item-border-radius: var(
+            --dashkit-grid-item-border-radius,
+            #{$_border-radius}
+        );
+        --_-dashkit-grid-item-edit-opacity: var(--dashkit-grid-item-edit-opacity, 0.5);
+
         position: absolute;
         top: 0;
         bottom: 0;
         left: 0;
         right: 0;
-        border-radius: 3px;
+        border-radius: var(--_-dashkit-grid-item-border-radius);
 
         &_editMode {
-            opacity: 0.5;
+            opacity: var(--_-dashkit-grid-item-edit-opacity);
             border-color: transparent;
             pointer-events: none;
+        }
+
+        &_animate {
+            will-change: opacity;
+            transition: opacity 300ms ease;
         }
     }
 }
@@ -96,8 +116,11 @@
 }
 
 .react-grid-item.react-grid-placeholder {
-    background: #fc0;
-    opacity: 0.2;
+    --_-dashkit-placeholder-color: var(--dashkit-placeholder-color, #fc0);
+    --_-dashkit-placeholder-opacity: var(--dashkit-placeholder-opacity, 0.2);
+
+    background: var(--_-dashkit-placeholder-color);
+    opacity: var(--_-dashkit-placeholder-opacity);
     transition-duration: 100ms;
     z-index: 2;
     user-select: none;

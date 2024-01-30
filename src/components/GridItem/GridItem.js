@@ -55,7 +55,7 @@ class GridItem extends React.PureComponent {
                     in={!isHidden}
                     nodeRef={this.overlayRef}
                     classNames={b('overlay')}
-                    timeout={500}
+                    timeout={300}
                     unmountOnExit
                 >
                     <div ref={this.overlayRef} className={b('overlay')} />
@@ -64,7 +64,7 @@ class GridItem extends React.PureComponent {
                     in={!isHidden}
                     nodeRef={this.controlsRef}
                     classNames={b('controls')}
-                    timeout={500}
+                    timeout={300}
                     unmountOnExit
                 >
                     <OverlayControls

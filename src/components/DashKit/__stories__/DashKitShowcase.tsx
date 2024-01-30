@@ -175,7 +175,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                 <DemoRow title="Last action in DashKit">{this.state.lastAction}</DemoRow>
                 <DemoRow title="Component view">
                     <ActionPanel
-                        enable={editMode ? !this.state.enableActionPanel : true}
+                        enable={editMode ? this.state.enableActionPanel : false}
                         items={this.getActionPanelItems()}
                     />
                     <DashKit

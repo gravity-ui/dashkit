@@ -325,6 +325,29 @@ type MenuItem = {
 DashKit.setSettings({menu: [] as Array<MenuItem>});
 ```
 
+| Name                                           | Description           |
+|-:----------------------------------------------|-:---------------------|
+| Action panel variables                         |                       |
+| `--dashkit-action-panel-color`                 | Background color      |
+| `--dashkit-action-panel-border-color`          | Border color          |
+| `--dashkit-action-panel-border-radius`         | Border radius         |
+| Action panel item variables                    |                       |
+| `--dashkit-action-panel-item-color`            | Backgroud color       |
+| `--dashkit-action-panel-item-text-color`       | Text color            |
+| `--dashkit-action-panel-item-color-hover`      | Hover backgroud color |
+| `--dashkit-action-panel-item-text-color-hover` | Hover text color      |
+| Overlay variables                              |                       |
+| `--dashkit-overlay-border-color`               | Border color          |
+| `--dashkit-overlay-color`                      | Background color      |
+| `--dashkit-overlay-opacity`                    | Opacity               |
+| Grid item variables                            |                       |
+| `--dashkit-grid-item-edit-opacity`             | Opacity               |
+| `--dashkit-grid-item-border-radius`            | Border radius         |
+| Placeholder variables                          |                       |
+| `--dashkit-placeholder-color`                  | Background color      |
+| `--dashkit-placeholder-opacity`                | Opacity               |
+
+
 ## Development
 
 ### Build & watch

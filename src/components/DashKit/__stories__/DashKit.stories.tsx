@@ -5,6 +5,7 @@ import {DashKit, DashKitProps} from '../DashKit';
 import pluginTitle from '../../../plugins/Title/Title';
 import pluginText from '../../../plugins/Text/Text';
 import {DashKitShowcase} from './DashKitShowcase';
+import {CssApiShowcase} from './CssApiShowcase';
 import {getConfig} from './utils';
 import './DashKit.stories.scss';
 
@@ -69,3 +70,6 @@ export const Default = DefaultTemplate.bind({});
 
 const ShowcaseTemplate: Story = () => <DashKitShowcase />;
 export const Showcase = ShowcaseTemplate.bind({});
+
+const CssApiShowcaseTemplate: Story<DashKitProps> = () => <CssApiShowcase />;
+export const CSS_API = CssApiShowcaseTemplate.bind({});

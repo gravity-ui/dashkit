@@ -23,7 +23,7 @@ export type ActionPanelProps = {
 const b = cn('dashkit-action-panel');
 
 export const ActionPanel = (props: ActionPanelProps) => {
-    const isHidden = props.enable;
+    const isHidden = !props.enable;
     const nodeRef = React.useRef<HTMLDivElement | null>(null);
 
     const content = (
