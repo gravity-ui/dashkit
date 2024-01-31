@@ -195,7 +195,6 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                     <DashKit
                         config={this.state.config}
                         editMode={editMode}
-                        editModeAnimation={this.state.enableAnimations}
                         itemsStateAndParams={this.state.itemsStateAndParams}
                         defaultGlobalParams={this.state.defaultGlobalParams}
                         globalParams={this.state.globalParams}

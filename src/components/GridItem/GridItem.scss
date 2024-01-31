@@ -83,11 +83,6 @@
             border-color: transparent;
             pointer-events: none;
         }
-
-        &_animate {
-            will-change: opacity;
-            transition: opacity 300ms ease;
-        }
     }
 }
 

@@ -325,6 +325,8 @@ type MenuItem = {
 DashKit.setSettings({menu: [] as Array<MenuItem>});
 ```
 
+### CSS API
+
 | Name                                           | Description           |
 |-:----------------------------------------------|-:---------------------|
 | Action panel variables                         |                       |
