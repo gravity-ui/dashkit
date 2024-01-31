@@ -20,48 +20,6 @@
         background-color: var(--_-dashkit-overlay-color);
         border: solid 1px var(--_-dashkit-overlay-border-color);
         opacity: var(--_-dashkit-overlay-opacity);
-
-        &-enter {
-            opacity: 0;
-            will-change: opacity;
-
-            &-active {
-                opacity: var(--_-dashkit-overlay-opacity);
-                transition: opacity 300ms ease;
-            }
-        }
-
-        &-exit {
-            opacity: var(--_-dashkit-overlay-opacity);
-            will-change: opacity;
-
-            &-active {
-                opacity: 0;
-                transition: opacity 300ms ease;
-            }
-        }
-    }
-
-    &__controls {
-        &-enter {
-            opacity: 0;
-            will-change: opacity;
-
-            &-active {
-                opacity: 1;
-                transition: opacity 300ms ease;
-            }
-        }
-
-        &-exit {
-            opacity: 1;
-            will-change: opacity;
-
-            &-active {
-                opacity: 0;
-                transition: opacity 300ms ease;
-            }
-        }
     }
 
     &__item {
