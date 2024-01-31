@@ -349,6 +349,38 @@ DashKit.setSettings({menu: [] as Array<MenuItem>});
 | `--dashkit-placeholder-color`                  | Background color      |
 | `--dashkit-placeholder-opacity`                | Opacity               |
 
+#### Usage example
+
+
+```css
+.custom-theme-wrapper {
+    --dashkit-grid-item-edit-opacit: 1;
+    --dashkit-overlay-color: var(--g-color-base-float);
+    --dashkit-overlay-border-color: var(--g-color-base-float);
+    --dashkit-overlay-opacity: 0.5;
+
+    --dashkit-action-panel-border-color: var(--g-color-line-info);
+    --dashkit-action-panel-color: var(--g-color-base-float-accent);
+    --dashkit-action-panel-border-radius: var(--g-border-radius-xxl);
+}
+```
+
+```tsx
+// ....
+
+const CustomThemeWrapper = (props: {
+    dashkitProps: DashkitProps;
+    actionPanelProps: ActionPanelProps;
+}) => {
+    return (
+        <div className="custom-theme-wrapper">
+            <Dashkit {...props.dashkitProps} />
+            <ActionPanel {...props.actionPanelProps} />
+        </div>
+    );
+};
+```
+
 
 ## Development
 
