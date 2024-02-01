@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.8.0](https://github.com/gravity-ui/dashkit/compare/v6.7.2...v6.8.0) (2024-02-01)
+
+
+### Features
+
+* add slide animation for ActionPanel ([#110](https://github.com/gravity-ui/dashkit/issues/110)) ([d7e9f9b](https://github.com/gravity-ui/dashkit/commit/d7e9f9b03f52494306d13cea3a1c1ffed92deab0))
+
 ## [6.7.2](https://github.com/gravity-ui/dashkit/compare/v6.7.1...v6.7.2) (2023-12-14)
 
 
