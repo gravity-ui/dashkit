@@ -325,6 +325,63 @@ type MenuItem = {
 DashKit.setSettings({menu: [] as Array<MenuItem>});
 ```
 
+### CSS API
+
+| Name                                           | Description           |
+|-:----------------------------------------------|-:---------------------|
+| Action panel variables                         |                       |
+| `--dashkit-action-panel-color`                 | Background color      |
+| `--dashkit-action-panel-border-color`          | Border color          |
+| `--dashkit-action-panel-border-radius`         | Border radius         |
+| Action panel item variables                    |                       |
+| `--dashkit-action-panel-item-color`            | Backgroud color       |
+| `--dashkit-action-panel-item-text-color`       | Text color            |
+| `--dashkit-action-panel-item-color-hover`      | Hover backgroud color |
+| `--dashkit-action-panel-item-text-color-hover` | Hover text color      |
+| Overlay variables                              |                       |
+| `--dashkit-overlay-border-color`               | Border color          |
+| `--dashkit-overlay-color`                      | Background color      |
+| `--dashkit-overlay-opacity`                    | Opacity               |
+| Grid item variables                            |                       |
+| `--dashkit-grid-item-edit-opacity`             | Opacity               |
+| `--dashkit-grid-item-border-radius`            | Border radius         |
+| Placeholder variables                          |                       |
+| `--dashkit-placeholder-color`                  | Background color      |
+| `--dashkit-placeholder-opacity`                | Opacity               |
+
+#### Usage example
+
+
+```css
+.custom-theme-wrapper {
+    --dashkit-grid-item-edit-opacit: 1;
+    --dashkit-overlay-color: var(--g-color-base-float);
+    --dashkit-overlay-border-color: var(--g-color-base-float);
+    --dashkit-overlay-opacity: 0.5;
+
+    --dashkit-action-panel-border-color: var(--g-color-line-info);
+    --dashkit-action-panel-color: var(--g-color-base-float-accent);
+    --dashkit-action-panel-border-radius: var(--g-border-radius-xxl);
+}
+```
+
+```tsx
+// ....
+
+const CustomThemeWrapper = (props: {
+    dashkitProps: DashkitProps;
+    actionPanelProps: ActionPanelProps;
+}) => {
+    return (
+        <div className="custom-theme-wrapper">
+            <Dashkit {...props.dashkitProps} />
+            <ActionPanel {...props.actionPanelProps} />
+        </div>
+    );
+};
+```
+
+
 ## Development
 
 ### Build & watch

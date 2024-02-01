@@ -1,4 +1,5 @@
 import React from 'react';
+import {CSSTransition} from 'react-transition-group';
 
 import {cn} from '../../utils/cn';
 
@@ -16,13 +17,19 @@ export type ActionPanelItem = {
 export type ActionPanelProps = {
     items: ActionPanelItem[];
     className?: string;
+    disable?: boolean;
+    toggleAnimation?: boolean;
 };
 
 const b = cn('dashkit-action-panel');
 
 export const ActionPanel = (props: ActionPanelProps) => {
-    return (
-        <div className={b(null, props.className)}>
+    const isDisabled = props.disable ?? false;
+    const isAnimated = props.toggleAnimation ?? false;
+    const nodeRef = React.useRef<HTMLDivElement | null>(null);
+
+    const content = (
+        <div ref={nodeRef} className={b(null, props.className)}>
             {props.items.map((item) => {
                 return (
                     <div
@@ -41,4 +48,20 @@ export const ActionPanel = (props: ActionPanelProps) => {
             })}
         </div>
     );
+
+    if (isAnimated) {
+        return (
+            <CSSTransition
+                in={!isDisabled}
+                nodeRef={nodeRef}
+                classNames={b(null)}
+                timeout={300}
+                unmountOnExit
+            >
+                {content}
+            </CSSTransition>
+        );
+    } else {
+        return isDisabled ? null : content;
+    }
 };

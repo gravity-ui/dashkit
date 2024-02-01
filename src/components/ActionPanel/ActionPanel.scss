@@ -1,33 +1,84 @@
 .dashkit-action-panel {
-    background-color: var(--g-color-base-float);
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
+    $show_panel_transform: translateX(-50%) translateY(0);
+    $hide_panel_transform: translateX(-50%) translateY(calc(100% + 20px));
+
+    --_--dashkit-action-panel-color: var(--dashkit-action-panel-color, var(--g-color-base-float));
+    --_--dashkit-action-panel-border-color: var(
+        --dashkit-action-panel-border-color,
+        var(--g-color-base-brand)
+    );
+    --_--dashkit-action-panel-border-radius: var(
+        --dashkit-action-panel-border-radius,
+        var(--g-border-radius-xl)
+    );
+
+    background-color: var(--_--dashkit-action-panel-color);
     position: fixed;
     bottom: 20px;
     display: flex;
-    border-radius: 8px;
+    border-radius: var(--_--dashkit-action-panel-border-radius);
+    border: 2px solid var(--_--dashkit-action-panel-border-color);
     padding: 8px;
     gap: 0;
     left: 50%;
-    transform: translateX(-50%);
+    transform: $show_panel_transform;
     z-index: 1;
 
+    &-enter {
+        transform: $hide_panel_transform;
+        will-change: transform;
+
+        &-active {
+            transform: $show_panel_transform;
+            transition: transform 300ms ease;
+        }
+    }
+
+    &-exit {
+        transform: $show_panel_transform;
+        will-change: transform;
+
+        &-active {
+            transform: $hide_panel_transform;
+            transition: transform 300ms ease;
+        }
+    }
+
     &__item {
+        --_--dashkit-action-panel-item-color: var(--dashkit-action-panel-item-color, transparent);
+        --_--dashkit-action-panel-item-text-color: var(
+            --dashkit-action-panel-item-text-color,
+            var(--g-color-text-primary)
+        );
+        --_--dashkit-action-panel-item-color-hover: var(
+            --dashkit-action-panel-item-color-hover,
+            var(--g-color-base-simple-hover)
+        );
+        --_--dashkit-action-panel-item-text-color-hover: var(
+            --dashkit-action-panel-item-text-color-hover,
+            var(--g-color-text-primary)
+        );
+
         height: 68px;
         width: 98px;
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        transition: 0.3s background-color ease-in-out;
+        transition: 300ms color ease-in-out, 300ms background-color ease-in-out;
         border-radius: 6px;
         padding: 0 12px;
         box-sizing: border-box;
         white-space: nowrap;
         overflow: hidden;
+        background-color: var(--_--dashkit-action-panel-item-color);
+        color: var(--_--dashkit-action-panel-item-text-color);
+        will-change: color, backgroung-color;
 
         &:hover {
             cursor: pointer;
-            background-color: var(--g-color-base-simple-hover);
+            background-color: var(--_--dashkit-action-panel-item-color-hover);
+            color: var(--_--dashkit-action-panel-item-text-color-hover);
         }
     }
 
