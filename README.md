@@ -328,7 +328,7 @@ DashKit.setSettings({menu: [] as Array<MenuItem>});
 ### CSS API
 
 | Name                                           | Description           |
-|-:----------------------------------------------|-:---------------------|
+|:-----------------------------------------------|:----------------------|
 | Action panel variables                         |                       |
 | `--dashkit-action-panel-color`                 | Background color      |
 | `--dashkit-action-panel-border-color`          | Border color          |
