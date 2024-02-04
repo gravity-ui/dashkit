@@ -4,7 +4,7 @@ import {ChartColumn, Heading, Sliders, TextAlignLeft} from '@gravity-ui/icons';
 
 import {Demo, DemoRow} from './Demo';
 import {getConfig} from './utils';
-import {DashKit, ActionPanel, MenuItems, DashKitDnDWrapper} from '../../..';
+import {DashKit, ActionPanel, MenuItems, DashKitDnDWrapper, DashKitProps} from '../../..';
 import i18n from '../../../i18n';
 import {CogIcon} from '../../../icons/CogIcon';
 import {CopyIcon} from '../../../icons/CopyIcon';
@@ -67,23 +67,28 @@ export const DashKitDnDShowcase: React.FC = () => {
         [],
     );
     const [config, setConfig] = React.useState(getConfig());
-    const onChange = React.useCallback(({config}) => {
+    // TODO fix any
+    const onChange = React.useCallback(({config}: {config: DashKitProps['config']}) => {
         setConfig(config);
     }, []);
 
     const onDrop = React.useCallback(
-        (dropProps) => {
+        // TODO fix any
+        (dropProps: any) => {
             let data = null;
             if (dropProps.pluginType === 'custom') {
                 data = {};
             } else {
                 const text = prompt('Enter text');
                 if (text) {
-                    data = {
-                        size: 'm',
-                        text: 'Title widget',
-                        showInTOC: true,
-                    };
+                    data =
+                        dropProps.pluginType === 'title'
+                            ? {
+                                  size: 'm',
+                                  text,
+                                  showInTOC: true,
+                              }
+                            : {text};
                 }
             }
 
