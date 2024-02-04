@@ -20,8 +20,9 @@ import {
     getItemsStateAndParamsMeta,
     pickActionParamsFromParams,
     transformParamsToActionParams,
+    ConfigLayout,
 } from '../shared';
-import {AddConfigItem, WidgetLayout, SetItemOptions} from '../typings';
+import {AddConfigItem, WidgetLayout, SetItemOptions, SetNewItemOptions} from '../typings';
 import {RegisterManagerPluginLayout} from './register-manager';
 import {DEFAULT_NAMESPACE} from '../constants';
 import {getNewId} from './get-new-id';
@@ -259,11 +260,8 @@ export class UpdateManager {
         namespace: string;
         layout: RegisterManagerPluginLayout;
         config: Config;
-        options: SetItemOptions;
+        options: SetNewItemOptions;
     }) {
-        const layoutY = Math.max(0, ...config.layout.map(({h, y}) => h + y));
-        const saveDefaultLayout = pick(layout, ['h', 'w', 'x', 'y']);
-
         const salt = config.salt;
 
         const newItemData = getNewItemData({item, config, salt, counter: config.counter, options});
@@ -273,12 +271,33 @@ export class UpdateManager {
         counter = newIdData.counter;
 
         const newItem = {...item, id: newIdData.id, data: newItemData.data, namespace};
+        const saveDefaultLayout = pick(layout, ['h', 'w', 'x', 'y']);
 
-        return update(config, {
-            items: {$push: [newItem]},
-            layout: {$push: [{...saveDefaultLayout, y: layoutY, i: newItem.id}]},
-            counter: {$set: counter},
-        });
+        if (options.updateLayout) {
+            const byId = options.updateLayout.reduce<Record<string, ConfigLayout>>((memo, t) => {
+                memo[t.i] = t;
+                return memo;
+            }, {});
+            const newLayout = [
+                ...config.layout.map((t) => ({...t, ...(byId[t.i] || {})})),
+                {...saveDefaultLayout, i: newItem.id},
+            ];
+
+            return update(config, {
+                items: {$push: [newItem]},
+                layout: {$set: newLayout},
+                counter: {$set: counter},
+            });
+        } else {
+            const layoutY = Math.max(0, ...config.layout.map(({h, y}) => h + y));
+            const newLayoutItem = {...saveDefaultLayout, y: layoutY, i: newItem.id};
+
+            return update(config, {
+                items: {$push: [newItem]},
+                layout: {$push: [newLayoutItem]},
+                counter: {$set: counter},
+            });
+        }
     }
 
     static editItem({

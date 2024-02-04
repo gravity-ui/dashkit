@@ -11,9 +11,9 @@ import {
     ContextProps,
     Plugin,
     AddConfigItem,
-    SetItemOptions,
+    SetNewItemOptions,
 } from '../../typings';
-import {GlobalParams, Config, ConfigItem, ItemsStateAndParams} from '../../shared';
+import {GlobalParams, Config, ConfigItem, ConfigLayout, ItemsStateAndParams} from '../../shared';
 
 import {OverlayControlItem} from '../OverlayControls/OverlayControls';
 
@@ -27,6 +27,7 @@ interface DashKitGeneralProps {
 interface DashKitDefaultProps {
     onItemEdit: (item: ConfigItem) => void;
     onChange: (data: {config: Config; itemsStateAndParams: ItemsStateAndParams}) => void;
+    onDrop: (pluginType: string, itemLayout: ConfigLayout, restLayout: ConfigLayout) => void;
     defaultGlobalParams: GlobalParams;
     globalParams: GlobalParams;
     itemsStateAndParams: ItemsStateAndParams;
@@ -45,6 +46,7 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
     static defaultProps: DashKitDefaultProps = {
         onItemEdit: noop,
         onChange: noop,
+        onDrop: noop,
         defaultGlobalParams: {},
         globalParams: {},
         itemsStateAndParams: {},
@@ -62,6 +64,10 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
         });
     }
 
+    // static getPlugin(type: string) {
+    //     return registerManager.getItem(type);
+    // }
+
     static setSettings(settings: Settings) {
         registerManager.setSettings(settings);
     }
@@ -75,7 +81,7 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
         item: SetConfigItem;
         namespace?: string;
         config: Config;
-        options?: SetItemOptions;
+        options?: SetNewItemOptions;
     }): Config {
         if (setItem.id) {
             return UpdateManager.editItem({item: setItem, namespace, config, options});
