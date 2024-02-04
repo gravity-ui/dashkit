@@ -1,8 +1,9 @@
 import React from 'react';
-import {DashKitContext} from '../context/DashKitContext';
+import {DashKitContext, DashKitDnDContext} from '../context/DashKitContext';
 import {UpdateManager} from '../utils';
 import {getItemsParams, getItemsState} from '../shared';
 import isEqual from 'lodash/isEqual';
+import {TEMPORARY_ITEM_ID} from '../constants/common';
 
 function useMemoStateContext(props) {
     // так как мы не хотим хранить параметры виджета с активированной автовысотой в сторе и на сервере, актуальный
@@ -13,6 +14,14 @@ function useMemoStateContext(props) {
 
     const originalLayouts = React.useRef({});
     const adjustedLayouts = React.useRef({});
+    const [temporaryLayout, setTemporaryLayout] = React.useState(null);
+    const resetTemporaryLayout = React.useCallback(
+        () => setTemporaryLayout(null),
+        [setTemporaryLayout],
+    );
+
+    const dndContext = React.useContext(DashKitDnDContext);
+    const outerDnDEnable = Boolean(dndContext);
 
     // TODO: need move originalLayouts, adjustedLayouts to state
     const [layoutUpdateCounter, forceUpdateLayout] = React.useState(0);
@@ -64,15 +73,30 @@ function useMemoStateContext(props) {
 
     const onItemRemove = React.useCallback(
         (id) => {
-            onChange(
-                UpdateManager.removeItem({
-                    id,
-                    config: props.config,
-                    itemsStateAndParams: props.itemsStateAndParams,
-                }),
-            );
+            if (id === TEMPORARY_ITEM_ID) {
+                resetTemporaryLayout();
+            } else {
+                if (temporaryLayout) {
+                    setTemporaryLayout(temporaryLayout.filter(({i}) => i !== id));
+                }
+
+                onChange(
+                    UpdateManager.removeItem({
+                        id,
+                        config: props.config,
+                        itemsStateAndParams: props.itemsStateAndParams,
+                    }),
+                );
+            }
         },
-        [props.config, props.itemsStateAndParams, onChange],
+        [
+            props.config,
+            props.itemsStateAndParams,
+            temporaryLayout,
+            onChange,
+            setTemporaryLayout,
+            resetTemporaryLayout,
+        ],
     );
 
     const onItemStateAndParamsChange = React.useCallback(
@@ -176,9 +200,68 @@ function useMemoStateContext(props) {
         pluginsRefs.forEach((ref) => ref && ref.reload && ref.reload(data));
     }, []);
 
+    const draggedPluginRef = React.useRef(dndContext?.dragPluginType);
+    React.useEffect(() => {
+        if (!dndContext?.dragPluginType && !temporaryLayout) {
+            draggedPluginRef.current = null;
+        } else if (dndContext?.dragPluginType) {
+            draggedPluginRef.current = dndContext.dragPluginType;
+        }
+    }, [draggedPluginRef, dndContext?.dragPluginType, temporaryLayout]);
+    const dndPluginType = draggedPluginRef.current || dndContext?.dragPluginType;
+
+    const dragOverPlugin = React.useMemo(() => {
+        const pluginType = dndPluginType;
+
+        if (pluginType === null && temporaryLayout === null) return null;
+
+        if (props.registerManager.check(pluginType)) {
+            return props.registerManager.getItem(pluginType);
+        } else {
+            // eslint-disable-next-line no-console
+            console.error(`Uknown pluginType: ${pluginType}`);
+            return null;
+        }
+    }, [dndPluginType, props.registerManager, temporaryLayout]);
+
+    const onDropDragOver = React.useCallback(() => {
+        if (temporaryLayout) {
+            resetTemporaryLayout();
+            return false;
+        }
+
+        if (dragOverPlugin?.defaultLayout) {
+            const {h = 3, w = 3} = dragOverPlugin.defaultLayout;
+            return {h, w};
+        }
+
+        return false;
+    }, [resetTemporaryLayout, temporaryLayout, dragOverPlugin]);
+
+    const onDrop = React.useCallback(
+        (newLayout, item) => {
+            setTemporaryLayout(newLayout);
+            const {i, w, h, x, y} = item;
+
+            props.onDrop({
+                newLayout: newLayout.reduce((memo, l) => {
+                    if (l.i !== i) {
+                        memo.push({i: l.i, w: l.w, h: l.h, x: l.x, y: l.y});
+                    }
+                    return memo;
+                }, []),
+                itemLayout: {w, h, x, y},
+                pluginType: dndPluginType,
+                commit: resetTemporaryLayout,
+            });
+        },
+        [dndPluginType, props.onDrop],
+    );
+
     return React.useMemo(
         () => ({
             layout: resultLayout,
+            temporaryLayout,
             config: props.config,
             context: props.context,
             noOverlay: props.noOverlay,
@@ -191,6 +274,8 @@ function useMemoStateContext(props) {
             registerManager: props.registerManager,
             onItemStateAndParamsChange,
             removeItem: onItemRemove,
+            onDrop,
+            onDropDragOver,
             editItem: props.onItemEdit,
             layoutChange: onLayoutChange,
             getItemsMeta,
@@ -199,9 +284,12 @@ function useMemoStateContext(props) {
             revertToOriginalLayout,
             forwardedMetaRef: props.forwardedMetaRef,
             draggableHandleClassName: props.draggableHandleClassName,
+            outerDnDEnable,
+            dragOverPlugin,
         }),
         [
             resultLayout,
+            temporaryLayout,
             props.config,
             props.context,
             props.noOverlay,
@@ -213,6 +301,8 @@ function useMemoStateContext(props) {
             props.registerManager,
             onItemStateAndParamsChange,
             onItemRemove,
+            onDrop,
+            onDropDragOver,
             props.onItemEdit,
             onLayoutChange,
             getItemsMeta,
@@ -221,6 +311,8 @@ function useMemoStateContext(props) {
             revertToOriginalLayout,
             props.forwardedMetaRef,
             props.draggableHandleClassName,
+            outerDnDEnable,
+            dragOverPlugin,
         ],
     );
 }

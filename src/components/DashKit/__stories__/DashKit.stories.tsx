@@ -6,6 +6,7 @@ import pluginTitle from '../../../plugins/Title/Title';
 import pluginText from '../../../plugins/Text/Text';
 import {DashKitShowcase} from './DashKitShowcase';
 import {CssApiShowcase} from './CssApiShowcase';
+import {DashKitDnDShowcase} from './DashKitDnDShowcase';
 import {getConfig} from './utils';
 import './DashKit.stories.scss';
 
@@ -73,3 +74,6 @@ export const Showcase = ShowcaseTemplate.bind({});
 
 const CssApiShowcaseTemplate: Story<DashKitProps> = () => <CssApiShowcase />;
 export const CSS_API = CssApiShowcaseTemplate.bind({});
+
+const DndShowcaseTemplate: Story<DashKitProps> = () => <DashKitDnDShowcase />;
+export const DragNDrop = DndShowcaseTemplate.bind({});

@@ -2,9 +2,39 @@ import React from 'react';
 import ReactGridLayout, {WidthProvider} from 'react-grid-layout';
 import GridItem from '../GridItem/GridItem';
 import {DashKitContext} from '../../context/DashKitContext';
-import {OVERLAY_CONTROLS_CLASS_NAME} from '../../constants';
+import {OVERLAY_CONTROLS_CLASS_NAME, OVERLAY_CLASS_NAME, TEMPORARY_ITEM_ID} from '../../constants';
 
-const Layout = WidthProvider(ReactGridLayout); // eslint-disable-line new-cap
+class DragOverLayout extends ReactGridLayout {
+    processGridItem(child, isDroppingItem) {
+        if (isDroppingItem) {
+            // Drop item from outside gets 0,0 droppingPosition
+            // centering cursor on newly creted grid item
+            // And cause grid-layout using it's own GridItem to make it look
+            // like overlay adding className
+            const gridItem = super.processGridItem(child, isDroppingItem);
+            if (!gridItem) return null;
+
+            const {props} = gridItem;
+            const {containerWidth, cols, w, h, rowHeight, margin, transformScale} = props;
+
+            const leftOffset = (((containerWidth / cols) * w) / 2 || 0) * transformScale;
+            const topOffset = ((h * rowHeight + (h - 1) * margin[1]) / 2 || 0) * transformScale;
+
+            return React.cloneElement(gridItem, {
+                className: OVERLAY_CLASS_NAME,
+                droppingPosition: {
+                    ...props.droppingPosition,
+                    left: props.droppingPosition.left - leftOffset,
+                    top: props.droppingPosition.top - topOffset,
+                },
+            });
+        }
+
+        return super.processGridItem(child, isDroppingItem);
+    }
+}
+
+const Layout = WidthProvider(DragOverLayout); // eslint-disable-line new-cap
 
 export default class GridLayout extends React.PureComponent {
     constructor(props, context) {
@@ -95,25 +125,93 @@ export default class GridLayout extends React.PureComponent {
     }
 
     _onStart = () => {
+        if (this.temporaryLayout) return;
+
         this.setState({isDragging: true});
     };
 
     _onStop = (newLayout) => {
-        const {layoutChange} = this.context;
+        const {layoutChange, onDrop, temporaryLayout} = this.context;
 
-        layoutChange(newLayout);
+        if (temporaryLayout) {
+            onDrop?.(
+                newLayout,
+                newLayout.find(({i}) => i === TEMPORARY_ITEM_ID),
+            );
+        } else {
+            layoutChange(newLayout);
+        }
         this.setState({isDragging: false});
     };
 
+    _onDropDragOver = (e) => {
+        const {editMode, onDropDragOver, temporaryLayout} = this.context;
+
+        if (!editMode) {
+            return false;
+        }
+
+        const result = onDropDragOver(e);
+
+        if (temporaryLayout) {
+            return false;
+        }
+
+        return result;
+    };
+
+    _onDrop = (layout, item, e) => {
+        const {editMode, temporaryLayout, onDrop} = this.context;
+        if (!editMode && temporaryLayout) {
+            return false;
+        }
+
+        onDrop?.(layout, item, e);
+    };
+
+    renderTemporaryPlaceholder() {
+        const {temporaryLayout, dragOverPlugin, noOverlay, draggableHandleClassName} = this.context;
+
+        if (!temporaryLayout) {
+            return null;
+        }
+        const id = TEMPORARY_ITEM_ID;
+        const type = dragOverPlugin.type;
+
+        return (
+            <GridItem
+                key={id}
+                id={id}
+                item={{id, type, data: {}}}
+                layout={temporaryLayout}
+                adjustWidgetLayout={this.adjustWidgetLayout}
+                isDragging={this.state.isDragging}
+                isPlaceholder={true}
+                noOverlay={noOverlay}
+                withCustomHandle={Boolean(draggableHandleClassName)}
+                overlayControls={this.props.overlayControls}
+            />
+        );
+    }
+
     render() {
-        const {layout, config, registerManager, editMode, noOverlay, draggableHandleClassName} =
-            this.context;
+        const {
+            layout,
+            temporaryLayout,
+            config,
+            registerManager,
+            editMode,
+            noOverlay,
+            draggableHandleClassName,
+            outerDnDEnable,
+        } = this.context;
         this.pluginsRefs.length = config.items.length;
 
+        // console.log(layout, config, temporaryLayout);
         return (
             <Layout
                 {...registerManager.gridLayout}
-                layout={layout}
+                layout={temporaryLayout || layout}
                 isDraggable={editMode}
                 isResizable={editMode}
                 onDragStart={this._onStart}
@@ -122,6 +220,13 @@ export default class GridLayout extends React.PureComponent {
                 onResizeStop={this._onStop}
                 {...(draggableHandleClassName
                     ? {draggableHandle: `.${draggableHandleClassName}`}
+                    : null)}
+                {...(outerDnDEnable
+                    ? {
+                          isDroppable: true,
+                          onDropDragOver: this._onDropDragOver,
+                          onDrop: this._onDrop,
+                      }
                     : null)}
                 draggableCancel={`.${OVERLAY_CONTROLS_CLASS_NAME}`}
             >
@@ -134,7 +239,7 @@ export default class GridLayout extends React.PureComponent {
                             key={item.id}
                             id={item.id}
                             item={item}
-                            layout={layout}
+                            layout={temporaryLayout || layout}
                             adjustWidgetLayout={this.adjustWidgetLayout}
                             isDragging={this.state.isDragging}
                             noOverlay={noOverlay}
@@ -143,6 +248,7 @@ export default class GridLayout extends React.PureComponent {
                         />
                     );
                 })}
+                {this.renderTemporaryPlaceholder()}
             </Layout>
         );
     }

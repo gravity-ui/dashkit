@@ -17,6 +17,7 @@ class GridItem extends React.PureComponent {
         id: PropTypes.string,
         item: PropTypes.object,
         isDragging: PropTypes.bool,
+        isPlaceholder: PropTypes.bool,
         layout: PropTypes.array,
         overlayControls: PropTypes.object,
 
@@ -72,6 +73,7 @@ class GridItem extends React.PureComponent {
             children,
             className,
             isDragging,
+            isPlaceholder,
             noOverlay,
             withCustomHandle,
         } = this.props;
@@ -112,6 +114,7 @@ class GridItem extends React.PureComponent {
                         adjustWidgetLayout={this.props.adjustWidgetLayout}
                         layout={this.props.layout}
                         forwardedPluginRef={this.props.forwardedPluginRef}
+                        isPlaceholder={isPlaceholder}
                     />
                 </div>
                 {!noOverlay && this.renderOverlay()}
@@ -121,6 +124,10 @@ class GridItem extends React.PureComponent {
     }
 }
 
-export default React.forwardRef((props, ref) => {
+const GridItemForwarderRef = React.forwardRef((props, ref) => {
     return <GridItem {...props} forwardedRef={ref} />;
 });
+
+GridItemForwarderRef.displayName = 'forwardRef(GridItem)';
+
+export default GridItemForwarderRef;

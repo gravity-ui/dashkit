@@ -50,4 +50,5 @@ export interface PluginDefaultLayout {
 export interface Plugin<P extends PluginWidgetProps = any> extends PluginBase {
     defaultLayout?: PluginDefaultLayout;
     renderer: (props: P, forwardedRef: React.RefObject<any>) => React.ReactNode;
+    placeholderRenderer?: (props: P, forwardedRef: React.RefObject<any>) => React.ReactNode;
 }

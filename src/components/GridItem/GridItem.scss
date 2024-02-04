@@ -58,6 +58,14 @@
     will-change: width, height;
 }
 
+// .react-grid-item.dropping {
+//     opacity: 0;
+// }
+
+// .react-grid-item.dropping.react-grid-placeholder {
+//     opacity: 1;
+// }
+
 .react-grid-item.react-draggable:not(.dashkit-grid-item_with-custom-handle) {
     cursor: move;
 }
