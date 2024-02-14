@@ -1,22 +1,23 @@
-import keyBy from 'lodash/keyBy';
 import get from 'lodash/get';
 import invert from 'lodash/invert';
 import isEmpty from 'lodash/isEmpty';
+import keyBy from 'lodash/keyBy';
 import pick from 'lodash/pick';
-import {META_KEY, CURRENT_VERSION, ACTION_PARAM_PREFIX} from '../constants';
+
+import {ACTION_PARAM_PREFIX, CURRENT_VERSION, META_KEY} from '../constants';
 import {
-    PluginBase,
+    Config,
+    ConfigAliases,
+    ConfigConnection,
     ConfigItem,
+    ConfigItemWithTabs,
+    ItemStateAndParams,
     ItemsStateAndParams,
     ItemsStateAndParamsBase,
+    PluginBase,
+    QueueItem,
     StateAndParamsMetaData,
     StringParams,
-    ConfigConnection,
-    ConfigAliases,
-    ConfigItemWithTabs,
-    Config,
-    QueueItem,
-    ItemStateAndParams,
 } from '../types';
 
 function getNormalizedPlugins(plugins: PluginBase[]) {

@@ -1,15 +1,17 @@
 import React from 'react';
-import {ContextProps, SettingsProps, WidgetLayout} from './common';
+
+import type {ReactGridLayoutProps} from 'react-grid-layout';
+
 import {
-    StringParams,
     ConfigItem,
     ItemState,
     ItemStateAndParams,
-    PluginBase,
     ItemStateAndParamsChangeOptions,
+    PluginBase,
+    StringParams,
 } from '../shared';
 
-import type {ReactGridLayoutProps} from 'react-grid-layout';
+import {ContextProps, SettingsProps, WidgetLayout} from './common';
 
 export interface PluginWidgetProps {
     id: string;

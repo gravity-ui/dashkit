@@ -1,15 +1,5 @@
 import React from 'react';
-import {Button, Icon} from '@gravity-ui/uikit';
-import {DashKit, DashKitProps, MenuItems, ConfigItem, ActionPanel} from '../../..';
-import {TickIcon} from '../../../icons/TickIcon';
-import {CogIcon} from '../../../icons/CogIcon';
-import {CopyIcon} from '../../../icons/CopyIcon';
-import {DeleteIcon} from '../../../icons/DeleteIcon';
-import {WarningIcon} from '../../../icons/WarningIcon';
-import i18n from '../../../i18n';
-import {cn} from '../../../utils/cn';
-import {getConfig, makeid, titleId} from './utils';
-import {Demo, DemoRow} from './Demo';
+
 import {
     ChartColumn,
     Heading,
@@ -18,6 +8,19 @@ import {
     Sliders,
     TextAlignLeft,
 } from '@gravity-ui/icons';
+import {Button, Icon} from '@gravity-ui/uikit';
+
+import {ActionPanel, ConfigItem, DashKit, DashKitProps, MenuItems} from '../../..';
+import {i18n} from '../../../i18n';
+import {CogIcon} from '../../../icons/CogIcon';
+import {CopyIcon} from '../../../icons/CopyIcon';
+import {DeleteIcon} from '../../../icons/DeleteIcon';
+import {TickIcon} from '../../../icons/TickIcon';
+import {WarningIcon} from '../../../icons/WarningIcon';
+import {cn} from '../../../utils/cn';
+
+import {Demo, DemoRow} from './Demo';
+import {getConfig, makeid, titleId} from './utils';
 
 import './DashKitShowcase.scss';
 

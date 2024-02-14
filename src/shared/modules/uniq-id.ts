@@ -1,5 +1,7 @@
 import Hashids from 'hashids';
+
 import type {Config} from '../types';
+
 import {isItemWithTabs} from './helpers';
 
 export function extractIdsFromConfig(config: Config): string[] {

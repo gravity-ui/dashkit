@@ -1,5 +1,7 @@
 import React from 'react';
+
 import isEqual from 'lodash/isEqual';
+
 import {Config} from '../shared';
 import {RegisterManager} from '../utils';
 

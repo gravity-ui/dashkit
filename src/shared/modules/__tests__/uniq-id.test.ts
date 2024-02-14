@@ -1,6 +1,7 @@
 import Hashids from 'hashids';
-import {generateUniqId, extractIdsFromConfig} from '../uniq-id';
+
 import type {Config} from '../../types';
+import {extractIdsFromConfig, generateUniqId} from '../uniq-id';
 
 const salt = 'salt';
 const hashids = new Hashids(salt);

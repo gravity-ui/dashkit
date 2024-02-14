@@ -1,5 +1,5 @@
 {
-  "extends": "@gravity-ui/tsconfig/tsconfig",
+  "extends": "@gravity-ui/tsconfig",
   "compilerOptions": {
     "declaration": true,
     "allowJs": true,

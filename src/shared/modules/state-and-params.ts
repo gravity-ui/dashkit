@@ -1,29 +1,31 @@
 import groupBy from 'lodash/groupBy';
+
 import {META_KEY} from '../constants';
 import {
-    GlobalParams,
     Config,
-    ItemsStateAndParams,
-    PluginBase,
     ConfigItem,
-    StringParams,
-    ItemState,
-    ItemsStateAndParamsBase,
-    StateAndParamsMetaData,
-    ItemStateAndParams,
     ConfigItemDataWithTabs,
+    GlobalParams,
+    ItemState,
+    ItemStateAndParams,
+    ItemsStateAndParams,
+    ItemsStateAndParamsBase,
+    PluginBase,
+    StateAndParamsMetaData,
+    StringParams,
 } from '../types';
+
 import {
-    prerenderItems,
-    formQueueData,
     FormedQueueData,
-    getMapItemsIgnores,
-    mergeParamsWithAliases,
+    formQueueData,
     getCurrentVersion,
-    pickActionParamsFromParams,
+    getMapItemsIgnores,
     hasActionParam,
-    pickExceptActionParamsFromParams,
     isItemWithTabs,
+    mergeParamsWithAliases,
+    pickActionParamsFromParams,
+    pickExceptActionParamsFromParams,
+    prerenderItems,
     resolveItemInnerId,
 } from './helpers';
 
@@ -59,14 +61,17 @@ export function getItemsParams({
         isFirstVersion,
     });
     const groupByNamespace = groupBy(items, 'namespace');
-    const itemsWithDefaultsByNamespace = Object.keys(groupByNamespace).reduce((acc, namespace) => {
-        return {
-            ...acc,
-            // there are defaults only in selectors by now, need to get them from item.data.tabs[].defaults for widgets
-            // but make a decision about there's order first
-            [namespace]: groupByNamespace[namespace].filter((item) => item.defaults),
-        };
-    }, {} as Record<string, ConfigItem[]>);
+    const itemsWithDefaultsByNamespace = Object.keys(groupByNamespace).reduce(
+        (acc, namespace) => {
+            return {
+                ...acc,
+                // there are defaults only in selectors by now, need to get them from item.data.tabs[].defaults for widgets
+                // but make a decision about there's order first
+                [namespace]: groupByNamespace[namespace].filter((item) => item.defaults),
+            };
+        },
+        {} as Record<string, ConfigItem[]>,
+    );
 
     return items.reduce((itemsParams: Record<string, StringParams>, item) => {
         const {id, namespace} = item;

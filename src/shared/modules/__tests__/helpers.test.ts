@@ -1,5 +1,5 @@
-import {ConfigItem, StringParams, ItemsStateAndParams, ConfigItemData} from '../../types';
 import {ACTION_PARAM_PREFIX, META_KEY} from '../../constants';
+import {ConfigItem, ConfigItemData, ItemsStateAndParams, StringParams} from '../../types';
 import {
     formQueueData,
     hasActionParams,

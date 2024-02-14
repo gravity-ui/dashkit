@@ -12,10 +12,7 @@
         );
 
         position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        right: 0;
+        inset: 0;
         border-radius: var(--_-dashkit-overlay-border-radius);
         background-color: var(--_-dashkit-overlay-color);
         border: solid 1px var(--_-dashkit-overlay-border-color);
@@ -30,10 +27,7 @@
         --_-dashkit-grid-item-edit-opacity: var(--dashkit-grid-item-edit-opacity, 0.5);
 
         position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        right: 0;
+        inset: 0;
         border-radius: var(--_-dashkit-grid-item-border-radius);
 
         &_editMode {

@@ -65,7 +65,9 @@
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        transition: 300ms color ease-in-out, 300ms background-color ease-in-out;
+        transition:
+            300ms color ease-in-out,
+            300ms background-color ease-in-out;
         border-radius: 6px;
         padding: 0 12px;
         box-sizing: border-box;

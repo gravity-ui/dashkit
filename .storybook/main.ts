@@ -5,7 +5,7 @@ const config: StorybookConfig = {
         name: '@storybook/react-webpack5',
         options: {fastRefresh: true},
     },
-    stories: ['../src/**/*.mdx', '../src/**/*.stories.@(ts|tsx)'],
+    stories: ['../src/**/*.stories.@(ts|tsx)'],
     docs: {
         autodocs: false,
     },

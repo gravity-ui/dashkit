@@ -1,13 +1,13 @@
 import React from 'react';
+
 import PropTypes from 'prop-types';
 
-import Item from '../Item/Item';
 import {DashKitContext} from '../../context/DashKitContext';
 import {cn} from '../../utils/cn';
+import Item from '../Item/Item';
+import OverlayControls from '../OverlayControls/OverlayControls';
 
 import './GridItem.scss';
-
-import OverlayControls from '../OverlayControls/OverlayControls';
 
 const b = cn('dashkit-grid-item');
 

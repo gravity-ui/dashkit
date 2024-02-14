@@ -1,27 +1,28 @@
 import React from 'react';
-import i18n from '../../i18n';
-import noop from 'lodash/noop';
 
-import {DashKitContext} from '../../context/DashKitContext';
 import {
-    Icon,
-    DropdownMenu,
     Button,
-    ButtonView,
     ButtonSize,
+    ButtonView,
+    DropdownMenu,
+    Icon,
     IconProps,
     MenuItemProps,
 } from '@gravity-ui/uikit';
-import {COPIED_WIDGET_STORE_KEY, OVERLAY_CONTROLS_CLASS_NAME, MenuItems} from '../../constants';
-import {ConfigLayout, ConfigItem, PluginBase, StringParams, Config, ItemState} from '../../shared';
-import type {RegisterManager} from '../../utils/register-manager';
-import {DotsIcon} from '../../icons/DotsIcon';
-import {CogIcon} from '../../icons/CogIcon';
+import noop from 'lodash/noop';
+
+import {COPIED_WIDGET_STORE_KEY, MenuItems, OVERLAY_CONTROLS_CLASS_NAME} from '../../constants';
+import {DashKitContext} from '../../context/DashKitContext';
+import {i18n} from '../../i18n';
 import {CloseIcon} from '../../icons/CloseIcon';
+import {CogIcon} from '../../icons/CogIcon';
+import {DotsIcon} from '../../icons/DotsIcon';
+import {Config, ConfigItem, ConfigLayout, ItemState, PluginBase, StringParams} from '../../shared';
+import {Settings} from '../../typings';
 import {cn} from '../../utils/cn';
+import type {RegisterManager} from '../../utils/register-manager';
 
 import './OverlayControls.scss';
-import {Settings} from '../../typings';
 
 const b = cn(OVERLAY_CONTROLS_CLASS_NAME);
 
@@ -253,6 +254,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                           : this.getDropDownMenuItemConfig(item.id)?.action || (() => {});
 
                   return {
+                      // @ts-expect-error
                       text: item.title || i18n(item.id),
                       icon: item.icon,
                       action: itemAction,

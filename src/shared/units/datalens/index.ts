@@ -1,7 +1,8 @@
 import omit from 'lodash/omit';
-import {GetItemsParamsArg, getItemsStateAndParams} from '../../modules';
-import {PluginBase, ItemsStateAndParamsBase} from '../../types';
+
 import {META_KEY} from '../../constants';
+import {GetItemsParamsArg, getItemsStateAndParams} from '../../modules';
+import {ItemsStateAndParamsBase, PluginBase} from '../../types';
 
 export const pluginControlBaseDL: PluginBase = {
     type: 'control',
