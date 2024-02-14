@@ -13,7 +13,7 @@ import noop from 'lodash/noop';
 
 import {COPIED_WIDGET_STORE_KEY, MenuItems, OVERLAY_CONTROLS_CLASS_NAME} from '../../constants';
 import {DashKitContext} from '../../context/DashKitContext';
-import i18n from '../../i18n';
+import {i18n} from '../../i18n';
 import {CloseIcon} from '../../icons/CloseIcon';
 import {CogIcon} from '../../icons/CogIcon';
 import {DotsIcon} from '../../icons/DotsIcon';
@@ -254,6 +254,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                           : this.getDropDownMenuItemConfig(item.id)?.action || (() => {});
 
                   return {
+                      // @ts-expect-error
                       text: item.title || i18n(item.id),
                       icon: item.icon,
                       action: itemAction,

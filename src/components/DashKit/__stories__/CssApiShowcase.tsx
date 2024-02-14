@@ -11,7 +11,7 @@ import {
 import {Icon} from '@gravity-ui/uikit';
 
 import {ActionPanel, DashKit, MenuItems} from '../../..';
-import i18n from '../../../i18n';
+import {i18n} from '../../../i18n';
 import {CogIcon} from '../../../icons/CogIcon';
 import {CopyIcon} from '../../../icons/CopyIcon';
 import {DeleteIcon} from '../../../icons/DeleteIcon';
