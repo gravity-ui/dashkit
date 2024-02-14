@@ -92,7 +92,7 @@ export const CssApiShowcase: React.FC = () => {
 
                     --dashkit-action-panel-item-color: transparent;
                     --dashkit-action-panel-item-text-color: var(--g-color-text-primary);
-                    
+
                     --dashkit-action-panel-item-color-hover: var(--g-color-line-info);
                     --dashkit-action-panel-item-text-color-hover: white;
 
