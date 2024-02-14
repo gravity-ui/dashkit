@@ -1,5 +1,16 @@
 # Changelog
 
+## [7.0.0](https://github.com/gravity-ui/dashkit/compare/v6.8.0...v7.0.0) (2024-02-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* move to uikit 6 ([#116](https://github.com/gravity-ui/dashkit/issues/116))
+
+### Features
+
+* move to uikit 6 ([#116](https://github.com/gravity-ui/dashkit/issues/116)) ([2954e07](https://github.com/gravity-ui/dashkit/commit/2954e0702e8a5429b5bf5949990b77b5c8998e96))
+
 ## [6.8.0](https://github.com/gravity-ui/dashkit/compare/v6.7.2...v6.8.0) (2024-02-01)
 
 
