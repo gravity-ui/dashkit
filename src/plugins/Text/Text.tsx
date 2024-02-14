@@ -1,8 +1,11 @@
 import React from 'react';
-import {Loader, Button} from '@gravity-ui/uikit';
+
+import {Button, Loader} from '@gravity-ui/uikit';
+
 import i18n from '../../i18n';
+import {Plugin, PluginWidgetProps} from '../../typings';
 import {cn} from '../../utils/cn';
-import {PluginWidgetProps, Plugin} from '../../typings';
+
 import './Text.scss';
 
 // need to set markdown styles separately

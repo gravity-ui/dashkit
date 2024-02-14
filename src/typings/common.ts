@@ -1,7 +1,7 @@
+import type {ReactGridLayoutProps} from 'react-grid-layout';
+
 import {OverlayCustomControlItem} from '../components/OverlayControls/OverlayControls';
 import {MenuItems} from '../constants';
-
-import type {ReactGridLayoutProps} from 'react-grid-layout';
 
 export interface Settings {
     gridLayout?: ReactGridLayoutProps;

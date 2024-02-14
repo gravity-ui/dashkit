@@ -1,12 +1,16 @@
 import React from 'react';
-import {cn} from '../../../utils/cn';
+
 import {Meta, Story} from '@storybook/react';
-import {DashKit, DashKitProps} from '../DashKit';
-import pluginTitle from '../../../plugins/Title/Title';
+
 import pluginText from '../../../plugins/Text/Text';
-import {DashKitShowcase} from './DashKitShowcase';
+import pluginTitle from '../../../plugins/Title/Title';
+import {cn} from '../../../utils/cn';
+import {DashKit, DashKitProps} from '../DashKit';
+
 import {CssApiShowcase} from './CssApiShowcase';
+import {DashKitShowcase} from './DashKitShowcase';
 import {getConfig} from './utils';
+
 import './DashKit.stories.scss';
 
 const b = cn('stories-dashkit');

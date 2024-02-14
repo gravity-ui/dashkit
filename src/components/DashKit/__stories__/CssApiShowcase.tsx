@@ -1,5 +1,5 @@
 import React from 'react';
-import {Icon} from '@gravity-ui/uikit';
+
 import {
     ChartColumn,
     Heading,
@@ -8,14 +8,16 @@ import {
     Sliders,
     TextAlignLeft,
 } from '@gravity-ui/icons';
+import {Icon} from '@gravity-ui/uikit';
 
-import {Demo, DemoRow} from './Demo';
-import {getConfig} from './utils';
-import {DashKit, ActionPanel, MenuItems} from '../../..';
+import {ActionPanel, DashKit, MenuItems} from '../../..';
 import i18n from '../../../i18n';
 import {CogIcon} from '../../../icons/CogIcon';
 import {CopyIcon} from '../../../icons/CopyIcon';
 import {DeleteIcon} from '../../../icons/DeleteIcon';
+
+import {Demo, DemoRow} from './Demo';
+import {getConfig} from './utils';
 
 export const CssApiShowcase: React.FC = () => {
     React.useEffect(() => {

@@ -1,20 +1,21 @@
 import React from 'react';
+
 import noop from 'lodash/noop';
+
+import {DEFAULT_NAMESPACE} from '../../constants';
+import {Config, ConfigItem, GlobalParams, ItemsStateAndParams} from '../../shared';
+import {
+    AddConfigItem,
+    ContextProps,
+    Plugin,
+    SetConfigItem,
+    SetItemOptions,
+    Settings,
+    SettingsProps,
+} from '../../typings';
 import {RegisterManager, UpdateManager} from '../../utils';
 import DashKitView from '../DashKitView/DashKitView';
 import GridLayout from '../GridLayout/GridLayout';
-import {DEFAULT_NAMESPACE} from '../../constants';
-import {
-    SetConfigItem,
-    Settings,
-    SettingsProps,
-    ContextProps,
-    Plugin,
-    AddConfigItem,
-    SetItemOptions,
-} from '../../typings';
-import {GlobalParams, Config, ConfigItem, ItemsStateAndParams} from '../../shared';
-
 import {OverlayControlItem} from '../OverlayControls/OverlayControls';
 
 interface DashKitGeneralProps {

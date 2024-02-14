@@ -1,4 +1,4 @@
-import {configure, Lang} from './configure';
+import {Lang, configure} from './configure';
 
 /**
  * Preferred method to set language.

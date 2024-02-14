@@ -1,8 +1,10 @@
 import React from 'react';
-import {DashKitContext} from '../context/DashKitContext';
-import {UpdateManager} from '../utils';
-import {getItemsParams, getItemsState} from '../shared';
+
 import isEqual from 'lodash/isEqual';
+
+import {DashKitContext} from '../context/DashKitContext';
+import {getItemsParams, getItemsState} from '../shared';
+import {UpdateManager} from '../utils';
 
 function useMemoStateContext(props) {
     // так как мы не хотим хранить параметры виджета с активированной автовысотой в сторе и на сервере, актуальный

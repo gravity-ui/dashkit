@@ -1,4 +1,5 @@
 import React from 'react';
+
 import {CSSTransition} from 'react-transition-group';
 
 import {cn} from '../../utils/cn';

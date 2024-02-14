@@ -1,4 +1,5 @@
 import {META_KEY} from '../constants';
+
 import {StringParams} from './common';
 
 export interface ItemState {

@@ -1,6 +1,8 @@
 import React from 'react';
+
+import {Plugin, PluginWidgetProps} from '../../typings';
 import {cn} from '../../utils/cn';
-import {PluginWidgetProps, Plugin} from '../../typings';
+
 import './Title.scss';
 
 export interface PluginTitleProps extends PluginWidgetProps {

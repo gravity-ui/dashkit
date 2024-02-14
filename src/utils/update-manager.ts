@@ -1,30 +1,32 @@
-import update, {extend, Spec, CustomCommands} from 'immutability-helper';
+import update, {CustomCommands, Spec, extend} from 'immutability-helper';
 import omit from 'lodash/omit';
 import pick from 'lodash/pick';
+
+import {DEFAULT_NAMESPACE} from '../constants';
 import {
-    mergeParamsWithAliases,
-    isItemWithTabs,
     Config,
     ConfigItem,
-    ItemsStateAndParams,
     ItemStateAndParams,
-    ItemsStateAndParamsBase,
     ItemStateAndParamsChangeOptions,
-    StringParams,
-    getCurrentVersion,
+    ItemsStateAndParams,
+    ItemsStateAndParamsBase,
     META_KEY,
-    deleteFromQueue,
+    StringParams,
     addToQueue,
+    deleteFromQueue,
+    getCurrentVersion,
     getInitialItemsStateAndParamsMeta,
-    resolveItemInnerId,
     getItemsStateAndParamsMeta,
+    isItemWithTabs,
+    mergeParamsWithAliases,
     pickActionParamsFromParams,
+    resolveItemInnerId,
     transformParamsToActionParams,
 } from '../shared';
-import {AddConfigItem, WidgetLayout, SetItemOptions} from '../typings';
-import {RegisterManagerPluginLayout} from './register-manager';
-import {DEFAULT_NAMESPACE} from '../constants';
+import {AddConfigItem, SetItemOptions, WidgetLayout} from '../typings';
+
 import {getNewId} from './get-new-id';
+import {RegisterManagerPluginLayout} from './register-manager';
 
 extend('$auto', (value, object) => (object ? update(object, value) : update({}, value)));
 type AutoExtendCommand = CustomCommands<{$auto: object}>;
@@ -61,25 +63,30 @@ function removeItemVersion1({id, config, itemsStateAndParams}: RemoveItemArg) {
     );
     const withoutUniqItemsParams = Object.keys(itemsStateAndParams)
         .filter((key) => key !== id)
-        .reduce((acc, key) => {
-            const {params} = (itemsStateAndParams as ItemsStateAndParamsBase)[key];
-            // в state из урла могут быть элементы, которых нет в config.items
-            const item = config.items.find((configItem) => configItem.id === key);
-            if (params && item) {
-                const {namespace} = item;
-                const currentUniqParamsKeys =
-                    namespace === removeItem.namespace ? uniqNamespaceParamsKeys : uniqParamsKeys;
-                const resultParams: StringParams = omit(params, currentUniqParamsKeys);
-                if (Object.keys(params).length !== Object.keys(resultParams).length) {
-                    acc[key] = {
-                        params: {
-                            $set: resultParams,
-                        },
-                    };
+        .reduce(
+            (acc, key) => {
+                const {params} = (itemsStateAndParams as ItemsStateAndParamsBase)[key];
+                // в state из урла могут быть элементы, которых нет в config.items
+                const item = config.items.find((configItem) => configItem.id === key);
+                if (params && item) {
+                    const {namespace} = item;
+                    const currentUniqParamsKeys =
+                        namespace === removeItem.namespace
+                            ? uniqNamespaceParamsKeys
+                            : uniqParamsKeys;
+                    const resultParams: StringParams = omit(params, currentUniqParamsKeys);
+                    if (Object.keys(params).length !== Object.keys(resultParams).length) {
+                        acc[key] = {
+                            params: {
+                                $set: resultParams,
+                            },
+                        };
+                    }
                 }
-            }
-            return acc;
-        }, {} as Record<string, Spec<{params: StringParams}>>);
+                return acc;
+            },
+            {} as Record<string, Spec<{params: StringParams}>>,
+        );
     const newItemsStateAndParams = update(itemsStateAndParams, {
         $unset: [id],
         ...withoutUniqItemsParams,
@@ -186,21 +193,24 @@ function changeStateAndParamsVersion1({
             .map(({id}) => id);
         return update(
             itemsStateAndParams,
-            updateIds.reduce((acc, currentId) => {
-                acc[currentId] = {
-                    $auto: {
-                        params: {
-                            [(itemsStateAndParams as ItemsStateAndParamsBase)[currentId]?.params
-                                ? '$merge'
-                                : '$set']: allowableParamsWithAliases,
+            updateIds.reduce(
+                (acc, currentId) => {
+                    acc[currentId] = {
+                        $auto: {
+                            params: {
+                                [(itemsStateAndParams as ItemsStateAndParamsBase)[currentId]?.params
+                                    ? '$merge'
+                                    : '$set']: allowableParamsWithAliases,
+                            },
+                            ...(hasState && currentId === initiatorId
+                                ? {state: {$set: stateAndParams.state}}
+                                : {}),
                         },
-                        ...(hasState && currentId === initiatorId
-                            ? {state: {$set: stateAndParams.state}}
-                            : {}),
-                    },
-                };
-                return acc;
-            }, {} as Record<string, Spec<ItemsStateAndParams, AutoExtendCommand>>),
+                    };
+                    return acc;
+                },
+                {} as Record<string, Spec<ItemsStateAndParams, AutoExtendCommand>>,
+            ),
         );
     } else if (hasState) {
         return update(itemsStateAndParams, {

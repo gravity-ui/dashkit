@@ -1,7 +1,9 @@
 import omit from 'lodash/omit';
+
 import {META_KEY} from '../../constants';
-import {getItemsStateAndParamsDL} from '../datalens';
 import {Config} from '../../types';
+import {getItemsStateAndParamsDL} from '../datalens';
+
 import mockConfigs from './configs.json';
 
 export const stateAndParams1 = {

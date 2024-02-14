@@ -1,4 +1,5 @@
 import {I18N} from '@gravity-ui/i18n';
+
 import {getConfig, subscribeConfigure} from '../utils/configure';
 
 import en from './en.json';
