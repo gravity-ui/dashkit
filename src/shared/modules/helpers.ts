@@ -10,6 +10,8 @@ import {
     ConfigAliases,
     ConfigConnection,
     ConfigItem,
+    ConfigItemGroup,
+    ConfigItemWithGroup,
     ConfigItemWithTabs,
     ItemStateAndParams,
     ItemsStateAndParams,
@@ -63,14 +65,22 @@ export function getCurrentVersion(itemsStateAndParams: ItemsStateAndParams): num
     return meta.version;
 }
 
-function nonNullable<T>(value: T): value is NonNullable<T> {
-    return value !== null && value !== undefined;
+function isConfigData(
+    item: Pick<ConfigItem, 'data'> | ConfigItemGroup,
+): item is Pick<ConfigItem, 'data'> {
+    return 'data' in item && 'type' in item;
 }
 
 export function isItemWithTabs(
-    item: Pick<ConfigItem, 'data'>,
+    item: Pick<ConfigItem, 'data'> | ConfigItemGroup,
 ): item is Pick<ConfigItemWithTabs, 'data'> {
-    return Array.isArray(item?.data?.tabs);
+    return isConfigData(item) && Array.isArray(item?.data?.tabs);
+}
+
+export function isItemWithGroup(
+    item: Pick<ConfigItem, 'data'>,
+): item is Pick<ConfigItemWithGroup, 'data'> {
+    return Array.isArray(item?.data?.group);
 }
 
 export type FormedQueueData = {
@@ -89,49 +99,86 @@ export function formQueueData({
 }): FormedQueueData[] {
     const queue = getItemsStateAndParamsMeta(itemsStateAndParams)?.queue || [];
     const keyById = keyBy(items, 'id');
-    return queue
-        .map((queueItem) => {
-            const {id: queueId, tabId} = queueItem;
-            const item = keyById[queueId];
-            if (!item) {
-                return null;
-            }
-            let itemDefaultParams: StringParams;
-            if (isItemWithTabs(item)) {
-                if (!tabId || resolveItemInnerId({item, itemsStateAndParams}) !== tabId) {
-                    return null;
-                }
-                itemDefaultParams =
-                    item.data.tabs.find((tabData) => tabData.id === tabId)?.params || {};
-            } else {
-                itemDefaultParams = item.defaults || {};
-            }
+    return queue.reduce((queueArray: FormedQueueData[], queueItem: QueueItem) => {
+        const {id: queueId, tabId, groupItemId} = queueItem;
+        const item = keyById[queueId];
+        const isGroup = isItemWithGroup(item);
+        if (!item || (isGroup && !groupItemId)) {
+            return queueArray;
+        }
 
-            const itemQueueParams: StringParams = get(itemsStateAndParams, [item.id, 'params'], {});
-            const filteredParamsByDefaults = pick(itemQueueParams, Object.keys(itemDefaultParams));
+        if (isGroup && groupItemId) {
+            const itemQueueParams: Record<string, StringParams> = get(
+                itemsStateAndParams,
+                [item.id, 'params'],
+                {},
+            );
+
+            const groupItem = item.data.group.find(({id}) => id === groupItemId);
+            if (!groupItem) {
+                return queueArray;
+            }
+            const groupItemQueueParams = itemQueueParams[groupItemId];
+            const filteredParamsByDefaults = pick(
+                groupItemQueueParams,
+                Object.keys(groupItem.defaults || {}),
+            );
 
             /**
              * merging filtered params and filtered actionParams with prefixes
              */
             const params = {
                 ...filteredParamsByDefaults,
-                ...(pickActionParamsFromParams(itemQueueParams, true) || {}),
+                ...(pickActionParamsFromParams(groupItemQueueParams, true) || {}),
             };
 
-            return {
-                id: item.id,
-                namespace: item.namespace,
+            queueArray.push({
+                id: groupItem.id,
+                namespace: groupItem.namespace,
                 params,
-            };
-        })
-        .filter(nonNullable);
+            });
+
+            return queueArray;
+        }
+
+        const itemQueueParams: StringParams = get(itemsStateAndParams, [item.id, 'params'], {});
+
+        let itemDefaultParams: StringParams;
+        if (isItemWithTabs(item)) {
+            if (!tabId || resolveItemInnerId({item, itemsStateAndParams}) !== tabId) {
+                return queueArray;
+            }
+            itemDefaultParams =
+                item.data.tabs.find((tabData) => tabData.id === tabId)?.params || {};
+        } else {
+            itemDefaultParams = item.defaults || {};
+        }
+
+        const filteredParamsByDefaults = pick(itemQueueParams, Object.keys(itemDefaultParams));
+
+        /**
+         * merging filtered params and filtered actionParams with prefixes
+         */
+        const params = {
+            ...filteredParamsByDefaults,
+            ...(pickActionParamsFromParams(itemQueueParams, true) || {}),
+        };
+
+        queueArray.push({
+            id: item.id,
+            namespace: item.namespace,
+            params,
+        });
+
+        return queueArray;
+    }, []);
 }
 
 export function resolveItemInnerId({
     item,
     itemsStateAndParams,
 }: {
-    item: ConfigItem;
+    item: Pick<ConfigItemWithTabs, 'data' | 'id'>;
     itemsStateAndParams: ItemsStateAndParams;
 }): string {
     const {id} = item;
@@ -153,7 +200,7 @@ export function getMapItemsIgnores({
     itemsStateAndParams,
     isFirstVersion,
 }: {
-    items: ConfigItem[];
+    items: (ConfigItem | ConfigItemGroup)[];
     ignores: ConfigConnection[];
     itemsStateAndParams: ItemsStateAndParams;
     isFirstVersion: boolean;
@@ -232,13 +279,35 @@ export function getInitialItemsStateAndParamsMeta(): StateAndParamsMetaData {
 interface ChangeQueueArg {
     id: string;
     tabId?: string;
+    groupItemId?: string;
     config: Config;
     itemsStateAndParams: ItemsStateAndParams;
+}
+
+interface ChangeQueueGroupArg {
+    id: string;
+    groupItemIds: string[];
+    config: Config;
+    itemsStateAndParams: ItemsStateAndParams;
+}
+
+function getActualItems(items: ConfigItem[]) {
+    return items.reduce((ids: string[], item) => {
+        if (isItemWithGroup(item)) {
+            item.data.group.forEach((groupItem) => {
+                ids.push(groupItem.id);
+            });
+        }
+
+        ids.push(item.id);
+        return ids;
+    }, []);
 }
 
 export function addToQueue({
     id,
     tabId,
+    groupItemId,
     config,
     itemsStateAndParams,
 }: ChangeQueueArg): StateAndParamsMetaData {
@@ -246,17 +315,55 @@ export function addToQueue({
     if (tabId) {
         queueItem.tabId = tabId;
     }
+    if (groupItemId) {
+        queueItem.groupItemId = groupItemId;
+    }
     const meta = getItemsStateAndParamsMeta(itemsStateAndParams);
     if (!meta) {
         return {queue: [queueItem], version: CURRENT_VERSION};
     }
-    const {items} = config;
-    const actualIds = items.map((item) => item.id);
+    const actualIds = getActualItems(config.items);
     const metaQueue = meta.queue || [];
+    const notCurrent = (item: QueueItem) => {
+        if (groupItemId && item.groupItemId) {
+            return actualIds.includes(item.groupItemId) && item.groupItemId !== groupItemId;
+        }
+        return item.id !== id;
+    };
     return {
         queue: metaQueue
-            .filter((item) => actualIds.includes(item.id) && item.id !== id)
+            .filter((item) => actualIds.includes(item.id) && notCurrent(item))
             .concat(queueItem),
+        version: meta.version || CURRENT_VERSION,
+    };
+}
+
+export function addGroupToQueue({
+    id,
+    groupItemIds,
+    config,
+    itemsStateAndParams,
+}: ChangeQueueGroupArg): StateAndParamsMetaData {
+    const queueItems: QueueItem[] = groupItemIds.map((groupItemId) => ({
+        id,
+        groupItemId,
+    }));
+    const meta = getItemsStateAndParamsMeta(itemsStateAndParams);
+    if (!meta) {
+        return {queue: queueItems, version: CURRENT_VERSION};
+    }
+    const actualIds = getActualItems(config.items);
+    const metaQueue = meta.queue || [];
+    const notCurrent = (item: QueueItem) => {
+        if (item.groupItemId) {
+            return actualIds.includes(item.groupItemId) && !groupItemIds.includes(item.groupItemId);
+        }
+        return true;
+    };
+    return {
+        queue: metaQueue
+            .filter((item) => actualIds.includes(item.id) && notCurrent(item))
+            .concat(queueItems),
         version: meta.version || CURRENT_VERSION,
     };
 }
@@ -334,8 +441,13 @@ export function transformParamsToActionParams(params: ItemStateAndParams['params
  * check if object contains actionParams
  * @param conf
  */
-export function hasActionParam(conf?: StringParams): boolean {
-    return Object.keys(conf || {}).some((key) => key.startsWith(ACTION_PARAM_PREFIX));
+export function hasActionParam(conf?: StringParams | Record<string, StringParams>): boolean {
+    return Object.keys(conf || {}).some((key) => {
+        if (conf && typeof conf[key] === 'object' && !Array.isArray(conf[key])) {
+            return Object.keys(conf[key]).some((subkey) => subkey.startsWith(ACTION_PARAM_PREFIX));
+        }
+        return key.startsWith(ACTION_PARAM_PREFIX);
+    });
 }
 
 /**
