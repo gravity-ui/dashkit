@@ -1,6 +1,15 @@
 import {ACTION_PARAM_PREFIX, META_KEY} from '../../constants';
-import {ConfigItem, ConfigItemData, ItemsStateAndParams, StringParams} from '../../types';
 import {
+    Config,
+    ConfigItem,
+    ConfigItemData,
+    ConfigItemWithGroup,
+    ItemsStateAndParams,
+    StringParams,
+} from '../../types';
+import {
+    addGroupToQueue,
+    addToQueue,
     formQueueData,
     hasActionParams,
     pickExceptActionParamsFromParams,
@@ -8,6 +17,9 @@ import {
 } from '../helpers';
 
 const DEFAULT_CONTROL_ID = 'controlId';
+const DEFAULT_CONTROL_ID_2 = 'controlId2';
+const DEFAULT_GROUP_ITEM_ID = 'groupItemId';
+const DEFAULT_GROUP_ITEM_ID_2 = 'groupItemId2';
 const DEFAULT_WIDGET_ID = 'widgetId';
 const DEFAULT_WIDGET_TAB_ID = 'widget_tabId';
 const NAMESPACE = 'default';
@@ -15,6 +27,11 @@ const NAMESPACE = 'default';
 type MockedControlItemArgs = {
     defaults?: StringParams;
     id?: string;
+};
+
+type MockedGroupControlItemArgs = MockedControlItemArgs & {
+    groupItemId?: string;
+    groupItemId2?: string;
 };
 
 const getMockedControlItem = ({
@@ -28,10 +45,36 @@ const getMockedControlItem = ({
     namespace: NAMESPACE,
 });
 
+const getMockedGroupControlItem = ({
+    id = DEFAULT_CONTROL_ID,
+    groupItemId = DEFAULT_GROUP_ITEM_ID,
+    groupItemId2 = DEFAULT_GROUP_ITEM_ID_2,
+    defaults,
+}: MockedGroupControlItemArgs): ConfigItemWithGroup => ({
+    id,
+    data: {
+        group: [
+            {id: groupItemId, namespace: NAMESPACE, defaults},
+            {id: groupItemId2, namespace: NAMESPACE, defaults},
+        ],
+    },
+    type: 'group-control',
+    namespace: NAMESPACE,
+});
+
 type MockedWidgetItemArgs = {
     id?: string;
     tabs?: ConfigItemData['tabs'];
 };
+
+const getMockedConfig = ({items}: {items: ConfigItem[]}): Config => ({
+    items,
+    salt: '0.9021043992843898',
+    counter: 124,
+    layout: [],
+    aliases: {},
+    connections: [],
+});
 
 const stateAndParamsWithParamsOnly = {
     params: {
@@ -146,6 +189,63 @@ describe('modules.helpers', () => {
             expect([
                 {
                     id: DEFAULT_CONTROL_ID,
+                    namespace: NAMESPACE,
+                    params: {
+                        scale: 'd',
+                        view: 'normal',
+                    },
+                },
+            ]).toEqual(formQueueData({items: [controlItem5], itemsStateAndParams}));
+        });
+
+        it('return correct queue data for control: group control', () => {
+            const itemsStateAndParams: ItemsStateAndParams = {
+                [DEFAULT_CONTROL_ID]: {
+                    params: {
+                        [DEFAULT_GROUP_ITEM_ID]: {
+                            scale: 'd',
+                            view: 'normal',
+                        },
+                    },
+                },
+                [META_KEY]: {
+                    queue: [{id: DEFAULT_CONTROL_ID, groupItemId: DEFAULT_GROUP_ITEM_ID}],
+                    version: 2,
+                },
+            };
+
+            const controlItem1 = getMockedGroupControlItem({
+                id: 'control-1',
+                groupItemId: 'group-control-1',
+            });
+            expect([]).toEqual(formQueueData({items: [controlItem1], itemsStateAndParams}));
+
+            const controlItem2 = getMockedGroupControlItem({defaults: {number: 'one', size: 's'}});
+            expect([
+                {
+                    id: DEFAULT_GROUP_ITEM_ID,
+                    namespace: NAMESPACE,
+                    params: {},
+                },
+            ]).toEqual(formQueueData({items: [controlItem2], itemsStateAndParams}));
+
+            const controlItem4 = getMockedGroupControlItem({defaults: {scale: 'm', size: 's'}});
+            expect([
+                {
+                    id: DEFAULT_GROUP_ITEM_ID,
+                    namespace: NAMESPACE,
+                    params: {
+                        scale: 'd',
+                    },
+                },
+            ]).toEqual(formQueueData({items: [controlItem4], itemsStateAndParams}));
+
+            const controlItem5 = getMockedGroupControlItem({
+                defaults: {scale: 'm', size: 's', view: 'contrast'},
+            });
+            expect([
+                {
+                    id: DEFAULT_GROUP_ITEM_ID,
                     namespace: NAMESPACE,
                     params: {
                         scale: 'd',
@@ -282,10 +382,18 @@ describe('modules.helpers', () => {
                         view: 'normal',
                     },
                 },
+                [DEFAULT_CONTROL_ID_2]: {
+                    params: {
+                        [DEFAULT_GROUP_ITEM_ID]: {
+                            size: 'm',
+                        },
+                    },
+                },
                 [META_KEY]: {
                     queue: [
                         {id: DEFAULT_CONTROL_ID},
                         {id: DEFAULT_WIDGET_ID, tabId: DEFAULT_WIDGET_TAB_ID},
+                        {id: DEFAULT_CONTROL_ID_2, groupItemId: DEFAULT_GROUP_ITEM_ID},
                     ],
                     version: 2,
                 },
@@ -301,20 +409,42 @@ describe('modules.helpers', () => {
             });
             const control1 = getMockedControlItem({id: 'control-1'});
             const control2 = getMockedControlItem({defaults: {scale: 'm', view: 'contrast'}});
+            const groupControl1 = getMockedGroupControlItem({id: 'group-control-1'});
+            const groupControl2 = getMockedGroupControlItem({
+                id: DEFAULT_CONTROL_ID_2,
+                defaults: {size: 'xl', view: 'normal'},
+            });
             expect([
                 {
                     id: DEFAULT_CONTROL_ID,
                     namespace: NAMESPACE,
-                    params: {scale: 'd'},
+                    params: {
+                        scale: 'd',
+                    },
                 },
                 {
                     id: DEFAULT_WIDGET_ID,
                     namespace: NAMESPACE,
                     params: {view: 'normal'},
                 },
+                {
+                    id: DEFAULT_GROUP_ITEM_ID,
+                    namespace: NAMESPACE,
+                    params: {
+                        size: 'm',
+                    },
+                },
             ]).toEqual(
                 formQueueData({
-                    items: [widgetItem2, widgetItem3, control1, widgetItem1, control2],
+                    items: [
+                        widgetItem2,
+                        widgetItem3,
+                        control1,
+                        widgetItem1,
+                        control2,
+                        groupControl1,
+                        groupControl2,
+                    ],
                     itemsStateAndParams,
                 }),
             );
@@ -361,6 +491,97 @@ describe('modules.helpers', () => {
             );
             expect(exeptActionParam3.out).toEqual(
                 pickExceptActionParamsFromParams(exeptActionParam3.in),
+            );
+        });
+    });
+
+    describe('queue helpers', () => {
+        it('add common control to the end of queue', () => {
+            const itemsStateAndParams: ItemsStateAndParams = {
+                [META_KEY]: {
+                    queue: [
+                        {id: DEFAULT_CONTROL_ID},
+                        {id: DEFAULT_CONTROL_ID_2, groupItemId: DEFAULT_GROUP_ITEM_ID},
+                    ],
+                    version: 2,
+                },
+            };
+
+            const config = getMockedConfig({
+                items: [
+                    getMockedControlItem({}),
+                    getMockedGroupControlItem({id: DEFAULT_CONTROL_ID_2}),
+                ],
+            });
+
+            expect({
+                queue: [
+                    {id: DEFAULT_CONTROL_ID_2, groupItemId: DEFAULT_GROUP_ITEM_ID},
+                    {id: DEFAULT_CONTROL_ID},
+                ],
+                version: 2,
+            }).toEqual(addToQueue({id: DEFAULT_CONTROL_ID, config, itemsStateAndParams}));
+        });
+
+        it('remove unused items from queue after adding new item', () => {
+            const itemsStateAndParams: ItemsStateAndParams = {
+                [META_KEY]: {
+                    queue: [
+                        {id: 'control1'},
+                        {id: 'control2', tabId: 'tab'},
+                        {id: DEFAULT_CONTROL_ID},
+                        {id: DEFAULT_CONTROL_ID_2, groupItemId: 'group-item-1'},
+                    ],
+                    version: 2,
+                },
+            };
+
+            const config = getMockedConfig({
+                items: [
+                    getMockedControlItem({}),
+                    getMockedGroupControlItem({id: DEFAULT_CONTROL_ID_2}),
+                ],
+            });
+            expect({
+                queue: [
+                    {id: DEFAULT_CONTROL_ID},
+                    {id: DEFAULT_CONTROL_ID_2, groupItemId: DEFAULT_GROUP_ITEM_ID},
+                ],
+                version: 2,
+            }).toEqual(
+                addToQueue({
+                    id: DEFAULT_CONTROL_ID_2,
+                    groupItemId: DEFAULT_GROUP_ITEM_ID,
+                    config,
+                    itemsStateAndParams,
+                }),
+            );
+        });
+
+        it('add group control to queue', () => {
+            const itemsStateAndParams: ItemsStateAndParams = {
+                [META_KEY]: {
+                    queue: [{id: DEFAULT_CONTROL_ID_2, groupItemId: DEFAULT_GROUP_ITEM_ID_2}],
+                    version: 2,
+                },
+            };
+
+            const config = getMockedConfig({
+                items: [getMockedGroupControlItem({})],
+            });
+            expect({
+                queue: [
+                    {id: DEFAULT_CONTROL_ID_2, groupItemId: DEFAULT_GROUP_ITEM_ID},
+                    {id: DEFAULT_CONTROL_ID_2, groupItemId: DEFAULT_GROUP_ITEM_ID_2},
+                ],
+                version: 2,
+            }).toEqual(
+                addGroupToQueue({
+                    id: DEFAULT_CONTROL_ID_2,
+                    groupItemIds: [DEFAULT_GROUP_ITEM_ID, DEFAULT_GROUP_ITEM_ID_2],
+                    config,
+                    itemsStateAndParams,
+                }),
             );
         });
     });

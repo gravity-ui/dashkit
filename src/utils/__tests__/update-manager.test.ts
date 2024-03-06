@@ -117,6 +117,61 @@ const config: Config = {
             },
             namespace: 'default',
         },
+        {
+            id: 'qY',
+            data: {
+                group: [
+                    {
+                        id: '9YN',
+                        title: 'Category',
+                        width: '',
+                        source: {
+                            datasetId: 'rfvnhj345gugf',
+                            fieldType: 'string',
+                            elementType: 'select',
+                            datasetFieldId: 'ab089',
+                            datasetFieldType: 'DIMENSION',
+                        },
+                        defaults: {
+                            ab089: '',
+                        },
+                        sourceType: 'dataset',
+                        placementMode: 'auto',
+                        namespace: 'default',
+                    },
+                    {
+                        id: 'qav',
+                        title: 'Селектор 1',
+                        width: '',
+                        source: {
+                            fieldName: 'sds',
+                            elementType: 'select',
+                            acceptableValues: [
+                                {
+                                    title: '2',
+                                    value: '2',
+                                },
+                                {
+                                    title: '34',
+                                    value: '34',
+                                },
+                            ],
+                        },
+                        defaults: {
+                            sds: '',
+                        },
+                        sourceType: 'manual',
+                        placementMode: 'auto',
+                        namespace: 'default',
+                    },
+                ],
+                autoHeight: true,
+                buttonApply: false,
+                buttonReset: false,
+            },
+            type: 'group_control',
+            namespace: 'default',
+        },
     ],
     layout: [
         {h: 4, i: 'al', w: 4, x: 8, y: 0},
@@ -124,6 +179,7 @@ const config: Config = {
         {h: 2, i: 'L5', w: 8, x: 0, y: 2},
         {h: 2, i: 'C8', w: 8, x: 10, y: 30},
         {h: 2, i: 'lko', w: 8, x: 0, y: 12},
+        {h: 2, i: 'qY', w: 8, x: 0, y: 24},
     ],
     aliases: {},
     connections: [],
@@ -135,7 +191,7 @@ beforeEach(() => {
 
 describe('UpdateManager', () => {
     describe('changeStateAndParams', () => {
-        it('control adds params to empty itemsStateAndParams', () => {
+        it('control adds params to empty itemsStateAndParams: common control', () => {
             expect(
                 UpdateManager.changeStateAndParams({
                     id: 'L5',
@@ -157,6 +213,33 @@ describe('UpdateManager', () => {
             });
         });
 
+        it('control adds params to empty itemsStateAndParams: group control', () => {
+            expect(
+                UpdateManager.changeStateAndParams({
+                    id: 'qY',
+                    config,
+                    itemsStateAndParams: {},
+                    stateAndParams: {
+                        params: {
+                            ab089: ['red'],
+                        },
+                    },
+                    options: {
+                        groupItemId: '9YN',
+                    },
+                }),
+            ).toEqual({
+                qY: {
+                    params: {
+                        '9YN': {
+                            ab089: ['red'],
+                        },
+                    },
+                },
+                __meta__: {queue: [{id: 'qY', groupItemId: '9YN'}], version: 2},
+            });
+        });
+
         it('state changes only do not push into the queue', () => {
             expect(
                 UpdateManager.changeStateAndParams({
@@ -168,7 +251,17 @@ describe('UpdateManager', () => {
                                 d079: ['Russia'],
                             },
                         },
-                        __meta__: {queue: [{id: 'L5'}, {id: 'Unk'}], version: 2},
+                        qY: {
+                            params: {
+                                '9YN': {
+                                    ab089: ['red'],
+                                },
+                            },
+                        },
+                        __meta__: {
+                            queue: [{id: 'L5'}, {id: 'qY', groupItemId: '9YN'}, {id: 'Unk'}],
+                            version: 2,
+                        },
                     },
                     stateAndParams: {
                         state: {tabId: 'Pf'},
@@ -180,12 +273,19 @@ describe('UpdateManager', () => {
                         d079: ['Russia'],
                     },
                 },
+                qY: {
+                    params: {
+                        '9YN': {
+                            ab089: ['red'],
+                        },
+                    },
+                },
                 al: {
                     state: {
                         tabId: 'Pf',
                     },
                 },
-                __meta__: {queue: [{id: 'L5'}], version: 2},
+                __meta__: {queue: [{id: 'L5'}, {id: 'qY', groupItemId: '9YN'}], version: 2},
             });
         });
 
@@ -219,7 +319,7 @@ describe('UpdateManager', () => {
             });
         });
 
-        it('control changes rearrange position in the queue', () => {
+        it('control changes rearrange position in the queue: common control', () => {
             expect(
                 UpdateManager.changeStateAndParams({
                     id: 'L5',
@@ -280,6 +380,60 @@ describe('UpdateManager', () => {
             });
         });
 
+        it('control changes rearrange position in the queue: group control', () => {
+            expect(
+                UpdateManager.changeStateAndParams({
+                    id: 'qY',
+                    config,
+                    itemsStateAndParams: {
+                        al: {
+                            params: {
+                                Country: 'USA',
+                            },
+                        },
+                        qY: {
+                            params: {
+                                qav: {
+                                    sds: ['yellow'],
+                                },
+                            },
+                        },
+                        __meta__: {
+                            queue: [{id: 'qY', groupItemId: 'qav'}, {id: 'al'}],
+                            version: 2,
+                        },
+                    },
+                    stateAndParams: {
+                        params: {
+                            qav: {
+                                sds: ['violet'],
+                            },
+                        },
+                    },
+                    options: {
+                        groupItemId: 'qav',
+                    },
+                }),
+            ).toEqual({
+                al: {
+                    params: {
+                        Country: 'USA',
+                    },
+                },
+                qY: {
+                    params: {
+                        qav: {
+                            sds: ['violet'],
+                        },
+                    },
+                },
+                __meta__: {
+                    queue: [{id: 'al'}, {id: 'qY', groupItemId: 'qav'}],
+                    version: 2,
+                },
+            });
+        });
+
         it('control params should merge', () => {
             expect(
                 UpdateManager.changeStateAndParams({
@@ -326,7 +480,7 @@ describe('UpdateManager', () => {
             });
         });
 
-        it('control cannot set params not from defaults', () => {
+        it('control cannot set params not from defaults: common control', () => {
             expect(
                 UpdateManager.changeStateAndParams({
                     id: 'lko',
@@ -346,6 +500,32 @@ describe('UpdateManager', () => {
                     },
                 },
                 __meta__: {queue: [{id: 'lko'}], version: 2},
+            });
+        });
+
+        it('control cannot set params not from defaults: group control', () => {
+            expect(
+                UpdateManager.changeStateAndParams({
+                    id: 'qY',
+                    config,
+                    itemsStateAndParams: {},
+                    stateAndParams: {
+                        params: {
+                            sds: ['value'],
+                            UnknownParam: ['Value'],
+                        },
+                    },
+                    options: {groupItemId: 'qav'},
+                }),
+            ).toEqual({
+                qY: {
+                    params: {
+                        qav: {
+                            sds: ['value'],
+                        },
+                    },
+                },
+                __meta__: {queue: [{id: 'qY', groupItemId: 'qav'}], version: 2},
             });
         });
 
