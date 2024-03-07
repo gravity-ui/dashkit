@@ -13,10 +13,10 @@ import {
 
 import {ContextProps, SettingsProps, WidgetLayout} from './common';
 
-export interface PluginWidgetProps {
+export interface PluginWidgetProps<T = StringParams> {
     id: string;
     editMode: boolean;
-    params: StringParams;
+    params: T;
     state: ItemState;
     onStateAndParamsChange: (
         stateAndParams: ItemStateAndParams,
@@ -49,7 +49,7 @@ export interface PluginDefaultLayout {
     maxH?: number;
 }
 
-export interface Plugin<P extends PluginWidgetProps = any> extends PluginBase {
+export interface Plugin<P extends PluginWidgetProps<T> = any, T = StringParams> extends PluginBase {
     defaultLayout?: PluginDefaultLayout;
     renderer: (props: P, forwardedRef: React.RefObject<any>) => React.ReactNode;
 }

@@ -9,6 +9,7 @@ export interface ItemState {
 export interface QueueItem {
     id: string;
     tabId?: string;
+    groupItemId?: string;
 }
 
 export type StateAndParamsMetaData = {
@@ -21,12 +22,13 @@ export type StateAndParamsMeta = {
 };
 
 export type ItemStateAndParams = {
-    params?: StringParams;
+    params?: StringParams | Record<string, StringParams>;
     state?: ItemState;
 };
 
 export type ItemStateAndParamsChangeOptions = {
-    action: 'setParams' | 'removeItem';
+    action?: 'setParams' | 'removeItem';
+    groupItemIds?: string[];
 };
 
 export type ItemsStateAndParamsBase = Record<string, ItemStateAndParams>;
