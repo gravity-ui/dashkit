@@ -1,27 +1,32 @@
-import update, {extend, Spec, CustomCommands} from 'immutability-helper';
+import update, {CustomCommands, Spec, extend} from 'immutability-helper';
 import omit from 'lodash/omit';
 import pick from 'lodash/pick';
 import {
-    mergeParamsWithAliases,
-    isItemWithTabs,
     Config,
     ConfigItem,
-    ItemsStateAndParams,
+    ConfigItemGroup,
+    ConfigItemWithGroup,
     ItemStateAndParams,
-    ItemsStateAndParamsBase,
     ItemStateAndParamsChangeOptions,
-    StringParams,
-    getCurrentVersion,
+    ItemsStateAndParams,
+    ItemsStateAndParamsBase,
     META_KEY,
-    deleteFromQueue,
+    StateAndParamsMetaData,
+    StringParams,
+    addGroupToQueue,
     addToQueue,
+    deleteFromQueue,
+    getCurrentVersion,
     getInitialItemsStateAndParamsMeta,
-    resolveItemInnerId,
     getItemsStateAndParamsMeta,
+    isItemWithGroup,
+    isItemWithTabs,
+    mergeParamsWithAliases,
     pickActionParamsFromParams,
+    resolveItemInnerId,
     transformParamsToActionParams,
 } from '../shared';
-import {AddConfigItem, WidgetLayout, SetItemOptions} from '../typings';
+import {AddConfigItem, SetItemOptions, WidgetLayout} from '../typings';
 import {RegisterManagerPluginLayout} from './register-manager';
 import {DEFAULT_NAMESPACE} from '../constants';
 import {getNewId} from './get-new-id';
@@ -103,7 +108,7 @@ function removeItemVersion1({id, config, itemsStateAndParams}: RemoveItemArg) {
 }
 
 function getAllowableChangedParams(
-    item: ConfigItem,
+    item: ConfigItem | ConfigItemGroup,
     stateAndParams: ItemStateAndParams,
     itemsStateAndParams: ItemsStateAndParams,
     paramsSettings?: {
@@ -135,7 +140,13 @@ function getAllowableChangedParams(
         }
         allowedParams = pick(stateParamsConf, Object.keys(tab?.params || {})) as StringParams;
     } else {
-        allowedParams = pick(stateParamsConf, Object.keys(item.defaults || {})) as StringParams;
+        // check if structure is StringParams or Record<string, StringParams>
+        const paramsConf =
+            typeof stateParamsConf?.[item.id] === 'object' &&
+            !Array.isArray(stateParamsConf?.[item.id])
+                ? stateParamsConf[item.id]
+                : stateParamsConf;
+        allowedParams = pick(paramsConf, Object.keys(item.defaults || {})) as StringParams;
     }
     if (Object.keys(allowedParams || {}).length !== Object.keys(stateParamsConf || {}).length) {
         console.warn('Параметры, которых нет в defaults, будут проигнорированы!');
@@ -174,6 +185,7 @@ function changeStateAndParamsVersion1({
         const ignoresInitiatorIds = config.connections
             .filter(({to}) => to === initiatorId)
             .map(({from}) => from);
+
         const updateIds = config.items
             .filter(
                 (item) =>
@@ -244,7 +256,94 @@ function getNewItemData({item, config, counter: argsCounter, salt, options}: Get
 
         data = {...item.data, tabs};
     }
+
+    if (isItemWithGroup(item)) {
+        const group = item.data.group.map((groupItem) => {
+            if (groupItem.id) {
+                return groupItem;
+            }
+
+            const newIdGroupData = getNewId({config, salt, counter, excludeIds});
+            counter = newIdGroupData.counter;
+            excludeIds.push(newIdGroupData.id);
+
+            return {
+                ...groupItem,
+                id: newIdGroupData.id,
+                namespace: groupItem.namespace || DEFAULT_NAMESPACE,
+            };
+        });
+
+        data = {...item.data, group};
+    }
+
     return {data, counter, excludeIds};
+}
+
+function changeGroupParams({
+    groupItemIds,
+    initiatorId,
+    initiatorItem,
+    itemsStateAndParams,
+    stateAndParams,
+    config,
+    unusedIds,
+}: {
+    groupItemIds: string[];
+    initiatorId: string;
+    initiatorItem: ConfigItemWithGroup;
+    config: Config;
+    itemsStateAndParams: ItemsStateAndParams;
+    stateAndParams: ItemStateAndParams;
+    unusedIds: string[];
+}) {
+    const meta: StateAndParamsMetaData = addGroupToQueue({
+        id: initiatorId,
+        groupItemIds,
+        config,
+        itemsStateAndParams,
+    });
+    const updatedItems: Record<string, StringParams> = {};
+    const currentItemParams = (itemsStateAndParams as ItemsStateAndParamsBase)[initiatorId]
+        ?.params as Record<string, StringParams> | undefined;
+
+    for (const groupItem of initiatorItem.data.group) {
+        if (groupItemIds.includes(groupItem.id)) {
+            const allowableParams = getAllowableChangedParams(
+                groupItem,
+                stateAndParams,
+                itemsStateAndParams,
+            );
+
+            const allowableActionParams = getAllowableChangedParams(
+                groupItem,
+                stateAndParams,
+                itemsStateAndParams,
+                {type: 'actionParams', returnPrefix: true},
+            );
+
+            updatedItems[groupItem.id] = {...allowableParams, ...allowableActionParams};
+
+            continue;
+        }
+
+        if (currentItemParams && currentItemParams[groupItem.id]) {
+            updatedItems[groupItem.id] = currentItemParams[groupItem.id];
+        }
+    }
+
+    const obj = {
+        $unset: unusedIds,
+        [initiatorId]: {
+            $auto: {
+                params: {
+                    $set: updatedItems,
+                },
+            },
+        },
+        [META_KEY]: {$set: meta},
+    };
+    return update(itemsStateAndParams, obj);
 }
 
 export class UpdateManager {
@@ -317,9 +416,13 @@ export class UpdateManager {
         }
         const itemIndex = config.items.findIndex((item) => item.id === id);
         const item = config.items[itemIndex];
-        const itemIds = isItemWithTabs(item)
-            ? [id].concat(item.data.tabs.map((tab) => tab.id))
-            : [id];
+        let itemIds = [id];
+        if (isItemWithTabs(item)) {
+            itemIds = [id].concat(item.data.tabs.map((tab) => tab.id));
+        }
+        if (isItemWithGroup(item)) {
+            itemIds = [id].concat(item.data.group.map((groupItem) => groupItem.id));
+        }
         const connections = config.connections.filter(
             ({from, to}) => !itemIds.includes(from) && !itemIds.includes(to),
         );
@@ -382,6 +485,7 @@ export class UpdateManager {
         const newTabId: string | undefined = stateAndParams.state?.tabId;
         const isTabSwitched = isItemWithTabs(initiatorItem) && Boolean(newTabId);
         const currentMeta = getItemsStateAndParamsMeta(itemsStateAndParams);
+        const groupItemIds = options?.groupItemIds;
 
         if (action === 'removeItem') {
             return update(itemsStateAndParams, {
@@ -395,6 +499,18 @@ export class UpdateManager {
                           })
                         : getInitialItemsStateAndParamsMeta(),
                 },
+            });
+        }
+
+        if (isItemWithGroup(initiatorItem) && groupItemIds) {
+            return changeGroupParams({
+                initiatorId,
+                initiatorItem,
+                groupItemIds,
+                itemsStateAndParams,
+                stateAndParams,
+                config,
+                unusedIds,
             });
         }
 
