@@ -291,7 +291,7 @@ interface ChangeQueueGroupArg {
     itemsStateAndParams: ItemsStateAndParams;
 }
 
-function getActualItems(items: ConfigItem[]) {
+function getActualItemsIds(items: ConfigItem[]) {
     return items.reduce((ids: string[], item) => {
         if (isItemWithGroup(item)) {
             item.data.group.forEach((groupItem) => {
@@ -307,7 +307,6 @@ function getActualItems(items: ConfigItem[]) {
 export function addToQueue({
     id,
     tabId,
-    groupItemId,
     config,
     itemsStateAndParams,
 }: ChangeQueueArg): StateAndParamsMetaData {
@@ -315,18 +314,15 @@ export function addToQueue({
     if (tabId) {
         queueItem.tabId = tabId;
     }
-    if (groupItemId) {
-        queueItem.groupItemId = groupItemId;
-    }
     const meta = getItemsStateAndParamsMeta(itemsStateAndParams);
     if (!meta) {
         return {queue: [queueItem], version: CURRENT_VERSION};
     }
-    const actualIds = getActualItems(config.items);
+    const actualIds = getActualItemsIds(config.items);
     const metaQueue = meta.queue || [];
     const notCurrent = (item: QueueItem) => {
-        if (groupItemId && item.groupItemId) {
-            return actualIds.includes(item.groupItemId) && item.groupItemId !== groupItemId;
+        if (item.groupItemId) {
+            return actualIds.includes(item.groupItemId);
         }
         return item.id !== id;
     };
@@ -352,7 +348,7 @@ export function addGroupToQueue({
     if (!meta) {
         return {queue: queueItems, version: CURRENT_VERSION};
     }
-    const actualIds = getActualItems(config.items);
+    const actualIds = getActualItemsIds(config.items);
     const metaQueue = meta.queue || [];
     const notCurrent = (item: QueueItem) => {
         if (item.groupItemId) {

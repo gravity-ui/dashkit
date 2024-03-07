@@ -225,7 +225,7 @@ describe('UpdateManager', () => {
                         },
                     },
                     options: {
-                        groupItemId: '9YN',
+                        groupItemIds: ['9YN'],
                     },
                 }),
             ).toEqual({
@@ -396,10 +396,17 @@ describe('UpdateManager', () => {
                                 qav: {
                                     sds: ['yellow'],
                                 },
+                                '9YN': {
+                                    ab089: ['red'],
+                                },
                             },
                         },
                         __meta__: {
-                            queue: [{id: 'qY', groupItemId: 'qav'}, {id: 'al'}],
+                            queue: [
+                                {id: 'qY', groupItemId: 'qav'},
+                                {id: 'qY', groupItemId: '9YN'},
+                                {id: 'al'},
+                            ],
                             version: 2,
                         },
                     },
@@ -408,10 +415,13 @@ describe('UpdateManager', () => {
                             qav: {
                                 sds: ['violet'],
                             },
+                            '9YN': {
+                                ab089: ['purple'],
+                            },
                         },
                     },
                     options: {
-                        groupItemId: 'qav',
+                        groupItemIds: ['qav'],
                     },
                 }),
             ).toEqual({
@@ -425,10 +435,17 @@ describe('UpdateManager', () => {
                         qav: {
                             sds: ['violet'],
                         },
+                        '9YN': {
+                            ab089: ['red'],
+                        },
                     },
                 },
                 __meta__: {
-                    queue: [{id: 'al'}, {id: 'qY', groupItemId: 'qav'}],
+                    queue: [
+                        {id: 'qY', groupItemId: '9YN'},
+                        {id: 'al'},
+                        {id: 'qY', groupItemId: 'qav'},
+                    ],
                     version: 2,
                 },
             });
@@ -515,7 +532,7 @@ describe('UpdateManager', () => {
                             UnknownParam: ['Value'],
                         },
                     },
-                    options: {groupItemId: 'qav'},
+                    options: {groupItemIds: ['qav']},
                 }),
             ).toEqual({
                 qY: {

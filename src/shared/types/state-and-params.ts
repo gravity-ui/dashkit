@@ -28,7 +28,7 @@ export type ItemStateAndParams = {
 
 export type ItemStateAndParamsChangeOptions = {
     action?: 'setParams' | 'removeItem';
-    groupItemId?: string;
+    groupItemIds?: string[];
 };
 
 export type ItemsStateAndParamsBase = Record<string, ItemStateAndParams>;

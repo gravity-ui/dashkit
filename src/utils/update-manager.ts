@@ -151,7 +151,7 @@ function getAllowableChangedParams(
         const paramsConf =
             typeof stateParamsConf?.[item.id] === 'object' &&
             !Array.isArray(stateParamsConf?.[item.id])
-                ? stateParamsConf?.[item.id]
+                ? stateParamsConf[item.id]
                 : stateParamsConf;
         allowedParams = pick(paramsConf, Object.keys(item.defaults || {})) as StringParams;
     }
@@ -291,7 +291,7 @@ function getNewItemData({item, config, counter: argsCounter, salt, options}: Get
 }
 
 function changeGroupParams({
-    groupItemId,
+    groupItemIds,
     initiatorId,
     initiatorItem,
     itemsStateAndParams,
@@ -299,7 +299,7 @@ function changeGroupParams({
     config,
     unusedIds,
 }: {
-    groupItemId?: string;
+    groupItemIds: string[];
     initiatorId: string;
     initiatorItem: ConfigItemWithGroup;
     config: Config;
@@ -307,52 +307,6 @@ function changeGroupParams({
     stateAndParams: ItemStateAndParams;
     unusedIds: string[];
 }) {
-    if (groupItemId) {
-        const initiatorItemsStateAndParams = (
-            omit(itemsStateAndParams, [META_KEY]) as ItemsStateAndParamsBase
-        )[initiatorId];
-        const initiatorParams =
-            (initiatorItemsStateAndParams?.params as Record<string, StringParams>) || {};
-
-        const initiatorGroupItem = initiatorItem.data.group.find(
-            ({id}) => id === groupItemId,
-        ) as ConfigItemGroup;
-
-        const allowableParams = getAllowableChangedParams(
-            initiatorGroupItem,
-            stateAndParams,
-            itemsStateAndParams,
-        );
-
-        const allowableActionParams = getAllowableChangedParams(
-            initiatorGroupItem,
-            stateAndParams,
-            itemsStateAndParams,
-            {type: 'actionParams', returnPrefix: true},
-        );
-
-        const meta = addToQueue({id: initiatorId, groupItemId, config, itemsStateAndParams});
-
-        const updatedParams: Record<string, StringParams> = {
-            ...initiatorParams,
-            [groupItemId]: {...allowableParams, ...allowableActionParams},
-        };
-
-        const obj = {
-            $unset: unusedIds,
-            [initiatorId]: {
-                $auto: {
-                    params: {
-                        $set: updatedParams,
-                    },
-                },
-            },
-            [META_KEY]: {$set: meta},
-        };
-        return update(itemsStateAndParams, obj);
-    }
-
-    const groupItemIds = initiatorItem.data.group.map(({id}) => id);
     const meta: StateAndParamsMetaData = addGroupToQueue({
         id: initiatorId,
         groupItemIds,
@@ -360,23 +314,33 @@ function changeGroupParams({
         itemsStateAndParams,
     });
     const updatedItems: Record<string, StringParams> = {};
+    const currentItemParams = (itemsStateAndParams as ItemsStateAndParamsBase)[initiatorId]
+        ?.params as Record<string, StringParams> | undefined;
 
-    initiatorItem.data.group.forEach((groupItem) => {
-        const allowableParams = getAllowableChangedParams(
-            groupItem,
-            stateAndParams,
-            itemsStateAndParams,
-        );
+    for (const groupItem of initiatorItem.data.group) {
+        if (groupItemIds.includes(groupItem.id)) {
+            const allowableParams = getAllowableChangedParams(
+                groupItem,
+                stateAndParams,
+                itemsStateAndParams,
+            );
 
-        const allowableActionParams = getAllowableChangedParams(
-            groupItem,
-            stateAndParams,
-            itemsStateAndParams,
-            {type: 'actionParams', returnPrefix: true},
-        );
+            const allowableActionParams = getAllowableChangedParams(
+                groupItem,
+                stateAndParams,
+                itemsStateAndParams,
+                {type: 'actionParams', returnPrefix: true},
+            );
 
-        updatedItems[groupItem.id] = {...allowableParams, ...allowableActionParams};
-    });
+            updatedItems[groupItem.id] = {...allowableParams, ...allowableActionParams};
+
+            continue;
+        }
+
+        if (currentItemParams && currentItemParams[groupItem.id]) {
+            updatedItems[groupItem.id] = currentItemParams[groupItem.id];
+        }
+    }
 
     const obj = {
         $unset: unusedIds,
@@ -467,7 +431,7 @@ export class UpdateManager {
             itemIds = [id].concat(item.data.tabs.map((tab) => tab.id));
         }
         if (isItemWithGroup(item)) {
-            itemIds = [id].concat(item.data.group.map((tab) => tab.id));
+            itemIds = [id].concat(item.data.group.map((groupItem) => groupItem.id));
         }
         const connections = config.connections.filter(
             ({from, to}) => !itemIds.includes(from) && !itemIds.includes(to),
@@ -531,7 +495,7 @@ export class UpdateManager {
         const newTabId: string | undefined = stateAndParams.state?.tabId;
         const isTabSwitched = isItemWithTabs(initiatorItem) && Boolean(newTabId);
         const currentMeta = getItemsStateAndParamsMeta(itemsStateAndParams);
-        const groupItemId = options?.groupItemId;
+        const groupItemIds = options?.groupItemIds;
 
         if (action === 'removeItem') {
             return update(itemsStateAndParams, {
@@ -548,11 +512,11 @@ export class UpdateManager {
             });
         }
 
-        if (isItemWithGroup(initiatorItem)) {
+        if (isItemWithGroup(initiatorItem) && groupItemIds) {
             return changeGroupParams({
                 initiatorId,
                 initiatorItem,
-                groupItemId,
+                groupItemIds,
                 itemsStateAndParams,
                 stateAndParams,
                 config,

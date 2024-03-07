@@ -523,12 +523,13 @@ describe('modules.helpers', () => {
             }).toEqual(addToQueue({id: DEFAULT_CONTROL_ID, config, itemsStateAndParams}));
         });
 
-        it('remove unused items from queue after adding new item', () => {
+        it('remove unused items from queue after adding new group item: remove common items and group items', () => {
             const itemsStateAndParams: ItemsStateAndParams = {
                 [META_KEY]: {
                     queue: [
                         {id: 'control1'},
                         {id: 'control2', tabId: 'tab'},
+                        {id: DEFAULT_CONTROL_ID_2, groupItemId: DEFAULT_GROUP_ITEM_ID_2},
                         {id: DEFAULT_CONTROL_ID},
                         {id: DEFAULT_CONTROL_ID_2, groupItemId: 'group-item-1'},
                     ],
@@ -544,14 +545,43 @@ describe('modules.helpers', () => {
             });
             expect({
                 queue: [
+                    {id: DEFAULT_CONTROL_ID_2, groupItemId: DEFAULT_GROUP_ITEM_ID_2},
                     {id: DEFAULT_CONTROL_ID},
                     {id: DEFAULT_CONTROL_ID_2, groupItemId: DEFAULT_GROUP_ITEM_ID},
                 ],
                 version: 2,
             }).toEqual(
-                addToQueue({
+                addGroupToQueue({
                     id: DEFAULT_CONTROL_ID_2,
-                    groupItemId: DEFAULT_GROUP_ITEM_ID,
+                    groupItemIds: [DEFAULT_GROUP_ITEM_ID],
+                    config,
+                    itemsStateAndParams,
+                }),
+            );
+        });
+
+        it('remove unused items from queue after adding new item: remove common items and item with group', () => {
+            const itemsStateAndParams: ItemsStateAndParams = {
+                [META_KEY]: {
+                    queue: [
+                        {id: 'control1'},
+                        {id: 'control2', tabId: 'a3'},
+                        {id: DEFAULT_CONTROL_ID_2, groupItemId: DEFAULT_GROUP_ITEM_ID_2},
+                        {id: DEFAULT_CONTROL_ID_2, groupItemId: DEFAULT_GROUP_ITEM_ID},
+                    ],
+                    version: 2,
+                },
+            };
+
+            const config = getMockedConfig({
+                items: [getMockedControlItem({})],
+            });
+            expect({
+                queue: [{id: DEFAULT_CONTROL_ID}],
+                version: 2,
+            }).toEqual(
+                addToQueue({
+                    id: DEFAULT_CONTROL_ID,
                     config,
                     itemsStateAndParams,
                 }),
