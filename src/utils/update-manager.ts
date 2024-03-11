@@ -40,6 +40,7 @@ interface RemoveItemArg {
     id: string;
     config: Config;
     itemsStateAndParams: ItemsStateAndParams;
+    test?: string;
 }
 
 function removeItemVersion1({id, config, itemsStateAndParams}: RemoveItemArg) {
