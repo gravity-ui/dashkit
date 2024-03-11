@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.9.0](https://github.com/gravity-ui/dashkit/compare/v6.8.0...v6.9.0) (2024-03-11)
+
+
+### Features
+
+* support group in widget item ([#118](https://github.com/gravity-ui/dashkit/issues/118)) ([#120](https://github.com/gravity-ui/dashkit/issues/120)) ([49130cc](https://github.com/gravity-ui/dashkit/commit/49130ccd924a8a5b8ec6d8ee50e1ba39fe3e8ee0))
+
 ## [6.8.0](https://github.com/gravity-ui/dashkit/compare/v6.7.2...v6.8.0) (2024-02-01)
 
 
