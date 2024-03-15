@@ -1,6 +1,6 @@
 import React from 'react';
 
-import type {ReactGridLayoutProps} from 'react-grid-layout';
+import ReactGridLayout from 'react-grid-layout';
 
 import {
     ConfigItem,
@@ -30,7 +30,7 @@ export interface PluginWidgetProps<T = StringParams> {
     settings: SettingsProps;
     context: ContextProps;
     layout: WidgetLayout[];
-    gridLayout: ReactGridLayoutProps;
+    gridLayout: ReactGridLayout.ReactGridLayoutProps;
     adjustWidgetLayout: (data: {
         widgetId: string;
         needSetDefault?: boolean;

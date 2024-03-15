@@ -1,4 +1,4 @@
-import type {ReactGridLayoutProps} from 'react-grid-layout';
+import ReactGridLayout from 'react-grid-layout';
 
 import {Plugin, PluginDefaultLayout, Settings} from '../typings';
 
@@ -29,7 +29,7 @@ export class RegisterManager {
         minW: 4,
         minH: 2,
     };
-    private _gridLayout: ReactGridLayoutProps = {
+    private _gridLayout: ReactGridLayout.ReactGridLayoutProps = {
         rowHeight: 18,
         cols: 36,
         margin: [2, 2],
