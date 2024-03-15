@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.1.1](https://github.com/gravity-ui/dashkit/compare/v7.1.0...v7.1.1) (2024-03-15)
+
+
+### Bug Fixes
+
+* **react-grid-layout:** fix react-grid-layout type imports ([#125](https://github.com/gravity-ui/dashkit/issues/125)) ([2a051cf](https://github.com/gravity-ui/dashkit/commit/2a051cfc2f7b6698892ecc42eb185e5272aba2e2))
+
 ## [7.1.0](https://github.com/gravity-ui/dashkit/compare/v7.0.0...v7.1.0) (2024-03-07)
 
 
