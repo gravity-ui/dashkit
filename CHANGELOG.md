@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.10.0](https://github.com/gravity-ui/dashkit/compare/v6.9.0...v6.10.0) (2024-03-27)
+
+
+### Features
+
+* add copy context field for prepared copy item type ([#129](https://github.com/gravity-ui/dashkit/issues/129)) ([6ff6436](https://github.com/gravity-ui/dashkit/commit/6ff6436270fe000db0fd367b53294da434ab36ad))
+
 ## [6.9.0](https://github.com/gravity-ui/dashkit/compare/v6.8.0...v6.9.0) (2024-03-11)
 
 
