@@ -4,16 +4,16 @@ import noop from 'lodash/noop';
 
 import {DashKitContext} from '../../context/DashKitContext';
 import {
-    Icon,
-    DropdownMenu,
     Button,
-    ButtonView,
     ButtonSize,
+    ButtonView,
+    DropdownMenu,
+    Icon,
     IconProps,
     MenuItemProps,
 } from '@gravity-ui/uikit';
-import {COPIED_WIDGET_STORE_KEY, OVERLAY_CONTROLS_CLASS_NAME, MenuItems} from '../../constants';
-import {ConfigLayout, ConfigItem, PluginBase, StringParams, Config, ItemState} from '../../shared';
+import {COPIED_WIDGET_STORE_KEY, MenuItems, OVERLAY_CONTROLS_CLASS_NAME} from '../../constants';
+import {Config, ConfigItem, ConfigLayout, ItemState, PluginBase, StringParams} from '../../shared';
 import type {RegisterManager} from '../../utils/register-manager';
 import {DotsIcon} from '../../icons/DotsIcon';
 import {CogIcon} from '../../icons/CogIcon';
@@ -74,7 +74,9 @@ type PreparedCopyItemOptionsArg = Pick<ConfigItem, 'data' | 'type' | 'defaults' 
     };
 };
 
-export type PreparedCopyItemOptions = PreparedCopyItemOptionsArg;
+export type PreparedCopyItemOptions<C extends object = {}> = PreparedCopyItemOptionsArg & {
+    copyContext?: C;
+};
 
 type DashKitCtx = React.Context<{
     context: Record<string, any>;
