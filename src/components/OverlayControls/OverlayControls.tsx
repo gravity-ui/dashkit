@@ -17,7 +17,14 @@ import {i18n} from '../../i18n';
 import {CloseIcon} from '../../icons/CloseIcon';
 import {CogIcon} from '../../icons/CogIcon';
 import {DotsIcon} from '../../icons/DotsIcon';
-import {Config, ConfigItem, ConfigLayout, ItemState, PluginBase, StringParams} from '../../shared';
+import type {
+    Config,
+    ConfigItem,
+    ConfigLayout,
+    ItemState,
+    PluginBase,
+    StringParams,
+} from '../../types';
 import {Settings} from '../../typings';
 import {cn} from '../../utils/cn';
 import type {RegisterManager} from '../../utils/register-manager';

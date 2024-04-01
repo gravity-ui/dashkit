@@ -1,4 +1,4 @@
-import type {Config} from '../../shared';
+import type {Config} from '../../types';
 import {UpdateManager} from '../update-manager';
 
 const config: Config = {

@@ -2,16 +2,16 @@ import React from 'react';
 
 import ReactGridLayout from 'react-grid-layout';
 
-import {
+import type {
     ConfigItem,
     ItemState,
     ItemStateAndParams,
     ItemStateAndParamsChangeOptions,
     PluginBase,
     StringParams,
-} from '../shared';
+} from '../types';
 
-import {ContextProps, SettingsProps, WidgetLayout} from './common';
+import type {ContextProps, SettingsProps, WidgetLayout} from './common';
 
 export interface PluginWidgetProps<T = StringParams> {
     id: string;

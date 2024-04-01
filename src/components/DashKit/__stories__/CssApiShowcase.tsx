@@ -10,7 +10,8 @@ import {
 } from '@gravity-ui/icons';
 import {Icon} from '@gravity-ui/uikit';
 
-import {ActionPanel, DashKit, MenuItems} from '../../..';
+import {ActionPanel, DashKit} from '../../..';
+import {MenuItems} from '../../../helpers';
 import {i18n} from '../../../i18n';
 import {CogIcon} from '../../../icons/CogIcon';
 import {CopyIcon} from '../../../icons/CopyIcon';
@@ -92,7 +93,7 @@ export const CssApiShowcase: React.FC = () => {
 
                     --dashkit-action-panel-item-color: transparent;
                     --dashkit-action-panel-item-text-color: var(--g-color-text-primary);
-                    
+
                     --dashkit-action-panel-item-color-hover: var(--g-color-line-info);
                     --dashkit-action-panel-item-text-color-hover: white;
 

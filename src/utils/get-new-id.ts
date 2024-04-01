@@ -1,4 +1,5 @@
-import {Config, extractIdsFromConfig, generateUniqId} from '../shared';
+import {extractIdsFromConfig, generateUniqId} from '../shared';
+import type {Config} from '../types';
 
 type GetNewIdArgs = {
     config: Config;

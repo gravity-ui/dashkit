@@ -4,17 +4,7 @@ import pick from 'lodash/pick';
 
 import {DEFAULT_NAMESPACE} from '../constants';
 import {
-    Config,
-    ConfigItem,
-    ConfigItemGroup,
-    ConfigItemWithGroup,
-    ItemStateAndParams,
-    ItemStateAndParamsChangeOptions,
-    ItemsStateAndParams,
-    ItemsStateAndParamsBase,
     META_KEY,
-    StateAndParamsMetaData,
-    StringParams,
     addGroupToQueue,
     addToQueue,
     deleteFromQueue,
@@ -28,7 +18,21 @@ import {
     resolveItemInnerId,
     transformParamsToActionParams,
 } from '../shared';
-import {AddConfigItem, SetItemOptions, WidgetLayout} from '../typings';
+import type {
+    AddConfigItem,
+    Config,
+    ConfigItem,
+    ConfigItemGroup,
+    ConfigItemWithGroup,
+    ItemStateAndParams,
+    ItemStateAndParamsChangeOptions,
+    ItemsStateAndParams,
+    ItemsStateAndParamsBase,
+    SetItemOptions,
+    StateAndParamsMetaData,
+    StringParams,
+    WidgetLayout,
+} from '../types';
 
 import {getNewId} from './get-new-id';
 import {RegisterManagerPluginLayout} from './register-manager';

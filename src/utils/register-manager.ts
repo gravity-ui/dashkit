@@ -1,6 +1,6 @@
 import ReactGridLayout from 'react-grid-layout';
 
-import {Plugin, PluginDefaultLayout, Settings} from '../typings';
+import type {Plugin, PluginDefaultLayout, Settings} from '../typings';
 
 interface RegisterManagerDefaultLayout {
     x: number;

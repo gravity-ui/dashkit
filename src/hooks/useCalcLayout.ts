@@ -2,7 +2,7 @@ import React from 'react';
 
 import isEqual from 'lodash/isEqual';
 
-import {Config} from '../shared';
+import type {Config} from '../types';
 import {RegisterManager} from '../utils';
 
 function onUpdatePropsConfig(config: Config, registerManager: RegisterManager) {

@@ -10,13 +10,15 @@ import {
 } from '@gravity-ui/icons';
 import {Button, Icon} from '@gravity-ui/uikit';
 
-import {ActionPanel, ConfigItem, DashKit, DashKitProps, MenuItems} from '../../..';
+import {ActionPanel, DashKit, DashKitProps} from '../../..';
+import {MenuItems} from '../../../helpers';
 import {i18n} from '../../../i18n';
 import {CogIcon} from '../../../icons/CogIcon';
 import {CopyIcon} from '../../../icons/CopyIcon';
 import {DeleteIcon} from '../../../icons/DeleteIcon';
 import {TickIcon} from '../../../icons/TickIcon';
 import {WarningIcon} from '../../../icons/WarningIcon';
+import {ConfigItem} from '../../../types';
 import {cn} from '../../../utils/cn';
 
 import {Demo, DemoRow} from './Demo';
