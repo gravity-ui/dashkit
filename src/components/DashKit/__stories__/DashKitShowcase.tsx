@@ -18,7 +18,7 @@ import {CopyIcon} from '../../../icons/CopyIcon';
 import {DeleteIcon} from '../../../icons/DeleteIcon';
 import {TickIcon} from '../../../icons/TickIcon';
 import {WarningIcon} from '../../../icons/WarningIcon';
-import {ConfigItem} from '../../../types';
+import type {ConfigItem} from '../../../index';
 import {cn} from '../../../utils/cn';
 
 import {Demo, DemoRow} from './Demo';

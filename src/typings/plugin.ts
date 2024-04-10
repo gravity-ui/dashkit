@@ -9,7 +9,7 @@ import type {
     ItemStateAndParamsChangeOptions,
     PluginBase,
     StringParams,
-} from '../types';
+} from '../shared';
 
 import type {ContextProps, SettingsProps, WidgetLayout} from './common';
 

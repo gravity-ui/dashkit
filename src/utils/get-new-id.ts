@@ -1,5 +1,5 @@
 import {extractIdsFromConfig, generateUniqId} from '../shared';
-import type {Config} from '../types';
+import type {Config} from '../shared';
 
 type GetNewIdArgs = {
     config: Config;

@@ -1,4 +1,4 @@
-import {ConfigItem, ConfigLayout} from '../../types';
+import type {ConfigItem, ConfigLayout} from '../../shared';
 import {DashKitProps} from '../DashKit';
 
 const sortByOrderComparator = (prev: ConfigItem, next: ConfigItem, fieldName: keyof ConfigItem) => {

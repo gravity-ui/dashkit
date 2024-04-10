@@ -1,4 +1,4 @@
-import type {ConfigItem, ConfigLayout} from '../types';
+import type {ConfigItem, ConfigLayout} from '../shared';
 
 export interface AddConfigItem extends Omit<ConfigItem, 'id' | 'namespace'> {
     id?: null;

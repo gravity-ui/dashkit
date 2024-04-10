@@ -24,7 +24,7 @@ import type {
     ItemState,
     PluginBase,
     StringParams,
-} from '../../types';
+} from '../../shared';
 import {Settings} from '../../typings';
 import {cn} from '../../utils/cn';
 import type {RegisterManager} from '../../utils/register-manager';

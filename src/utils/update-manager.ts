@@ -19,7 +19,6 @@ import {
     transformParamsToActionParams,
 } from '../shared';
 import type {
-    AddConfigItem,
     Config,
     ConfigItem,
     ConfigItemGroup,
@@ -28,11 +27,10 @@ import type {
     ItemStateAndParamsChangeOptions,
     ItemsStateAndParams,
     ItemsStateAndParamsBase,
-    SetItemOptions,
     StateAndParamsMetaData,
     StringParams,
-    WidgetLayout,
-} from '../types';
+} from '../shared';
+import type {AddConfigItem, SetItemOptions, WidgetLayout} from '../typings';
 
 import {getNewId} from './get-new-id';
 import {RegisterManagerPluginLayout} from './register-manager';
