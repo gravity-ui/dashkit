@@ -7,6 +7,18 @@
     "type": "git",
     "url": "https://github.com/gravity-ui/dashkit"
   },
+  "exports": {
+    ".": {
+      "types": "./build/esm/index.d.ts",
+      "require": "./build/cjs/index.js",
+      "import": "./build/esm/index.js"
+    },
+    "./helpers": {
+      "types": "./build/esm/helpers.d.ts",
+      "require": "./build/cjs/helpers.js",
+      "import": "./build/esm/helpers.js"
+    }
+  },
   "files": [
     "build"
   ],
@@ -17,9 +29,19 @@
   "publishConfig": {
     "access": "public"
   },
-  "main": "build/cjs/index.js",
-  "module": "build/esm/index.js",
+  "main": "./build/cjs/index.js",
+  "module": "./build/esm/index.js",
   "types": "build/esm/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "index.d.ts": [
+        "./build/esm/index.d.ts"
+      ],
+      "helpers": [
+        "./build/esm/helpers.d.ts"
+      ]
+    }
+  },
   "scripts": {
     "lint:prettier": "prettier --check --log-level=error '**/*.{js,jsx,ts,tsx,scss}'",
     "lint:prettier:fix": "prettier --write '**/*.md'",
