@@ -1,4 +1,4 @@
-import {ConfigItem} from './config';
+import type {ConfigItem} from './config';
 
 interface PluginSpecialFields {
     prerenderMiddleware?: (item: ConfigItem) => ConfigItem;

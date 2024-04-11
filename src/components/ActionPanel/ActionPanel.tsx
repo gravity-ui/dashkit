@@ -4,23 +4,9 @@ import {CSSTransition} from 'react-transition-group';
 
 import {cn} from '../../utils/cn';
 
+import {ActionPanelProps} from './types';
+
 import './ActionPanel.scss';
-
-export type ActionPanelItem = {
-    id: string;
-    icon: React.ReactNode;
-    title: string;
-    onClick?: () => void;
-    className?: string;
-    qa?: string;
-};
-
-export type ActionPanelProps = {
-    items: ActionPanelItem[];
-    className?: string;
-    disable?: boolean;
-    toggleAnimation?: boolean;
-};
 
 const b = cn('dashkit-action-panel');
 

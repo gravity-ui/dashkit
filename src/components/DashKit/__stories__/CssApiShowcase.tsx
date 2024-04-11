@@ -10,7 +10,8 @@ import {
 } from '@gravity-ui/icons';
 import {Icon} from '@gravity-ui/uikit';
 
-import {ActionPanel, DashKit, MenuItems} from '../../..';
+import {ActionPanel, DashKit} from '../../..';
+import {MenuItems} from '../../../helpers';
 import {i18n} from '../../../i18n';
 import {CogIcon} from '../../../icons/CogIcon';
 import {CopyIcon} from '../../../icons/CopyIcon';
