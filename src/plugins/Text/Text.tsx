@@ -5,6 +5,7 @@ import {Button, Loader} from '@gravity-ui/uikit';
 import {i18n} from '../../i18n';
 import {Plugin, PluginWidgetProps} from '../../typings';
 import {cn} from '../../utils/cn';
+import {PLUGIN_ROOT_ATTR_NAME} from '../constants';
 
 import './Text.scss';
 
@@ -107,7 +108,10 @@ export class PluginText extends React.PureComponent<PluginTextProps, PluginTextS
 
     private renderText() {
         return (
-            <div className={b({withMarkdown: this.withMarkdown})}>
+            <div
+                className={b({withMarkdown: this.withMarkdown})}
+                {...{[PLUGIN_ROOT_ATTR_NAME]: 'text'}}
+            >
                 {this.withMarkdown ? (
                     <div
                         className="yfm" // className из стилей для markdown
