@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.0.2](https://github.com/gravity-ui/dashkit/compare/v8.0.1...v8.0.2) (2024-04-12)
+
+
+### Bug Fixes
+
+* add group_control to pluginBaseDL ([#140](https://github.com/gravity-ui/dashkit/issues/140)) ([6a41996](https://github.com/gravity-ui/dashkit/commit/6a4199698ee5c500e40ec32ca1881a552bd6cb71))
+
 ## [8.0.1](https://github.com/gravity-ui/dashkit/compare/v8.0.0...v8.0.1) (2024-04-12)
 
 
