@@ -8,6 +8,10 @@ export const pluginControlBaseDL: PluginBase = {
     type: 'control',
 };
 
+export const pluginGroupControlBaseDL: PluginBase = {
+    type: 'group_control',
+};
+
 export const pluginWidgetBaseDL: PluginBase = {
     type: 'widget',
 };
@@ -17,6 +21,7 @@ const pluginsBaseDL: PluginBase[] = [
     {type: 'text'},
     pluginControlBaseDL,
     pluginWidgetBaseDL,
+    pluginGroupControlBaseDL,
 ];
 
 // Используется в DataLens на серверной стороне для формирования параметров и стейта чарта в рассылках
