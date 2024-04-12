@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.0.1](https://github.com/gravity-ui/dashkit/compare/v8.0.0...v8.0.1) (2024-04-12)
+
+
+### Bug Fixes
+
+* change types setting path to common one ([#138](https://github.com/gravity-ui/dashkit/issues/138)) ([d963f18](https://github.com/gravity-ui/dashkit/commit/d963f18cc68920c7ea1c20fd4e0f802f7715560d))
+
 ## [8.0.0](https://github.com/gravity-ui/dashkit/compare/v7.2.0...v8.0.0) (2024-04-12)
 
 
