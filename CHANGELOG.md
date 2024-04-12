@@ -7,9 +7,15 @@
 
 * separated helpers export from ui ([#133](https://github.com/gravity-ui/dashkit/issues/133))
 
-### refactor
-
-* separated helpers export from ui ([#133](https://github.com/gravity-ui/dashkit/issues/133)) ([5786de8](https://github.com/gravity-ui/dashkit/commit/5786de8f2658fa3dd441b93bb0973b5725649808))
+Functions and constants from `src/utils`, `src/shared` and `src/constants` are available for export from another endpoint `helpers`. 
+For example, previously you could use:
+```
+import {transformParamsToActionParams} from '@gravity-ui/dashkit';
+```
+now you should use:
+```
+import {transformParamsToActionParams} from '@gravity-ui/dashkit/helpers';
+```
 
 
 ### Features
