@@ -1,5 +1,21 @@
 # Changelog
 
+## [8.0.0](https://github.com/gravity-ui/dashkit/compare/v7.2.0...v8.0.0) (2024-04-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* separated helpers export from ui ([#133](https://github.com/gravity-ui/dashkit/issues/133))
+
+### refactor
+
+* separated helpers export from ui ([#133](https://github.com/gravity-ui/dashkit/issues/133)) ([5786de8](https://github.com/gravity-ui/dashkit/commit/5786de8f2658fa3dd441b93bb0973b5725649808))
+
+
+### Features
+
+* add attribute to plugin root element ([#135](https://github.com/gravity-ui/dashkit/issues/135)) ([d052702](https://github.com/gravity-ui/dashkit/commit/d052702b6e4b736fe2ac67c8488f3ec1951096fb))
+
 ## [7.2.0](https://github.com/gravity-ui/dashkit/compare/v7.1.1...v7.2.0) (2024-03-27)
 
 
