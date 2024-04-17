@@ -62,6 +62,10 @@
     will-change: transform;
 }
 
+.react-grid-item.dashkit-grid-item_is-focused {
+    z-index: 2;
+}
+
 .react-grid-item.react-grid-placeholder {
     --_-dashkit-placeholder-color: var(--dashkit-placeholder-color, #fc0);
     --_-dashkit-placeholder-opacity: var(--dashkit-placeholder-opacity, 0.2);

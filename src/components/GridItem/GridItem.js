@@ -37,6 +37,10 @@ class GridItem extends React.PureComponent {
 
     static contextType = DashKitContext;
 
+    state = {
+        isFocused: false,
+    };
+
     renderOverlay() {
         const {overlayControls} = this.props;
         const {editMode} = this.context;
@@ -59,6 +63,14 @@ class GridItem extends React.PureComponent {
             </React.Fragment>
         );
     }
+
+    onFocusHandler = () => {
+        this.setState({isFocused: true});
+    };
+
+    onBlurHandler = () => {
+        this.setState({isFocused: false});
+    };
 
     render() {
         // из-за бага, что Grid Items unmounts при изменении static, isDraggable, isResaizable
@@ -92,6 +104,7 @@ class GridItem extends React.PureComponent {
                 className={b(
                     {
                         'is-dragging': isDragging,
+                        'is-focused': this.state.isFocused,
                         'with-custom-handle': withCustomHandle,
                     },
                     preparedClassName,
@@ -100,6 +113,9 @@ class GridItem extends React.PureComponent {
                 style={style}
                 ref={this.props.forwardedRef}
                 {...reactGridLayoutProps}
+                onFocus={this.onFocusHandler}
+                onBlur={this.onBlurHandler}
+                tabIndex={-1}
             >
                 <div className={b('item', {editMode: editMode && !_editActive && !noOverlay})}>
                     <Item
