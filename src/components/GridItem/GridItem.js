@@ -99,13 +99,21 @@ class GridItem extends React.PureComponent {
 
     onFocusHandler = () => {
         this.setState({isFocused: true});
+
+        if (this.controller) {
+            this.controller.abort();
+        }
     };
 
     onBlurHandler = () => {
+        this.controller = new AbortController();
+
         windowFocusObserver.getFocuseState().then((isWindowFocused) => {
-            if (isWindowFocused) {
+            if (!this.controller.signal.aborted && isWindowFocused) {
                 this.setState({isFocused: false});
             }
+
+            this.controller = null;
         });
     };
 
