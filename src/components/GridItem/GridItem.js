@@ -11,6 +11,39 @@ import './GridItem.scss';
 
 const b = cn('dashkit-grid-item');
 
+class WindowFocusObserver {
+    constructor() {
+        this.subscribers = 0;
+        this.isFocused = !document.hidden;
+
+        window.addEventListener('blur', this.blurHandler, true);
+        window.addEventListener('focus', this.focusHandler, true);
+    }
+
+    blurHandler = (e) => {
+        if (e.target === window) {
+            this.isFocused = false;
+        }
+    };
+
+    focusHandler = (e) => {
+        if (e.target === window) {
+            this.isFocused = true;
+        }
+    };
+
+    // Method to get state after all blur\focus events in document are triggered
+    async getFocuseState() {
+        return new Promise((resolve) => {
+            requestAnimationFrame(() => {
+                resolve(this.isFocused);
+            });
+        });
+    }
+}
+
+const windowFocusObserver = new WindowFocusObserver();
+
 class GridItem extends React.PureComponent {
     static propTypes = {
         adjustWidgetLayout: PropTypes.func.isRequired,
@@ -69,7 +102,11 @@ class GridItem extends React.PureComponent {
     };
 
     onBlurHandler = () => {
-        this.setState({isFocused: false});
+        windowFocusObserver.getFocuseState().then((isWindowFocused) => {
+            if (isWindowFocused) {
+                this.setState({isFocused: false});
+            }
+        });
     };
 
     render() {
