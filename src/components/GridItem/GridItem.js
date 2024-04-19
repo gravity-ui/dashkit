@@ -11,6 +11,39 @@ import './GridItem.scss';
 
 const b = cn('dashkit-grid-item');
 
+class WindowFocusObserver {
+    constructor() {
+        this.subscribers = 0;
+        this.isFocused = !document.hidden;
+
+        window.addEventListener('blur', this.blurHandler, true);
+        window.addEventListener('focus', this.focusHandler, true);
+    }
+
+    blurHandler = (e) => {
+        if (e.target === window) {
+            this.isFocused = false;
+        }
+    };
+
+    focusHandler = (e) => {
+        if (e.target === window) {
+            this.isFocused = true;
+        }
+    };
+
+    // Method to get state after all blur\focus events in document are triggered
+    async getFocuseState() {
+        return new Promise((resolve) => {
+            requestAnimationFrame(() => {
+                resolve(this.isFocused);
+            });
+        });
+    }
+}
+
+const windowFocusObserver = new WindowFocusObserver();
+
 class GridItem extends React.PureComponent {
     static propTypes = {
         adjustWidgetLayout: PropTypes.func.isRequired,
@@ -28,6 +61,7 @@ class GridItem extends React.PureComponent {
         className: PropTypes.string,
         style: PropTypes.object,
         noOverlay: PropTypes.bool,
+        focusable: PropTypes.bool,
         withCustomHandle: PropTypes.bool,
         onMouseDown: PropTypes.func,
         onMouseUp: PropTypes.func,
@@ -36,6 +70,10 @@ class GridItem extends React.PureComponent {
     };
 
     static contextType = DashKitContext;
+
+    state = {
+        isFocused: false,
+    };
 
     renderOverlay() {
         const {overlayControls} = this.props;
@@ -60,6 +98,26 @@ class GridItem extends React.PureComponent {
         );
     }
 
+    onFocusHandler = () => {
+        this.setState({isFocused: true});
+
+        if (this.controller) {
+            this.controller.abort();
+        }
+    };
+
+    onBlurHandler = () => {
+        this.controller = new AbortController();
+
+        windowFocusObserver.getFocuseState().then((isWindowFocused) => {
+            if (!this.controller.signal.aborted && isWindowFocused) {
+                this.setState({isFocused: false});
+            }
+
+            this.controller = null;
+        });
+    };
+
     render() {
         // из-за бага, что Grid Items unmounts при изменении static, isDraggable, isResaizable
         // https://github.com/STRML/react-grid-layout/issues/721
@@ -73,6 +131,7 @@ class GridItem extends React.PureComponent {
             className,
             isDragging,
             noOverlay,
+            focusable,
             withCustomHandle,
         } = this.props;
         const {editMode} = this.context;
@@ -92,6 +151,7 @@ class GridItem extends React.PureComponent {
                 className={b(
                     {
                         'is-dragging': isDragging,
+                        'is-focused': this.state.isFocused,
                         'with-custom-handle': withCustomHandle,
                     },
                     preparedClassName,
@@ -100,6 +160,13 @@ class GridItem extends React.PureComponent {
                 style={style}
                 ref={this.props.forwardedRef}
                 {...reactGridLayoutProps}
+                {...(focusable
+                    ? {
+                          onFocus: this.onFocusHandler,
+                          onBlur: this.onBlurHandler,
+                          tabIndex: -1,
+                      }
+                    : {})}
             >
                 <div className={b('item', {editMode: editMode && !_editActive && !noOverlay})}>
                     <Item

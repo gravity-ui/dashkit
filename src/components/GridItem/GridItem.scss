@@ -2,6 +2,10 @@
     position: relative;
     $_border-radius: 3px;
 
+    &:focus {
+        outline: none;
+    }
+
     &__overlay {
         --_-dashkit-overlay-color: var(--dashkit-overlay-color, var(--g-color-base-generic));
         --_-dashkit-overlay-border-color: var(--dashkit-overlay-border-color, rgba(0, 0, 0, 0.1));
@@ -60,6 +64,10 @@
     transition: none;
     z-index: 3;
     will-change: transform;
+}
+
+.react-grid-item.dashkit-grid-item_is-focused {
+    z-index: 2;
 }
 
 .react-grid-item.react-grid-placeholder {

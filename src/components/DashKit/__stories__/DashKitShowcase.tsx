@@ -208,6 +208,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                         settings={this.state.settings}
                         ref={this.dashKitRef}
                         overlayControls={controls}
+                        focusable={!editMode}
                     />
                 </DemoRow>
             </Demo>

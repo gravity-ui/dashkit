@@ -49,6 +49,7 @@ interface DashKitProps {
 - **context**: Object that will be propped up on all widgets.
 - **overlayControls**: Object that overrides widget controls at the time of editing. If not transmitted, basic controls will be displayed.
 - **noOverlay**: If `true`, overlay and controls are not displayed while editing.
+- **focusable**: If `true`, grid items will be focusable.
 - **draggableHandleClassName** : СSS class name of the element that makes the widget draggable.
 
 ## Usage
