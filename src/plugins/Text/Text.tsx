@@ -180,7 +180,7 @@ const plugin: PluginTextObject = {
     renderer(props, forwardedRef) {
         return <PluginText {...props} apiHandler={plugin._apiHandler} ref={forwardedRef} />;
     },
-    placeholderRenderer(props, forwardedRef) {
+    placeholderRenderer(_, forwardedRef) {
         return <div ref={forwardedRef}>Text placeholder</div>;
     },
 };

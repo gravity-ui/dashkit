@@ -3,12 +3,19 @@ import React from 'react';
 import noop from 'lodash/noop';
 
 import {DEFAULT_NAMESPACE} from '../../constants';
-import type {Config, ConfigItem, GlobalParams, ItemsStateAndParams} from '../../shared';
+import type {
+    Config,
+    ConfigItem,
+    ConfigLayout,
+    GlobalParams,
+    ItemsStateAndParams,
+} from '../../shared';
 import {
     AddConfigItem,
     ContextProps,
     Plugin,
     SetConfigItem,
+    SetNewItemOptions,
     Settings,
     SettingsProps,
 } from '../../typings';
