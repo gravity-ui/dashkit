@@ -1,7 +1,10 @@
 import React from 'react';
+
 import PropTypes from 'prop-types';
+
 import {prepareItem} from '../../hocs/prepareItem';
 import {cn} from '../../utils/cn';
+
 import './Item.scss';
 
 const b = cn('dashkit-item');

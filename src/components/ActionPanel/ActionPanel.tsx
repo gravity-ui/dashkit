@@ -1,8 +1,11 @@
 import React from 'react';
+
 import {CSSTransition} from 'react-transition-group';
 
-import {cn} from '../../utils/cn';
 import {DashKitDnDContext} from '../../context/DashKitContext';
+import {cn} from '../../utils/cn';
+
+import {ActionPanelProps} from './types';
 
 import './ActionPanel.scss';
 
@@ -14,13 +17,6 @@ export type ActionPanelItem = {
     className?: string;
     qa?: string;
     pluginType?: string;
-};
-
-export type ActionPanelProps = {
-    items: ActionPanelItem[];
-    className?: string;
-    disable?: boolean;
-    toggleAnimation?: boolean;
 };
 
 type DndProps =

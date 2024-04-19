@@ -1,14 +1,17 @@
 import React from 'react';
-import {Icon} from '@gravity-ui/uikit';
-import {ChartColumn, Heading, Sliders, TextAlignLeft} from '@gravity-ui/icons';
 
-import {Demo, DemoRow} from './Demo';
-import {getConfig} from './utils';
-import {DashKit, ActionPanel, MenuItems, DashKitDnDWrapper, DashKitProps} from '../../..';
-import i18n from '../../../i18n';
+import {ChartColumn, Heading, Sliders, TextAlignLeft} from '@gravity-ui/icons';
+import {Icon} from '@gravity-ui/uikit';
+
+import {ActionPanel, DashKit, DashKitDnDWrapper, DashKitProps} from '../../..';
+import {MenuItems} from '../../../helpers';
+import {i18n} from '../../../i18n';
 import {CogIcon} from '../../../icons/CogIcon';
 import {CopyIcon} from '../../../icons/CopyIcon';
 import {DeleteIcon} from '../../../icons/DeleteIcon';
+
+import {Demo, DemoRow} from './Demo';
+import {getConfig} from './utils';
 
 export const DashKitDnDShowcase: React.FC = () => {
     React.useEffect(() => {

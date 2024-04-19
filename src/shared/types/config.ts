@@ -8,6 +8,13 @@ export interface ConfigLayout {
     y: number;
 }
 
+export type ConfigItemGroup = {
+    id: string;
+    defaults?: StringParams;
+    namespace: string;
+    [key: string]: unknown;
+};
+
 export interface ConfigItemData {
     _editActive?: boolean;
     tabs?: {
@@ -16,11 +23,16 @@ export interface ConfigItemData {
         params?: StringParams;
         [key: string]: unknown;
     }[];
+    group?: ConfigItemGroup[];
     [key: string]: unknown;
 }
 
 export interface ConfigItemDataWithTabs extends Omit<ConfigItemData, 'tabs'> {
     tabs: NonNullable<ConfigItemData['tabs']>;
+}
+
+export interface ConfigItemDataWithGroup extends Omit<ConfigItemData, 'group'> {
+    group: NonNullable<ConfigItemData['group']>;
 }
 
 export interface ConfigItem {
@@ -35,6 +47,10 @@ export interface ConfigItem {
 
 export interface ConfigItemWithTabs extends Omit<ConfigItem, 'data'> {
     data: ConfigItemDataWithTabs;
+}
+
+export interface ConfigItemWithGroup extends Omit<ConfigItem, 'data'> {
+    data: ConfigItemDataWithGroup;
 }
 
 export interface ConfigAliases {

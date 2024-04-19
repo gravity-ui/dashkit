@@ -49,6 +49,7 @@ interface DashKitProps {
 - **context**: Object that will be propped up on all widgets.
 - **overlayControls**: Object that overrides widget controls at the time of editing. If not transmitted, basic controls will be displayed.
 - **noOverlay**: If `true`, overlay and controls are not displayed while editing.
+- **focusable**: If `true`, grid items will be focusable.
 - **draggableHandleClassName** : СSS class name of the element that makes the widget draggable.
 
 ## Usage
@@ -57,24 +58,12 @@ interface DashKitProps {
 
 Before using `DashKit` as a react component, it must be configured.
 
-- setLang
-
-  Used for setting the language of DashKit provided ui elements. Currently the languages supported are: ru, en.
+- set language
 
   ```js
-  import {setLang} from '@gravity-ui/dashkit';
+  import {configure, Lang} from '@gravity-ui/uikit';
 
-  setLang('en');
-  ```
-
-  **From version 3.0.0 the language must be set separately for each DashKit and Gravity-ui instances**
-
-  ```js
-  import {setLang} from '@gravity-ui/dashkit';
-  import {configure as uiKitConfigure, Lang as UILang} from '@gravity-ui/uikit';
-    
-  setLang('en');
-  uiKitConfigure({lang: lang as UILang});
+  configure({lang: Lang.En});
   ```
 
 - DashKit.setSettings
@@ -97,7 +86,7 @@ Before using `DashKit` as a react component, it must be configured.
 
   ```js
   import {DashKit} from '@gravity-ui/dashkit';
-  import {pluginTitle, pluginText}  from '@gravity-ui/dashkit';
+  import {pluginTitle, pluginText} from '@gravity-ui/dashkit';
 
   DashKit.registerPlugins(
     pluginTitle,
@@ -328,7 +317,7 @@ DashKit.setSettings({menu: [] as Array<MenuItem>});
 ### CSS API
 
 | Name                                           | Description           |
-|:-----------------------------------------------|:----------------------|
+| :--------------------------------------------- | :-------------------- |
 | Action panel variables                         |                       |
 | `--dashkit-action-panel-color`                 | Background color      |
 | `--dashkit-action-panel-border-color`          | Border color          |
@@ -351,17 +340,16 @@ DashKit.setSettings({menu: [] as Array<MenuItem>});
 
 #### Usage example
 
-
 ```css
 .custom-theme-wrapper {
-    --dashkit-grid-item-edit-opacit: 1;
-    --dashkit-overlay-color: var(--g-color-base-float);
-    --dashkit-overlay-border-color: var(--g-color-base-float);
-    --dashkit-overlay-opacity: 0.5;
+  --dashkit-grid-item-edit-opacit: 1;
+  --dashkit-overlay-color: var(--g-color-base-float);
+  --dashkit-overlay-border-color: var(--g-color-base-float);
+  --dashkit-overlay-opacity: 0.5;
 
-    --dashkit-action-panel-border-color: var(--g-color-line-info);
-    --dashkit-action-panel-color: var(--g-color-base-float-accent);
-    --dashkit-action-panel-border-radius: var(--g-border-radius-xxl);
+  --dashkit-action-panel-border-color: var(--g-color-line-info);
+  --dashkit-action-panel-color: var(--g-color-base-float-accent);
+  --dashkit-action-panel-border-radius: var(--g-border-radius-xxl);
 }
 ```
 
@@ -369,18 +357,17 @@ DashKit.setSettings({menu: [] as Array<MenuItem>});
 // ....
 
 const CustomThemeWrapper = (props: {
-    dashkitProps: DashkitProps;
-    actionPanelProps: ActionPanelProps;
+  dashkitProps: DashkitProps;
+  actionPanelProps: ActionPanelProps;
 }) => {
-    return (
-        <div className="custom-theme-wrapper">
-            <Dashkit {...props.dashkitProps} />
-            <ActionPanel {...props.actionPanelProps} />
-        </div>
-    );
+  return (
+    <div className="custom-theme-wrapper">
+      <Dashkit {...props.dashkitProps} />
+      <ActionPanel {...props.actionPanelProps} />
+    </div>
+  );
 };
 ```
-
 
 ## Development
 

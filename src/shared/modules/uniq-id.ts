@@ -1,6 +1,8 @@
 import Hashids from 'hashids';
+
 import type {Config} from '../types';
-import {isItemWithTabs} from './helpers';
+
+import {isItemWithGroup, isItemWithTabs} from './helpers';
 
 export function extractIdsFromConfig(config: Config): string[] {
     const ids: string[] = [];
@@ -13,6 +15,9 @@ export function extractIdsFromConfig(config: Config): string[] {
         ids.push(item.id);
         if (isItemWithTabs(item)) {
             item.data.tabs.forEach((tabItem) => ids.push(tabItem.id));
+        }
+        if (isItemWithGroup(item)) {
+            item.data.group.forEach((groupItem) => ids.push(groupItem.id));
         }
     });
     connections.forEach(({from, to}) => ids.push(from, to));

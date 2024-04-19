@@ -1,20 +1,20 @@
 import React from 'react';
+
 import noop from 'lodash/noop';
-import {RegisterManager, UpdateManager} from '../../utils';
-import DashKitView from '../DashKitView/DashKitView';
-import GridLayout from '../GridLayout/GridLayout';
+
 import {DEFAULT_NAMESPACE} from '../../constants';
+import type {Config, ConfigItem, GlobalParams, ItemsStateAndParams} from '../../shared';
 import {
+    AddConfigItem,
+    ContextProps,
+    Plugin,
     SetConfigItem,
     Settings,
     SettingsProps,
-    ContextProps,
-    Plugin,
-    AddConfigItem,
-    SetNewItemOptions,
 } from '../../typings';
-import {GlobalParams, Config, ConfigItem, ConfigLayout, ItemsStateAndParams} from '../../shared';
-
+import {RegisterManager, UpdateManager} from '../../utils';
+import DashKitView from '../DashKitView/DashKitView';
+import GridLayout from '../GridLayout/GridLayout';
 import {OverlayControlItem} from '../OverlayControls/OverlayControls';
 
 interface DashKitGeneralProps {
@@ -34,6 +34,7 @@ interface DashKitDefaultProps {
     settings: SettingsProps;
     context: ContextProps;
     noOverlay: boolean;
+    focusable?: boolean;
 }
 
 export interface DashKitProps extends DashKitGeneralProps, Partial<DashKitDefaultProps> {}
@@ -56,6 +57,7 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
         },
         context: {},
         noOverlay: false,
+        focusable: false,
     };
 
     static registerPlugins(...plugins: Plugin[]) {

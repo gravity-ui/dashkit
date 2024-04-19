@@ -1,9 +1,11 @@
 import React from 'react';
-import {DashKitContext, DashKitDnDContext} from '../context/DashKitContext';
-import {UpdateManager} from '../utils';
-import {getItemsParams, getItemsState} from '../shared';
+
 import isEqual from 'lodash/isEqual';
+
 import {TEMPORARY_ITEM_ID} from '../constants/common';
+import {DashKitContext, DashKitDnDContext} from '../context/DashKitContext';
+import {getItemsParams, getItemsState} from '../shared';
+import {UpdateManager} from '../utils';
 
 function useMemoStateContext(props) {
     // так как мы не хотим хранить параметры виджета с активированной автовысотой в сторе и на сервере, актуальный
@@ -265,6 +267,7 @@ function useMemoStateContext(props) {
             config: props.config,
             context: props.context,
             noOverlay: props.noOverlay,
+            focusable: props.focusable,
             defaultGlobalParams: props.globalParams,
             globalParams: props.globalParams,
             editMode: props.editMode,
@@ -293,6 +296,7 @@ function useMemoStateContext(props) {
             props.config,
             props.context,
             props.noOverlay,
+            props.focusable,
             props.globalParams,
             props.editMode,
             props.settings,

@@ -1,8 +1,9 @@
 import React from 'react';
 
-import Item from '../Item/Item';
 import {DashKitContext} from '../../context/DashKitContext';
 import {cn} from '../../utils/cn';
+import Item from '../Item/Item';
+
 import {getSortedConfigItems} from './helpers';
 
 import './MobileLayout.scss';

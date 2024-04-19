@@ -1,5 +1,5 @@
 import React from 'react';
-import {Icon} from '@gravity-ui/uikit';
+
 import {
     ChartColumn,
     Heading,
@@ -8,14 +8,17 @@ import {
     Sliders,
     TextAlignLeft,
 } from '@gravity-ui/icons';
+import {Icon} from '@gravity-ui/uikit';
 
-import {Demo, DemoRow} from './Demo';
-import {getConfig} from './utils';
-import {DashKit, ActionPanel, MenuItems} from '../../..';
-import i18n from '../../../i18n';
+import {ActionPanel, DashKit} from '../../..';
+import {MenuItems} from '../../../helpers';
+import {i18n} from '../../../i18n';
 import {CogIcon} from '../../../icons/CogIcon';
 import {CopyIcon} from '../../../icons/CopyIcon';
 import {DeleteIcon} from '../../../icons/DeleteIcon';
+
+import {Demo, DemoRow} from './Demo';
+import {getConfig} from './utils';
 
 export const CssApiShowcase: React.FC = () => {
     React.useEffect(() => {
@@ -90,7 +93,7 @@ export const CssApiShowcase: React.FC = () => {
 
                     --dashkit-action-panel-item-color: transparent;
                     --dashkit-action-panel-item-text-color: var(--g-color-text-primary);
-                    
+
                     --dashkit-action-panel-item-color-hover: var(--g-color-line-info);
                     --dashkit-action-panel-item-text-color-hover: white;
 

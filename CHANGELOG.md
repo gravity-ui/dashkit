@@ -1,5 +1,77 @@
 # Changelog
 
+## [8.1.0](https://github.com/gravity-ui/dashkit/compare/v8.0.2...v8.1.0) (2024-04-19)
+
+
+### Features
+
+* focusable grid item ([#142](https://github.com/gravity-ui/dashkit/issues/142)) ([aa02ea1](https://github.com/gravity-ui/dashkit/commit/aa02ea1cfb6a4f750d6541e0eeb2dde2f72cf9fc))
+
+## [8.0.2](https://github.com/gravity-ui/dashkit/compare/v8.0.1...v8.0.2) (2024-04-12)
+
+
+### Bug Fixes
+
+* add group_control to pluginBaseDL ([#140](https://github.com/gravity-ui/dashkit/issues/140)) ([6a41996](https://github.com/gravity-ui/dashkit/commit/6a4199698ee5c500e40ec32ca1881a552bd6cb71))
+
+## [8.0.1](https://github.com/gravity-ui/dashkit/compare/v8.0.0...v8.0.1) (2024-04-12)
+
+
+### Bug Fixes
+
+* change types setting path to common one ([#138](https://github.com/gravity-ui/dashkit/issues/138)) ([d963f18](https://github.com/gravity-ui/dashkit/commit/d963f18cc68920c7ea1c20fd4e0f802f7715560d))
+
+## [8.0.0](https://github.com/gravity-ui/dashkit/compare/v7.2.0...v8.0.0) (2024-04-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* separated helpers export from ui ([#133](https://github.com/gravity-ui/dashkit/issues/133))
+
+Functions and constants from `src/utils`, `src/shared` and `src/constants` are available for export from another endpoint `helpers`. 
+For example, previously you could use:
+```
+import {transformParamsToActionParams} from '@gravity-ui/dashkit';
+```
+now you should use:
+```
+import {transformParamsToActionParams} from '@gravity-ui/dashkit/helpers';
+```
+
+
+### Features
+
+* add attribute to plugin root element ([#135](https://github.com/gravity-ui/dashkit/issues/135)) ([d052702](https://github.com/gravity-ui/dashkit/commit/d052702b6e4b736fe2ac67c8488f3ec1951096fb))
+
+## [7.2.0](https://github.com/gravity-ui/dashkit/compare/v7.1.1...v7.2.0) (2024-03-27)
+
+
+### Features
+
+* add copy context field for prepared copy item type ([#130](https://github.com/gravity-ui/dashkit/issues/130)) ([fad573e](https://github.com/gravity-ui/dashkit/commit/fad573e7fb02a5a1c3949a48d5e9d3de2617f560))
+
+## [7.1.1](https://github.com/gravity-ui/dashkit/compare/v7.1.0...v7.1.1) (2024-03-15)
+
+
+### Bug Fixes
+
+* **react-grid-layout:** fix react-grid-layout type imports ([#125](https://github.com/gravity-ui/dashkit/issues/125)) ([2a051cf](https://github.com/gravity-ui/dashkit/commit/2a051cfc2f7b6698892ecc42eb185e5272aba2e2))
+
+## [7.1.0](https://github.com/gravity-ui/dashkit/compare/v7.0.0...v7.1.0) (2024-03-07)
+
+
+### Features
+
+* support group in widget item ([#118](https://github.com/gravity-ui/dashkit/issues/118)) ([f480ee6](https://github.com/gravity-ui/dashkit/commit/f480ee69b7d1cebe3d7e889a6657114ec120e0ac))
+
+## [7.0.0](https://github.com/gravity-ui/dashkit/compare/v6.8.0...v7.0.0) (2024-02-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* move to uikit 6 ([#116](https://github.com/gravity-ui/dashkit/issues/116))
+* remove internal usage of `i18n`, use `configure` from `uilit` instead
+
 ## [6.8.0](https://github.com/gravity-ui/dashkit/compare/v6.7.2...v6.8.0) (2024-02-01)
 
 

@@ -1,8 +1,10 @@
 import React from 'react';
+
 import ReactGridLayout, {WidthProvider} from 'react-grid-layout';
-import GridItem from '../GridItem/GridItem';
+
+import {OVERLAY_CLASS_NAME, OVERLAY_CONTROLS_CLASS_NAME, TEMPORARY_ITEM_ID} from '../../constants';
 import {DashKitContext} from '../../context/DashKitContext';
-import {OVERLAY_CONTROLS_CLASS_NAME, OVERLAY_CLASS_NAME, TEMPORARY_ITEM_ID} from '../../constants';
+import GridItem from '../GridItem/GridItem';
 
 class DragOverLayout extends ReactGridLayout {
     processGridItem(child, isDroppingItem) {
@@ -202,6 +204,7 @@ export default class GridLayout extends React.PureComponent {
             registerManager,
             editMode,
             noOverlay,
+            focusable,
             draggableHandleClassName,
             outerDnDEnable,
         } = this.context;
@@ -243,6 +246,7 @@ export default class GridLayout extends React.PureComponent {
                             adjustWidgetLayout={this.adjustWidgetLayout}
                             isDragging={this.state.isDragging}
                             noOverlay={noOverlay}
+                            focusable={focusable}
                             withCustomHandle={Boolean(draggableHandleClassName)}
                             overlayControls={this.props.overlayControls}
                         />

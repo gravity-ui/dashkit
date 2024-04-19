@@ -1,29 +1,33 @@
 import groupBy from 'lodash/groupBy';
+
 import {META_KEY} from '../constants';
 import {
-    GlobalParams,
     Config,
-    ItemsStateAndParams,
-    PluginBase,
     ConfigItem,
-    StringParams,
-    ItemState,
-    ItemsStateAndParamsBase,
-    StateAndParamsMetaData,
-    ItemStateAndParams,
     ConfigItemDataWithTabs,
+    ConfigItemGroup,
+    GlobalParams,
+    ItemState,
+    ItemStateAndParams,
+    ItemsStateAndParams,
+    ItemsStateAndParamsBase,
+    PluginBase,
+    StateAndParamsMetaData,
+    StringParams,
 } from '../types';
+
 import {
-    prerenderItems,
-    formQueueData,
     FormedQueueData,
-    getMapItemsIgnores,
-    mergeParamsWithAliases,
+    formQueueData,
     getCurrentVersion,
-    pickActionParamsFromParams,
+    getMapItemsIgnores,
     hasActionParam,
-    pickExceptActionParamsFromParams,
+    isItemWithGroup,
     isItemWithTabs,
+    mergeParamsWithAliases,
+    pickActionParamsFromParams,
+    pickExceptActionParamsFromParams,
+    prerenderItems,
     resolveItemInnerId,
 } from './helpers';
 
@@ -35,7 +39,93 @@ export interface GetItemsParamsArg {
     plugins: PluginBase[];
 }
 
-type GetItemsParamsReturn = Record<string, StringParams>;
+type GetItemsParamsReturn = Record<string, StringParams | Record<string, StringParams>>;
+
+function getItemParams({
+    item,
+    itemsStateAndParams,
+    mapItemsIgnores,
+    itemsWithDefaultsByNamespace,
+    getMergedParams,
+    defaultGlobalParams,
+    globalParams,
+    isFirstVersion,
+    queueData,
+}: {
+    item: ConfigItem | ConfigItemGroup;
+    itemsStateAndParams: ItemsStateAndParams;
+    mapItemsIgnores: Record<string, string[]>;
+    itemsWithDefaultsByNamespace: Record<string, (ConfigItem | ConfigItemGroup)[]>;
+    getMergedParams: (params: StringParams, actionParams?: StringParams) => StringParams;
+    defaultGlobalParams: StringParams;
+    globalParams: GlobalParams;
+    isFirstVersion: boolean;
+    queueData: FormedQueueData[];
+}) {
+    const {id, namespace} = item;
+
+    let defaultWidgetParams: StringParams | Record<string, StringParams> = {};
+    if (isItemWithTabs(item)) {
+        const currentWidgetTabId = resolveItemInnerId({item, itemsStateAndParams});
+        const itemTabs: ConfigItemDataWithTabs['tabs'] = item.data.tabs;
+        defaultWidgetParams =
+            itemTabs.find((tabItem) => tabItem?.id === currentWidgetTabId)?.params || {};
+    } else {
+        defaultWidgetParams = item.defaults || {};
+    }
+
+    const itemIgnores = mapItemsIgnores[id];
+
+    const affectingItemsWithDefaults = itemsWithDefaultsByNamespace[namespace].filter(
+        (itemWithDefaults) => !itemIgnores.includes(itemWithDefaults.id),
+    );
+
+    let itemParams: StringParams = Object.assign(
+        {},
+        getMergedParams(defaultGlobalParams),
+        // default parameters to begin with
+        affectingItemsWithDefaults.reduceRight((defaultParams: StringParams, itemWithDefaults) => {
+            return {
+                ...defaultParams,
+                ...getMergedParams(itemWithDefaults.defaults || {}),
+            };
+        }, {}),
+        getMergedParams(globalParams),
+    );
+    if (isFirstVersion) {
+        itemParams = Object.assign(
+            itemParams,
+            (itemsStateAndParams as ItemsStateAndParamsBase)?.[id]?.params || {},
+        );
+    } else {
+        // params according to queue of its applying
+        let queueDataItemsParams: StringParams = {};
+        for (const data of queueData) {
+            if (data.namespace !== namespace || itemIgnores.includes(data.id)) {
+                continue;
+            }
+
+            let actionParams;
+            let params = data.params;
+            const needAliasesForActionParams = data.id !== id && hasActionParam(data.params);
+            if (needAliasesForActionParams) {
+                actionParams = pickActionParamsFromParams(data.params);
+                params = pickExceptActionParamsFromParams(data.params);
+            }
+
+            const mergedParams = getMergedParams(params, actionParams);
+
+            queueDataItemsParams = {
+                ...queueDataItemsParams,
+                ...mergedParams,
+            };
+        }
+
+        itemParams = Object.assign(itemParams, queueDataItemsParams);
+    }
+
+    return {...defaultWidgetParams, ...itemParams};
+}
 
 export function getItemsParams({
     defaultGlobalParams = {},
@@ -47,97 +137,82 @@ export function getItemsParams({
     const {aliases, connections} = config;
     const items = prerenderItems({items: config.items, plugins});
     const isFirstVersion = getCurrentVersion(itemsStateAndParams) === 1;
+
+    const allItems = items.reduce((paramsItems: (ConfigItem | ConfigItemGroup)[], item) => {
+        if (isItemWithGroup(item)) {
+            item.data.group.forEach((groupItem) => {
+                paramsItems.push(groupItem);
+            });
+
+            return paramsItems;
+        }
+
+        paramsItems.push(item);
+        return paramsItems;
+    }, []);
+
     const queueData: FormedQueueData[] = isFirstVersion
         ? []
         : formQueueData({items, itemsStateAndParams});
 
     // to consider other kind types in future (not only ignore)
     const mapItemsIgnores = getMapItemsIgnores({
-        items,
+        items: allItems,
         ignores: connections.filter(({kind}) => kind === 'ignore'),
         itemsStateAndParams,
         isFirstVersion,
     });
-    const groupByNamespace = groupBy(items, 'namespace');
-    const itemsWithDefaultsByNamespace = Object.keys(groupByNamespace).reduce((acc, namespace) => {
-        return {
-            ...acc,
-            // there are defaults only in selectors by now, need to get them from item.data.tabs[].defaults for widgets
-            // but make a decision about there's order first
-            [namespace]: groupByNamespace[namespace].filter((item) => item.defaults),
-        };
-    }, {} as Record<string, ConfigItem[]>);
+    const groupByNamespace = groupBy(allItems, 'namespace');
+    const itemsWithDefaultsByNamespace = Object.keys(groupByNamespace).reduce(
+        (acc, namespace) => {
+            return {
+                ...acc,
+                // there are defaults only in selectors by now, need to get them from item.data.tabs[].defaults for widgets
+                // but make a decision about there's order first
+                [namespace]: groupByNamespace[namespace].filter((item) => item.defaults),
+            };
+        },
+        {} as Record<string, (ConfigItem | ConfigItemGroup)[]>,
+    );
 
-    return items.reduce((itemsParams: Record<string, StringParams>, item) => {
+    return items.reduce((itemsParams: GetItemsParamsReturn, item: ConfigItem) => {
         const {id, namespace} = item;
-
-        let defaultWidgetParams: StringParams = {};
-        if (isItemWithTabs(item)) {
-            const currentWidgetTabId = resolveItemInnerId({item, itemsStateAndParams});
-            const itemTabs: ConfigItemDataWithTabs['tabs'] = item.data.tabs;
-            defaultWidgetParams =
-                itemTabs.find((tabItem) => tabItem?.id === currentWidgetTabId)?.params || {};
-        } else {
-            defaultWidgetParams = item.defaults || {};
-        }
 
         const getMergedParams = (params: StringParams, actionParams?: StringParams) =>
             mergeParamsWithAliases({aliases, namespace, params: params || {}, actionParams});
-        const itemIgnores = mapItemsIgnores[id];
-        const affectingItemsWithDefaults = itemsWithDefaultsByNamespace[namespace].filter(
-            (itemWithDefaults) => !itemIgnores.includes(itemWithDefaults.id),
-        );
 
-        let itemParams: StringParams = Object.assign(
-            {},
-            getMergedParams(defaultGlobalParams),
-            // default parameters to begin with
-            affectingItemsWithDefaults.reduceRight(
-                (defaultParams: StringParams, itemWithDefaults) => {
-                    return {
-                        ...defaultParams,
-                        ...getMergedParams(itemWithDefaults.defaults || {}),
-                    };
+        const paramsOptions = {
+            itemsStateAndParams,
+            mapItemsIgnores,
+            itemsWithDefaultsByNamespace,
+            getMergedParams,
+            defaultGlobalParams,
+            globalParams,
+            isFirstVersion,
+            queueData,
+        };
+
+        if (isItemWithGroup(item)) {
+            const groupParams = item.data.group.reduce(
+                (groupItemParams: Record<string, StringParams>, groupItem) => {
+                    groupItemParams[groupItem.id] = getItemParams({
+                        item: groupItem,
+                        ...paramsOptions,
+                    });
+                    return groupItemParams;
                 },
                 {},
-            ),
-            getMergedParams(globalParams),
-        );
-        if (isFirstVersion) {
-            itemParams = Object.assign(
-                itemParams,
-                (itemsStateAndParams as ItemsStateAndParamsBase)?.[id]?.params || {},
             );
-        } else {
-            // params according to queue of its applying
-            let queueDataItemsParams: StringParams = {};
-            for (const data of Object.values(queueData)) {
-                if (data.namespace !== namespace || itemIgnores.includes(data.id)) {
-                    continue;
-                }
 
-                let actionParams;
-                let params = data.params;
-                const needAliasesForActionParams = data.id !== id && hasActionParam(data.params);
-                if (needAliasesForActionParams) {
-                    actionParams = pickActionParamsFromParams(data.params);
-                    params = pickExceptActionParamsFromParams(data.params);
-                }
-
-                const mergedParams = getMergedParams(params, actionParams);
-
-                queueDataItemsParams = {
-                    ...queueDataItemsParams,
-                    ...mergedParams,
-                };
-            }
-
-            itemParams = Object.assign(itemParams, queueDataItemsParams);
+            return {...itemsParams, [id]: groupParams};
         }
 
         return {
             ...itemsParams,
-            [id]: {...defaultWidgetParams, ...itemParams},
+            [id]: getItemParams({
+                item,
+                ...paramsOptions,
+            }),
         };
     }, {});
 }

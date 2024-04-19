@@ -1,6 +1,8 @@
 import React from 'react';
-import {DashKitContext} from '../context/DashKitContext';
+
 import PropTypes from 'prop-types';
+
+import {DashKitContext} from '../context/DashKitContext';
 
 export function prepareItem(Component) {
     return class PrepareItem extends React.Component {

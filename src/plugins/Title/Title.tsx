@@ -1,6 +1,9 @@
 import React from 'react';
+
+import {Plugin, PluginWidgetProps} from '../../typings';
 import {cn} from '../../utils/cn';
-import {PluginWidgetProps, Plugin} from '../../typings';
+import {PLUGIN_ROOT_ATTR_NAME} from '../constants';
+
 import './Title.scss';
 
 export interface PluginTitleProps extends PluginWidgetProps {
@@ -20,7 +23,7 @@ export class PluginTitle extends React.Component<PluginTitleProps> {
         const size = data.size ? data.size : false;
         const id = data.showInTOC && text ? encodeURIComponent(text) : undefined;
         return (
-            <div id={id} className={b({size})}>
+            <div id={id} className={b({size})} {...{[PLUGIN_ROOT_ATTR_NAME]: 'title'}}>
                 {text}
             </div>
         );

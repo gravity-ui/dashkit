@@ -1,31 +1,40 @@
-import update, {extend, Spec, CustomCommands} from 'immutability-helper';
+import update, {CustomCommands, Spec, extend} from 'immutability-helper';
 import omit from 'lodash/omit';
 import pick from 'lodash/pick';
+
+import {DEFAULT_NAMESPACE} from '../constants';
 import {
-    mergeParamsWithAliases,
+    ConfigLayout,
+    META_KEY,
+    addGroupToQueue,
+    addToQueue,
+    deleteFromQueue,
+    getCurrentVersion,
+    getInitialItemsStateAndParamsMeta,
+    getItemsStateAndParamsMeta,
+    isItemWithGroup,
     isItemWithTabs,
+    mergeParamsWithAliases,
+    pickActionParamsFromParams,
+    resolveItemInnerId,
+    transformParamsToActionParams,
+} from '../shared';
+import type {
     Config,
     ConfigItem,
-    ItemsStateAndParams,
+    ConfigItemGroup,
+    ConfigItemWithGroup,
     ItemStateAndParams,
-    ItemsStateAndParamsBase,
     ItemStateAndParamsChangeOptions,
+    ItemsStateAndParams,
+    ItemsStateAndParamsBase,
+    StateAndParamsMetaData,
     StringParams,
-    getCurrentVersion,
-    META_KEY,
-    deleteFromQueue,
-    addToQueue,
-    getInitialItemsStateAndParamsMeta,
-    resolveItemInnerId,
-    getItemsStateAndParamsMeta,
-    pickActionParamsFromParams,
-    transformParamsToActionParams,
-    ConfigLayout,
 } from '../shared';
-import {AddConfigItem, WidgetLayout, SetItemOptions, SetNewItemOptions} from '../typings';
-import {RegisterManagerPluginLayout} from './register-manager';
-import {DEFAULT_NAMESPACE} from '../constants';
+import type {AddConfigItem, SetItemOptions, SetNewItemOptions, WidgetLayout} from '../typings';
+
 import {getNewId} from './get-new-id';
+import {RegisterManagerPluginLayout} from './register-manager';
 
 extend('$auto', (value, object) => (object ? update(object, value) : update({}, value)));
 type AutoExtendCommand = CustomCommands<{$auto: object}>;
@@ -62,25 +71,30 @@ function removeItemVersion1({id, config, itemsStateAndParams}: RemoveItemArg) {
     );
     const withoutUniqItemsParams = Object.keys(itemsStateAndParams)
         .filter((key) => key !== id)
-        .reduce((acc, key) => {
-            const {params} = (itemsStateAndParams as ItemsStateAndParamsBase)[key];
-            // в state из урла могут быть элементы, которых нет в config.items
-            const item = config.items.find((configItem) => configItem.id === key);
-            if (params && item) {
-                const {namespace} = item;
-                const currentUniqParamsKeys =
-                    namespace === removeItem.namespace ? uniqNamespaceParamsKeys : uniqParamsKeys;
-                const resultParams: StringParams = omit(params, currentUniqParamsKeys);
-                if (Object.keys(params).length !== Object.keys(resultParams).length) {
-                    acc[key] = {
-                        params: {
-                            $set: resultParams,
-                        },
-                    };
+        .reduce(
+            (acc, key) => {
+                const {params} = (itemsStateAndParams as ItemsStateAndParamsBase)[key];
+                // в state из урла могут быть элементы, которых нет в config.items
+                const item = config.items.find((configItem) => configItem.id === key);
+                if (params && item) {
+                    const {namespace} = item;
+                    const currentUniqParamsKeys =
+                        namespace === removeItem.namespace
+                            ? uniqNamespaceParamsKeys
+                            : uniqParamsKeys;
+                    const resultParams: StringParams = omit(params, currentUniqParamsKeys);
+                    if (Object.keys(params).length !== Object.keys(resultParams).length) {
+                        acc[key] = {
+                            params: {
+                                $set: resultParams,
+                            },
+                        };
+                    }
                 }
-            }
-            return acc;
-        }, {} as Record<string, Spec<{params: StringParams}>>);
+                return acc;
+            },
+            {} as Record<string, Spec<{params: StringParams}>>,
+        );
     const newItemsStateAndParams = update(itemsStateAndParams, {
         $unset: [id],
         ...withoutUniqItemsParams,
@@ -104,7 +118,7 @@ function removeItemVersion1({id, config, itemsStateAndParams}: RemoveItemArg) {
 }
 
 function getAllowableChangedParams(
-    item: ConfigItem,
+    item: ConfigItem | ConfigItemGroup,
     stateAndParams: ItemStateAndParams,
     itemsStateAndParams: ItemsStateAndParams,
     paramsSettings?: {
@@ -136,7 +150,13 @@ function getAllowableChangedParams(
         }
         allowedParams = pick(stateParamsConf, Object.keys(tab?.params || {})) as StringParams;
     } else {
-        allowedParams = pick(stateParamsConf, Object.keys(item.defaults || {})) as StringParams;
+        // check if structure is StringParams or Record<string, StringParams>
+        const paramsConf =
+            typeof stateParamsConf?.[item.id] === 'object' &&
+            !Array.isArray(stateParamsConf?.[item.id])
+                ? stateParamsConf[item.id]
+                : stateParamsConf;
+        allowedParams = pick(paramsConf, Object.keys(item.defaults || {})) as StringParams;
     }
     if (Object.keys(allowedParams || {}).length !== Object.keys(stateParamsConf || {}).length) {
         console.warn('Параметры, которых нет в defaults, будут проигнорированы!');
@@ -175,6 +195,7 @@ function changeStateAndParamsVersion1({
         const ignoresInitiatorIds = config.connections
             .filter(({to}) => to === initiatorId)
             .map(({from}) => from);
+
         const updateIds = config.items
             .filter(
                 (item) =>
@@ -187,21 +208,24 @@ function changeStateAndParamsVersion1({
             .map(({id}) => id);
         return update(
             itemsStateAndParams,
-            updateIds.reduce((acc, currentId) => {
-                acc[currentId] = {
-                    $auto: {
-                        params: {
-                            [(itemsStateAndParams as ItemsStateAndParamsBase)[currentId]?.params
-                                ? '$merge'
-                                : '$set']: allowableParamsWithAliases,
+            updateIds.reduce(
+                (acc, currentId) => {
+                    acc[currentId] = {
+                        $auto: {
+                            params: {
+                                [(itemsStateAndParams as ItemsStateAndParamsBase)[currentId]?.params
+                                    ? '$merge'
+                                    : '$set']: allowableParamsWithAliases,
+                            },
+                            ...(hasState && currentId === initiatorId
+                                ? {state: {$set: stateAndParams.state}}
+                                : {}),
                         },
-                        ...(hasState && currentId === initiatorId
-                            ? {state: {$set: stateAndParams.state}}
-                            : {}),
-                    },
-                };
-                return acc;
-            }, {} as Record<string, Spec<ItemsStateAndParams, AutoExtendCommand>>),
+                    };
+                    return acc;
+                },
+                {} as Record<string, Spec<ItemsStateAndParams, AutoExtendCommand>>,
+            ),
         );
     } else if (hasState) {
         return update(itemsStateAndParams, {
@@ -245,7 +269,94 @@ function getNewItemData({item, config, counter: argsCounter, salt, options}: Get
 
         data = {...item.data, tabs};
     }
+
+    if (isItemWithGroup(item)) {
+        const group = item.data.group.map((groupItem) => {
+            if (groupItem.id) {
+                return groupItem;
+            }
+
+            const newIdGroupData = getNewId({config, salt, counter, excludeIds});
+            counter = newIdGroupData.counter;
+            excludeIds.push(newIdGroupData.id);
+
+            return {
+                ...groupItem,
+                id: newIdGroupData.id,
+                namespace: groupItem.namespace || DEFAULT_NAMESPACE,
+            };
+        });
+
+        data = {...item.data, group};
+    }
+
     return {data, counter, excludeIds};
+}
+
+function changeGroupParams({
+    groupItemIds,
+    initiatorId,
+    initiatorItem,
+    itemsStateAndParams,
+    stateAndParams,
+    config,
+    unusedIds,
+}: {
+    groupItemIds: string[];
+    initiatorId: string;
+    initiatorItem: ConfigItemWithGroup;
+    config: Config;
+    itemsStateAndParams: ItemsStateAndParams;
+    stateAndParams: ItemStateAndParams;
+    unusedIds: string[];
+}) {
+    const meta: StateAndParamsMetaData = addGroupToQueue({
+        id: initiatorId,
+        groupItemIds,
+        config,
+        itemsStateAndParams,
+    });
+    const updatedItems: Record<string, StringParams> = {};
+    const currentItemParams = (itemsStateAndParams as ItemsStateAndParamsBase)[initiatorId]
+        ?.params as Record<string, StringParams> | undefined;
+
+    for (const groupItem of initiatorItem.data.group) {
+        if (groupItemIds.includes(groupItem.id)) {
+            const allowableParams = getAllowableChangedParams(
+                groupItem,
+                stateAndParams,
+                itemsStateAndParams,
+            );
+
+            const allowableActionParams = getAllowableChangedParams(
+                groupItem,
+                stateAndParams,
+                itemsStateAndParams,
+                {type: 'actionParams', returnPrefix: true},
+            );
+
+            updatedItems[groupItem.id] = {...allowableParams, ...allowableActionParams};
+
+            continue;
+        }
+
+        if (currentItemParams && currentItemParams[groupItem.id]) {
+            updatedItems[groupItem.id] = currentItemParams[groupItem.id];
+        }
+    }
+
+    const obj = {
+        $unset: unusedIds,
+        [initiatorId]: {
+            $auto: {
+                params: {
+                    $set: updatedItems,
+                },
+            },
+        },
+        [META_KEY]: {$set: meta},
+    };
+    return update(itemsStateAndParams, obj);
 }
 
 export class UpdateManager {
@@ -336,9 +447,13 @@ export class UpdateManager {
         }
         const itemIndex = config.items.findIndex((item) => item.id === id);
         const item = config.items[itemIndex];
-        const itemIds = isItemWithTabs(item)
-            ? [id].concat(item.data.tabs.map((tab) => tab.id))
-            : [id];
+        let itemIds = [id];
+        if (isItemWithTabs(item)) {
+            itemIds = [id].concat(item.data.tabs.map((tab) => tab.id));
+        }
+        if (isItemWithGroup(item)) {
+            itemIds = [id].concat(item.data.group.map((groupItem) => groupItem.id));
+        }
         const connections = config.connections.filter(
             ({from, to}) => !itemIds.includes(from) && !itemIds.includes(to),
         );
@@ -401,6 +516,7 @@ export class UpdateManager {
         const newTabId: string | undefined = stateAndParams.state?.tabId;
         const isTabSwitched = isItemWithTabs(initiatorItem) && Boolean(newTabId);
         const currentMeta = getItemsStateAndParamsMeta(itemsStateAndParams);
+        const groupItemIds = options?.groupItemIds;
 
         if (action === 'removeItem') {
             return update(itemsStateAndParams, {
@@ -414,6 +530,18 @@ export class UpdateManager {
                           })
                         : getInitialItemsStateAndParamsMeta(),
                 },
+            });
+        }
+
+        if (isItemWithGroup(initiatorItem) && groupItemIds) {
+            return changeGroupParams({
+                initiatorId,
+                initiatorItem,
+                groupItemIds,
+                itemsStateAndParams,
+                stateAndParams,
+                config,
+                unusedIds,
             });
         }
 

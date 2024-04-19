@@ -1,20 +1,22 @@
 import React from 'react';
-import {ContextProps, SettingsProps, WidgetLayout} from './common';
-import {
-    StringParams,
+
+import ReactGridLayout from 'react-grid-layout';
+
+import type {
     ConfigItem,
     ItemState,
     ItemStateAndParams,
-    PluginBase,
     ItemStateAndParamsChangeOptions,
+    PluginBase,
+    StringParams,
 } from '../shared';
 
-import type {ReactGridLayoutProps} from 'react-grid-layout';
+import type {ContextProps, SettingsProps, WidgetLayout} from './common';
 
-export interface PluginWidgetProps {
+export interface PluginWidgetProps<T = StringParams> {
     id: string;
     editMode: boolean;
-    params: StringParams;
+    params: T;
     state: ItemState;
     onStateAndParamsChange: (
         stateAndParams: ItemStateAndParams,
@@ -28,7 +30,7 @@ export interface PluginWidgetProps {
     settings: SettingsProps;
     context: ContextProps;
     layout: WidgetLayout[];
-    gridLayout: ReactGridLayoutProps;
+    gridLayout: ReactGridLayout.ReactGridLayoutProps;
     adjustWidgetLayout: (data: {
         widgetId: string;
         needSetDefault?: boolean;
@@ -47,7 +49,7 @@ export interface PluginDefaultLayout {
     maxH?: number;
 }
 
-export interface Plugin<P extends PluginWidgetProps = any> extends PluginBase {
+export interface Plugin<P extends PluginWidgetProps<T> = any, T = StringParams> extends PluginBase {
     defaultLayout?: PluginDefaultLayout;
     renderer: (props: P, forwardedRef: React.RefObject<any>) => React.ReactNode;
     placeholderRenderer?: (props: P, forwardedRef: React.RefObject<any>) => React.ReactNode;
