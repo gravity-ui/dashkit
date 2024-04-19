@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.1.0](https://github.com/gravity-ui/dashkit/compare/v8.0.2...v8.1.0) (2024-04-19)
+
+
+### Features
+
+* focusable grid item ([#142](https://github.com/gravity-ui/dashkit/issues/142)) ([aa02ea1](https://github.com/gravity-ui/dashkit/commit/aa02ea1cfb6a4f750d6541e0eeb2dde2f72cf9fc))
+
 ## [8.0.2](https://github.com/gravity-ui/dashkit/compare/v8.0.1...v8.0.2) (2024-04-12)
 
 
