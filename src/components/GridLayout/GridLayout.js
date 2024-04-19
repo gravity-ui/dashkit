@@ -108,8 +108,15 @@ export default class GridLayout extends React.PureComponent {
     };
 
     render() {
-        const {layout, config, registerManager, editMode, noOverlay, draggableHandleClassName} =
-            this.context;
+        const {
+            layout,
+            config,
+            registerManager,
+            editMode,
+            noOverlay,
+            focusable,
+            draggableHandleClassName,
+        } = this.context;
         this.pluginsRefs.length = config.items.length;
 
         return (
@@ -140,6 +147,7 @@ export default class GridLayout extends React.PureComponent {
                             adjustWidgetLayout={this.adjustWidgetLayout}
                             isDragging={this.state.isDragging}
                             noOverlay={noOverlay}
+                            focusable={focusable}
                             withCustomHandle={Boolean(draggableHandleClassName)}
                             overlayControls={this.props.overlayControls}
                         />

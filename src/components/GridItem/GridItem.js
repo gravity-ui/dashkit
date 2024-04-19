@@ -61,6 +61,7 @@ class GridItem extends React.PureComponent {
         className: PropTypes.string,
         style: PropTypes.object,
         noOverlay: PropTypes.bool,
+        focusable: PropTypes.bool,
         withCustomHandle: PropTypes.bool,
         onMouseDown: PropTypes.func,
         onMouseUp: PropTypes.func,
@@ -130,6 +131,7 @@ class GridItem extends React.PureComponent {
             className,
             isDragging,
             noOverlay,
+            focusable,
             withCustomHandle,
         } = this.props;
         const {editMode} = this.context;
@@ -158,9 +160,13 @@ class GridItem extends React.PureComponent {
                 style={style}
                 ref={this.props.forwardedRef}
                 {...reactGridLayoutProps}
-                onFocus={this.onFocusHandler}
-                onBlur={this.onBlurHandler}
-                tabIndex={-1}
+                {...(focusable
+                    ? {
+                          onFocus: this.onFocusHandler,
+                          onBlur: this.onBlurHandler,
+                          tabIndex: -1,
+                      }
+                    : {})}
             >
                 <div className={b('item', {editMode: editMode && !_editActive && !noOverlay})}>
                     <Item

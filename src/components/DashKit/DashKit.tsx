@@ -34,6 +34,7 @@ interface DashKitDefaultProps {
     settings: SettingsProps;
     context: ContextProps;
     noOverlay: boolean;
+    focusable?: boolean;
 }
 
 export interface DashKitProps extends DashKitGeneralProps, Partial<DashKitDefaultProps> {}
@@ -55,6 +56,7 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
         },
         context: {},
         noOverlay: false,
+        focusable: false,
     };
 
     static registerPlugins(...plugins: Plugin[]) {
