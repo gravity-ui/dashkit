@@ -7,6 +7,23 @@ import {DashKitContext} from '../../context/DashKitContext';
 import GridItem from '../GridItem/GridItem';
 
 class DragOverLayout extends ReactGridLayout {
+    componentDidMount() {
+        super.componentDidMount();
+
+        window.addEventListener('dragend', this.dragReset);
+    }
+
+    componentWillUnmount() {
+        window.removeEventListener('dragend', this.dragReset);
+    }
+
+    dragReset = () => {
+        if (this.dragEnterCounter) {
+            this.dragEnterCounter = 0;
+            this.removeDroppingPlaceholder();
+        }
+    };
+
     processGridItem(child, isDroppingItem) {
         if (isDroppingItem) {
             // Drop item from outside gets 0,0 droppingPosition
