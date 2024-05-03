@@ -37,6 +37,10 @@ export const DashKitDnDShowcase: React.FC = () => {
         });
     }, []);
 
+    const onClick = () => {
+        console.log('click');
+    };
+
     const items = React.useMemo(
         () => [
             {
@@ -46,6 +50,7 @@ export const DashKitDnDShowcase: React.FC = () => {
                 className: 'test',
                 qa: 'chart',
                 pluginType: 'custom',
+                onClick,
             },
             {
                 id: 'selector',
@@ -53,29 +58,32 @@ export const DashKitDnDShowcase: React.FC = () => {
                 title: 'Selector',
                 qa: 'selector',
                 pluginType: 'custom',
+                onClick,
             },
             {
                 id: 'text',
                 icon: <Icon data={TextAlignLeft} />,
                 title: 'Text',
                 pluginType: 'text',
+                onClick,
             },
             {
                 id: 'header',
                 icon: <Icon data={Heading} />,
                 title: 'Header',
                 pluginType: 'title',
+                onClick,
             },
         ],
         [],
     );
     const [config, setConfig] = React.useState(getConfig());
-    // TODO fix any
+
     const onChange = React.useCallback(({config}: {config: DashKitProps['config']}) => {
         setConfig(config);
     }, []);
 
-    const onDrop = React.useCallback(
+    const onDrop = React.useCallback<DashKitDefaultProps['onDrop']>(
         // TODO fix any
         (dropProps: any) => {
             let data = null;

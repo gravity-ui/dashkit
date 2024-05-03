@@ -50,7 +50,6 @@ class GridItem extends React.PureComponent {
         id: PropTypes.string,
         item: PropTypes.object,
         isDragging: PropTypes.bool,
-        isPlaceholder: PropTypes.bool,
         layout: PropTypes.array,
         overlayControls: PropTypes.object,
 
@@ -131,7 +130,6 @@ class GridItem extends React.PureComponent {
             children,
             className,
             isDragging,
-            isPlaceholder,
             noOverlay,
             focusable,
             withCustomHandle,
@@ -181,7 +179,6 @@ class GridItem extends React.PureComponent {
                         adjustWidgetLayout={this.props.adjustWidgetLayout}
                         layout={this.props.layout}
                         forwardedPluginRef={this.props.forwardedPluginRef}
-                        isPlaceholder={isPlaceholder}
                     />
                 </div>
                 {!noOverlay && this.renderOverlay()}

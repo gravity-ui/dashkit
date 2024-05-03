@@ -34,7 +34,11 @@ interface DashKitGeneralProps {
 interface DashKitDefaultProps {
     onItemEdit: (item: ConfigItem) => void;
     onChange: (data: {config: Config; itemsStateAndParams: ItemsStateAndParams}) => void;
-    onDrop: (pluginType: string, itemLayout: ConfigLayout, restLayout: ConfigLayout) => void;
+    onDrop: (dropProps: {
+        pluginType: string;
+        itemLayout: ConfigLayout;
+        restLayout: ConfigLayout;
+    }) => void;
     defaultGlobalParams: GlobalParams;
     globalParams: GlobalParams;
     itemsStateAndParams: ItemsStateAndParams;
@@ -72,10 +76,6 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
             registerManager.registerPlugin(plugin);
         });
     }
-
-    // static getPlugin(type: string) {
-    //     return registerManager.getItem(type);
-    // }
 
     static setSettings(settings: Settings) {
         registerManager.setSettings(settings);
