@@ -188,6 +188,31 @@ export default class GridLayout extends React.PureComponent {
         onDrop?.(layout, item, e);
     };
 
+    renderTemporaryPlaceholder() {
+        const {temporaryLayout, dragOverPlugin, noOverlay, draggableHandleClassName} = this.context;
+
+        if (!temporaryLayout) {
+            return null;
+        }
+        const id = TEMPORARY_ITEM_ID;
+        const type = dragOverPlugin.type;
+
+        return (
+            <GridItem
+                key={id}
+                id={id}
+                item={{id, type, data: {}}}
+                layout={temporaryLayout}
+                adjustWidgetLayout={this.adjustWidgetLayout}
+                isDragging={this.state.isDragging}
+                isPlaceholder={true}
+                noOverlay={noOverlay}
+                withCustomHandle={Boolean(draggableHandleClassName)}
+                overlayControls={this.props.overlayControls}
+            />
+        );
+    }
+
     render() {
         const {
             layout,
@@ -243,6 +268,7 @@ export default class GridLayout extends React.PureComponent {
                         />
                     );
                 })}
+                {this.renderTemporaryPlaceholder()}
             </Layout>
         );
     }

@@ -115,7 +115,6 @@ export const DashKitDnDShowcase: React.FC = () => {
                         updateLayout: dropProps.newLayout,
                     },
                 });
-
                 setConfig(newConfig);
             }
 
