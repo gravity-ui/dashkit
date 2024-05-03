@@ -7,6 +7,7 @@ export type ActionPanelItem = {
     onClick?: () => void;
     className?: string;
     qa?: string;
+    pluginType?: string;
 };
 
 export type ActionPanelProps = {
