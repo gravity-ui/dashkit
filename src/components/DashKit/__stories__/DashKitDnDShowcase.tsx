@@ -83,9 +83,8 @@ export const DashKitDnDShowcase: React.FC = () => {
         setConfig(config);
     }, []);
 
-    const onDrop = React.useCallback<DashKitDefaultProps['onDrop']>(
-        // TODO fix any
-        (dropProps: any) => {
+    const onDrop = React.useCallback<Exclude<DashKitProps['onDrop'], undefined>>(
+        (dropProps) => {
             let data = null;
             if (dropProps.pluginType === 'custom') {
                 data = {};

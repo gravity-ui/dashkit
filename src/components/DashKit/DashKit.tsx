@@ -35,9 +35,10 @@ interface DashKitDefaultProps {
     onItemEdit: (item: ConfigItem) => void;
     onChange: (data: {config: Config; itemsStateAndParams: ItemsStateAndParams}) => void;
     onDrop: (dropProps: {
+        commit: () => void;
         pluginType: string;
         itemLayout: ConfigLayout;
-        restLayout: ConfigLayout;
+        newLayout: ConfigLayout[];
     }) => void;
     defaultGlobalParams: GlobalParams;
     globalParams: GlobalParams;
