@@ -77,10 +77,10 @@ class GridItem extends React.PureComponent {
     };
 
     renderOverlay() {
-        const {overlayControls} = this.props;
+        const {overlayControls, isPlaceholder} = this.props;
         const {editMode} = this.context;
 
-        if (!editMode || this.props.item.data._editActive) {
+        if (!editMode || this.props.item.data._editActive || isPlaceholder) {
             return null;
         }
 

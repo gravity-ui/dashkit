@@ -202,15 +202,7 @@ function useMemoStateContext(props) {
         pluginsRefs.forEach((ref) => ref && ref.reload && ref.reload(data));
     }, []);
 
-    const draggedPluginRef = React.useRef(dndContext?.dragPluginType);
-    React.useEffect(() => {
-        if (!dndContext?.dragPluginType && !temporaryLayout) {
-            draggedPluginRef.current = null;
-        } else if (dndContext?.dragPluginType) {
-            draggedPluginRef.current = dndContext.dragPluginType;
-        }
-    }, [draggedPluginRef, dndContext?.dragPluginType, temporaryLayout]);
-    const dndPluginType = draggedPluginRef.current || dndContext?.dragPluginType;
+    const dndPluginType = dndContext?.dragPluginType;
 
     const dragOverPlugin = React.useMemo(() => {
         const pluginType = dndPluginType;
@@ -240,12 +232,13 @@ function useMemoStateContext(props) {
         return false;
     }, [resetTemporaryLayout, temporaryLayout, dragOverPlugin]);
 
+    const onDropProp = props.onDrop;
     const onDrop = React.useCallback(
         (newLayout, item) => {
             setTemporaryLayout(newLayout);
             const {i, w, h, x, y} = item;
 
-            props.onDrop({
+            onDropProp({
                 newLayout: newLayout.reduce((memo, l) => {
                     if (l.i !== i) {
                         memo.push({i: l.i, w: l.w, h: l.h, x: l.x, y: l.y});
@@ -257,7 +250,7 @@ function useMemoStateContext(props) {
                 commit: resetTemporaryLayout,
             });
         },
-        [dndPluginType, props.onDrop],
+        [dndPluginType, onDropProp, resetTemporaryLayout],
     );
 
     return React.useMemo(

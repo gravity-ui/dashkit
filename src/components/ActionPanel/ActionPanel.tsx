@@ -35,14 +35,14 @@ export const ActionPanelItemContainer = ({item}: {item: ActionPanelItem}) => {
 
     const onDragStart = React.useCallback(
         (e: React.DragEvent) => {
-            dragContext.onDragStart(e, item.pluginType);
+            dragContext?.onDragStart(e, item.pluginType);
         },
         [dragContext?.onDragStart, item.pluginType],
     );
 
     const onDragEnd = React.useCallback<React.DragEventHandler<HTMLDivElement>>(
         (e) => {
-            dragContext.onDragEnd(e);
+            dragContext?.onDragEnd(e);
         },
         [dragContext?.onDragEnd],
     );

@@ -164,22 +164,20 @@ export default class GridLayout extends React.PureComponent {
     };
 
     _onDropDragOver = (e) => {
-        const {editMode, onDropDragOver, temporaryLayout} = this.context;
+        const {editMode, dragOverPlugin, onDropDragOver, temporaryLayout} = this.context;
 
-        if (!editMode) {
+        if (!editMode || !dragOverPlugin || temporaryLayout) {
             return false;
         }
 
-        const result = onDropDragOver(e);
-
-        if (temporaryLayout) {
-            return false;
-        }
-
-        return result;
+        return onDropDragOver(e);
     };
 
     _onDrop = (layout, item, e) => {
+        if (!item) {
+            return false;
+        }
+
         const {editMode, temporaryLayout, onDrop} = this.context;
         if (!editMode && temporaryLayout) {
             return false;
@@ -194,6 +192,7 @@ export default class GridLayout extends React.PureComponent {
         if (!temporaryLayout) {
             return null;
         }
+
         const id = TEMPORARY_ITEM_ID;
         const type = dragOverPlugin.type;
 
