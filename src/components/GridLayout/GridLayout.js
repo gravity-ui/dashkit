@@ -190,7 +190,7 @@ export default class GridLayout extends React.PureComponent {
     renderTemporaryPlaceholder() {
         const {temporaryLayout, dragOverPlugin, noOverlay, draggableHandleClassName} = this.context;
 
-        if (!temporaryLayout) {
+        if (!temporaryLayout || !dragOverPlugin) {
             return null;
         }
 
