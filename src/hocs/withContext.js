@@ -208,7 +208,9 @@ function useMemoStateContext(props) {
     const dragProps = dndContext?.dragProps;
 
     const dragOverPlugin = React.useMemo(() => {
-        if (!dragProps && temporaryLayout === null) return null;
+        if (dragProps === null) {
+            return null;
+        }
 
         const pluginType = dragProps.type;
 
@@ -219,7 +221,7 @@ function useMemoStateContext(props) {
             console.error(`Uknown pluginType: ${pluginType}`);
             return null;
         }
-    }, [dragProps, temporaryLayout, props.registerManager]);
+    }, [dragProps, props.registerManager]);
 
     const onDropDragOver = React.useCallback(() => {
         if (temporaryLayout) {
