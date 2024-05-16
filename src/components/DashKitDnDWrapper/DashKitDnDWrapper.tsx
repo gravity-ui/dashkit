@@ -1,35 +1,36 @@
 import React from 'react';
 
 import {DashKitDnDContext} from '../../context/DashKitContext';
+import type {DragProps} from '../../shared';
 
 type DashKitDnDWrapperProps = {
     children: React.ReactElement;
 };
 
 export const DashKitDnDWrapper: React.FC<DashKitDnDWrapperProps> = (props) => {
-    const [dragPluginType, setDragPluginType] = React.useState<string | null>(null);
+    const [dragProps, setDragProps] = React.useState<DragProps | null>(null);
 
     const onDragStart = React.useCallback(
-        (_: React.DragEvent<Element>, type: string) => {
-            setDragPluginType(type);
+        (_: React.DragEvent<Element>, currentProps: DragProps) => {
+            setDragProps(currentProps);
         },
-        [setDragPluginType],
+        [setDragProps],
     );
 
     const onDragEnd = React.useCallback(
         (_: React.DragEvent<Element>) => {
-            setDragPluginType(null);
+            setDragProps(null);
         },
-        [setDragPluginType],
+        [setDragProps],
     );
 
     const contextValue = React.useMemo(() => {
         return {
-            dragPluginType,
+            dragProps,
             onDragStart,
             onDragEnd,
         };
-    }, [dragPluginType, onDragStart, onDragEnd]);
+    }, [dragProps, onDragStart, onDragEnd]);
 
     return (
         <DashKitDnDContext.Provider value={contextValue}>

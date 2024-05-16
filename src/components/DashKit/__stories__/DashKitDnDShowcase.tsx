@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {ChartColumn, Heading, Sliders, TextAlignLeft} from '@gravity-ui/icons';
+import {ChartColumn, Copy, Heading, Sliders, TextAlignLeft} from '@gravity-ui/icons';
 import {Icon} from '@gravity-ui/uikit';
 
 import {ActionPanel, DashKit, DashKitDnDWrapper, DashKitProps} from '../../..';
@@ -49,7 +49,9 @@ export const DashKitDnDShowcase: React.FC = () => {
                 title: 'Chart',
                 className: 'test',
                 qa: 'chart',
-                pluginType: 'custom',
+                dragProps: {
+                    type: 'custom',
+                },
                 onClick,
             },
             {
@@ -57,21 +59,38 @@ export const DashKitDnDShowcase: React.FC = () => {
                 icon: <Icon data={Sliders} />,
                 title: 'Selector',
                 qa: 'selector',
-                pluginType: 'custom',
+                dragProps: {
+                    type: 'custom',
+                },
                 onClick,
             },
             {
                 id: 'text',
                 icon: <Icon data={TextAlignLeft} />,
                 title: 'Text',
-                pluginType: 'text',
+                dragProps: {
+                    type: 'text',
+                },
                 onClick,
             },
             {
                 id: 'header',
                 icon: <Icon data={Heading} />,
                 title: 'Header',
-                pluginType: 'title',
+                dragProps: {
+                    type: 'title',
+                },
+                onClick,
+            },
+            {
+                id: 'custom',
+                icon: <Icon data={Copy} />,
+                title: 'Custom',
+                dragProps: {
+                    type: 'title',
+                    h: 10,
+                    w: 36,
+                },
                 onClick,
             },
         ],
@@ -86,13 +105,14 @@ export const DashKitDnDShowcase: React.FC = () => {
     const onDrop = React.useCallback<Exclude<DashKitProps['onDrop'], undefined>>(
         (dropProps) => {
             let data = null;
-            if (dropProps.pluginType === 'custom') {
+            const type = dropProps.dragProps?.type;
+            if (type === 'custom') {
                 data = {};
             } else {
                 const text = prompt('Enter text');
                 if (text) {
                     data =
-                        dropProps.pluginType === 'title'
+                        type === 'title'
                             ? {
                                   size: 'm',
                                   text,
@@ -106,8 +126,8 @@ export const DashKitDnDShowcase: React.FC = () => {
                 const newConfig = DashKit.setItem({
                     item: {
                         data,
+                        type,
                         namespace: 'default',
-                        type: dropProps.pluginType,
                         layout: dropProps.itemLayout,
                     },
                     config,

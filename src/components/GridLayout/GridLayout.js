@@ -25,12 +25,13 @@ class DragOverLayout extends ReactGridLayout {
     };
 
     processGridItem(child, isDroppingItem) {
+        const gridItem = super.processGridItem(child, isDroppingItem);
+
         if (isDroppingItem) {
             // Drop item from outside gets 0,0 droppingPosition
             // centering cursor on newly creted grid item
             // And cause grid-layout using it's own GridItem to make it look
             // like overlay adding className
-            const gridItem = super.processGridItem(child, isDroppingItem);
             if (!gridItem) return null;
 
             const {props} = gridItem;
@@ -49,7 +50,7 @@ class DragOverLayout extends ReactGridLayout {
             });
         }
 
-        return super.processGridItem(child, isDroppingItem);
+        return gridItem;
     }
 }
 

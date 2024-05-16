@@ -7,6 +7,9 @@ import {DashKitContext, DashKitDnDContext} from '../context/DashKitContext';
 import {getItemsParams, getItemsState} from '../shared';
 import {UpdateManager} from '../utils';
 
+const DEFAULT_HEIGHT = 3;
+const DEFAULT_WIDTH = 3;
+
 function useMemoStateContext(props) {
     // так как мы не хотим хранить параметры виджета с активированной автовысотой в сторе и на сервере, актуальный
     // (видимый юзером в конкретный момент времени) лэйаут (массив объектов с данными о ширине, высоте,
@@ -202,12 +205,12 @@ function useMemoStateContext(props) {
         pluginsRefs.forEach((ref) => ref && ref.reload && ref.reload(data));
     }, []);
 
-    const dndPluginType = dndContext?.dragPluginType;
+    const dragProps = dndContext?.dragProps;
 
     const dragOverPlugin = React.useMemo(() => {
-        const pluginType = dndPluginType;
+        if (!dragProps && temporaryLayout === null) return null;
 
-        if (pluginType === null && temporaryLayout === null) return null;
+        const pluginType = dragProps.type;
 
         if (props.registerManager.check(pluginType)) {
             return props.registerManager.getItem(pluginType);
@@ -216,7 +219,7 @@ function useMemoStateContext(props) {
             console.error(`Uknown pluginType: ${pluginType}`);
             return null;
         }
-    }, [dndPluginType, props.registerManager, temporaryLayout]);
+    }, [dragProps, temporaryLayout, props.registerManager]);
 
     const onDropDragOver = React.useCallback(() => {
         if (temporaryLayout) {
@@ -224,17 +227,24 @@ function useMemoStateContext(props) {
             return false;
         }
 
-        if (dragOverPlugin?.defaultLayout) {
-            const {h = 3, w = 3} = dragOverPlugin.defaultLayout;
+        if (dragOverPlugin) {
+            const {defaultLayout} = dragOverPlugin;
+            const {h = defaultLayout?.h || DEFAULT_HEIGHT, w = defaultLayout?.w || DEFAULT_WIDTH} =
+                dragProps;
+
             return {h, w};
         }
 
         return false;
-    }, [resetTemporaryLayout, temporaryLayout, dragOverPlugin]);
+    }, [resetTemporaryLayout, temporaryLayout, dragOverPlugin, dragProps]);
 
     const onDropProp = props.onDrop;
     const onDrop = React.useCallback(
         (newLayout, item) => {
+            if (!dragProps) {
+                return;
+            }
+
             setTemporaryLayout(newLayout);
             const {i, w, h, x, y} = item;
 
@@ -246,11 +256,11 @@ function useMemoStateContext(props) {
                     return memo;
                 }, []),
                 itemLayout: {w, h, x, y},
-                pluginType: dndPluginType,
                 commit: resetTemporaryLayout,
+                dragProps,
             });
         },
-        [dndPluginType, onDropProp, resetTemporaryLayout],
+        [dragProps, onDropProp, resetTemporaryLayout],
     );
 
     return React.useMemo(

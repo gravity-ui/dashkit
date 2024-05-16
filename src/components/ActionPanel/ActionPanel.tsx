@@ -5,19 +5,9 @@ import {CSSTransition} from 'react-transition-group';
 import {DashKitDnDContext} from '../../context/DashKitContext';
 import {cn} from '../../utils/cn';
 
-import {ActionPanelProps} from './types';
+import {ActionPanelItem, ActionPanelProps} from './types';
 
 import './ActionPanel.scss';
-
-export type ActionPanelItem = {
-    id: string;
-    icon: React.ReactNode;
-    title: string;
-    onClick?: () => void;
-    className?: string;
-    qa?: string;
-    pluginType?: string;
-};
 
 type DndProps =
     | {}
@@ -35,9 +25,9 @@ export const ActionPanelItemContainer = ({item}: {item: ActionPanelItem}) => {
 
     const onDragStart = React.useCallback(
         (e: React.DragEvent) => {
-            dragContext?.onDragStart(e, item.pluginType);
+            dragContext?.onDragStart(e, item.dragProps);
         },
-        [dragContext?.onDragStart, item.pluginType],
+        [dragContext?.onDragStart, item.dragProps],
     );
 
     const onDragEnd = React.useCallback<React.DragEventHandler<HTMLDivElement>>(
@@ -49,7 +39,7 @@ export const ActionPanelItemContainer = ({item}: {item: ActionPanelItem}) => {
 
     let dndProps: DndProps = {};
 
-    if (item.pluginType) {
+    if (item.dragProps) {
         dndProps = {
             draggable: true,
             unselectable: 'on',
