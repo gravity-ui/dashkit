@@ -1,11 +1,5 @@
 import {StringParams} from './common';
 
-export type DragProps = {
-    type: string;
-    w?: number;
-    h?: number;
-};
-
 export interface ConfigLayout {
     i: string;
     h: number;

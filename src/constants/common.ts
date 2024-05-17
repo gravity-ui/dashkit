@@ -13,3 +13,6 @@ export const MenuItems = {
     Delete: 'delete',
     Settings: 'settings',
 } as const;
+
+export const DEFAULT_WIDGET_HEIGHT = 3;
+export const DEFAULT_WIDGET_WIDTH = 3;

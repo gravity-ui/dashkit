@@ -1,15 +1,15 @@
 import React from 'react';
 
-import type {DragProps} from '../../shared';
+import type {ItemDragProps} from '../../shared';
 
 export type ActionPanelItem = {
     id: string;
     icon: React.ReactNode;
     title: string;
-    onClick?: () => void;
     className?: string;
     qa?: string;
-    dragProps?: DragProps;
+    onClick?: () => void;
+    dragProps?: ItemDragProps;
 };
 
 export type ActionPanelProps = {

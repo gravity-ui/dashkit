@@ -88,8 +88,10 @@ export const DashKitDnDShowcase: React.FC = () => {
                 title: 'Custom',
                 dragProps: {
                     type: 'title',
-                    h: 10,
-                    w: 36,
+                    layout: {
+                        h: 10,
+                        w: 36,
+                    },
                 },
                 onClick,
             },

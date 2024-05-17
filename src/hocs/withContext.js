@@ -2,13 +2,10 @@ import React from 'react';
 
 import isEqual from 'lodash/isEqual';
 
-import {TEMPORARY_ITEM_ID} from '../constants/common';
+import {DEFAULT_WIDGET_HEIGHT, DEFAULT_WIDGET_WIDTH, TEMPORARY_ITEM_ID} from '../constants/common';
 import {DashKitContext, DashKitDnDContext} from '../context/DashKitContext';
 import {getItemsParams, getItemsState} from '../shared';
 import {UpdateManager} from '../utils';
-
-const DEFAULT_HEIGHT = 3;
-const DEFAULT_WIDTH = 3;
 
 function useMemoStateContext(props) {
     // так как мы не хотим хранить параметры виджета с активированной автовысотой в сторе и на сервере, актуальный
@@ -208,7 +205,7 @@ function useMemoStateContext(props) {
     const dragProps = dndContext?.dragProps;
 
     const dragOverPlugin = React.useMemo(() => {
-        if (dragProps === null) {
+        if (!dragProps) {
             return null;
         }
 
@@ -231,8 +228,10 @@ function useMemoStateContext(props) {
 
         if (dragOverPlugin) {
             const {defaultLayout} = dragOverPlugin;
-            const {h = defaultLayout?.h || DEFAULT_HEIGHT, w = defaultLayout?.w || DEFAULT_WIDTH} =
-                dragProps;
+            const {
+                h = defaultLayout?.h || DEFAULT_WIDGET_HEIGHT,
+                w = defaultLayout?.w || DEFAULT_WIDGET_WIDTH,
+            } = dragProps.layout || {};
 
             return {h, w};
         }

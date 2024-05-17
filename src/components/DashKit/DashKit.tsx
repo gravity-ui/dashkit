@@ -7,8 +7,8 @@ import type {
     Config,
     ConfigItem,
     ConfigLayout,
-    DragProps,
     GlobalParams,
+    ItemDragProps,
     ItemsStateAndParams,
 } from '../../shared';
 import {
@@ -37,7 +37,7 @@ interface DashKitDefaultProps {
     onChange: (data: {config: Config; itemsStateAndParams: ItemsStateAndParams}) => void;
     onDrop: (dropProps: {
         commit: () => void;
-        dragProps: DragProps;
+        dragProps: ItemDragProps;
         itemLayout: ConfigLayout;
         newLayout: ConfigLayout[];
     }) => void;

@@ -2,56 +2,22 @@ import React from 'react';
 
 import {CSSTransition} from 'react-transition-group';
 
-import {DashKitDnDContext} from '../../context/DashKitContext';
+import {useDnDItemProps} from '../../hooks/useDnDItemProps';
 import {cn} from '../../utils/cn';
 
 import {ActionPanelItem, ActionPanelProps} from './types';
 
 import './ActionPanel.scss';
 
-type DndProps =
-    | {}
-    | {
-          draggable: true;
-          unselectable: 'on';
-          onDragStart: React.DragEventHandler<HTMLDivElement>;
-          onDragEnd: React.DragEventHandler<HTMLDivElement>;
-      };
-
 const b = cn('dashkit-action-panel');
 
 export const ActionPanelItemContainer = ({item}: {item: ActionPanelItem}) => {
-    const dragContext = React.useContext(DashKitDnDContext);
-
-    const onDragStart = React.useCallback(
-        (e: React.DragEvent) => {
-            dragContext?.onDragStart(e, item.dragProps);
-        },
-        [dragContext?.onDragStart, item.dragProps],
-    );
-
-    const onDragEnd = React.useCallback<React.DragEventHandler<HTMLDivElement>>(
-        (e) => {
-            dragContext?.onDragEnd(e);
-        },
-        [dragContext?.onDragEnd],
-    );
-
-    let dndProps: DndProps = {};
-
-    if (item.dragProps) {
-        dndProps = {
-            draggable: true,
-            unselectable: 'on',
-            onDragStart,
-            onDragEnd,
-        };
-    }
+    const dndProps = useDnDItemProps(item);
 
     return (
         <div
             role="button"
-            className={b('item', item.className)}
+            className={b('item', {draggable: Boolean(dndProps)}, item.className)}
             key={`dk-action-panel-${item.id}`}
             onClick={item.onClick}
             data-qa={item.qa}
