@@ -18,7 +18,6 @@ export const ActionPanelItemContainer = ({item}: {item: ActionPanelItem}) => {
         <div
             role="button"
             className={b('item', {draggable: Boolean(dndProps)}, item.className)}
-            key={`dk-action-panel-${item.id}`}
             onClick={item.onClick}
             data-qa={item.qa}
             {...dndProps}
@@ -38,8 +37,8 @@ export const ActionPanel = (props: ActionPanelProps) => {
 
     const content = (
         <div ref={nodeRef} className={b(null, props.className)}>
-            {props.items.map((item, i) => (
-                <ActionPanelItemContainer key={`item_${i}`} item={item} />
+            {props.items.map((item) => (
+                <ActionPanelItemContainer key={`dk-action-panel-${item.id}`} item={item} />
             ))}
         </div>
     );
