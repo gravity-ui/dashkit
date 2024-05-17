@@ -10,4 +10,5 @@ export type ItemDragProps = {
         w?: number;
         h?: number;
     };
+    extra?: any;
 };
