@@ -6,9 +6,8 @@ import {DEFAULT_NAMESPACE} from '../../constants';
 import type {
     Config,
     ConfigItem,
-    ConfigLayout,
     GlobalParams,
-    ItemDragProps,
+    ItemDropProps,
     ItemsStateAndParams,
 } from '../../shared';
 import {
@@ -35,12 +34,7 @@ interface DashKitGeneralProps {
 interface DashKitDefaultProps {
     onItemEdit: (item: ConfigItem) => void;
     onChange: (data: {config: Config; itemsStateAndParams: ItemsStateAndParams}) => void;
-    onDrop: (dropProps: {
-        commit: () => void;
-        dragProps: ItemDragProps;
-        itemLayout: ConfigLayout;
-        newLayout: ConfigLayout[];
-    }) => void;
+    onDrop: (dropProps: ItemDropProps) => void;
     defaultGlobalParams: GlobalParams;
     globalParams: GlobalParams;
     itemsStateAndParams: ItemsStateAndParams;

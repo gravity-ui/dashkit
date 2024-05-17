@@ -1,3 +1,5 @@
+import {ConfigLayout} from './config';
+
 export type Dictionary<T = unknown> = Record<string, T>;
 
 export interface StringParams extends Dictionary<string | string[]> {}
@@ -12,4 +14,11 @@ export type ItemDragProps = {
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     extra?: any;
+};
+
+export type ItemDropProps = {
+    commit: () => void;
+    dragProps: ItemDragProps;
+    itemLayout: ConfigLayout;
+    newLayout: ConfigLayout[];
 };
