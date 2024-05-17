@@ -10,4 +10,6 @@ export type ItemDragProps = {
         w?: number;
         h?: number;
     };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    extra?: any;
 };
