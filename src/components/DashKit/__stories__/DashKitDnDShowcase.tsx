@@ -146,20 +146,20 @@ export const DashKitDnDShowcase: React.FC = () => {
     );
 
     return (
-        <>
-            <DashKitDnDWrapper>
-                <Demo title="Drag'n'Drop example">
-                    <DemoRow title="Component view">
-                        <ActionPanel items={items} />
-                        <DashKit
-                            editMode={true}
-                            config={config}
-                            onChange={onChange}
-                            onDrop={onDrop}
-                        />
-                    </DemoRow>
-                </Demo>
-            </DashKitDnDWrapper>
-        </>
+        <DashKitDnDWrapper
+            onDragStart={() => {
+                console.log('dragStarted');
+            }}
+            onDragEnd={() => {
+                console.log('dragEnded');
+            }}
+        >
+            <Demo title="Drag'n'Drop example">
+                <DemoRow title="Component view">
+                    <DashKit editMode={true} config={config} onChange={onChange} onDrop={onDrop} />
+                    <ActionPanel items={items} />
+                </DemoRow>
+            </Demo>
+        </DashKitDnDWrapper>
     );
 };
