@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.2.0](https://github.com/gravity-ui/dashkit/compare/v8.1.0...v8.2.0) (2024-05-21)
+
+
+### Features
+
+* drag n drop from action panel ([#114](https://github.com/gravity-ui/dashkit/issues/114)) ([1d2e44a](https://github.com/gravity-ui/dashkit/commit/1d2e44ae205eaf89e92c1401ab2de819e52417a7))
+
 ## [8.1.0](https://github.com/gravity-ui/dashkit/compare/v8.0.2...v8.1.0) (2024-04-19)
 
 
