@@ -3,13 +3,19 @@ import React from 'react';
 import noop from 'lodash/noop';
 
 import {DEFAULT_NAMESPACE} from '../../constants';
-import type {Config, ConfigItem, GlobalParams, ItemsStateAndParams} from '../../shared';
+import type {
+    Config,
+    ConfigItem,
+    GlobalParams,
+    ItemDropProps,
+    ItemsStateAndParams,
+} from '../../shared';
 import {
     AddConfigItem,
     ContextProps,
     Plugin,
     SetConfigItem,
-    SetItemOptions,
+    SetNewItemOptions,
     Settings,
     SettingsProps,
 } from '../../typings';
@@ -28,6 +34,7 @@ interface DashKitGeneralProps {
 interface DashKitDefaultProps {
     onItemEdit: (item: ConfigItem) => void;
     onChange: (data: {config: Config; itemsStateAndParams: ItemsStateAndParams}) => void;
+    onDrop: (dropProps: ItemDropProps) => void;
     defaultGlobalParams: GlobalParams;
     globalParams: GlobalParams;
     itemsStateAndParams: ItemsStateAndParams;
@@ -47,6 +54,7 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
     static defaultProps: DashKitDefaultProps = {
         onItemEdit: noop,
         onChange: noop,
+        onDrop: noop,
         defaultGlobalParams: {},
         globalParams: {},
         itemsStateAndParams: {},
@@ -78,7 +86,7 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
         item: SetConfigItem;
         namespace?: string;
         config: Config;
-        options?: SetItemOptions;
+        options?: SetNewItemOptions;
     }): Config {
         if (setItem.id) {
             return UpdateManager.editItem({item: setItem, namespace, config, options});

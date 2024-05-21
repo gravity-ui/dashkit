@@ -15,6 +15,7 @@ export function prepareItem(Component) {
             width: PropTypes.number,
             height: PropTypes.number,
             transform: PropTypes.string,
+            isPlaceholder: PropTypes.bool,
 
             forwardedPluginRef: PropTypes.any,
         };
@@ -40,7 +41,7 @@ export function prepareItem(Component) {
         };
 
         render() {
-            const {id, width, height, item, adjustWidgetLayout, layout} = this.props;
+            const {id, width, height, item, adjustWidgetLayout, layout, isPlaceholder} = this.props;
             const {itemsState, itemsParams, registerManager, settings, context, editMode} =
                 this.context;
             const {type, data, defaults, namespace} = item;
@@ -60,6 +61,7 @@ export function prepareItem(Component) {
                 layout,
                 gridLayout: registerManager.gridLayout,
                 adjustWidgetLayout,
+                isPlaceholder,
             };
             return (
                 <Component
@@ -67,6 +69,7 @@ export function prepareItem(Component) {
                     rendererProps={rendererProps}
                     registerManager={registerManager}
                     type={type}
+                    isPlaceholder={isPlaceholder}
                 />
             );
         }

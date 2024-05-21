@@ -55,6 +55,7 @@ class GridItem extends React.PureComponent {
 
         forwardedRef: PropTypes.any,
         forwardedPluginRef: PropTypes.any,
+        isPlaceholder: PropTypes.bool,
 
         // from react-grid-layout:
         children: PropTypes.node,
@@ -76,10 +77,10 @@ class GridItem extends React.PureComponent {
     };
 
     renderOverlay() {
-        const {overlayControls} = this.props;
+        const {overlayControls, isPlaceholder} = this.props;
         const {editMode} = this.context;
 
-        if (!editMode || this.props.item.data._editActive) {
+        if (!editMode || this.props.item.data._editActive || isPlaceholder) {
             return null;
         }
 
@@ -133,6 +134,7 @@ class GridItem extends React.PureComponent {
             noOverlay,
             focusable,
             withCustomHandle,
+            isPlaceholder,
         } = this.props;
         const {editMode} = this.context;
         const width = Number.parseInt(style.width, 10);
@@ -176,6 +178,7 @@ class GridItem extends React.PureComponent {
                         width={width}
                         height={height}
                         transform={transform}
+                        isPlaceholder={isPlaceholder}
                         adjustWidgetLayout={this.props.adjustWidgetLayout}
                         layout={this.props.layout}
                         forwardedPluginRef={this.props.forwardedPluginRef}
@@ -188,6 +191,10 @@ class GridItem extends React.PureComponent {
     }
 }
 
-export default React.forwardRef((props, ref) => {
+const GridItemForwarderRef = React.forwardRef((props, ref) => {
     return <GridItem {...props} forwardedRef={ref} />;
 });
+
+GridItemForwarderRef.displayName = 'forwardRef(GridItem)';
+
+export default GridItemForwarderRef;

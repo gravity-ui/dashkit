@@ -29,6 +29,7 @@ interface DashKitProps {
   editMode: boolean;
   onItemEdit: ({id}: {id: string}) => void;
   onChange: (data: {config: Config; itemsStateAndParams: ItemsStateAndParams}) => void;
+  onDrop: (dropProps: ItemDropProps) => void;
   defaultGlobalParams: GlobalParams;
   globalParams: GlobalParams;
   itemsStateAndParams: ItemsStateAndParams;
@@ -36,6 +37,8 @@ interface DashKitProps {
   context: ContextProps;
   overlayControls?: Record<string, OverlayControlItem[]>;
   noOverlay?: boolean;
+  focusable?: boolean;
+  draggableHandleClassName?: string;
 }
 ```
 
@@ -43,6 +46,7 @@ interface DashKitProps {
 - **editMode**: Whether edit mode is enabled.
 - **onItemEdit**: Called when you click to edit a widget.
 - **onChange**: Called when config or [itemsStateAndParams](#temsStateAndParams) are changed.
+- **onDrop**: Called when item dropped from ActionPanel using (#DashKitDnDWrapper)
 - **defaultGlobalParams**, **globalParams**: [Parameters](#Params) that affect all widgets. In DataLens, `defaultGlobalParams` are global parameters set in the dashboard settings. `globalParams` are globals parameters that can be set in the url.
 - **itemsStateAndParams**: [itemsStateAndParams](#temsStateAndParams).
 - **settings**: DashKit settings.
@@ -208,6 +212,23 @@ const config: DashKitProps['config'] = {
 Add a new item to the config:
 
 ```ts
+const newLayout = updateLayout: [
+  {
+    h: 6,
+    i: 'Ea',
+    w: 12,
+    x: 0,
+    y: 6,
+  },
+  {
+    h: 4,
+    i: 'Dk',
+    w: 8,
+    x: 0,
+    y: 12,
+  },
+];
+
 const newConfig = DashKit.setItem({
   item: {
     data: {
@@ -215,8 +236,19 @@ const newConfig = DashKit.setItem({
     },
     namespace: 'default',
     type: 'text',
+    // Optional. If new item needed to be inserted in current layout with predefined dimensions
+    layout: { // Current item inseterted before 'Ea'
+      h: 6,
+      w: 12,
+      x: 0,
+      y: 2,
+    },,
   },
   config: config,
+  options: {
+    // Optional. New layout values for existing items when new element is dropped from ActionPanel
+    updateLayout: newLayout,
+  },
 });
 ```
 
@@ -312,6 +344,69 @@ type MenuItem = {
 
 // use array of menu items in settings
 DashKit.setSettings({menu: [] as Array<MenuItem>});
+```
+
+### Draggable items from ActionPanel
+
+#### DashKitDnDWrapper
+
+```ts
+interface DashKitDnDWrapperProps {
+  dragImageSrc?: string;
+  onDragStart?: (dragProps: ItemDragProps) => void;
+  onDragEnd?: () => void;
+}
+```
+
+**dragImageSrc**: Drag image preview, by default used transparent 1px png base64
+**onDragStart**: Callback called when element is dragged from ActionPanel
+**onDragEnd**: Callback called when element dropped or drag canceled
+
+```ts
+type ItemDragProps = {
+    type: string; // Plugin type
+    layout?: { // Optional. Layout item size for preview and init
+        w?: number;
+        h?: number;
+    };
+    extra?: any; // Custom user context
+};
+```
+
+```ts
+type ItemDropProps = {
+    commit: () => void; // Callback should be called after all config operations are made
+    dragProps: ItemDragProps; // Item drag props
+    itemLayout: ConfigLayout; // Calculated item layout dimensions
+    newLayout: ConfigLayout[]; // New layout after element is dropped
+};
+```
+
+
+#### Example:
+
+```jsx
+const menuItems = [
+  {
+    id: 'chart',
+    icon: <Icon data={ChartColumn} />,
+    title: 'Chart',
+    qa: 'chart',
+    dragProps: { // ItemDragProps
+        type: 'custom', // Registered plugin type
+    },
+  }
+]
+
+const onDrop = (dropProps: ItemDropProps) => {
+  // ... add element to your config
+  dropProps.commit();
+}
+
+<DashKitDnDWrapper>
+  <DashKit editMode={true} config={config} onChange={onChange} onDrop={onDrop} />
+  <ActionPanel items={menuItems} />
+</DashKitDnDWrapper>
 ```
 
 ### CSS API

@@ -10,3 +10,7 @@ export type SetConfigItem = ConfigItem | AddConfigItem;
 export type SetItemOptions = {
     excludeIds?: string[];
 };
+
+export type SetNewItemOptions = SetItemOptions & {
+    updateLayout?: ConfigLayout[];
+};

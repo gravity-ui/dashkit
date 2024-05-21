@@ -8,6 +8,7 @@ import {cn} from '../../../utils/cn';
 import {DashKit, DashKitProps} from '../DashKit';
 
 import {CssApiShowcase} from './CssApiShowcase';
+import {DashKitDnDShowcase} from './DashKitDnDShowcase';
 import {DashKitShowcase} from './DashKitShowcase';
 import {getConfig} from './utils';
 
@@ -77,3 +78,6 @@ export const Showcase = ShowcaseTemplate.bind({});
 
 const CssApiShowcaseTemplate: Story<DashKitProps> = () => <CssApiShowcase />;
 export const CSS_API = CssApiShowcaseTemplate.bind({});
+
+const DndShowcaseTemplate: Story<DashKitProps> = () => <DashKitDnDShowcase />;
+export const DragNDrop = DndShowcaseTemplate.bind({});

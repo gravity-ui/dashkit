@@ -2,13 +2,33 @@ import React from 'react';
 
 import {CSSTransition} from 'react-transition-group';
 
+import {useDnDItemProps} from '../../hooks/useDnDItemProps';
 import {cn} from '../../utils/cn';
 
-import {ActionPanelProps} from './types';
+import {ActionPanelItem, ActionPanelProps} from './types';
 
 import './ActionPanel.scss';
 
 const b = cn('dashkit-action-panel');
+
+export const ActionPanelItemContainer = ({item}: {item: ActionPanelItem}) => {
+    const dndProps = useDnDItemProps(item);
+
+    return (
+        <div
+            role="button"
+            className={b('item', {draggable: Boolean(dndProps)}, item.className)}
+            onClick={item.onClick}
+            data-qa={item.qa}
+            {...dndProps}
+        >
+            <div className={b('icon')}>{item.icon}</div>
+            <div className={b('title')} title={item.title}>
+                {item.title}
+            </div>
+        </div>
+    );
+};
 
 export const ActionPanel = (props: ActionPanelProps) => {
     const isDisabled = props.disable ?? false;
@@ -17,22 +37,9 @@ export const ActionPanel = (props: ActionPanelProps) => {
 
     const content = (
         <div ref={nodeRef} className={b(null, props.className)}>
-            {props.items.map((item) => {
-                return (
-                    <div
-                        role="button"
-                        className={b('item', item.className)}
-                        key={`dk-action-panel-${item.id}`}
-                        onClick={item.onClick}
-                        data-qa={item.qa}
-                    >
-                        <div className={b('icon')}>{item.icon}</div>
-                        <div className={b('title')} title={item.title}>
-                            {item.title}
-                        </div>
-                    </div>
-                );
-            })}
+            {props.items.map((item) => (
+                <ActionPanelItemContainer key={`dk-action-panel-${item.id}`} item={item} />
+            ))}
         </div>
     );
 

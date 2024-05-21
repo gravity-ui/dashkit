@@ -276,8 +276,9 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         return (
             <DropdownMenu
                 items={items}
-                switcher={
+                renderSwitcher={(props) => (
                     <Button
+                        {...props}
                         view={view}
                         size={size}
                         pin="brick-round"
@@ -285,7 +286,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                     >
                         <Icon data={DotsIcon} size="16" />
                     </Button>
-                }
+                )}
             />
         );
     }

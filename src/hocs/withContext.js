@@ -2,7 +2,8 @@ import React from 'react';
 
 import isEqual from 'lodash/isEqual';
 
-import {DashKitContext} from '../context/DashKitContext';
+import {DEFAULT_WIDGET_HEIGHT, DEFAULT_WIDGET_WIDTH, TEMPORARY_ITEM_ID} from '../constants/common';
+import {DashKitContext, DashKitDnDContext} from '../context/DashKitContext';
 import {getItemsParams, getItemsState} from '../shared';
 import {UpdateManager} from '../utils';
 
@@ -15,6 +16,14 @@ function useMemoStateContext(props) {
 
     const originalLayouts = React.useRef({});
     const adjustedLayouts = React.useRef({});
+    const [temporaryLayout, setTemporaryLayout] = React.useState(null);
+    const resetTemporaryLayout = React.useCallback(
+        () => setTemporaryLayout(null),
+        [setTemporaryLayout],
+    );
+
+    const dndContext = React.useContext(DashKitDnDContext);
+    const outerDnDEnable = Boolean(dndContext);
 
     // TODO: need move originalLayouts, adjustedLayouts to state
     const [layoutUpdateCounter, forceUpdateLayout] = React.useState(0);
@@ -66,15 +75,33 @@ function useMemoStateContext(props) {
 
     const onItemRemove = React.useCallback(
         (id) => {
-            onChange(
-                UpdateManager.removeItem({
-                    id,
-                    config: props.config,
-                    itemsStateAndParams: props.itemsStateAndParams,
-                }),
-            );
+            if (id === TEMPORARY_ITEM_ID) {
+                resetTemporaryLayout();
+            } else {
+                if (temporaryLayout) {
+                    setTemporaryLayout({
+                        ...temporaryLayout,
+                        data: temporaryLayout.data.filter(({i}) => i !== id),
+                    });
+                }
+
+                onChange(
+                    UpdateManager.removeItem({
+                        id,
+                        config: props.config,
+                        itemsStateAndParams: props.itemsStateAndParams,
+                    }),
+                );
+            }
         },
-        [props.config, props.itemsStateAndParams, onChange],
+        [
+            props.config,
+            props.itemsStateAndParams,
+            temporaryLayout,
+            onChange,
+            setTemporaryLayout,
+            resetTemporaryLayout,
+        ],
     );
 
     const onItemStateAndParamsChange = React.useCallback(
@@ -178,9 +205,74 @@ function useMemoStateContext(props) {
         pluginsRefs.forEach((ref) => ref && ref.reload && ref.reload(data));
     }, []);
 
+    const dragProps = dndContext?.dragProps;
+
+    const dragOverPlugin = React.useMemo(() => {
+        if (!dragProps) {
+            return null;
+        }
+
+        const pluginType = dragProps.type;
+
+        if (props.registerManager.check(pluginType)) {
+            return props.registerManager.getItem(pluginType);
+        } else {
+            // eslint-disable-next-line no-console
+            console.error(`Uknown pluginType: ${pluginType}`);
+            return null;
+        }
+    }, [dragProps, props.registerManager]);
+
+    const onDropDragOver = React.useCallback(() => {
+        if (temporaryLayout) {
+            resetTemporaryLayout();
+            return false;
+        }
+
+        if (dragOverPlugin) {
+            const {defaultLayout} = dragOverPlugin;
+            const {
+                h = defaultLayout?.h || DEFAULT_WIDGET_HEIGHT,
+                w = defaultLayout?.w || DEFAULT_WIDGET_WIDTH,
+            } = dragProps.layout || {};
+
+            return {h, w};
+        }
+
+        return false;
+    }, [resetTemporaryLayout, temporaryLayout, dragOverPlugin, dragProps]);
+
+    const onDrop = React.useCallback(
+        (newLayout, item) => {
+            if (!dragProps) {
+                return;
+            }
+
+            setTemporaryLayout({
+                data: newLayout,
+                dragProps,
+            });
+            const {i, w, h, x, y} = item;
+
+            props.onDrop({
+                newLayout: newLayout.reduce((memo, l) => {
+                    if (l.i !== i) {
+                        memo.push({i: l.i, w: l.w, h: l.h, x: l.x, y: l.y});
+                    }
+                    return memo;
+                }, []),
+                itemLayout: {w, h, x, y},
+                commit: resetTemporaryLayout,
+                dragProps,
+            });
+        },
+        [dragProps, props.onDrop, setTemporaryLayout, resetTemporaryLayout],
+    );
+
     return React.useMemo(
         () => ({
             layout: resultLayout,
+            temporaryLayout,
             config: props.config,
             context: props.context,
             noOverlay: props.noOverlay,
@@ -194,6 +286,8 @@ function useMemoStateContext(props) {
             registerManager: props.registerManager,
             onItemStateAndParamsChange,
             removeItem: onItemRemove,
+            onDrop,
+            onDropDragOver,
             editItem: props.onItemEdit,
             layoutChange: onLayoutChange,
             getItemsMeta,
@@ -202,9 +296,12 @@ function useMemoStateContext(props) {
             revertToOriginalLayout,
             forwardedMetaRef: props.forwardedMetaRef,
             draggableHandleClassName: props.draggableHandleClassName,
+            outerDnDEnable,
+            dragOverPlugin,
         }),
         [
             resultLayout,
+            temporaryLayout,
             props.config,
             props.context,
             props.noOverlay,
@@ -217,6 +314,8 @@ function useMemoStateContext(props) {
             props.registerManager,
             onItemStateAndParamsChange,
             onItemRemove,
+            onDrop,
+            onDropDragOver,
             props.onItemEdit,
             onLayoutChange,
             getItemsMeta,
@@ -225,6 +324,8 @@ function useMemoStateContext(props) {
             revertToOriginalLayout,
             props.forwardedMetaRef,
             props.draggableHandleClassName,
+            outerDnDEnable,
+            dragOverPlugin,
         ],
     );
 }
