@@ -81,7 +81,7 @@ function useMemoStateContext(props) {
                 if (temporaryLayout) {
                     setTemporaryLayout({
                         ...temporaryLayout,
-                        data: temporaryLayout.filter(({i}) => i !== id),
+                        data: temporaryLayout.data.filter(({i}) => i !== id),
                     });
                 }
 
