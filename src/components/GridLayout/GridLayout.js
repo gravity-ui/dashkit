@@ -115,9 +115,9 @@ export default class GridLayout extends React.PureComponent {
     };
 
     _onDropDragOver = (e) => {
-        const {editMode, dragOverPlugin, onDropDragOver, temporaryLayout} = this.context;
+        const {editMode, dragOverPlugin, onDropDragOver} = this.context;
 
-        if (!editMode || !dragOverPlugin || temporaryLayout) {
+        if (!editMode || !dragOverPlugin) {
             return false;
         }
 
@@ -129,8 +129,8 @@ export default class GridLayout extends React.PureComponent {
             return false;
         }
 
-        const {editMode, temporaryLayout, onDrop} = this.context;
-        if (!editMode && temporaryLayout) {
+        const {editMode, onDrop} = this.context;
+        if (!editMode) {
             return false;
         }
 
@@ -138,21 +138,21 @@ export default class GridLayout extends React.PureComponent {
     };
 
     renderTemporaryPlaceholder() {
-        const {temporaryLayout, dragOverPlugin, noOverlay, draggableHandleClassName} = this.context;
+        const {temporaryLayout, noOverlay, draggableHandleClassName} = this.context;
 
-        if (!temporaryLayout || !dragOverPlugin) {
+        if (!temporaryLayout || !temporaryLayout.dragProps) {
             return null;
         }
 
         const id = TEMPORARY_ITEM_ID;
-        const type = dragOverPlugin.type;
+        const {type} = temporaryLayout.dragProps;
 
         return (
             <GridItem
                 key={id}
                 id={id}
                 item={{id, type, data: {}}}
-                layout={temporaryLayout}
+                layout={temporaryLayout.data}
                 adjustWidgetLayout={this.adjustWidgetLayout}
                 isDragging={this.state.isDragging}
                 isPlaceholder={true}
@@ -180,7 +180,7 @@ export default class GridLayout extends React.PureComponent {
         return (
             <Layout
                 {...registerManager.gridLayout}
-                layout={temporaryLayout || layout}
+                layout={temporaryLayout?.data || layout}
                 isDraggable={editMode}
                 isResizable={editMode}
                 onDragStart={this._onStart}
@@ -208,7 +208,7 @@ export default class GridLayout extends React.PureComponent {
                             key={item.id}
                             id={item.id}
                             item={item}
-                            layout={temporaryLayout || layout}
+                            layout={temporaryLayout?.data || layout}
                             adjustWidgetLayout={this.adjustWidgetLayout}
                             isDragging={this.state.isDragging}
                             noOverlay={noOverlay}
