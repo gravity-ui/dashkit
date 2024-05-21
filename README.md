@@ -360,7 +360,7 @@ interface DashKitDnDWrapperProps {
 
 **dragImageSrc**: Drag image preview, by default used transparent 1px png base64
 **onDragStart**: Callback called when element is dragged from ActionPanel
-**onDragEnd**: Callback called when element dropped or drag canceld
+**onDragEnd**: Callback called when element dropped or drag canceled
 
 ```ts
 type ItemDragProps = {
