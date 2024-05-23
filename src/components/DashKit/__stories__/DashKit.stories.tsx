@@ -2,6 +2,7 @@ import React from 'react';
 
 import {Meta, Story} from '@storybook/react';
 
+import pluginLayout from '../../../plugins/Layout/Layout';
 import pluginText from '../../../plugins/Text/Text';
 import pluginTitle from '../../../plugins/Title/Title';
 import {cn} from '../../../utils/cn';
@@ -9,6 +10,7 @@ import {DashKit, DashKitProps} from '../DashKit';
 
 import {CssApiShowcase} from './CssApiShowcase';
 import {DashKitDnDShowcase} from './DashKitDnDShowcase';
+import {DashKitFixedLayout} from './DashKitFixedLayout';
 import {DashKitShowcase} from './DashKitShowcase';
 import {getConfig} from './utils';
 
@@ -45,6 +47,7 @@ if (!getInitialized()) {
         pluginText.setSettings({
             apiHandler: ({text}) => Promise.resolve({result: text}),
         }),
+        pluginLayout,
     );
     DashKit.registerPlugins({
         type: 'custom',
@@ -81,3 +84,6 @@ export const CSS_API = CssApiShowcaseTemplate.bind({});
 
 const DndShowcaseTemplate: Story<DashKitProps> = () => <DashKitDnDShowcase />;
 export const DragNDrop = DndShowcaseTemplate.bind({});
+
+const FixedLayoutShowcaseTemplate: Story<DashKitProps> = () => <DashKitFixedLayout />;
+export const FixedLayout = FixedLayoutShowcaseTemplate.bind({});

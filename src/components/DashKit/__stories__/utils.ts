@@ -28,6 +28,30 @@ export const getConfig = (): DashKitProps['config'] => ({
             orderId: 1,
         },
         {
+            id: 'FK',
+            data: {
+                size: 'm',
+                text: 'Title widget',
+                showInTOC: true,
+            },
+            type: 'title',
+            namespace: 'default',
+            orderId: 1,
+            fixed: true,
+        },
+        {
+            id: 'BP',
+            data: {
+                size: 'm',
+                text: 'Title widget',
+                showInTOC: true,
+            },
+            type: 'title',
+            namespace: 'default',
+            orderId: 1,
+            fixed: true,
+        },
+        {
             id: 'Ea',
             data: {
                 text: 'special mode _editActive',
@@ -78,11 +102,25 @@ export const getConfig = (): DashKitProps['config'] => ({
             y: 2,
         },
         {
-            h: 10,
+            h: 30,
             i: 'Dk',
             w: 10,
             x: 0,
             y: 8,
+        },
+        {
+            h: 2,
+            i: 'FK',
+            w: 36,
+            x: 0,
+            y: 0,
+        },
+        {
+            h: 2,
+            i: 'BP',
+            w: 36,
+            x: 0,
+            y: 2,
         },
     ],
     aliases: {},

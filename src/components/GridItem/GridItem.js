@@ -136,7 +136,10 @@ class GridItem extends React.PureComponent {
             withCustomHandle,
             isPlaceholder,
         } = this.props;
-        const {editMode} = this.context;
+        const editMode =
+            this.props.editMode === false || this.props.editMode === true
+                ? this.props.editMode
+                : this.context.editMode;
         const width = Number.parseInt(style.width, 10);
         const height = Number.parseInt(style.height, 10);
         const transform = style.transform;

@@ -43,6 +43,7 @@ export interface ConfigItem {
     defaults?: StringParams;
     orderId?: number;
     defaultOrderId?: number;
+    fixed?: boolean;
 }
 
 export interface ConfigItemWithTabs extends Omit<ConfigItem, 'data'> {
