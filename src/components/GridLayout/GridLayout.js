@@ -12,10 +12,10 @@ const MAX_HEADER_SIZE = 10;
 const FIXED_HEADER_ID = 'fixedHeader';
 
 const FixedHeader = (props) => {
-    const {editMode, registerManager, size, onSizeUpdate, layout, children} = props;
+    const {registerManager, size, onSizeUpdate, layout, children} = props;
 
     const [isCollapsed, setCollapsed] = React.useState(false);
-    const [isEditing, setEditing] = React.useState(editMode);
+    const [isEditing, setEditing] = React.useState(false);
 
     const currentMaxSizeRef = React.useRef(HEADER_SIZE);
     const elementRef = React.useRef();
