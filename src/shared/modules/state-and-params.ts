@@ -37,6 +37,7 @@ export interface GetItemsParamsArg {
     config: Config;
     itemsStateAndParams: ItemsStateAndParams;
     plugins: PluginBase[];
+    useStateAsInitial?: boolean;
 }
 
 type GetItemsParamsReturn = Record<string, StringParams | Record<string, StringParams>>;
@@ -51,6 +52,8 @@ function getItemParams({
     globalParams,
     isFirstVersion,
     queueData,
+    parentItemId,
+    useStateAsInitial,
 }: {
     item: ConfigItem | ConfigItemGroup;
     itemsStateAndParams: ItemsStateAndParams;
@@ -61,6 +64,8 @@ function getItemParams({
     globalParams: GlobalParams;
     isFirstVersion: boolean;
     queueData: FormedQueueData[];
+    parentItemId?: string;
+    useStateAsInitial?: boolean;
 }) {
     const {id, namespace} = item;
 
@@ -80,18 +85,35 @@ function getItemParams({
         (itemWithDefaults) => !itemIgnores.includes(itemWithDefaults.id),
     );
 
-    let itemParams: StringParams = Object.assign(
-        {},
-        getMergedParams(defaultGlobalParams),
-        // default parameters to begin with
-        affectingItemsWithDefaults.reduceRight((defaultParams: StringParams, itemWithDefaults) => {
-            return {
-                ...defaultParams,
-                ...getMergedParams(itemWithDefaults.defaults || {}),
-            };
-        }, {}),
-        getMergedParams(globalParams),
-    );
+    let itemParams: StringParams;
+
+    const widgetId = parentItemId || item.id;
+    if (useStateAsInitial && widgetId in itemsStateAndParams) {
+        const stateAndParams = itemsStateAndParams as ItemsStateAndParamsBase;
+        itemParams = parentItemId
+            ? Object.assign(
+                  {},
+                  (stateAndParams[widgetId].params as Record<string, StringParams>)[item.id],
+              )
+            : Object.assign({}, stateAndParams[widgetId].params as StringParams);
+    } else {
+        itemParams = Object.assign(
+            {},
+            getMergedParams(defaultGlobalParams),
+            // default parameters to begin with
+            affectingItemsWithDefaults.reduceRight(
+                (defaultParams: StringParams, itemWithDefaults) => {
+                    return {
+                        ...defaultParams,
+                        ...getMergedParams(itemWithDefaults.defaults || {}),
+                    };
+                },
+                {},
+            ),
+            getMergedParams(globalParams),
+        );
+    }
+
     if (isFirstVersion) {
         itemParams = Object.assign(
             itemParams,
@@ -133,6 +155,7 @@ export function getItemsParams({
     config,
     itemsStateAndParams,
     plugins,
+    useStateAsInitial,
 }: GetItemsParamsArg): GetItemsParamsReturn {
     const {aliases, connections} = config;
     const items = prerenderItems({items: config.items, plugins});
@@ -190,6 +213,7 @@ export function getItemsParams({
             globalParams,
             isFirstVersion,
             queueData,
+            useStateAsInitial,
         };
 
         if (isItemWithGroup(item)) {
@@ -197,6 +221,7 @@ export function getItemsParams({
                 (groupItemParams: Record<string, StringParams>, groupItem) => {
                     groupItemParams[groupItem.id] = getItemParams({
                         item: groupItem,
+                        parentItemId: item.id,
                         ...paramsOptions,
                     });
                     return groupItemParams;
