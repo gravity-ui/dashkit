@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.3.0](https://github.com/gravity-ui/dashkit/compare/v8.2.0...v8.3.0) (2024-06-11)
+
+
+### Features
+
+* support useStateAsInitial in getItemsParams ([#148](https://github.com/gravity-ui/dashkit/issues/148)) ([ede2db0](https://github.com/gravity-ui/dashkit/commit/ede2db0b219697016aafd4fed9a210f2b9c52fb4))
+
 ## [8.2.0](https://github.com/gravity-ui/dashkit/compare/v8.1.0...v8.2.0) (2024-05-21)
 
 
