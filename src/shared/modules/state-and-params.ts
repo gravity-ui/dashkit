@@ -37,9 +37,36 @@ export interface GetItemsParamsArg {
     config: Config;
     itemsStateAndParams: ItemsStateAndParams;
     plugins: PluginBase[];
+    useStateAsInitial?: boolean;
 }
 
 type GetItemsParamsReturn = Record<string, StringParams | Record<string, StringParams>>;
+
+const getParamsFromStateAndParams = ({
+    itemsStateAndParams,
+    parentItemId,
+    item,
+}: {
+    item: ConfigItem | ConfigItemGroup;
+    itemsStateAndParams: ItemsStateAndParams;
+    parentItemId?: string;
+}) => {
+    const widgetId = parentItemId || item.id;
+
+    if (!(widgetId in itemsStateAndParams)) {
+        return {};
+    }
+
+    const stateAndParams = itemsStateAndParams as ItemsStateAndParamsBase;
+    const itemParams = parentItemId
+        ? Object.assign(
+              {},
+              (stateAndParams[widgetId].params as Record<string, StringParams>)[item.id],
+          )
+        : Object.assign({}, stateAndParams[widgetId].params as StringParams);
+
+    return itemParams;
+};
 
 function getItemParams({
     item,
@@ -51,6 +78,8 @@ function getItemParams({
     globalParams,
     isFirstVersion,
     queueData,
+    parentItemId,
+    useStateAsInitial,
 }: {
     item: ConfigItem | ConfigItemGroup;
     itemsStateAndParams: ItemsStateAndParams;
@@ -61,6 +90,8 @@ function getItemParams({
     globalParams: GlobalParams;
     isFirstVersion: boolean;
     queueData: FormedQueueData[];
+    parentItemId?: string;
+    useStateAsInitial?: boolean;
 }) {
     const {id, namespace} = item;
 
@@ -91,7 +122,11 @@ function getItemParams({
             };
         }, {}),
         getMergedParams(globalParams),
+        useStateAsInitial
+            ? getParamsFromStateAndParams({parentItemId, item, itemsStateAndParams})
+            : {},
     );
+
     if (isFirstVersion) {
         itemParams = Object.assign(
             itemParams,
@@ -133,6 +168,7 @@ export function getItemsParams({
     config,
     itemsStateAndParams,
     plugins,
+    useStateAsInitial,
 }: GetItemsParamsArg): GetItemsParamsReturn {
     const {aliases, connections} = config;
     const items = prerenderItems({items: config.items, plugins});
@@ -190,6 +226,7 @@ export function getItemsParams({
             globalParams,
             isFirstVersion,
             queueData,
+            useStateAsInitial,
         };
 
         if (isItemWithGroup(item)) {
@@ -197,6 +234,7 @@ export function getItemsParams({
                 (groupItemParams: Record<string, StringParams>, groupItem) => {
                     groupItemParams[groupItem.id] = getItemParams({
                         item: groupItem,
+                        parentItemId: item.id,
                         ...paramsOptions,
                     });
                     return groupItemParams;

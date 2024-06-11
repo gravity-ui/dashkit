@@ -139,6 +139,14 @@ function getAllowableChangedParams(
 
     const stateParamsConf = stateAndParams.params;
 
+    // check if structure is StringParams or Record<string, StringParams>
+    // if it's Record<string, StringParams>, then this is a group application of params
+    // and checking for comparison of allowedParams and stateParamsConf is not necessary
+    const isGroupParamsApply =
+        typeof stateParamsConf?.[item.id] === 'object' &&
+        stateParamsConf?.[item.id] !== null &&
+        !Array.isArray(stateParamsConf?.[item.id]);
+
     if (isItemWithTabs(item)) {
         let tab;
         if ('state' in stateAndParams && stateAndParams.state?.tabId) {
@@ -150,15 +158,14 @@ function getAllowableChangedParams(
         }
         allowedParams = pick(stateParamsConf, Object.keys(tab?.params || {})) as StringParams;
     } else {
-        // check if structure is StringParams or Record<string, StringParams>
-        const paramsConf =
-            typeof stateParamsConf?.[item.id] === 'object' &&
-            !Array.isArray(stateParamsConf?.[item.id])
-                ? stateParamsConf[item.id]
-                : stateParamsConf;
+        const paramsConf = isGroupParamsApply ? stateParamsConf[item.id] : stateParamsConf;
         allowedParams = pick(paramsConf, Object.keys(item.defaults || {})) as StringParams;
     }
-    if (Object.keys(allowedParams || {}).length !== Object.keys(stateParamsConf || {}).length) {
+
+    if (
+        !isGroupParamsApply &&
+        Object.keys(allowedParams || {}).length !== Object.keys(stateParamsConf || {}).length
+    ) {
         console.warn('Параметры, которых нет в defaults, будут проигнорированы!');
     }
     return allowedParams;
@@ -293,6 +300,31 @@ function getNewItemData({item, config, counter: argsCounter, salt, options}: Get
     return {data, counter, excludeIds};
 }
 
+export const getChangedParams = ({
+    initiatorItem,
+    stateAndParams,
+    itemsStateAndParams,
+}: {
+    initiatorItem: ConfigItem | ConfigItemGroup;
+    stateAndParams: ItemStateAndParams;
+    itemsStateAndParams: ItemsStateAndParams;
+}) => {
+    const allowableParams = getAllowableChangedParams(
+        initiatorItem,
+        stateAndParams,
+        itemsStateAndParams,
+    );
+
+    const allowableActionParams = getAllowableChangedParams(
+        initiatorItem,
+        stateAndParams,
+        itemsStateAndParams,
+        {type: 'actionParams', returnPrefix: true},
+    );
+
+    return {...allowableParams, ...allowableActionParams};
+};
+
 function changeGroupParams({
     groupItemIds,
     initiatorId,
@@ -322,20 +354,13 @@ function changeGroupParams({
 
     for (const groupItem of initiatorItem.data.group) {
         if (groupItemIds.includes(groupItem.id)) {
-            const allowableParams = getAllowableChangedParams(
-                groupItem,
+            const changedParams = getChangedParams({
+                initiatorItem: groupItem,
                 stateAndParams,
                 itemsStateAndParams,
-            );
+            });
 
-            const allowableActionParams = getAllowableChangedParams(
-                groupItem,
-                stateAndParams,
-                itemsStateAndParams,
-                {type: 'actionParams', returnPrefix: true},
-            );
-
-            updatedItems[groupItem.id] = {...allowableParams, ...allowableActionParams};
+            updatedItems[groupItem.id] = changedParams;
 
             continue;
         }
@@ -546,18 +571,11 @@ export class UpdateManager {
         }
 
         if ('params' in stateAndParams) {
-            const allowableParams = getAllowableChangedParams(
+            const changedParams = getChangedParams({
                 initiatorItem,
                 stateAndParams,
                 itemsStateAndParams,
-            );
-
-            const allowableActionParams = getAllowableChangedParams(
-                initiatorItem,
-                stateAndParams,
-                itemsStateAndParams,
-                {type: 'actionParams', returnPrefix: true},
-            );
+            });
 
             const tabId: string | undefined = isItemWithTabs(initiatorItem)
                 ? newTabId || resolveItemInnerId({item: initiatorItem, itemsStateAndParams})
@@ -577,10 +595,7 @@ export class UpdateManager {
                 [initiatorId]: {
                     $auto: {
                         params: {
-                            [commandUpdateParams]: {
-                                ...allowableParams,
-                                ...allowableActionParams,
-                            },
+                            [commandUpdateParams]: changedParams,
                         },
                         ...(hasState ? {state: {$set: stateAndParams.state}} : {}),
                     },
