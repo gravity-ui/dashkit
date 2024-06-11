@@ -144,6 +144,7 @@ function getAllowableChangedParams(
     // and checking for comparison of allowedParams and stateParamsConf is not necessary
     const isGroupParamsApply =
         typeof stateParamsConf?.[item.id] === 'object' &&
+        stateParamsConf?.[item.id] !== null &&
         !Array.isArray(stateParamsConf?.[item.id]);
 
     if (isItemWithTabs(item)) {
