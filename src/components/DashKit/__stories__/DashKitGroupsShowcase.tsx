@@ -158,29 +158,23 @@ export const DashKitGroupshowcase: React.FC = () => {
             {
                 id: fixedGroup,
                 render: (id: string, children: React.ReactNode, props: DashkitGroupRenderProps) => {
-                    const {editMode} = props;
+                    const style: React.CSSProperties = props.editMode
+                        ? {
+                              position: 'static',
+                              backgroundColor: '#ccc',
+                              overflow: 'visible',
+                          }
+                        : {
+                              position: 'sticky',
+                              top: 0,
+                              backgroundColor: '#ccc',
+                              zIndex: 3,
+                              overflow: 'auto',
+                              maxHeight: 300,
+                          };
 
                     return (
-                        <div
-                            key={id}
-                            style={
-                                editMode
-                                    ? {
-                                          position: 'static',
-                                          backgroundColor: '#ccc',
-                                          overflow: 'visible',
-                                          maxHeight: 'unset',
-                                      }
-                                    : {
-                                          position: 'sticky',
-                                          top: 0,
-                                          backgroundColor: '#ccc',
-                                          zIndex: 3,
-                                          overflow: 'auto',
-                                          maxHeight: 300,
-                                      }
-                            }
-                        >
+                        <div key={id} style={style}>
                             {children}
                         </div>
                     );
