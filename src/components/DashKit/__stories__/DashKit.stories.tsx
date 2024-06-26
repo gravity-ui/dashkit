@@ -9,6 +9,7 @@ import {DashKit, DashKitProps} from '../DashKit';
 
 import {CssApiShowcase} from './CssApiShowcase';
 import {DashKitDnDShowcase} from './DashKitDnDShowcase';
+import {DashKitGroupshowcase} from './DashKitGroupsShowcase';
 import {DashKitShowcase} from './DashKitShowcase';
 import {getConfig} from './utils';
 
@@ -81,3 +82,6 @@ export const CSS_API = CssApiShowcaseTemplate.bind({});
 
 const DndShowcaseTemplate: Story<DashKitProps> = () => <DashKitDnDShowcase />;
 export const DragNDrop = DndShowcaseTemplate.bind({});
+
+const GroupsShowcaseTemplate: Story<DashKitProps> = () => <DashKitGroupshowcase />;
+export const Groups = GroupsShowcaseTemplate.bind({});

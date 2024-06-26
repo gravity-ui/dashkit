@@ -407,7 +407,7 @@ export class UpdateManager {
         counter = newIdData.counter;
 
         const newItem = {...item, id: newIdData.id, data: newItemData.data, namespace};
-        const saveDefaultLayout = pick(layout, ['h', 'w', 'x', 'y']);
+        const saveDefaultLayout = pick(layout, ['h', 'w', 'x', 'y', 'parent']);
 
         if (options.updateLayout) {
             const byId = options.updateLayout.reduce<Record<string, ConfigLayout>>((memo, t) => {
@@ -510,7 +510,9 @@ export class UpdateManager {
     static updateLayout({layout, config}: {layout: WidgetLayout[]; config: Config}) {
         return update(config, {
             layout: {
-                $set: layout.map(({x, y, w, h, i}) => ({x, y, w, h, i})),
+                $set: layout.map(({x, y, w, h, i, parent}) =>
+                    parent ? {x, y, w, h, i, parent} : {x, y, w, h, i},
+                ),
             },
         });
     }

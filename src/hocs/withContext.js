@@ -242,6 +242,7 @@ function useMemoStateContext(props) {
         return false;
     }, [resetTemporaryLayout, temporaryLayout, dragOverPlugin, dragProps]);
 
+    const onDropProp = props.onDrop;
     const onDrop = React.useCallback(
         (newLayout, item) => {
             if (!dragProps) {
@@ -252,21 +253,26 @@ function useMemoStateContext(props) {
                 data: newLayout,
                 dragProps,
             });
-            const {i, w, h, x, y} = item;
+            const {i, w, h, x, y, parent} = item;
 
-            props.onDrop({
+            onDropProp({
                 newLayout: newLayout.reduce((memo, l) => {
                     if (l.i !== i) {
-                        memo.push({i: l.i, w: l.w, h: l.h, x: l.x, y: l.y});
+                        const item = {i: l.i, w: l.w, h: l.h, x: l.x, y: l.y};
+                        if (l.parent) {
+                            item.parent = l.parent;
+                        }
+
+                        memo.push(item);
                     }
                     return memo;
                 }, []),
-                itemLayout: {w, h, x, y},
+                itemLayout: parent ? {w, h, x, y, parent} : {w, h, x, y},
                 commit: resetTemporaryLayout,
                 dragProps,
             });
         },
-        [dragProps, props.onDrop, setTemporaryLayout, resetTemporaryLayout],
+        [dragProps, onDropProp, setTemporaryLayout, resetTemporaryLayout],
     );
 
     return React.useMemo(

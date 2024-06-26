@@ -123,14 +123,7 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
     metaRef = React.createRef<GridLayout>();
 
     render() {
-        return (
-            <DashKitView
-                // @ts-ignore
-                registerManager={registerManager}
-                ref={this.metaRef}
-                {...this.props}
-            />
-        );
+        return <DashKitView registerManager={registerManager} ref={this.metaRef} {...this.props} />;
     }
 
     getItemsMeta() {
