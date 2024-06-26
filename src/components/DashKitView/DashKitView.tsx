@@ -35,6 +35,7 @@ const DashKitViewWithContext = withContext(DashKitView);
 
 const DashKitViewForwardedMeta = React.forwardRef((props: DashKitViewProps, ref) => {
     const layout = useCalcPropsLayout(props.config, props.registerManager);
+
     return <DashKitViewWithContext {...props} layout={layout} forwardedMetaRef={ref} />;
 });
 

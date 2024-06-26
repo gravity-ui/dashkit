@@ -1,19 +1,27 @@
 import React from 'react';
 
 import {ChartColumn, Copy, Heading, Sliders, TextAlignLeft} from '@gravity-ui/icons';
-import {Icon} from '@gravity-ui/uikit';
+import {Button, Icon} from '@gravity-ui/uikit';
 
-import {ActionPanel, DashKit, DashKitDnDWrapper, DashKitProps} from '../../..';
-import {MenuItems} from '../../../helpers';
+import {
+    ActionPanel,
+    DashKit,
+    DashKitDnDWrapper,
+    DashKitProps,
+    DashkitGroupRenderProps,
+} from '../../..';
+import {DEFAULT_GROUP, MenuItems} from '../../../helpers';
 import {i18n} from '../../../i18n';
 import {CogIcon} from '../../../icons/CogIcon';
 import {CopyIcon} from '../../../icons/CopyIcon';
 import {DeleteIcon} from '../../../icons/DeleteIcon';
 
 import {Demo, DemoRow} from './Demo';
-import {getConfig} from './utils';
+import {fixedGroup, getConfig} from './utils';
 
 export const DashKitGroupshowcase: React.FC = () => {
+    const [editMode, setEditMode] = React.useState(true);
+
     React.useEffect(() => {
         DashKit.setSettings({
             menu: [
@@ -106,8 +114,6 @@ export const DashKitGroupshowcase: React.FC = () => {
 
     const onDrop = React.useCallback<Exclude<DashKitProps['onDrop'], undefined>>(
         (dropProps) => {
-            console.log(dropProps);
-
             let data = null;
             const type = dropProps.dragProps?.type;
             if (type === 'custom') {
@@ -147,6 +153,46 @@ export const DashKitGroupshowcase: React.FC = () => {
         [config],
     );
 
+    const groups = React.useMemo(
+        () => [
+            {
+                id: fixedGroup,
+                render: (id: string, children: React.ReactNode, props: DashkitGroupRenderProps) => {
+                    const {editMode} = props;
+
+                    return (
+                        <div
+                            key={id}
+                            style={
+                                editMode
+                                    ? {
+                                          position: 'static',
+                                          backgroundColor: '#ccc',
+                                          overflow: 'visible',
+                                          maxHeight: 'unset',
+                                      }
+                                    : {
+                                          position: 'sticky',
+                                          top: 0,
+                                          backgroundColor: '#ccc',
+                                          zIndex: 3,
+                                          overflow: 'auto',
+                                          maxHeight: 300,
+                                      }
+                            }
+                        >
+                            {children}
+                        </div>
+                    );
+                },
+            },
+            {
+                id: DEFAULT_GROUP,
+            },
+        ],
+        [],
+    );
+
     return (
         <DashKitDnDWrapper
             onDragStart={() => {
@@ -157,8 +203,19 @@ export const DashKitGroupshowcase: React.FC = () => {
             }}
         >
             <Demo title="Groups">
+                <DemoRow title="Controls">
+                    <Button view="action" size="m" onClick={() => setEditMode(!editMode)}>
+                        {editMode ? 'Disable editMode' : 'Enable editMode'}
+                    </Button>
+                </DemoRow>
                 <DemoRow title="Component view">
-                    <DashKit editMode={true} config={config} onChange={onChange} onDrop={onDrop} />
+                    <DashKit
+                        editMode={editMode}
+                        groups={groups}
+                        config={config}
+                        onChange={onChange}
+                        onDrop={onDrop}
+                    />
                     <ActionPanel items={items} />
                 </DemoRow>
             </Demo>

@@ -1,12 +1,10 @@
 import React from 'react';
 
-import {OVERLAY_CONTROLS_CLASS_NAME, TEMPORARY_ITEM_ID} from '../../constants';
+import {DEFAULT_GROUP, OVERLAY_CONTROLS_CLASS_NAME, TEMPORARY_ITEM_ID} from '../../constants';
 import {DashKitContext} from '../../context/DashKitContext';
 import GridItem from '../GridItem/GridItem';
 
 import {Layout} from './ReactGridLayout';
-
-const DEFAULT_GROUP = 'default';
 
 export default class GridLayout extends React.PureComponent {
     constructor(props, context) {
@@ -263,7 +261,7 @@ export default class GridLayout extends React.PureComponent {
     }
 
     render() {
-        const {config} = this.context;
+        const {config, groups, editMode} = this.context;
 
         this.pluginsRefs.length = config.items.length;
 
@@ -302,22 +300,38 @@ export default class GridLayout extends React.PureComponent {
 
         let offset = 0;
 
-        return (
-            <React.Fragment>
-                {Object.keys(itemsByGroup).map((group) => {
-                    const element = this.renderGroup(
-                        group,
-                        groupedLayout[group],
-                        itemsByGroup[group],
+        if (groups) {
+            return groups.map((group) => {
+                const id = group.id || DEFAULT_GROUP;
+
+                let element;
+
+                if (id === DEFAULT_GROUP) {
+                    element = this.renderGroup(
+                        DEFAULT_GROUP,
+                        defaultRenderLayout,
+                        defaultRenderItems,
                         offset,
                     );
+                    offset += defaultRenderItems.length;
+                } else {
+                    element = this.renderGroup(id, groupedLayout[id], itemsByGroup[id], offset);
+                    offset += itemsByGroup[id].length;
+                }
 
-                    offset += itemsByGroup[group].length;
+                if (group.render) {
+                    return group.render(id, element, {
+                        config,
+                        editMode,
+                        items: itemsByGroup[id],
+                        layout: groupedLayout[id],
+                    });
+                }
 
-                    return element;
-                })}
-                {this.renderGroup(DEFAULT_GROUP, defaultRenderLayout, defaultRenderItems, offset)}
-            </React.Fragment>
-        );
+                return element;
+            });
+        } else {
+            return this.renderGroup(DEFAULT_GROUP, defaultRenderLayout, defaultRenderItems, offset);
+        }
     }
 }

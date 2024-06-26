@@ -16,3 +16,5 @@ export const MenuItems = {
 
 export const DEFAULT_WIDGET_HEIGHT = 3;
 export const DEFAULT_WIDGET_WIDTH = 3;
+
+export const DEFAULT_GROUP = '__default';

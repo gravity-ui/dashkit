@@ -30,14 +30,19 @@ function useMemoStateContext(props) {
     const [layoutUpdateCounter, forceUpdateLayout] = React.useState(0);
 
     const onChange = React.useCallback(
-        ({config = props.config, itemsStateAndParams = props.itemsStateAndParams}) => {
+        ({
+            config = props.config,
+            itemsStateAndParams = props.itemsStateAndParams,
+            groups = props.groups,
+        }) => {
             if (
                 !(
                     isEqual(config, props.config) &&
-                    isEqual(itemsStateAndParams, props.itemsStateAndParams)
+                    isEqual(itemsStateAndParams, props.itemsStateAndParams) &&
+                    isEqual(groups, props.groups)
                 )
             ) {
-                props.onChange({config, itemsStateAndParams});
+                props.onChange({config, itemsStateAndParams, groups});
             }
         },
         [props.config, props.itemsStateAndParams, props.onChange],
@@ -276,6 +281,7 @@ function useMemoStateContext(props) {
             layout: resultLayout,
             temporaryLayout,
             config: props.config,
+            groups: props.groups,
             context: props.context,
             noOverlay: props.noOverlay,
             focusable: props.focusable,
@@ -305,6 +311,7 @@ function useMemoStateContext(props) {
             resultLayout,
             temporaryLayout,
             props.config,
+            props.groups,
             props.context,
             props.noOverlay,
             props.focusable,

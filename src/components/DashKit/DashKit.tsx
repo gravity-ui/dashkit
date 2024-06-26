@@ -13,6 +13,7 @@ import type {
 import {
     AddConfigItem,
     ContextProps,
+    DashKiGroup,
     Plugin,
     SetConfigItem,
     SetNewItemOptions,
@@ -33,7 +34,11 @@ interface DashKitGeneralProps {
 
 interface DashKitDefaultProps {
     onItemEdit: (item: ConfigItem) => void;
-    onChange: (data: {config: Config; itemsStateAndParams: ItemsStateAndParams}) => void;
+    onChange: (data: {
+        config: Config;
+        itemsStateAndParams: ItemsStateAndParams;
+        groups?: DashKiGroup[];
+    }) => void;
     onDrop: (dropProps: ItemDropProps) => void;
     defaultGlobalParams: GlobalParams;
     globalParams: GlobalParams;
@@ -42,6 +47,7 @@ interface DashKitDefaultProps {
     context: ContextProps;
     noOverlay: boolean;
     focusable?: boolean;
+    groups?: DashKiGroup[];
 }
 
 export interface DashKitProps extends DashKitGeneralProps, Partial<DashKitDefaultProps> {}
