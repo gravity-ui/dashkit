@@ -304,27 +304,25 @@ export default class GridLayout extends React.PureComponent {
             return groups.map((group) => {
                 const id = group.id || DEFAULT_GROUP;
 
-                let element;
+                let layout, items;
 
                 if (id === DEFAULT_GROUP) {
-                    element = this.renderGroup(
-                        DEFAULT_GROUP,
-                        defaultRenderLayout,
-                        defaultRenderItems,
-                        offset,
-                    );
-                    offset += defaultRenderItems.length;
+                    layout = defaultRenderLayout;
+                    items = defaultRenderItems;
                 } else {
-                    element = this.renderGroup(id, groupedLayout[id], itemsByGroup[id], offset);
-                    offset += itemsByGroup[id].length;
+                    layout = groupedLayout[id] || [];
+                    items = itemsByGroup[id] || [];
                 }
+
+                const element = this.renderGroup(id, layout, items, offset);
+                offset += items.length;
 
                 if (group.render) {
                     return group.render(id, element, {
                         config,
                         editMode,
-                        items: itemsByGroup[id],
-                        layout: groupedLayout[id],
+                        items,
+                        layout,
                     });
                 }
 
