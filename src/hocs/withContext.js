@@ -1,6 +1,7 @@
 import React from 'react';
 
 import isEqual from 'lodash/isEqual';
+import pick from 'lodash/pick';
 
 import {DEFAULT_WIDGET_HEIGHT, DEFAULT_WIDGET_WIDTH, TEMPORARY_ITEM_ID} from '../constants/common';
 import {DashKitContext, DashKitDnDContext} from '../context/DashKitContext';
@@ -253,21 +254,16 @@ function useMemoStateContext(props) {
                 data: newLayout,
                 dragProps,
             });
-            const {i, w, h, x, y, parent} = item;
 
             onDropProp({
                 newLayout: newLayout.reduce((memo, l) => {
-                    if (l.i !== i) {
-                        const item = {i: l.i, w: l.w, h: l.h, x: l.x, y: l.y};
-                        if (l.parent) {
-                            item.parent = l.parent;
-                        }
-
-                        memo.push(item);
+                    if (l.i !== item.i) {
+                        memo.push(pick(l, ['i', 'h', 'w', 'x', 'y', 'parent']));
                     }
+
                     return memo;
                 }, []),
-                itemLayout: parent ? {w, h, x, y, parent} : {w, h, x, y},
+                itemLayout: pick(item, ['i', 'h', 'w', 'x', 'y', 'parent']),
                 commit: resetTemporaryLayout,
                 dragProps,
             });

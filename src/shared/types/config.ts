@@ -3,6 +3,7 @@ import {StringParams} from './common';
 export interface AdditionalWidgetLayout {
     parent?: string;
 }
+
 export interface ConfigLayout extends AdditionalWidgetLayout {
     i: string;
     h: number;
