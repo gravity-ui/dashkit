@@ -38,16 +38,7 @@ export interface PluginWidgetProps<T = StringParams> {
     }) => void;
 }
 
-export interface PluginDefaultLayout {
-    w?: number;
-    h?: number;
-    x?: number;
-    y?: number;
-    minW?: number;
-    maxW?: number;
-    minH?: number;
-    maxH?: number;
-}
+export type PluginDefaultLayout = Partial<Omit<WidgetLayout, 'i'>>;
 
 export interface Plugin<P extends PluginWidgetProps<T> = any, T = StringParams> extends PluginBase {
     defaultLayout?: PluginDefaultLayout;

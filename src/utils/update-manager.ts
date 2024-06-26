@@ -510,9 +510,7 @@ export class UpdateManager {
     static updateLayout({layout, config}: {layout: WidgetLayout[]; config: Config}) {
         return update(config, {
             layout: {
-                $set: layout.map(({x, y, w, h, i, parent}) =>
-                    parent ? {x, y, w, h, i, parent} : {x, y, w, h, i},
-                ),
+                $set: layout.map((item) => pick(item, ['i', 'h', 'w', 'x', 'y', 'parent'])),
             },
         });
     }
