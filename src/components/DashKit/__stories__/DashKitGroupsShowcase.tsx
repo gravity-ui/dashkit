@@ -19,7 +19,7 @@ import {DeleteIcon} from '../../../icons/DeleteIcon';
 import {Demo, DemoRow} from './Demo';
 import {fixedGroup, getConfig} from './utils';
 
-export const DashKitGroupshowcase: React.FC = () => {
+export const DashKitGroupsShowcase: React.FC = () => {
     const [editMode, setEditMode] = React.useState(true);
 
     React.useEffect(() => {

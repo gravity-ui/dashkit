@@ -8,10 +8,10 @@ class DragOverLayout extends ReactGridLayout {
     constructor(...args) {
         super(...args);
 
-        const oldonDrag = this.onDrag;
+        this.parentOnDrag = this.onDrag;
 
         this.onDrag = (i, x, y, sintE) => {
-            oldonDrag(i, x, y, sintE);
+            this.parentOnDrag(i, x, y, sintE);
             this.mouseLeaveHandler(sintE.e);
         };
     }

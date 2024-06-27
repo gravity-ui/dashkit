@@ -21,7 +21,7 @@ export interface DashkitGroupRenderProps {
     layout: ConfigLayout[];
 }
 
-export interface DashKiGroup {
+export interface DashKitGroup {
     id?: string;
     render?: (
         id: string,
