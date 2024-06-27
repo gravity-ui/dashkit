@@ -158,23 +158,29 @@ export const DashKitGroupshowcase: React.FC = () => {
             {
                 id: fixedGroup,
                 render: (id: string, children: React.ReactNode, props: DashkitGroupRenderProps) => {
+                    const defaultStyles: React.CSSProperties = {
+                        backgroundColor: '#ccc',
+                        display: 'flex',
+                        flexDirection: 'column',
+                    };
+
                     const style: React.CSSProperties = props.editMode
                         ? {
                               position: 'static',
-                              backgroundColor: '#ccc',
                               overflow: 'visible',
+                              minHeight: 48,
                           }
                         : {
                               position: 'sticky',
-                              top: 0,
-                              backgroundColor: '#ccc',
-                              zIndex: 3,
                               overflow: 'auto',
+                              top: 0,
+                              zIndex: 3,
                               maxHeight: 300,
+                              minHeight: 'unset',
                           };
 
                     return (
-                        <div key={id} style={style}>
+                        <div key={id} style={{...defaultStyles, ...style}}>
                             {children}
                         </div>
                     );

@@ -46,6 +46,14 @@ class DragOverLayout extends ReactGridLayout {
         }
     };
 
+    containerHeight() {
+        if (this.props.autoSize && this.state.layout.length === 0) {
+            return 'unset';
+        }
+
+        return super.containerHeight();
+    }
+
     processGridItem(child, isDroppingItem) {
         const gridItem = super.processGridItem?.(child, isDroppingItem);
 

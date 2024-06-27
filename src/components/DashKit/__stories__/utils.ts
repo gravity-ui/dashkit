@@ -73,7 +73,6 @@ export const getConfig = (withGroups?: boolean): DashKitProps['config'] => ({
                       id: 'Fr',
                       data: {
                           text: 'special mode _editActive',
-                          _editActive: true,
                       },
                       type: 'text',
                       namespace: 'default',
