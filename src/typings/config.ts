@@ -1,4 +1,4 @@
-import type {ConfigItem, ConfigLayout} from '../shared';
+import type {Config, ConfigItem, ConfigLayout} from '../shared';
 
 export interface AddConfigItem extends Omit<ConfigItem, 'id' | 'namespace'> {
     id?: null;
@@ -14,3 +14,18 @@ export type SetItemOptions = {
 export type SetNewItemOptions = SetItemOptions & {
     updateLayout?: ConfigLayout[];
 };
+export interface DashkitGroupRenderProps {
+    config: Config;
+    editMode: boolean;
+    items: ConfigItem[];
+    layout: ConfigLayout[];
+}
+
+export interface DashKitGroup {
+    id?: string;
+    render?: (
+        id: string,
+        children: React.ReactNode,
+        props: DashkitGroupRenderProps,
+    ) => React.ReactNode;
+}

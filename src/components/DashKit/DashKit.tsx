@@ -13,6 +13,7 @@ import type {
 import {
     AddConfigItem,
     ContextProps,
+    DashKitGroup,
     Plugin,
     SetConfigItem,
     SetNewItemOptions,
@@ -33,7 +34,11 @@ interface DashKitGeneralProps {
 
 interface DashKitDefaultProps {
     onItemEdit: (item: ConfigItem) => void;
-    onChange: (data: {config: Config; itemsStateAndParams: ItemsStateAndParams}) => void;
+    onChange: (data: {
+        config: Config;
+        itemsStateAndParams: ItemsStateAndParams;
+        groups?: DashKitGroup[];
+    }) => void;
     onDrop: (dropProps: ItemDropProps) => void;
     defaultGlobalParams: GlobalParams;
     globalParams: GlobalParams;
@@ -42,6 +47,7 @@ interface DashKitDefaultProps {
     context: ContextProps;
     noOverlay: boolean;
     focusable?: boolean;
+    groups?: DashKitGroup[];
 }
 
 export interface DashKitProps extends DashKitGeneralProps, Partial<DashKitDefaultProps> {}
@@ -123,14 +129,7 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
     metaRef = React.createRef<GridLayout>();
 
     render() {
-        return (
-            <DashKitView
-                // @ts-ignore
-                registerManager={registerManager}
-                ref={this.metaRef}
-                {...this.props}
-            />
-        );
+        return <DashKitView registerManager={registerManager} ref={this.metaRef} {...this.props} />;
     }
 
     getItemsMeta() {

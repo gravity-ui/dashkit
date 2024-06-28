@@ -5,6 +5,17 @@ import ReactGridLayout, {WidthProvider} from 'react-grid-layout';
 import {OVERLAY_CLASS_NAME} from '../../constants';
 
 class DragOverLayout extends ReactGridLayout {
+    constructor(...args) {
+        super(...args);
+
+        this.parentOnDrag = this.onDrag;
+
+        this.onDrag = (i, x, y, sintE) => {
+            this.parentOnDrag(i, x, y, sintE);
+            this.mouseLeaveHandler(sintE.e);
+        };
+    }
+
     componentDidMount() {
         super.componentDidMount?.();
 
@@ -21,6 +32,27 @@ class DragOverLayout extends ReactGridLayout {
             this.removeDroppingPlaceholder();
         }
     };
+
+    mouseLeaveHandler = (e) => {
+        const rect = this.props.innerRef?.current.getBoundingClientRect() || {};
+
+        if (
+            rect.bottom <= e.clientY ||
+            rect.top >= e.clientY ||
+            rect.left >= e.clientX ||
+            rect.right <= e.clientX
+        ) {
+            this.dragReset();
+        }
+    };
+
+    containerHeight() {
+        if (this.props.autoSize && this.state.layout.length === 0) {
+            return 'unset';
+        }
+
+        return super.containerHeight();
+    }
 
     processGridItem(child, isDroppingItem) {
         const gridItem = super.processGridItem?.(child, isDroppingItem);

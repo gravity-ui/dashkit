@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {OVERLAY_CONTROLS_CLASS_NAME, TEMPORARY_ITEM_ID} from '../../constants';
+import {DEFAULT_GROUP, OVERLAY_CONTROLS_CLASS_NAME, TEMPORARY_ITEM_ID} from '../../constants';
 import {DashKitContext} from '../../context/DashKitContext';
 import GridItem from '../GridItem/GridItem';
 
@@ -70,6 +70,39 @@ export default class GridLayout extends React.PureComponent {
         return getItemsMeta(this.pluginsRefs);
     };
 
+    getActiveLayout() {
+        const {layout, temporaryLayout} = this.context;
+
+        return temporaryLayout?.data || layout;
+    }
+
+    mergeGroupsLayout(group, newLayout, temporaryItem) {
+        const renderLayout = this.getActiveLayout();
+        const itemsByGroup = renderLayout.reduce(
+            (memo, item) => {
+                memo[item.i] = item;
+                return memo;
+            },
+            temporaryItem ? {[temporaryItem.i]: temporaryItem} : {},
+        );
+
+        const newItemsLayoutById = newLayout.reduce((memo, item) => {
+            const parent = itemsByGroup[item.i].parent;
+            memo[item.i] = {...item, parent};
+            return memo;
+        }, {});
+
+        return renderLayout.map((currentItem) => {
+            const itemParent = itemsByGroup[currentItem.i].parent || DEFAULT_GROUP;
+
+            if (itemParent === group) {
+                return newItemsLayoutById[currentItem.i];
+            }
+
+            return currentItem;
+        });
+    }
+
     reloadItems() {
         const {
             editMode,
@@ -100,16 +133,17 @@ export default class GridLayout extends React.PureComponent {
         this.setState({isDragging: true});
     };
 
-    _onStop = (newLayout) => {
+    _onStop = (group, newLayout) => {
         const {layoutChange, onDrop, temporaryLayout} = this.context;
+        const groupedLayout = this.mergeGroupsLayout(group, newLayout);
 
         if (temporaryLayout) {
             onDrop?.(
-                newLayout,
-                newLayout.find(({i}) => i === TEMPORARY_ITEM_ID),
+                groupedLayout,
+                groupedLayout.find(({i}) => i === TEMPORARY_ITEM_ID),
             );
         } else {
-            layoutChange(newLayout);
+            layoutChange(groupedLayout);
         }
         this.setState({isDragging: false});
     };
@@ -124,7 +158,7 @@ export default class GridLayout extends React.PureComponent {
         return onDropDragOver(e);
     };
 
-    _onDrop = (layout, item, e) => {
+    _onDrop = (group, newLayout, item, e) => {
         if (!item) {
             return false;
         }
@@ -134,7 +168,13 @@ export default class GridLayout extends React.PureComponent {
             return false;
         }
 
-        onDrop?.(layout, item, e);
+        if (group !== DEFAULT_GROUP) {
+            item.parent = group;
+        }
+
+        const groupedLayout = this.mergeGroupsLayout(group, newLayout, item);
+
+        onDrop?.(groupedLayout, item, e);
     };
 
     renderTemporaryPlaceholder() {
@@ -163,11 +203,8 @@ export default class GridLayout extends React.PureComponent {
         );
     }
 
-    render() {
+    renderGroup(group, renderLayout, renderItems, offset = 0) {
         const {
-            layout,
-            temporaryLayout,
-            config,
             registerManager,
             editMode,
             noOverlay,
@@ -175,18 +212,18 @@ export default class GridLayout extends React.PureComponent {
             draggableHandleClassName,
             outerDnDEnable,
         } = this.context;
-        this.pluginsRefs.length = config.items.length;
 
         return (
             <Layout
                 {...registerManager.gridLayout}
-                layout={temporaryLayout?.data || layout}
+                key={`group_${group}`}
+                layout={renderLayout}
                 isDraggable={editMode}
                 isResizable={editMode}
                 onDragStart={this._onStart}
-                onDragStop={this._onStop}
+                onDragStop={(...args) => this._onStop(group, ...args)}
                 onResizeStart={this._onStart}
-                onResizeStop={this._onStop}
+                onResizeStop={(...args) => this._onStop(group, ...args)}
                 {...(draggableHandleClassName
                     ? {draggableHandle: `.${draggableHandleClassName}`}
                     : null)}
@@ -194,21 +231,21 @@ export default class GridLayout extends React.PureComponent {
                     ? {
                           isDroppable: true,
                           onDropDragOver: this._onDropDragOver,
-                          onDrop: this._onDrop,
+                          onDrop: (...args) => this._onDrop(group, ...args),
                       }
                     : null)}
                 draggableCancel={`.${OVERLAY_CONTROLS_CLASS_NAME}`}
             >
-                {config.items.map((item, i) => {
+                {renderItems.map((item, i) => {
                     return (
                         <GridItem
                             forwardedPluginRef={(pluginRef) => {
-                                this.pluginsRefs[i] = pluginRef;
+                                this.pluginsRefs[offset + i] = pluginRef;
                             }} // forwarded ref to plugin
                             key={item.id}
                             id={item.id}
                             item={item}
-                            layout={temporaryLayout?.data || layout}
+                            layout={renderLayout}
                             adjustWidgetLayout={this.adjustWidgetLayout}
                             isDragging={this.state.isDragging}
                             noOverlay={noOverlay}
@@ -221,5 +258,78 @@ export default class GridLayout extends React.PureComponent {
                 {this.renderTemporaryPlaceholder()}
             </Layout>
         );
+    }
+
+    render() {
+        const {config, groups, editMode} = this.context;
+
+        this.pluginsRefs.length = config.items.length;
+
+        const defaultRenderLayout = [];
+        const defaultRenderItems = [];
+        const layoutMap = {};
+
+        const groupedLayout = this.getActiveLayout().reduce((memo, item) => {
+            if (item.parent) {
+                if (!memo[item.parent]) {
+                    memo[item.parent] = [];
+                }
+
+                memo[item.parent].push(item);
+                layoutMap[item.i] = item.parent;
+            } else {
+                defaultRenderLayout.push(item);
+            }
+
+            return memo;
+        }, []);
+
+        const itemsByGroup = config.items.reduce((memo, item) => {
+            const group = layoutMap[item.id];
+            if (group) {
+                if (!memo[group]) {
+                    memo[group] = [];
+                }
+                memo[group].push(item);
+            } else {
+                defaultRenderItems.push(item);
+            }
+
+            return memo;
+        }, {});
+
+        let offset = 0;
+
+        if (groups) {
+            return groups.map((group) => {
+                const id = group.id || DEFAULT_GROUP;
+
+                let layout, items;
+
+                if (id === DEFAULT_GROUP) {
+                    layout = defaultRenderLayout;
+                    items = defaultRenderItems;
+                } else {
+                    layout = groupedLayout[id] || [];
+                    items = itemsByGroup[id] || [];
+                }
+
+                const element = this.renderGroup(id, layout, items, offset);
+                offset += items.length;
+
+                if (group.render) {
+                    return group.render(id, element, {
+                        config,
+                        editMode,
+                        items,
+                        layout,
+                    });
+                }
+
+                return element;
+            });
+        } else {
+            return this.renderGroup(DEFAULT_GROUP, defaultRenderLayout, defaultRenderItems, offset);
+        }
     }
 }

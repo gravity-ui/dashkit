@@ -1,6 +1,10 @@
 import {StringParams} from './common';
 
-export interface ConfigLayout {
+export interface AdditionalWidgetLayout {
+    parent?: string;
+}
+
+export interface ConfigLayout extends AdditionalWidgetLayout {
     i: string;
     h: number;
     w: number;

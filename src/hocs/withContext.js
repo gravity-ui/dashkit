@@ -1,6 +1,7 @@
 import React from 'react';
 
 import isEqual from 'lodash/isEqual';
+import pick from 'lodash/pick';
 
 import {DEFAULT_WIDGET_HEIGHT, DEFAULT_WIDGET_WIDTH, TEMPORARY_ITEM_ID} from '../constants/common';
 import {DashKitContext, DashKitDnDContext} from '../context/DashKitContext';
@@ -29,14 +30,19 @@ function useMemoStateContext(props) {
     const [layoutUpdateCounter, forceUpdateLayout] = React.useState(0);
 
     const onChange = React.useCallback(
-        ({config = props.config, itemsStateAndParams = props.itemsStateAndParams}) => {
+        ({
+            config = props.config,
+            itemsStateAndParams = props.itemsStateAndParams,
+            groups = props.groups,
+        }) => {
             if (
                 !(
                     isEqual(config, props.config) &&
-                    isEqual(itemsStateAndParams, props.itemsStateAndParams)
+                    isEqual(itemsStateAndParams, props.itemsStateAndParams) &&
+                    isEqual(groups, props.groups)
                 )
             ) {
-                props.onChange({config, itemsStateAndParams});
+                props.onChange({config, itemsStateAndParams, groups});
             }
         },
         [props.config, props.itemsStateAndParams, props.onChange],
@@ -242,6 +248,7 @@ function useMemoStateContext(props) {
         return false;
     }, [resetTemporaryLayout, temporaryLayout, dragOverPlugin, dragProps]);
 
+    const onDropProp = props.onDrop;
     const onDrop = React.useCallback(
         (newLayout, item) => {
             if (!dragProps) {
@@ -252,21 +259,21 @@ function useMemoStateContext(props) {
                 data: newLayout,
                 dragProps,
             });
-            const {i, w, h, x, y} = item;
 
-            props.onDrop({
+            onDropProp({
                 newLayout: newLayout.reduce((memo, l) => {
-                    if (l.i !== i) {
-                        memo.push({i: l.i, w: l.w, h: l.h, x: l.x, y: l.y});
+                    if (l.i !== item.i) {
+                        memo.push(pick(l, ['i', 'h', 'w', 'x', 'y', 'parent']));
                     }
+
                     return memo;
                 }, []),
-                itemLayout: {w, h, x, y},
+                itemLayout: pick(item, ['i', 'h', 'w', 'x', 'y', 'parent']),
                 commit: resetTemporaryLayout,
                 dragProps,
             });
         },
-        [dragProps, props.onDrop, setTemporaryLayout, resetTemporaryLayout],
+        [dragProps, onDropProp, setTemporaryLayout, resetTemporaryLayout],
     );
 
     return React.useMemo(
@@ -274,6 +281,7 @@ function useMemoStateContext(props) {
             layout: resultLayout,
             temporaryLayout,
             config: props.config,
+            groups: props.groups,
             context: props.context,
             noOverlay: props.noOverlay,
             focusable: props.focusable,
@@ -303,6 +311,7 @@ function useMemoStateContext(props) {
             resultLayout,
             temporaryLayout,
             props.config,
+            props.groups,
             props.context,
             props.noOverlay,
             props.focusable,
