@@ -7,8 +7,10 @@ import {
     ActionPanel,
     DashKit,
     DashKitDnDWrapper,
+    DashKitGroup,
     DashKitProps,
     DashkitGroupRenderProps,
+    ReactGridLayoutProps,
 } from '../../..';
 import {DEFAULT_GROUP, MenuItems} from '../../../helpers';
 import {i18n} from '../../../i18n';
@@ -153,7 +155,7 @@ export const DashKitGroupsShowcase: React.FC = () => {
         [config],
     );
 
-    const groups = React.useMemo(
+    const groups = React.useMemo<DashKitGroup[]>(
         () => [
             {
                 id: fixedGroup,
@@ -184,6 +186,9 @@ export const DashKitGroupsShowcase: React.FC = () => {
                             {children}
                         </div>
                     );
+                },
+                gridProperties: (props: ReactGridLayoutProps) => {
+                    return {...props, compactType: 'horizontal'};
                 },
             },
             {

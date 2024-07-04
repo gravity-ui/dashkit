@@ -203,7 +203,7 @@ export default class GridLayout extends React.PureComponent {
         );
     }
 
-    renderGroup(group, renderLayout, renderItems, offset = 0) {
+    renderGroup(group, renderLayout, renderItems, offset = 0, groupGridProperties) {
         const {
             registerManager,
             editMode,
@@ -213,11 +213,17 @@ export default class GridLayout extends React.PureComponent {
             outerDnDEnable,
         } = this.context;
 
+        const properties = groupGridProperties
+            ? groupGridProperties({
+                  ...registerManager.gridLayout,
+              })
+            : registerManager.gridLayout;
+
         return (
             <Layout
-                {...registerManager.gridLayout}
-                key={`group_${group}`}
+                {...properties}
                 layout={renderLayout}
+                key={`group_${group}`}
                 isDraggable={editMode}
                 isResizable={editMode}
                 onDragStart={this._onStart}
@@ -314,7 +320,7 @@ export default class GridLayout extends React.PureComponent {
                     items = itemsByGroup[id] || [];
                 }
 
-                const element = this.renderGroup(id, layout, items, offset);
+                const element = this.renderGroup(id, layout, items, offset, group.gridProperties);
                 offset += items.length;
 
                 if (group.render) {

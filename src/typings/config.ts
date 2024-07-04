@@ -21,6 +21,25 @@ export interface DashkitGroupRenderProps {
     layout: ConfigLayout[];
 }
 
+export type ReactGridLayoutProps = Omit<
+    ReactGridLayout.ReactGridLayoutProps,
+    | 'children'
+    | 'innerRef'
+    | 'key'
+    | 'layout'
+    | 'isDraggable'
+    | 'isResizable'
+    | 'onDragStart'
+    | 'onDragStop'
+    | 'onResizeStart'
+    | 'onResizeStop'
+    | 'draggableHandle'
+    | 'isDroppable'
+    | 'onDropDragOver'
+    | 'onDrop'
+    | 'draggableCancel'
+>;
+
 export interface DashKitGroup {
     id?: string;
     render?: (
@@ -28,4 +47,5 @@ export interface DashKitGroup {
         children: React.ReactNode,
         props: DashkitGroupRenderProps,
     ) => React.ReactNode;
+    gridProperties?: (props: ReactGridLayoutProps) => ReactGridLayoutProps;
 }
