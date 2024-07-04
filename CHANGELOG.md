@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.5.0](https://github.com/gravity-ui/dashkit/compare/v8.4.0...v8.5.0) (2024-07-04)
+
+
+### Features
+
+* group properties ([#152](https://github.com/gravity-ui/dashkit/issues/152)) ([ac39f67](https://github.com/gravity-ui/dashkit/commit/ac39f677a0131b3196e0d913c0952fa0eab1ee26))
+
 ## [8.4.0](https://github.com/gravity-ui/dashkit/compare/v8.3.0...v8.4.0) (2024-06-28)
 
 
