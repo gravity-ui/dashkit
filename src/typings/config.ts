@@ -24,6 +24,7 @@ export interface DashkitGroupRenderProps {
 export type ReactGridLayoutProps = Omit<
     ReactGridLayout.ReactGridLayoutProps,
     | 'children'
+    | 'compactType'
     | 'innerRef'
     | 'key'
     | 'layout'
@@ -38,7 +39,9 @@ export type ReactGridLayoutProps = Omit<
     | 'onDropDragOver'
     | 'onDrop'
     | 'draggableCancel'
->;
+> & {
+    compactType?: ReactGridLayout.ReactGridLayoutProps['compactType'] | 'horizontal-nowrap';
+};
 
 export interface DashKitGroup {
     id?: string;

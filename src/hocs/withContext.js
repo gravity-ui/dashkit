@@ -229,24 +229,30 @@ function useMemoStateContext(props) {
         }
     }, [dragProps, props.registerManager]);
 
-    const onDropDragOver = React.useCallback(() => {
-        if (temporaryLayout) {
-            resetTemporaryLayout();
+    const onDropDragOver = React.useCallback(
+        (_e, gridProps = {}) => {
+            if (temporaryLayout) {
+                resetTemporaryLayout();
+                return false;
+            }
+
+            if (dragOverPlugin) {
+                const {defaultLayout} = dragOverPlugin;
+                const {
+                    h = defaultLayout?.h || DEFAULT_WIDGET_HEIGHT,
+                    w = defaultLayout?.w || DEFAULT_WIDGET_WIDTH,
+                } = dragProps.layout || {};
+
+                return {
+                    h: gridProps.maxH ? Math.min(h, gridProps.maxH) : h,
+                    w: gridProps.maxW ? Math.min(w, gridProps.maxW) : w,
+                };
+            }
+
             return false;
-        }
-
-        if (dragOverPlugin) {
-            const {defaultLayout} = dragOverPlugin;
-            const {
-                h = defaultLayout?.h || DEFAULT_WIDGET_HEIGHT,
-                w = defaultLayout?.w || DEFAULT_WIDGET_WIDTH,
-            } = dragProps.layout || {};
-
-            return {h, w};
-        }
-
-        return false;
-    }, [resetTemporaryLayout, temporaryLayout, dragOverPlugin, dragProps]);
+        },
+        [resetTemporaryLayout, temporaryLayout, dragOverPlugin, dragProps],
+    );
 
     const onDropProp = props.onDrop;
     const onDrop = React.useCallback(

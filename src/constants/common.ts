@@ -18,3 +18,5 @@ export const DEFAULT_WIDGET_HEIGHT = 3;
 export const DEFAULT_WIDGET_WIDTH = 3;
 
 export const DEFAULT_GROUP = '__default';
+
+export const COMPACT_TYPE_HORIZONTAL_NOWRAP = 'horizontal-nowrap';

@@ -188,7 +188,7 @@ export const DashKitGroupsShowcase: React.FC = () => {
                     );
                 },
                 gridProperties: (props: ReactGridLayoutProps) => {
-                    return {...props, compactType: 'horizontal'};
+                    return {...props, compactType: 'horizontal-nowrap', maxRows: 2};
                 },
             },
             {
