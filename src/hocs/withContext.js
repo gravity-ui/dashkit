@@ -195,12 +195,18 @@ function useMemoStateContext(props) {
     const resultLayout = React.useMemo(() => {
         return props.layout.map((item) => {
             if (item.i in adjustedLayouts.current) {
-                return {
-                    ...adjustedLayouts.current[item.i],
-                    w: item.w,
-                    x: item.x,
-                    y: item.y,
-                };
+                // eslint-disable-next-line no-unused-vars
+                const {parent, ...adjustedItem} = adjustedLayouts.current[item.i] || {};
+
+                adjustedItem.w = item.w;
+                adjustedItem.x = item.x;
+                adjustedItem.y = item.y;
+
+                if (item.parent) {
+                    adjustedItem.parent = item.parent;
+                }
+
+                return adjustedItem;
             } else {
                 return {...item};
             }
