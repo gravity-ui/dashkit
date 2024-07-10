@@ -206,6 +206,11 @@ function useMemoStateContext(props) {
                     adjustedItem.parent = item.parent;
                 }
 
+                // update originalLayouts memoized item
+                if (originalLayouts.current[item.i]) {
+                    originalLayouts.current[item.i] = item;
+                }
+
                 return adjustedItem;
             } else {
                 return {...item};
