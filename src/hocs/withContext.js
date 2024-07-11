@@ -218,11 +218,12 @@ function useMemoStateContext(props) {
                             originalLayouts.current[widgetId] = item;
                         } else {
                             adjustedLayouts.current[widgetId] = {...adjustedItem};
-                            originalLayouts.current[widgetId] = item;
                         }
 
                         delete nowrapAdjustedLayouts.current[widgetId];
                     }
+
+                    originalLayouts.current[widgetId] = item;
                 });
 
                 Object.entries(nowrapGroups).forEach(([, {items, leftSpace}]) => {
@@ -237,6 +238,11 @@ function useMemoStateContext(props) {
                                 : {maxW};
                         }
                     });
+                });
+            } else if (groups) {
+                layout.forEach((item) => {
+                    const widgetId = item.i;
+                    originalLayouts.current[widgetId] = item;
                 });
             }
 
