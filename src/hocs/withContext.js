@@ -11,6 +11,7 @@ import {
     TEMPORARY_ITEM_ID,
 } from '../constants/common';
 import {DashKitContext, DashKitDnDContext} from '../context/DashKitContext';
+import {useDeepEqualMemo} from '../hooks/useDeepEqualMemo';
 import {getItemsParams, getItemsState} from '../shared';
 import {UpdateManager} from '../utils';
 
@@ -242,7 +243,9 @@ function useMemoStateContext(props) {
             } else if (groups) {
                 layout.forEach((item) => {
                     const widgetId = item.i;
-                    originalLayouts.current[widgetId] = item;
+                    if (adjustedLayouts.current[widgetId]) {
+                        originalLayouts.current[widgetId] = item;
+                    }
                 });
             }
 
@@ -251,7 +254,7 @@ function useMemoStateContext(props) {
         [props.registerManager],
     );
 
-    const itemsParams = React.useMemo(
+    const itemsParams = useDeepEqualMemo(
         () =>
             getItemsParams({
                 defaultGlobalParams: props.defaultGlobalParams,
@@ -269,7 +272,7 @@ function useMemoStateContext(props) {
         ],
     );
 
-    const itemsState = React.useMemo(
+    const itemsState = useDeepEqualMemo(
         () =>
             getItemsState({
                 config: props.config,

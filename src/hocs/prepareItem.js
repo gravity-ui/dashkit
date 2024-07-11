@@ -40,11 +40,13 @@ export function prepareItem(Component) {
             this.context.onItemStateAndParamsChange(this.props.id, stateAndParams, options);
         };
 
-        render() {
+        _currentRenderProps = {};
+        getRenderProps = () => {
             const {id, width, height, item, adjustWidgetLayout, layout, isPlaceholder} = this.props;
             const {itemsState, itemsParams, registerManager, settings, context, editMode} =
                 this.context;
-            const {type, data, defaults, namespace} = item;
+            const {data, defaults, namespace} = item;
+
             const rendererProps = {
                 data,
                 editMode,
@@ -63,10 +65,27 @@ export function prepareItem(Component) {
                 adjustWidgetLayout,
                 isPlaceholder,
             };
+
+            const changedProp = Object.entries(rendererProps).find(
+                ([key, value]) => this._currentRenderProps[key] !== value,
+            );
+
+            if (changedProp) {
+                this._currentRenderProps = rendererProps;
+            }
+
+            return this._currentRenderProps;
+        };
+
+        render() {
+            const {item, isPlaceholder} = this.props;
+            const {registerManager} = this.context;
+            const {type} = item;
+
             return (
                 <Component
                     forwardedPluginRef={this.props.forwardedPluginRef}
-                    rendererProps={rendererProps}
+                    rendererProps={this.getRenderProps()}
                     registerManager={registerManager}
                     type={type}
                     isPlaceholder={isPlaceholder}
