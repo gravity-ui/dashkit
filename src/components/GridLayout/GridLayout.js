@@ -160,18 +160,7 @@ export default class GridLayout extends React.PureComponent {
             return false;
         }
 
-        let maxW = gridProperties.cols;
-        const maxH = gridProperties.maxRows;
-
-        if (gridProperties.compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP) {
-            maxW = this.caclculateEmptyHorizontalSpace(layout, gridProperties.cols);
-        }
-
-        if (maxW === 0 || maxH === 0) {
-            return false;
-        }
-
-        return onDropDragOver(e, {maxH, maxW});
+        return onDropDragOver(e, gridProperties, layout);
     };
 
     _onDrop = (group, newLayout, item, e) => {
@@ -219,26 +208,6 @@ export default class GridLayout extends React.PureComponent {
         );
     }
 
-    caclculateEmptyHorizontalSpace(layout, cols) {
-        return layout.reduce((memo, item) => memo - item.w, cols);
-    }
-
-    getElementLayout(layout, properties) {
-        let maxH;
-
-        if (properties.maxRows) {
-            maxH = properties.maxRows;
-        }
-
-        const leftSpace = this.caclculateEmptyHorizontalSpace(layout, properties.cols);
-
-        return layout.map((item) => ({
-            ...item,
-            maxW: item.w + leftSpace,
-            maxH,
-        }));
-    }
-
     renderGroup(group, renderLayout, renderItems, offset = 0, groupGridProperties) {
         const {
             registerManager,
@@ -257,7 +226,6 @@ export default class GridLayout extends React.PureComponent {
         let {compactType} = properties;
 
         if (compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP) {
-            renderLayout = this.getElementLayout(renderLayout, properties);
             compactType = 'horizontal';
         }
 

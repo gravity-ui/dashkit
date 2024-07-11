@@ -3,10 +3,18 @@ import React from 'react';
 import isEqual from 'lodash/isEqual';
 import pick from 'lodash/pick';
 
-import {DEFAULT_WIDGET_HEIGHT, DEFAULT_WIDGET_WIDTH, TEMPORARY_ITEM_ID} from '../constants/common';
+import {
+    COMPACT_TYPE_HORIZONTAL_NOWRAP,
+    DEFAULT_GROUP,
+    DEFAULT_WIDGET_HEIGHT,
+    DEFAULT_WIDGET_WIDTH,
+    TEMPORARY_ITEM_ID,
+} from '../constants/common';
 import {DashKitContext, DashKitDnDContext} from '../context/DashKitContext';
 import {getItemsParams, getItemsState} from '../shared';
 import {UpdateManager} from '../utils';
+
+const ITEM_PROPS = ['i', 'h', 'w', 'x', 'y', 'parent'];
 
 function useMemoStateContext(props) {
     // так как мы не хотим хранить параметры виджета с активированной автовысотой в сторе и на сервере, актуальный
@@ -17,6 +25,8 @@ function useMemoStateContext(props) {
 
     const originalLayouts = React.useRef({});
     const adjustedLayouts = React.useRef({});
+    const nowrapAdjustedLayouts = React.useRef({});
+
     const [temporaryLayout, setTemporaryLayout] = React.useState(null);
     const resetTemporaryLayout = React.useCallback(
         () => setTemporaryLayout(null),
@@ -81,6 +91,12 @@ function useMemoStateContext(props) {
 
     const onItemRemove = React.useCallback(
         (id) => {
+            if (nowrapAdjustedLayouts.current[id]) {
+                delete nowrapAdjustedLayouts.current[id];
+                delete adjustedLayouts.current[id];
+                delete originalLayouts.current[id];
+            }
+
             if (id === TEMPORARY_ITEM_ID) {
                 resetTemporaryLayout();
             } else {
@@ -154,6 +170,81 @@ function useMemoStateContext(props) {
         }
     }, []);
 
+    const horizontalNowrapLayoutAdjust = React.useCallback(
+        (groups, layout) => {
+            const defaultProps = props.registerManager._gridLayout || {};
+            const nowrapGroups = {};
+            let hasNowrapGroups = false;
+
+            if (defaultProps.compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP) {
+                nowrapGroups[DEFAULT_GROUP] = {
+                    items: [],
+                    leftSpace: defaultProps.cols,
+                };
+                hasNowrapGroups = true;
+            }
+
+            if (groups) {
+                groups.forEach((group) => {
+                    const resultProps = group.gridProperties?.(defaultProps) || {};
+
+                    if (resultProps.compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP) {
+                        nowrapGroups[group.id] = {
+                            items: [],
+                            leftSpace: resultProps.cols,
+                        };
+                        hasNowrapGroups = true;
+                    }
+                });
+            }
+
+            if (hasNowrapGroups) {
+                layout.forEach((item) => {
+                    const widgetId = item.i;
+                    const parentId = item.parent || DEFAULT_GROUP;
+
+                    if (nowrapGroups[parentId]) {
+                        nowrapGroups[parentId].items.push(item);
+                        nowrapGroups[parentId].leftSpace -= item.w;
+                    } else if (nowrapAdjustedLayouts.current[item.i]) {
+                        const {originalMaxW} = nowrapAdjustedLayouts.current[widgetId];
+                        const adjustedItem = adjustedLayouts.current[widgetId];
+
+                        if (originalMaxW) {
+                            adjustedLayouts.current[widgetId] = {
+                                ...adjustedItem,
+                                maxW: originalMaxW,
+                            };
+                            originalLayouts.current[widgetId] = item;
+                        } else {
+                            adjustedLayouts.current[widgetId] = {...adjustedItem};
+                            originalLayouts.current[widgetId] = item;
+                        }
+
+                        delete nowrapAdjustedLayouts.current[widgetId];
+                    }
+                });
+
+                Object.entries(nowrapGroups).forEach(([, {items, leftSpace}]) => {
+                    items.forEach((item) => {
+                        const maxW = item.w + leftSpace;
+
+                        if (!adjustedLayouts[item.i] || adjustedLayouts[item.i].maxW > maxW) {
+                            originalLayouts.current[item.i] = item;
+                            adjustedLayouts.current[item.i] = {...item, maxW};
+                            nowrapAdjustedLayouts.current[item.i] = item.maxW
+                                ? {maxW, originalMaxW: item.maxW}
+                                : {maxW};
+                        }
+                    });
+                });
+            }
+
+            return adjustedLayouts.current;
+        },
+        [props.registerManager],
+    );
+
     const itemsParams = React.useMemo(
         () =>
             getItemsParams({
@@ -193,10 +284,12 @@ function useMemoStateContext(props) {
     }, []);
 
     const resultLayout = React.useMemo(() => {
+        const adjusted = horizontalNowrapLayoutAdjust(props.groups, props.layout);
+
         return props.layout.map((item) => {
-            if (item.i in adjustedLayouts.current) {
+            if (item.i in adjusted) {
                 // eslint-disable-next-line no-unused-vars
-                const {parent, ...adjustedItem} = adjustedLayouts.current[item.i] || {};
+                const {parent, ...adjustedItem} = adjusted[item.i] || {};
 
                 adjustedItem.w = item.w;
                 adjustedItem.x = item.x;
@@ -206,17 +299,12 @@ function useMemoStateContext(props) {
                     adjustedItem.parent = item.parent;
                 }
 
-                // update originalLayouts memoized item
-                if (originalLayouts.current[item.i]) {
-                    originalLayouts.current[item.i] = item;
-                }
-
                 return adjustedItem;
             } else {
-                return {...item};
+                return item;
             }
         });
-    }, [props.layout, layoutUpdateCounter]);
+    }, [props.layout, props.groups, horizontalNowrapLayoutAdjust, layoutUpdateCounter]);
 
     const reloadItems = React.useCallback((pluginsRefs, data) => {
         pluginsRefs.forEach((ref) => ref && ref.reload && ref.reload(data));
@@ -241,26 +329,41 @@ function useMemoStateContext(props) {
     }, [dragProps, props.registerManager]);
 
     const onDropDragOver = React.useCallback(
-        (_e, gridProps = {}) => {
+        (_e, gridProps, groupLayout) => {
             if (temporaryLayout) {
                 resetTemporaryLayout();
                 return false;
             }
-
-            if (dragOverPlugin) {
-                const {defaultLayout} = dragOverPlugin;
-                const {
-                    h = defaultLayout?.h || DEFAULT_WIDGET_HEIGHT,
-                    w = defaultLayout?.w || DEFAULT_WIDGET_WIDTH,
-                } = dragProps.layout || {};
-
-                return {
-                    h: gridProps.maxH ? Math.min(h, gridProps.maxH) : h,
-                    w: gridProps.maxW ? Math.min(w, gridProps.maxW) : w,
-                };
+            if (!dragOverPlugin) {
+                return false;
             }
 
-            return false;
+            let maxW = gridProps.cols;
+            const {defaultLayout} = dragOverPlugin;
+            const maxH = Math.min(gridProps.maxRows || Infinity, defaultLayout.maxH || Infinity);
+
+            if (gridProps.compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP) {
+                maxW = groupLayout.reduce((memo, item) => memo - item.w, gridProps.cols);
+            }
+
+            if (
+                maxW === 0 ||
+                maxH === 0 ||
+                maxW < defaultLayout.minW ||
+                maxH < defaultLayout.minH
+            ) {
+                return false;
+            }
+
+            const {
+                h = defaultLayout?.h || DEFAULT_WIDGET_HEIGHT,
+                w = defaultLayout?.w || DEFAULT_WIDGET_WIDTH,
+            } = dragProps.layout || {};
+
+            return {
+                h: maxH ? Math.min(h, maxH) : h,
+                w: maxW ? Math.min(w, maxW) : w,
+            };
         },
         [resetTemporaryLayout, temporaryLayout, dragOverPlugin, dragProps],
     );
@@ -280,12 +383,12 @@ function useMemoStateContext(props) {
             onDropProp({
                 newLayout: newLayout.reduce((memo, l) => {
                     if (l.i !== item.i) {
-                        memo.push(pick(l, ['i', 'h', 'w', 'x', 'y', 'parent']));
+                        memo.push(pick(l, ITEM_PROPS));
                     }
 
                     return memo;
                 }, []),
-                itemLayout: pick(item, ['i', 'h', 'w', 'x', 'y', 'parent']),
+                itemLayout: pick(item, ITEM_PROPS),
                 commit: resetTemporaryLayout,
                 dragProps,
             });
