@@ -475,6 +475,7 @@ const CustomThemeWrapper = (props: {
 By default, storybook runs on `http://localhost:7120/`.
 New changes from a project aren't always picked up when storybook is running, so it's better to rebuild a project manually and restart storybook.
 
+
 ### Example of an nginx config for development on a dev machine
 
 ```bash
