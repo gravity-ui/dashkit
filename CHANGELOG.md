@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.6.0](https://github.com/gravity-ui/dashkit/compare/v8.5.0...v8.6.0) (2024-07-12)
+
+
+### Features
+
+* add horizontal-nowrap compactType ([#155](https://github.com/gravity-ui/dashkit/issues/155)) ([7f4e8f9](https://github.com/gravity-ui/dashkit/commit/7f4e8f91aa7f6f68644a7b234280bf4dfac88c52))
+
 ## [8.5.0](https://github.com/gravity-ui/dashkit/compare/v8.4.0...v8.5.0) (2024-07-04)
 
 
