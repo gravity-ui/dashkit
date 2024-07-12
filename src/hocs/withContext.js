@@ -3,10 +3,19 @@ import React from 'react';
 import isEqual from 'lodash/isEqual';
 import pick from 'lodash/pick';
 
-import {DEFAULT_WIDGET_HEIGHT, DEFAULT_WIDGET_WIDTH, TEMPORARY_ITEM_ID} from '../constants/common';
+import {
+    COMPACT_TYPE_HORIZONTAL_NOWRAP,
+    DEFAULT_GROUP,
+    DEFAULT_WIDGET_HEIGHT,
+    DEFAULT_WIDGET_WIDTH,
+    TEMPORARY_ITEM_ID,
+} from '../constants/common';
 import {DashKitContext, DashKitDnDContext} from '../context/DashKitContext';
+import {useDeepEqualMemo} from '../hooks/useDeepEqualMemo';
 import {getItemsParams, getItemsState} from '../shared';
 import {UpdateManager} from '../utils';
+
+const ITEM_PROPS = ['i', 'h', 'w', 'x', 'y', 'parent'];
 
 function useMemoStateContext(props) {
     // так как мы не хотим хранить параметры виджета с активированной автовысотой в сторе и на сервере, актуальный
@@ -17,6 +26,8 @@ function useMemoStateContext(props) {
 
     const originalLayouts = React.useRef({});
     const adjustedLayouts = React.useRef({});
+    const nowrapAdjustedLayouts = React.useRef({});
+
     const [temporaryLayout, setTemporaryLayout] = React.useState(null);
     const resetTemporaryLayout = React.useCallback(
         () => setTemporaryLayout(null),
@@ -81,6 +92,12 @@ function useMemoStateContext(props) {
 
     const onItemRemove = React.useCallback(
         (id) => {
+            if (nowrapAdjustedLayouts.current[id]) {
+                delete nowrapAdjustedLayouts.current[id];
+                delete adjustedLayouts.current[id];
+                delete originalLayouts.current[id];
+            }
+
             if (id === TEMPORARY_ITEM_ID) {
                 resetTemporaryLayout();
             } else {
@@ -154,7 +171,60 @@ function useMemoStateContext(props) {
         }
     }, []);
 
-    const itemsParams = React.useMemo(
+    React.useMemo(() => {
+        const groups = props.groups;
+        const layout = props.layout;
+        const defaultProps = props.registerManager._gridLayout || {};
+        const nowrapGroups = {};
+        let hasNowrapGroups = false;
+
+        if (defaultProps.compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP) {
+            nowrapGroups[DEFAULT_GROUP] = {
+                items: [],
+                leftSpace: defaultProps.cols,
+            };
+            hasNowrapGroups = true;
+        }
+
+        if (groups) {
+            groups.forEach((group) => {
+                const resultProps = group.gridProperties?.(defaultProps) || {};
+
+                if (resultProps.compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP) {
+                    nowrapGroups[group.id] = {
+                        items: [],
+                        leftSpace: resultProps.cols,
+                    };
+                    hasNowrapGroups = true;
+                }
+            });
+        }
+
+        if (hasNowrapGroups) {
+            layout.forEach((item) => {
+                const widgetId = item.i;
+                const parentId = item.parent || DEFAULT_GROUP;
+
+                if (nowrapGroups[parentId]) {
+                    // Collecting nowrap elements
+                    nowrapGroups[parentId].items.push(item);
+                    nowrapGroups[parentId].leftSpace -= item.w;
+                } else if (nowrapAdjustedLayouts.current[widgetId]) {
+                    // If element is not in horizontal-nowrap cleaning up and reverting adjustLayout values
+                    delete nowrapAdjustedLayouts.current[widgetId];
+                }
+            });
+
+            Object.entries(nowrapGroups).forEach(([, {items, leftSpace}]) => {
+                items.forEach((item) => {
+                    // setting maxW with adjustLayout fields and saving previous
+                    nowrapAdjustedLayouts.current[item.i] = item.w + leftSpace;
+                });
+            });
+        }
+    }, [props.registerManager, props.groups, props.layout]);
+
+    const itemsParams = useDeepEqualMemo(
         () =>
             getItemsParams({
                 defaultGlobalParams: props.defaultGlobalParams,
@@ -172,7 +242,7 @@ function useMemoStateContext(props) {
         ],
     );
 
-    const itemsState = React.useMemo(
+    const itemsState = useDeepEqualMemo(
         () =>
             getItemsState({
                 config: props.config,
@@ -193,16 +263,36 @@ function useMemoStateContext(props) {
     }, []);
 
     const resultLayout = React.useMemo(() => {
+        const adjusted = adjustedLayouts.current;
+        const original = originalLayouts.current;
+        const nowrapAdjust = nowrapAdjustedLayouts.current;
+
         return props.layout.map((item) => {
-            if (item.i in adjustedLayouts.current) {
-                return {
-                    ...adjustedLayouts.current[item.i],
-                    w: item.w,
-                    x: item.x,
-                    y: item.y,
-                };
+            const widgetId = item.i;
+
+            if (adjusted[widgetId] || nowrapAdjust[widgetId]) {
+                original[widgetId] = item;
+                // eslint-disable-next-line no-unused-vars
+                const {parent, ...adjustedItem} = adjusted[widgetId] || item;
+
+                adjustedItem.w = item.w;
+                adjustedItem.x = item.x;
+                adjustedItem.y = item.y;
+
+                if (item.parent) {
+                    adjustedItem.parent = item.parent;
+                }
+
+                if (nowrapAdjust[widgetId]) {
+                    adjustedItem.maxW = nowrapAdjust[widgetId];
+                }
+
+                return adjustedItem;
             } else {
-                return {...item};
+                if (original[widgetId]) {
+                    delete original[widgetId];
+                }
+                return item;
             }
         });
     }, [props.layout, layoutUpdateCounter]);
@@ -229,24 +319,45 @@ function useMemoStateContext(props) {
         }
     }, [dragProps, props.registerManager]);
 
-    const onDropDragOver = React.useCallback(() => {
-        if (temporaryLayout) {
-            resetTemporaryLayout();
-            return false;
-        }
+    const onDropDragOver = React.useCallback(
+        (_e, gridProps, groupLayout) => {
+            if (temporaryLayout) {
+                resetTemporaryLayout();
+                return false;
+            }
+            if (!dragOverPlugin) {
+                return false;
+            }
 
-        if (dragOverPlugin) {
+            let maxW = gridProps.cols;
             const {defaultLayout} = dragOverPlugin;
+            const maxH = Math.min(gridProps.maxRows || Infinity, defaultLayout.maxH || Infinity);
+
+            if (gridProps.compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP) {
+                maxW = groupLayout.reduce((memo, item) => memo - item.w, gridProps.cols);
+            }
+
+            if (
+                maxW === 0 ||
+                maxH === 0 ||
+                maxW < defaultLayout.minW ||
+                maxH < defaultLayout.minH
+            ) {
+                return false;
+            }
+
             const {
                 h = defaultLayout?.h || DEFAULT_WIDGET_HEIGHT,
                 w = defaultLayout?.w || DEFAULT_WIDGET_WIDTH,
             } = dragProps.layout || {};
 
-            return {h, w};
-        }
-
-        return false;
-    }, [resetTemporaryLayout, temporaryLayout, dragOverPlugin, dragProps]);
+            return {
+                h: maxH ? Math.min(h, maxH) : h,
+                w: maxW ? Math.min(w, maxW) : w,
+            };
+        },
+        [resetTemporaryLayout, temporaryLayout, dragOverPlugin, dragProps],
+    );
 
     const onDropProp = props.onDrop;
     const onDrop = React.useCallback(
@@ -263,12 +374,12 @@ function useMemoStateContext(props) {
             onDropProp({
                 newLayout: newLayout.reduce((memo, l) => {
                     if (l.i !== item.i) {
-                        memo.push(pick(l, ['i', 'h', 'w', 'x', 'y', 'parent']));
+                        memo.push(pick(l, ITEM_PROPS));
                     }
 
                     return memo;
                 }, []),
-                itemLayout: pick(item, ['i', 'h', 'w', 'x', 'y', 'parent']),
+                itemLayout: pick(item, ITEM_PROPS),
                 commit: resetTemporaryLayout,
                 dragProps,
             });

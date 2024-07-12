@@ -1,6 +1,11 @@
 import React from 'react';
 
-import {DEFAULT_GROUP, OVERLAY_CONTROLS_CLASS_NAME, TEMPORARY_ITEM_ID} from '../../constants';
+import {
+    COMPACT_TYPE_HORIZONTAL_NOWRAP,
+    DEFAULT_GROUP,
+    OVERLAY_CONTROLS_CLASS_NAME,
+    TEMPORARY_ITEM_ID,
+} from '../../constants';
 import {DashKitContext} from '../../context/DashKitContext';
 import GridItem from '../GridItem/GridItem';
 
@@ -29,9 +34,19 @@ export default class GridLayout extends React.PureComponent {
     componentWillUnmount() {
         clearTimeout(this._timeout);
         document.removeEventListener('visibilitychange', this.onVisibilityChange);
+
+        this._memoCallbacksForGroups = {};
+        this._memoGroupsProps = {};
+        this._memoGroupsLayouts = {};
+        this._memoForwardedPluginRef = [];
     }
 
     static contextType = DashKitContext;
+
+    _memoForwardedPluginRef = [];
+    _memoGroupsProps = {};
+    _memoGroupsLayouts = {};
+    _memoCallbacksForGroups = {};
 
     _timeout;
     _lastReloadAt;
@@ -75,6 +90,74 @@ export default class GridLayout extends React.PureComponent {
 
         return temporaryLayout?.data || layout;
     }
+
+    getMemoGroupLayout = (group, layout) => {
+        // fastest possible way to match json
+        const key = JSON.stringify(layout);
+
+        if (this._memoGroupsLayouts[group]) {
+            if (this._memoGroupsLayouts[group].key === key) {
+                return this._memoGroupsLayouts[group];
+            } else {
+                this._memoGroupsLayouts[group].key = key;
+                this._memoGroupsLayouts[group].layout = layout;
+            }
+        } else {
+            this._memoGroupsLayouts[group] = {
+                key,
+                layout,
+            };
+        }
+
+        return this._memoGroupsLayouts[group];
+    };
+
+    getMemoGroupCallbacks = (group) => {
+        if (!this._memoCallbacksForGroups[group]) {
+            const onStart = this._onStart;
+            const onStop = this._onStop.bind(this, group);
+            const onDrop = this._onDrop.bind(this, group);
+            const onDropDragOver = this._onDropDragOver.bind(this, group);
+
+            this._memoCallbacksForGroups[group] = {
+                onDragStart: onStart,
+                onResizeStart: onStart,
+                onDragStop: onStop,
+                onResizeStop: onStop,
+                onDrop: onDrop,
+                onDropDragOver,
+            };
+        }
+
+        return this._memoCallbacksForGroups[group];
+    };
+
+    getMemoGroupProps = (group, renderLayout, properties) => {
+        // Needed for _onDropDragOver
+        this._memoGroupsProps[group] = properties;
+
+        return {
+            layout: this.getMemoGroupLayout(group, renderLayout).layout,
+            callbacks: this.getMemoGroupCallbacks(group),
+        };
+    };
+
+    getLayoutAndPropsByGroup = (group) => {
+        return {
+            properties: this._memoGroupsProps[group],
+            layout: this._memoGroupsLayouts[group].layout,
+        };
+    };
+
+    getMemoForwardRefCallback = (refIndex) => {
+        if (!this._memoForwardedPluginRef[refIndex]) {
+            this._memoForwardedPluginRef[refIndex] = (pluginRef) => {
+                this.pluginsRefs[refIndex] = pluginRef;
+            };
+        }
+
+        return this._memoForwardedPluginRef[refIndex];
+    };
 
     mergeGroupsLayout(group, newLayout, temporaryItem) {
         const renderLayout = this.getActiveLayout();
@@ -148,14 +231,16 @@ export default class GridLayout extends React.PureComponent {
         this.setState({isDragging: false});
     };
 
-    _onDropDragOver = (e) => {
-        const {editMode, dragOverPlugin, onDropDragOver} = this.context;
+    _onDropDragOver = (group, e) => {
+        const {editMode, dragOverPlugin} = this.context;
 
         if (!editMode || !dragOverPlugin) {
             return false;
         }
 
-        return onDropDragOver(e);
+        const {properties, layout} = this.getLayoutAndPropsByGroup(group);
+
+        return this.context.onDropDragOver(e, properties, layout);
     };
 
     _onDrop = (group, newLayout, item, e) => {
@@ -218,26 +303,34 @@ export default class GridLayout extends React.PureComponent {
                   ...registerManager.gridLayout,
               })
             : registerManager.gridLayout;
+        let {compactType} = properties;
+
+        if (compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP) {
+            compactType = 'horizontal';
+        }
+
+        const {callbacks, layout} = this.getMemoGroupProps(group, renderLayout, properties);
 
         return (
             <Layout
                 {...properties}
-                layout={renderLayout}
+                compactType={compactType}
+                layout={layout}
                 key={`group_${group}`}
                 isDraggable={editMode}
                 isResizable={editMode}
-                onDragStart={this._onStart}
-                onDragStop={(...args) => this._onStop(group, ...args)}
-                onResizeStart={this._onStart}
-                onResizeStop={(...args) => this._onStop(group, ...args)}
+                onDragStart={callbacks.onDragStart}
+                onDragStop={callbacks.onDragStop}
+                onResizeStart={callbacks.onResizeStart}
+                onResizeStop={callbacks.onResizeStop}
                 {...(draggableHandleClassName
                     ? {draggableHandle: `.${draggableHandleClassName}`}
                     : null)}
                 {...(outerDnDEnable
                     ? {
                           isDroppable: true,
-                          onDropDragOver: this._onDropDragOver,
-                          onDrop: (...args) => this._onDrop(group, ...args),
+                          onDropDragOver: callbacks.onDropDragOver,
+                          onDrop: callbacks.onDrop,
                       }
                     : null)}
                 draggableCancel={`.${OVERLAY_CONTROLS_CLASS_NAME}`}
@@ -245,13 +338,11 @@ export default class GridLayout extends React.PureComponent {
                 {renderItems.map((item, i) => {
                     return (
                         <GridItem
-                            forwardedPluginRef={(pluginRef) => {
-                                this.pluginsRefs[offset + i] = pluginRef;
-                            }} // forwarded ref to plugin
+                            forwardedPluginRef={this.getMemoForwardRefCallback(offset + i)} // forwarded ref to plugin
                             key={item.id}
                             id={item.id}
                             item={item}
-                            layout={renderLayout}
+                            layout={layout}
                             adjustWidgetLayout={this.adjustWidgetLayout}
                             isDragging={this.state.isDragging}
                             noOverlay={noOverlay}
