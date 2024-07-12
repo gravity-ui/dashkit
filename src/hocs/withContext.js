@@ -171,7 +171,7 @@ function useMemoStateContext(props) {
         }
     }, []);
 
-    React.useEffect(() => {
+    React.useMemo(() => {
         const groups = props.groups;
         const layout = props.layout;
         const defaultProps = props.registerManager._gridLayout || {};
@@ -211,47 +211,15 @@ function useMemoStateContext(props) {
                     nowrapGroups[parentId].leftSpace -= item.w;
                 } else if (nowrapAdjustedLayouts.current[item.i]) {
                     // If element is not in horizontal-nowrap cleaning up and reverting adjustLayout values
-                    const {originalMaxW} = nowrapAdjustedLayouts.current[widgetId];
-                    const adjustedItem = adjustedLayouts.current[widgetId];
-
-                    if (originalMaxW) {
-                        adjustedLayouts.current[widgetId] = {
-                            ...adjustedItem,
-                            maxW: originalMaxW,
-                        };
-                    } else {
-                        adjustedLayouts.current[widgetId] = {...adjustedItem};
-                    }
-
                     delete nowrapAdjustedLayouts.current[widgetId];
-                }
-
-                // Needed to update parent if it's changed
-                if (adjustedLayouts.current[widgetId]) {
-                    originalLayouts.current[widgetId] = item;
                 }
             });
 
             Object.entries(nowrapGroups).forEach(([, {items, leftSpace}]) => {
                 items.forEach((item) => {
-                    const maxW = item.w + leftSpace;
-
                     // setting maxW with adjustLayout fields and saving previous
-                    if (!adjustedLayouts[item.i] || adjustedLayouts[item.i].maxW > maxW) {
-                        adjustedLayouts.current[item.i] = {...item, maxW};
-                        nowrapAdjustedLayouts.current[item.i] = item.maxW
-                            ? {maxW, originalMaxW: item.maxW}
-                            : {maxW};
-                    }
+                    nowrapAdjustedLayouts.current[item.i] = item.w + leftSpace;
                 });
-            });
-        } else if (groups) {
-            // Needed to update parent if it's changed
-            layout.forEach((item) => {
-                const widgetId = item.i;
-                if (adjustedLayouts.current[widgetId]) {
-                    originalLayouts.current[widgetId] = item;
-                }
             });
         }
     }, [props.registerManager, props.groups, props.layout]);
@@ -296,11 +264,16 @@ function useMemoStateContext(props) {
 
     const resultLayout = React.useMemo(() => {
         const adjusted = adjustedLayouts.current;
+        const original = originalLayouts.current;
+        const nowrapAdjust = nowrapAdjustedLayouts.current;
 
         return props.layout.map((item) => {
-            if (item.i in adjusted) {
+            const widgetId = item.i;
+
+            if (widgetId in adjusted || widgetId in nowrapAdjust) {
+                original[widgetId] = item;
                 // eslint-disable-next-line no-unused-vars
-                const {parent, ...adjustedItem} = adjusted[item.i] || {};
+                const {parent, ...adjustedItem} = adjusted[widgetId] || item;
 
                 adjustedItem.w = item.w;
                 adjustedItem.x = item.x;
@@ -308,6 +281,10 @@ function useMemoStateContext(props) {
 
                 if (item.parent) {
                     adjustedItem.parent = item.parent;
+                }
+
+                if (nowrapAdjust[widgetId]) {
+                    adjustedItem.maxW = nowrapAdjust[widgetId];
                 }
 
                 return adjustedItem;
