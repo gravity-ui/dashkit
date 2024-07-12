@@ -171,88 +171,90 @@ function useMemoStateContext(props) {
         }
     }, []);
 
-    const horizontalNowrapLayoutAdjust = React.useCallback(
-        (groups, layout) => {
-            const defaultProps = props.registerManager._gridLayout || {};
-            const nowrapGroups = {};
-            let hasNowrapGroups = false;
+    React.useEffect(() => {
+        const groups = props.groups;
+        const layout = props.layout;
+        const defaultProps = props.registerManager._gridLayout || {};
+        const nowrapGroups = {};
+        let hasNowrapGroups = false;
 
-            if (defaultProps.compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP) {
-                nowrapGroups[DEFAULT_GROUP] = {
-                    items: [],
-                    leftSpace: defaultProps.cols,
-                };
-                hasNowrapGroups = true;
-            }
+        if (defaultProps.compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP) {
+            nowrapGroups[DEFAULT_GROUP] = {
+                items: [],
+                leftSpace: defaultProps.cols,
+            };
+            hasNowrapGroups = true;
+        }
 
-            if (groups) {
-                groups.forEach((group) => {
-                    const resultProps = group.gridProperties?.(defaultProps) || {};
+        if (groups) {
+            groups.forEach((group) => {
+                const resultProps = group.gridProperties?.(defaultProps) || {};
 
-                    if (resultProps.compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP) {
-                        nowrapGroups[group.id] = {
-                            items: [],
-                            leftSpace: resultProps.cols,
+                if (resultProps.compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP) {
+                    nowrapGroups[group.id] = {
+                        items: [],
+                        leftSpace: resultProps.cols,
+                    };
+                    hasNowrapGroups = true;
+                }
+            });
+        }
+
+        if (hasNowrapGroups) {
+            layout.forEach((item) => {
+                const widgetId = item.i;
+                const parentId = item.parent || DEFAULT_GROUP;
+
+                if (nowrapGroups[parentId]) {
+                    // Collecting nowrap elements
+                    nowrapGroups[parentId].items.push(item);
+                    nowrapGroups[parentId].leftSpace -= item.w;
+                } else if (nowrapAdjustedLayouts.current[item.i]) {
+                    // If element is not in horizontal-nowrap cleaning up and reverting adjustLayout values
+                    const {originalMaxW} = nowrapAdjustedLayouts.current[widgetId];
+                    const adjustedItem = adjustedLayouts.current[widgetId];
+
+                    if (originalMaxW) {
+                        adjustedLayouts.current[widgetId] = {
+                            ...adjustedItem,
+                            maxW: originalMaxW,
                         };
-                        hasNowrapGroups = true;
-                    }
-                });
-            }
-
-            if (hasNowrapGroups) {
-                layout.forEach((item) => {
-                    const widgetId = item.i;
-                    const parentId = item.parent || DEFAULT_GROUP;
-
-                    if (nowrapGroups[parentId]) {
-                        nowrapGroups[parentId].items.push(item);
-                        nowrapGroups[parentId].leftSpace -= item.w;
-                    } else if (nowrapAdjustedLayouts.current[item.i]) {
-                        const {originalMaxW} = nowrapAdjustedLayouts.current[widgetId];
-                        const adjustedItem = adjustedLayouts.current[widgetId];
-
-                        if (originalMaxW) {
-                            adjustedLayouts.current[widgetId] = {
-                                ...adjustedItem,
-                                maxW: originalMaxW,
-                            };
-                            originalLayouts.current[widgetId] = item;
-                        } else {
-                            adjustedLayouts.current[widgetId] = {...adjustedItem};
-                        }
-
-                        delete nowrapAdjustedLayouts.current[widgetId];
+                    } else {
+                        adjustedLayouts.current[widgetId] = {...adjustedItem};
                     }
 
+                    delete nowrapAdjustedLayouts.current[widgetId];
+                }
+
+                // Needed to update parent if it's changed
+                if (adjustedLayouts.current[widgetId]) {
                     originalLayouts.current[widgetId] = item;
-                });
+                }
+            });
 
-                Object.entries(nowrapGroups).forEach(([, {items, leftSpace}]) => {
-                    items.forEach((item) => {
-                        const maxW = item.w + leftSpace;
+            Object.entries(nowrapGroups).forEach(([, {items, leftSpace}]) => {
+                items.forEach((item) => {
+                    const maxW = item.w + leftSpace;
 
-                        if (!adjustedLayouts[item.i] || adjustedLayouts[item.i].maxW > maxW) {
-                            originalLayouts.current[item.i] = item;
-                            adjustedLayouts.current[item.i] = {...item, maxW};
-                            nowrapAdjustedLayouts.current[item.i] = item.maxW
-                                ? {maxW, originalMaxW: item.maxW}
-                                : {maxW};
-                        }
-                    });
-                });
-            } else if (groups) {
-                layout.forEach((item) => {
-                    const widgetId = item.i;
-                    if (adjustedLayouts.current[widgetId]) {
-                        originalLayouts.current[widgetId] = item;
+                    // setting maxW with adjustLayout fields and saving previous
+                    if (!adjustedLayouts[item.i] || adjustedLayouts[item.i].maxW > maxW) {
+                        adjustedLayouts.current[item.i] = {...item, maxW};
+                        nowrapAdjustedLayouts.current[item.i] = item.maxW
+                            ? {maxW, originalMaxW: item.maxW}
+                            : {maxW};
                     }
                 });
-            }
-
-            return adjustedLayouts.current;
-        },
-        [props.registerManager],
-    );
+            });
+        } else if (groups) {
+            // Needed to update parent if it's changed
+            layout.forEach((item) => {
+                const widgetId = item.i;
+                if (adjustedLayouts.current[widgetId]) {
+                    originalLayouts.current[widgetId] = item;
+                }
+            });
+        }
+    }, [props.registerManager, props.groups, props.layout]);
 
     const itemsParams = useDeepEqualMemo(
         () =>
@@ -293,7 +295,7 @@ function useMemoStateContext(props) {
     }, []);
 
     const resultLayout = React.useMemo(() => {
-        const adjusted = horizontalNowrapLayoutAdjust(props.groups, props.layout);
+        const adjusted = adjustedLayouts.current;
 
         return props.layout.map((item) => {
             if (item.i in adjusted) {
@@ -313,7 +315,7 @@ function useMemoStateContext(props) {
                 return item;
             }
         });
-    }, [props.layout, props.groups, horizontalNowrapLayoutAdjust, layoutUpdateCounter]);
+    }, [props.layout, layoutUpdateCounter]);
 
     const reloadItems = React.useCallback((pluginsRefs, data) => {
         pluginsRefs.forEach((ref) => ref && ref.reload && ref.reload(data));
