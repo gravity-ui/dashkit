@@ -7,9 +7,6 @@ export const useDeepEqualMemo = <T extends any>(
     deps: React.DependencyList,
 ): T => {
     const previousValueRef = React.useRef<T>({} as any);
-    const callbackRef = React.useRef(predicate);
-
-    callbackRef.current = predicate;
 
     return React.useMemo(() => {
         const value = predicate();
@@ -19,5 +16,5 @@ export const useDeepEqualMemo = <T extends any>(
         }
 
         return previousValueRef.current;
-    }, [callbackRef, previousValueRef, ...deps]);
+    }, [previousValueRef, ...deps]);
 };
