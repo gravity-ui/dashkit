@@ -209,7 +209,7 @@ function useMemoStateContext(props) {
                     // Collecting nowrap elements
                     nowrapGroups[parentId].items.push(item);
                     nowrapGroups[parentId].leftSpace -= item.w;
-                } else if (nowrapAdjustedLayouts.current[item.i]) {
+                } else if (nowrapAdjustedLayouts.current[widgetId]) {
                     // If element is not in horizontal-nowrap cleaning up and reverting adjustLayout values
                     delete nowrapAdjustedLayouts.current[widgetId];
                 }
@@ -270,7 +270,7 @@ function useMemoStateContext(props) {
         return props.layout.map((item) => {
             const widgetId = item.i;
 
-            if (widgetId in adjusted || widgetId in nowrapAdjust) {
+            if (adjusted[widgetId] || nowrapAdjust[widgetId]) {
                 original[widgetId] = item;
                 // eslint-disable-next-line no-unused-vars
                 const {parent, ...adjustedItem} = adjusted[widgetId] || item;
@@ -289,6 +289,9 @@ function useMemoStateContext(props) {
 
                 return adjustedItem;
             } else {
+                if (original[widgetId]) {
+                    delete original[widgetId];
+                }
                 return item;
             }
         });
