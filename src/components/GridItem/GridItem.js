@@ -51,7 +51,6 @@ class GridItem extends React.PureComponent {
         item: PropTypes.object,
         isDragging: PropTypes.bool,
         layout: PropTypes.array,
-        overlayControls: PropTypes.object,
 
         forwardedRef: PropTypes.any,
         forwardedPluginRef: PropTypes.any,
@@ -77,7 +76,7 @@ class GridItem extends React.PureComponent {
     };
 
     renderOverlay() {
-        const {overlayControls, isPlaceholder} = this.props;
+        const {isPlaceholder} = this.props;
         const {editMode} = this.context;
 
         if (!editMode || this.props.item.data._editActive || isPlaceholder) {
@@ -85,16 +84,11 @@ class GridItem extends React.PureComponent {
         }
 
         const {item} = this.props;
-        const controls = overlayControls && overlayControls[item.type];
 
         return (
             <React.Fragment>
                 <div className={b('overlay')} />
-                <OverlayControls
-                    configItem={item}
-                    items={controls}
-                    overlayControls={overlayControls}
-                />
+                <OverlayControls configItem={item} />
             </React.Fragment>
         );
     }

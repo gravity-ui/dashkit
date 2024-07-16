@@ -417,6 +417,7 @@ function useMemoStateContext(props) {
             draggableHandleClassName: props.draggableHandleClassName,
             outerDnDEnable,
             dragOverPlugin,
+            overlayControls: props.overlayControls,
         }),
         [
             resultLayout,
@@ -446,6 +447,7 @@ function useMemoStateContext(props) {
             props.draggableHandleClassName,
             outerDnDEnable,
             dragOverPlugin,
+            props.overlayControls,
         ],
     );
 }
@@ -456,7 +458,7 @@ export function withContext(Component) {
 
         return (
             <DashKitContext.Provider value={contextValue}>
-                <Component overlayControls={props.overlayControls} />
+                <Component />
             </DashKitContext.Provider>
         );
     };

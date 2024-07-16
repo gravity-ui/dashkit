@@ -47,6 +47,7 @@ export interface OverlayControlItem {
     handler?: (item: ConfigItem) => void;
     allWidgetsControls?: boolean; // флаг кастомного контрола (без кастомного виджета), которые показываются не в списке меню
     excludeWidgetsTypes?: Array<PluginBase['type']>; // массив с типами виджетов (плагинов), которые исключаем из отображения контрола по настройке allWidgetsControls
+    filterCustomControlItem?: (item: ConfigItem) => boolean;
     id?: string; // id дефолтного пункта меню для возможноти использования дефолтного action в кастомных контролах
     qa?: string;
 }
@@ -70,8 +71,6 @@ interface OverlayControlsDefaultProps {
 
 interface OverlayControlsProps extends OverlayControlsDefaultProps {
     configItem: ConfigItem;
-    items?: OverlayControlItem[];
-    overlayControls?: Record<string, OverlayControlItem[]>;
 }
 
 type PreparedCopyItemOptionsArg = Pick<ConfigItem, 'data' | 'type' | 'defaults' | 'namespace'> & {
@@ -87,6 +86,7 @@ export type PreparedCopyItemOptions<C extends object = {}> = PreparedCopyItemOpt
 };
 
 type DashKitCtx = React.Context<{
+    overlayControls?: Record<string, OverlayControlItem[]>;
     context: Record<string, any>;
     registerManager: RegisterManager;
     itemsParams: Record<string, StringParams>;
@@ -107,7 +107,8 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
     };
     context!: React.ContextType<DashKitCtx>;
     render() {
-        const {items = [], position} = this.props;
+        const {position} = this.props;
+        const items = this.getItems();
         const hasCustomControlsWithWidgets = items.length > 0;
 
         const controls = hasCustomControlsWithWidgets
@@ -116,6 +117,14 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
 
         return <div className={b({position})}>{controls}</div>;
     }
+
+    private getItems = () => {
+        const {overlayControls} = this.context;
+        const {configItem} = this.props;
+
+        return (overlayControls && overlayControls[configItem.type]) || [];
+    };
+
     private renderControlsItem = (item: OverlayControlItem, index: number, length: number) => {
         const {view, size} = this.props;
         const {title, handler, icon, iconSize, qa} = item;
@@ -294,7 +303,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         // выбираем только items-ы у которых проставлено поле `allWidgetsControls:true`
         // те контролы, которые будут показываться слева от меню
         let controls: OverlayControlItem[] = [];
-        for (const controlItem of Object.values(this.props.overlayControls || {})) {
+        for (const controlItem of Object.values(this.context.overlayControls || {})) {
             controls = controls.concat(
                 (
                     (controlItem as OverlayControlItem[]).filter((item) => {
@@ -302,6 +311,11 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                         if (item.excludeWidgetsTypes?.includes(this.props.configItem.type)) {
                             return false;
                         }
+
+                        if (item.filterCustomControlItem) {
+                            return item.filterCustomControlItem(this.props.configItem);
+                        }
+
                         return item.allWidgetsControls;
                     }) || []
                 ).map((item) => {
@@ -379,7 +393,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
             iconSize: 12,
             handler: this.onRemoveItem,
         };
-        const {items = []} = this.props;
+        const items = this.getItems();
         const customOverlayControls = [...items, deleteControl];
         return customOverlayControls.map(
             (item: OverlayControlItem, index: number, controlItems: OverlayControlItem[]) =>
