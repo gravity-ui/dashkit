@@ -8,6 +8,7 @@ export interface Settings {
     gridLayout?: ReactGridLayout.ReactGridLayoutProps;
     theme?: string;
     isMobile?: boolean;
+    // @deprecated as it's possibly mutable property use Dashkit menuItems property instead
     menu?: Array<MenuItem>;
 }
 

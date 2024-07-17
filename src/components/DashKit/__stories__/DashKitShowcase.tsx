@@ -18,7 +18,7 @@ import {CopyIcon} from '../../../icons/CopyIcon';
 import {DeleteIcon} from '../../../icons/DeleteIcon';
 import {TickIcon} from '../../../icons/TickIcon';
 import {WarningIcon} from '../../../icons/WarningIcon';
-import type {ConfigItem} from '../../../index';
+import type {ConfigItem, MenuItem, OverlayControlItem} from '../../../index';
 import {cn} from '../../../utils/cn';
 
 import {Demo, DemoRow} from './Demo';
@@ -38,9 +38,9 @@ type DashKitDemoState = {
 
     lastAction: string;
     customControlsActionData: number;
-    showCustomMenu: boolean;
     enableActionPanel: boolean;
     enableAnimations: boolean;
+    menuItems: MenuItem[];
 };
 
 export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
@@ -57,21 +57,19 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
 
         lastAction: 'Nothing',
         customControlsActionData: 0,
-        showCustomMenu: true,
         enableActionPanel: false,
         enableAnimations: true,
+        menuItems: [],
     };
+
+    private controls: Record<string, OverlayControlItem[]>;
 
     private dashKitRef = React.createRef<DashKit>();
 
-    componentDidMount() {
-        this.toggleCustomMenu(true);
-    }
+    constructor(props: {}) {
+        super(props);
 
-    render() {
-        console.log('customControlsActionData', this.state.customControlsActionData);
-        const {editMode} = this.state;
-        const controls = {
+        this.controls = {
             custom: [
                 {
                     title: 'Edit custom widget',
@@ -87,6 +85,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                     icon: TickIcon,
                     handler: () => console.log('overlayControls::custom click'),
                     iconSize: 16,
+                    visible: (item) => item.type !== 'text',
                 },
                 {
                     allWidgetsControls: true,
@@ -94,14 +93,21 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                     id: MenuItems.Settings,
                     title: 'Settings default',
                     icon: WarningIcon,
+                    visible: (item) => item.type !== 'text',
                 },
                 {
                     allWidgetsControls: true,
                     title: 'Icon tooltip 2',
                     handler: () => console.log('overlayControls::custom click'),
+                    visible: (item) => item.type !== 'text',
                 },
             ],
         };
+    }
+
+    render() {
+        console.log('customControlsActionData', this.state.customControlsActionData);
+        const {editMode} = this.state;
 
         return (
             <Demo title="DashKit">
@@ -128,11 +134,11 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                         <Button
                             view="normal"
                             size="m"
-                            onClick={() => this.toggleCustomMenu(false)}
+                            onClick={this.toggleCustomMenu}
                             className={b('btn-contol')}
                             disabled={!editMode}
                         >
-                            {this.state.showCustomMenu
+                            {this.state.menuItems.length > 0
                                 ? 'Disable custom menu'
                                 : 'Enable custom menu'}
                         </Button>
@@ -207,7 +213,8 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                         onChange={this.onChange}
                         settings={this.state.settings}
                         ref={this.dashKitRef}
-                        overlayControls={controls}
+                        overlayControls={this.controls}
+                        menuItems={this.state.menuItems}
                         focusable={!editMode}
                     />
                 </DemoRow>
@@ -346,13 +353,14 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
         return Boolean(this.state.config.items.find((item) => item.id === titleId));
     }
 
-    private toggleCustomMenu = (init = false) => {
-        const {showCustomMenu} = this.state;
-        if (showCustomMenu) {
-            DashKit.setSettings({menu: []});
+    private toggleCustomMenu = () => {
+        const {menuItems} = this.state;
+
+        if (menuItems.length > 0) {
+            this.setState({menuItems: []});
         } else {
-            DashKit.setSettings({
-                menu: [
+            this.setState({
+                menuItems: [
                     {
                         id: 'settings',
                         title: 'Menu setting text',
@@ -360,6 +368,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                         handler: () => {
                             console.log('menu::settings::click');
                         },
+                        visible: (item) => item.type === 'title',
                     },
                     {
                         id: MenuItems.Copy,
@@ -375,12 +384,6 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                 ],
             });
         }
-        this.setState({
-            showCustomMenu: !showCustomMenu,
-            lastAction: init
-                ? this.state.lastAction
-                : `[DashKit.setSettings] toggle show custom widget menu: ${new Date().toISOString()}`,
-        });
     };
 
     private toggleActionPanel() {

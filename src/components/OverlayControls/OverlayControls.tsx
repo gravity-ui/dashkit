@@ -5,6 +5,7 @@ import {
     ButtonSize,
     ButtonView,
     DropdownMenu,
+    DropdownMenuItem,
     Icon,
     IconProps,
     MenuItemProps,
@@ -12,22 +13,14 @@ import {
 import noop from 'lodash/noop';
 
 import {COPIED_WIDGET_STORE_KEY, MenuItems, OVERLAY_CONTROLS_CLASS_NAME} from '../../constants';
-import {DashKitContext} from '../../context/DashKitContext';
+import {DashkitOvelayControlsContext} from '../../context/DashKitContext';
 import {i18n} from '../../i18n';
 import {CloseIcon} from '../../icons/CloseIcon';
 import {CogIcon} from '../../icons/CogIcon';
 import {DotsIcon} from '../../icons/DotsIcon';
-import type {
-    Config,
-    ConfigItem,
-    ConfigLayout,
-    ItemState,
-    PluginBase,
-    StringParams,
-} from '../../shared';
-import {Settings} from '../../typings';
+import type {ConfigItem, ConfigLayout, ItemState, PluginBase, StringParams} from '../../shared';
+import {MenuItem, Settings} from '../../typings';
 import {cn} from '../../utils/cn';
-import type {RegisterManager} from '../../utils/register-manager';
 
 import './OverlayControls.scss';
 
@@ -47,7 +40,7 @@ export interface OverlayControlItem {
     handler?: (item: ConfigItem) => void;
     allWidgetsControls?: boolean; // флаг кастомного контрола (без кастомного виджета), которые показываются не в списке меню
     excludeWidgetsTypes?: Array<PluginBase['type']>; // массив с типами виджетов (плагинов), которые исключаем из отображения контрола по настройке allWidgetsControls
-    filterCustomControlItem?: (item: ConfigItem) => boolean;
+    visible?: (item: ConfigItem) => boolean;
     id?: string; // id дефолтного пункта меню для возможноти использования дефолтного action в кастомных контролах
     qa?: string;
 }
@@ -88,18 +81,18 @@ export type PreparedCopyItemOptions<C extends object = {}> = PreparedCopyItemOpt
 type DashKitCtx = React.Context<{
     overlayControls?: Record<string, OverlayControlItem[]>;
     context: Record<string, any>;
-    registerManager: RegisterManager;
+    menu: MenuItem[];
     itemsParams: Record<string, StringParams>;
     itemsState: Record<string, ItemState>;
     editItem: (item: ConfigItem) => void;
     removeItem: (id: string) => void;
-    config: Config;
+    getLayoutItem: (id: string) => ConfigLayout | void;
 }>;
 
 const DEFAULT_DROPDOWN_MENU = [MenuItems.Copy, MenuItems.Delete];
 
 class OverlayControls extends React.Component<OverlayControlsProps> {
-    static contextType = DashKitContext;
+    static contextType = DashkitOvelayControlsContext;
     static defaultProps: OverlayControlsDefaultProps = {
         position: OverlayControlsPosition.TopRight,
         view: 'flat',
@@ -210,9 +203,8 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
     }
     private renderMenu() {
         const {view, size} = this.props;
-        const {registerManager} = this.context;
-        const withMenu =
-            Array.isArray(registerManager.settings.menu) && registerManager.settings.menu.length;
+        const {menu} = this.context;
+        const withMenu = Array.isArray(menu) && menu.length;
 
         return (
             <React.Fragment>
@@ -240,28 +232,32 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
     }
     private renderDropdownMenu() {
         const {view, size} = this.props;
-        const {registerManager, itemsParams, itemsState} = this.context;
+        const {menu: contextMenu, itemsParams, itemsState} = this.context;
 
         const configItem = this.props.configItem;
         const itemParams = itemsParams[configItem.id];
         const itemState = itemsState[configItem.id];
 
-        let menu = registerManager.settings.menu as any;
-        if (!menu.length) {
-            menu = DEFAULT_DROPDOWN_MENU;
-        }
+        const menu = contextMenu?.length > 0 ? contextMenu : DEFAULT_DROPDOWN_MENU;
 
         const isDefaultMenu = this.isDefaultMenu(menu);
 
-        let items = isDefaultMenu
-            ? (menu || []).map((name: string) => this.getDropDownMenuItemConfig(name, true))
-            : menu.map((item: OverlayCustomControlItem) => {
+        const items: DropdownMenuItem[] = isDefaultMenu
+            ? ((menu || []) as string[]).reduce<DropdownMenuItem[]>((memo, name: string) => {
+                  const item = this.getDropDownMenuItemConfig(name, true);
+                  if (item) {
+                      memo.push(item);
+                  }
+
+                  return memo;
+              }, [])
+            : menu.reduce<DropdownMenuItem[]>((memo, item: MenuItem) => {
                   if (typeof item === 'string') {
-                      return null;
+                      return memo;
                   }
                   // custom menu dropdown item filter
                   if (item.visible && !item.visible(configItem)) {
-                      return null;
+                      return memo;
                   }
 
                   const itemHandler = item.handler;
@@ -271,16 +267,17 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                           ? () => itemHandler(configItem, itemParams, itemState)
                           : this.getDropDownMenuItemConfig(item.id)?.action || (() => {});
 
-                  return {
+                  memo.push({
                       // @ts-expect-error
                       text: item.title || i18n(item.id),
                       icon: item.icon,
                       action: itemAction,
                       className: item.className,
                       qa: item.qa,
-                  };
-              });
-        items = items.filter(Boolean);
+                  });
+
+                  return memo;
+              }, []);
 
         return (
             <DropdownMenu
@@ -312,11 +309,9 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                             return false;
                         }
 
-                        if (item.filterCustomControlItem) {
-                            return item.filterCustomControlItem(this.props.configItem);
-                        }
-
-                        return item.allWidgetsControls;
+                        return item.visible
+                            ? item.visible(this.props.configItem)
+                            : item.allWidgetsControls;
                     }) || []
                 ).map((item) => {
                     if (!item?.id) {
@@ -335,16 +330,15 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         return controls;
     };
     private onCopyItem = () => {
-        const correspondedItemLayout = this.context.config.layout.find((item: ConfigLayout) => {
-            return item.i === this.props.configItem.id;
-        });
+        const {configItem} = this.props;
+        const correspondedItemLayout = this.context.getLayoutItem(configItem.id);
 
         let options: PreparedCopyItemOptions = {
             timestamp: Date.now(),
-            data: this.props.configItem.data,
-            type: this.props.configItem.type,
-            defaults: this.props.configItem.defaults,
-            namespace: this.props.configItem.namespace,
+            data: configItem.data,
+            type: configItem.type,
+            defaults: configItem.defaults,
+            namespace: configItem.namespace,
             layout: {
                 w: correspondedItemLayout!.w,
                 h: correspondedItemLayout!.h,

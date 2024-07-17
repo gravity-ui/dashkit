@@ -4,39 +4,11 @@ import {ChartColumn, Copy, Heading, Sliders, TextAlignLeft} from '@gravity-ui/ic
 import {Icon} from '@gravity-ui/uikit';
 
 import {ActionPanel, DashKit, DashKitDnDWrapper, DashKitProps} from '../../..';
-import {MenuItems} from '../../../helpers';
-import {i18n} from '../../../i18n';
-import {CogIcon} from '../../../icons/CogIcon';
-import {CopyIcon} from '../../../icons/CopyIcon';
-import {DeleteIcon} from '../../../icons/DeleteIcon';
 
 import {Demo, DemoRow} from './Demo';
 import {getConfig} from './utils';
 
 export const DashKitDnDShowcase: React.FC = () => {
-    React.useEffect(() => {
-        DashKit.setSettings({
-            menu: [
-                {
-                    id: 'settings',
-                    title: 'Menu setting text',
-                    icon: <Icon data={CogIcon} size={16} />,
-                },
-                {
-                    id: MenuItems.Copy,
-                    title: 'Menu setting copy',
-                    icon: <Icon data={CopyIcon} size={16} />,
-                },
-                {
-                    id: MenuItems.Delete,
-                    title: i18n('label_delete'), // for language change check
-                    icon: <Icon data={DeleteIcon} size={16} />,
-                    className: 'dashkit-overlay-controls__item_danger',
-                },
-            ],
-        });
-    }, []);
-
     const onClick = () => {
         console.log('click');
     };
