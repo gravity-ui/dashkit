@@ -63,13 +63,6 @@ function useMemoStateContext(props) {
         [props.config, props.itemsStateAndParams, props.onChange],
     );
 
-    const getLayoutItem = React.useCallback(
-        (widgetId) => {
-            return props.config.layout.find(({i}) => i === widgetId);
-        },
-        [props.config.layout],
-    );
-
     // каллбэк вызывающийся при изменение лэйаута сетки, первым аргументом приходит актуальный конфиг лэйаута,
     // т.е. если на текущей сетке есть виджеты, с активированной опцией автовысоты, их параметр "h" будет
     // "подстроенный"; чтобы, для сохранения в сторе "ушли" значения без учёта подстройки (как если бы у этих
@@ -101,13 +94,18 @@ function useMemoStateContext(props) {
         [props.config, onChange],
     );
 
+    const getLayoutItem = React.useCallback(
+        (id) => {
+            return props.config.layout.find(({i}) => i === id);
+        },
+        [props.config.layout],
+    );
+
     const onItemRemove = React.useCallback(
         (id) => {
-            if (nowrapAdjustedLayouts.current[id]) {
-                delete nowrapAdjustedLayouts.current[id];
-                delete adjustedLayouts.current[id];
-                delete originalLayouts.current[id];
-            }
+            delete nowrapAdjustedLayouts.current[id];
+            delete adjustedLayouts.current[id];
+            delete originalLayouts.current[id];
 
             if (id === TEMPORARY_ITEM_ID) {
                 resetTemporaryLayout();
@@ -456,12 +454,12 @@ function useMemoStateContext(props) {
         ],
     );
 
-    const menuItems = props.menuItems || props.registerManager.settings.menu;
+    const overlayMenuItems = props.overlayMenuItems || props.registerManager.settings.menu;
     const controlsContextValue = React.useMemo(
         () => ({
             overlayControls: props.overlayControls,
             context: props.context,
-            menu: menuItems,
+            menu: overlayMenuItems,
             itemsParams: itemsParams,
             itemsState: itemsState,
             editItem: props.onItemEdit,
@@ -475,7 +473,7 @@ function useMemoStateContext(props) {
             props.onItemEdit,
             onItemRemove,
             props.overlayControls,
-            menuItems,
+            overlayMenuItems,
             getLayoutItem,
         ],
     );

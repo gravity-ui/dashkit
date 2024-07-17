@@ -30,8 +30,8 @@ interface DashKitGeneralProps {
     config: Config;
     editMode: boolean;
     draggableHandleClassName?: string;
-    overlayControls?: Record<string, OverlayControlItem[]>;
-    menuItems?: MenuItem[];
+    overlayControls?: Record<string, OverlayControlItem[]> | null;
+    overlayMenuItems?: MenuItem[] | null;
 }
 
 interface DashKitDefaultProps {

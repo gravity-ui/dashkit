@@ -18,7 +18,7 @@ import {CopyIcon} from '../../../icons/CopyIcon';
 import {DeleteIcon} from '../../../icons/DeleteIcon';
 import {TickIcon} from '../../../icons/TickIcon';
 import {WarningIcon} from '../../../icons/WarningIcon';
-import type {ConfigItem, MenuItem, OverlayControlItem} from '../../../index';
+import type {ConfigItem, OverlayControlItem} from '../../../index';
 import {cn} from '../../../utils/cn';
 
 import {Demo, DemoRow} from './Demo';
@@ -40,7 +40,7 @@ type DashKitDemoState = {
     customControlsActionData: number;
     enableActionPanel: boolean;
     enableAnimations: boolean;
-    menuItems: MenuItem[];
+    overlayMenuItems: DashKitProps['overlayMenuItems'];
 };
 
 export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
@@ -59,7 +59,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
         customControlsActionData: 0,
         enableActionPanel: false,
         enableAnimations: true,
-        menuItems: [],
+        overlayMenuItems: null,
     };
 
     private controls: Record<string, OverlayControlItem[]>;
@@ -138,7 +138,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                             className={b('btn-contol')}
                             disabled={!editMode}
                         >
-                            {this.state.menuItems.length > 0
+                            {this.state.overlayMenuItems
                                 ? 'Disable custom menu'
                                 : 'Enable custom menu'}
                         </Button>
@@ -214,7 +214,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                         settings={this.state.settings}
                         ref={this.dashKitRef}
                         overlayControls={this.controls}
-                        menuItems={this.state.menuItems}
+                        overlayMenuItems={this.state.overlayMenuItems}
                         focusable={!editMode}
                     />
                 </DemoRow>
@@ -354,13 +354,11 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
     }
 
     private toggleCustomMenu = () => {
-        const {menuItems} = this.state;
-
-        if (menuItems.length > 0) {
-            this.setState({menuItems: []});
+        if (this.state.overlayMenuItems) {
+            this.setState({overlayMenuItems: null});
         } else {
             this.setState({
-                menuItems: [
+                overlayMenuItems: [
                     {
                         id: 'settings',
                         title: 'Menu setting text',

@@ -38,9 +38,9 @@ export interface OverlayControlItem {
     icon?: IconProps['data'];
     iconSize?: number | string;
     handler?: (item: ConfigItem) => void;
+    visible?: (item: ConfigItem) => boolean;
     allWidgetsControls?: boolean; // флаг кастомного контрола (без кастомного виджета), которые показываются не в списке меню
     excludeWidgetsTypes?: Array<PluginBase['type']>; // массив с типами виджетов (плагинов), которые исключаем из отображения контрола по настройке allWidgetsControls
-    visible?: (item: ConfigItem) => boolean;
     id?: string; // id дефолтного пункта меню для возможноти использования дефолтного action в кастомных контролах
     qa?: string;
 }
@@ -164,12 +164,15 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         }
         return null;
     }
-    private renderControls() {
+
+    private getDefaultControls = () => {
         const {view, size} = this.props;
 
-        const customLeftControls = this.getCustomLeftOverlayControls();
-        const hasCustomOverlayLeftControls = Boolean(customLeftControls.length);
-        const defaultControl = (
+        if (this.context.overlayControls === null) {
+            return null;
+        }
+
+        return (
             <Button
                 view={view}
                 size={size}
@@ -181,6 +184,13 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                 <Icon data={CogIcon} size="24" />
             </Button>
         );
+    };
+
+    private renderControls() {
+        const customLeftControls = this.getCustomLeftOverlayControls();
+        const hasCustomOverlayLeftControls = Boolean(customLeftControls.length);
+
+        const defaultControl = this.getDefaultControls();
         const controls = hasCustomOverlayLeftControls
             ? customLeftControls.map(
                   (item: OverlayControlItem, index: number, items: OverlayControlItem[]) =>
@@ -300,6 +310,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         // выбираем только items-ы у которых проставлено поле `allWidgetsControls:true`
         // те контролы, которые будут показываться слева от меню
         let controls: OverlayControlItem[] = [];
+
         for (const controlItem of Object.values(this.context.overlayControls || {})) {
             controls = controls.concat(
                 (

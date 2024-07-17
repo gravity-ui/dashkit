@@ -128,7 +128,13 @@ export const DashKitDnDShowcase: React.FC = () => {
         >
             <Demo title="Drag'n'Drop example">
                 <DemoRow title="Component view">
-                    <DashKit editMode={true} config={config} onChange={onChange} onDrop={onDrop} />
+                    <DashKit
+                        editMode={true}
+                        config={config}
+                        overlayControls={null}
+                        onChange={onChange}
+                        onDrop={onDrop}
+                    />
                     <ActionPanel items={items} />
                 </DemoRow>
             </Demo>

@@ -24,7 +24,7 @@ import {fixedGroup, getConfig} from './utils';
 export const DashKitGroupsShowcase: React.FC = () => {
     const [editMode, setEditMode] = React.useState(true);
 
-    const menuItems = React.useMemo(() => {
+    const overlayMenuItems = React.useMemo(() => {
         return [
             {
                 id: 'settings',
@@ -218,7 +218,7 @@ export const DashKitGroupsShowcase: React.FC = () => {
                         config={config}
                         onChange={onChange}
                         onDrop={onDrop}
-                        menuItems={menuItems}
+                        overlayMenuItems={overlayMenuItems}
                     />
                     <ActionPanel items={items} />
                 </DemoRow>
