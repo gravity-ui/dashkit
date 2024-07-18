@@ -215,7 +215,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
     private renderMenu(isOnlyOneItem: boolean) {
         const {view, size} = this.props;
 
-        const dropdown = this.renderDropdownMenu();
+        const dropdown = this.renderDropdownMenu(isOnlyOneItem);
 
         if (dropdown) {
             return dropdown;
@@ -241,7 +241,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
             (Object.values(MenuItems) as Array<string>).includes(String(item)),
         );
     }
-    private renderDropdownMenu() {
+    private renderDropdownMenu(isOnlyOneItem: boolean) {
         const {view, size} = this.props;
         const {menu: contextMenu, itemsParams, itemsState} = this.context;
 
@@ -302,7 +302,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                         {...props}
                         view={view}
                         size={size}
-                        pin="brick-round"
+                        pin={isOnlyOneItem ? 'round-round' : 'brick-round'}
                         qa="dashkit-overlay-control-menu"
                     >
                         <Icon data={DotsIcon} size="16" />
