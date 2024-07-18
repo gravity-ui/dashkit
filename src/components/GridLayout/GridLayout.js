@@ -356,7 +356,7 @@ export default class GridLayout extends React.PureComponent {
     }
 
     render() {
-        const {config, groups, editMode} = this.context;
+        const {config, groups, editMode, context} = this.context;
 
         this.pluginsRefs.length = config.items.length;
 
@@ -418,6 +418,7 @@ export default class GridLayout extends React.PureComponent {
                         editMode,
                         items,
                         layout,
+                        context,
                     });
                 }
 
