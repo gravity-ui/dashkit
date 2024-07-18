@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.7.0](https://github.com/gravity-ui/dashkit/compare/v8.6.0...v8.7.0) (2024-07-18)
+
+
+### Features
+
+* moved overlay controls into separated context ([#157](https://github.com/gravity-ui/dashkit/issues/157)) ([29fca8c](https://github.com/gravity-ui/dashkit/commit/29fca8c160491bfd488d4f668d0e654aba2a7976))
+
 ## [8.6.0](https://github.com/gravity-ui/dashkit/compare/v8.5.0...v8.6.0) (2024-07-12)
 
 
