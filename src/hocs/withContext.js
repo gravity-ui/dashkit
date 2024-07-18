@@ -10,7 +10,11 @@ import {
     DEFAULT_WIDGET_WIDTH,
     TEMPORARY_ITEM_ID,
 } from '../constants/common';
-import {DashKitContext, DashKitDnDContext} from '../context/DashKitContext';
+import {
+    DashKitContext,
+    DashKitDnDContext,
+    DashkitOvelayControlsContext,
+} from '../context/DashKitContext';
 import {useDeepEqualMemo} from '../hooks/useDeepEqualMemo';
 import {getItemsParams, getItemsState} from '../shared';
 import {UpdateManager} from '../utils';
@@ -90,13 +94,18 @@ function useMemoStateContext(props) {
         [props.config, onChange],
     );
 
+    const getLayoutItem = React.useCallback(
+        (id) => {
+            return props.config.layout.find(({i}) => i === id);
+        },
+        [props.config.layout],
+    );
+
     const onItemRemove = React.useCallback(
         (id) => {
-            if (nowrapAdjustedLayouts.current[id]) {
-                delete nowrapAdjustedLayouts.current[id];
-                delete adjustedLayouts.current[id];
-                delete originalLayouts.current[id];
-            }
+            delete nowrapAdjustedLayouts.current[id];
+            delete adjustedLayouts.current[id];
+            delete originalLayouts.current[id];
 
             if (id === TEMPORARY_ITEM_ID) {
                 resetTemporaryLayout();
@@ -270,7 +279,7 @@ function useMemoStateContext(props) {
         return props.layout.map((item) => {
             const widgetId = item.i;
 
-            if (adjusted[widgetId] || nowrapAdjust[widgetId]) {
+            if (widgetId in adjusted || widgetId in nowrapAdjust) {
                 original[widgetId] = item;
                 // eslint-disable-next-line no-unused-vars
                 const {parent, ...adjustedItem} = adjusted[widgetId] || item;
@@ -283,13 +292,13 @@ function useMemoStateContext(props) {
                     adjustedItem.parent = item.parent;
                 }
 
-                if (nowrapAdjust[widgetId]) {
+                if (widgetId in nowrapAdjust) {
                     adjustedItem.maxW = nowrapAdjust[widgetId];
                 }
 
                 return adjustedItem;
             } else {
-                if (original[widgetId]) {
+                if (widgetId in original) {
                     delete original[widgetId];
                 }
                 return item;
@@ -387,7 +396,7 @@ function useMemoStateContext(props) {
         [dragProps, onDropProp, setTemporaryLayout, resetTemporaryLayout],
     );
 
-    return React.useMemo(
+    const dashkitContextValue = React.useMemo(
         () => ({
             layout: resultLayout,
             temporaryLayout,
@@ -404,10 +413,8 @@ function useMemoStateContext(props) {
             itemsParams,
             registerManager: props.registerManager,
             onItemStateAndParamsChange,
-            removeItem: onItemRemove,
             onDrop,
             onDropDragOver,
-            editItem: props.onItemEdit,
             layoutChange: onLayoutChange,
             getItemsMeta,
             reloadItems,
@@ -433,10 +440,8 @@ function useMemoStateContext(props) {
             itemsParams,
             props.registerManager,
             onItemStateAndParamsChange,
-            onItemRemove,
             onDrop,
             onDropDragOver,
-            props.onItemEdit,
             onLayoutChange,
             getItemsMeta,
             reloadItems,
@@ -448,15 +453,43 @@ function useMemoStateContext(props) {
             dragOverPlugin,
         ],
     );
+
+    const overlayMenuItems = props.overlayMenuItems || props.registerManager.settings.menu;
+    const controlsContextValue = React.useMemo(
+        () => ({
+            overlayControls: props.overlayControls,
+            context: props.context,
+            menu: overlayMenuItems,
+            itemsParams: itemsParams,
+            itemsState: itemsState,
+            editItem: props.onItemEdit,
+            removeItem: onItemRemove,
+            getLayoutItem: getLayoutItem,
+        }),
+        [
+            itemsParams,
+            itemsState,
+            props.context,
+            props.onItemEdit,
+            onItemRemove,
+            props.overlayControls,
+            overlayMenuItems,
+            getLayoutItem,
+        ],
+    );
+
+    return {controlsContextValue, dashkitContextValue};
 }
 
 export function withContext(Component) {
     const WithContext = (props) => {
-        const contextValue = useMemoStateContext(props);
+        const {dashkitContextValue, controlsContextValue} = useMemoStateContext(props);
 
         return (
-            <DashKitContext.Provider value={contextValue}>
-                <Component overlayControls={props.overlayControls} />
+            <DashKitContext.Provider value={dashkitContextValue}>
+                <DashkitOvelayControlsContext.Provider value={controlsContextValue}>
+                    <Component />
+                </DashkitOvelayControlsContext.Provider>
             </DashKitContext.Provider>
         );
     };

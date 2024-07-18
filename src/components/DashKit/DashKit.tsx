@@ -14,6 +14,7 @@ import {
     AddConfigItem,
     ContextProps,
     DashKitGroup,
+    MenuItem,
     Plugin,
     SetConfigItem,
     SetNewItemOptions,
@@ -29,7 +30,8 @@ interface DashKitGeneralProps {
     config: Config;
     editMode: boolean;
     draggableHandleClassName?: string;
-    overlayControls?: Record<string, OverlayControlItem[]>;
+    overlayControls?: Record<string, OverlayControlItem[]> | null;
+    overlayMenuItems?: MenuItem[] | null;
 }
 
 interface DashKitDefaultProps {

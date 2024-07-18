@@ -283,7 +283,6 @@ export default class GridLayout extends React.PureComponent {
                 isPlaceholder={true}
                 noOverlay={noOverlay}
                 withCustomHandle={Boolean(draggableHandleClassName)}
-                overlayControls={this.props.overlayControls}
             />
         );
     }
@@ -348,7 +347,6 @@ export default class GridLayout extends React.PureComponent {
                             noOverlay={noOverlay}
                             focusable={focusable}
                             withCustomHandle={Boolean(draggableHandleClassName)}
-                            overlayControls={this.props.overlayControls}
                         />
                     );
                 })}

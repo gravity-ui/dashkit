@@ -35,7 +35,8 @@ interface DashKitProps {
   itemsStateAndParams: ItemsStateAndParams;
   settings: SettingsProps;
   context: ContextProps;
-  overlayControls?: Record<string, OverlayControlItem[]>;
+  overlayControls?: Record<string, OverlayControlItem[]> | null;
+  overlayMenuItems?: MenuItems[] | null;
   noOverlay?: boolean;
   focusable?: boolean;
   draggableHandleClassName?: string;
@@ -51,7 +52,8 @@ interface DashKitProps {
 - **itemsStateAndParams**: [itemsStateAndParams](#temsStateAndParams).
 - **settings**: DashKit settings.
 - **context**: Object that will be propped up on all widgets.
-- **overlayControls**: Object that overrides widget controls at the time of editing. If not transmitted, basic controls will be displayed.
+- **overlayControls**: Object that overrides widget controls at the time of editing. If not transmitted, basic controls will be displayed. If `null` passed only close button or custom menu will be displayed.
+- **overlayMenuItems**: Custom dropdown menu items
 - **noOverlay**: If `true`, overlay and controls are not displayed while editing.
 - **focusable**: If `true`, grid items will be focusable.
 - **draggableHandleClassName** : СSS class name of the element that makes the widget draggable.
@@ -343,6 +345,10 @@ type MenuItem = {
 };
 
 // use array of menu items in settings
+<Dashkit overlayMenuItems={[] as Array<MenuItem> | null} />
+
+[deprecated]
+// overlayMenuItems property has greater priority over setSettings menu
 DashKit.setSettings({menu: [] as Array<MenuItem>});
 ```
 
@@ -386,7 +392,7 @@ type ItemDropProps = {
 #### Example:
 
 ```jsx
-const menuItems = [
+const overlayMenuItems = [
   {
     id: 'chart',
     icon: <Icon data={ChartColumn} />,
@@ -405,7 +411,7 @@ const onDrop = (dropProps: ItemDropProps) => {
 
 <DashKitDnDWrapper>
   <DashKit editMode={true} config={config} onChange={onChange} onDrop={onDrop} />
-  <ActionPanel items={menuItems} />
+  <ActionPanel items={overlayMenuItems} />
 </DashKitDnDWrapper>
 ```
 
