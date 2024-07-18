@@ -383,18 +383,20 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                         handler: () => {
                             console.log('menu::settings::click');
                         },
-                        visible: (item) => item.type === 'title',
+                        visible: (item) => item.type !== 'custom',
                     },
                     {
                         id: MenuItems.Copy,
                         title: 'Menu setting copy',
                         icon: <Icon data={CopyIcon} size={16} />,
+                        visible: (item) => item.type !== 'custom',
                     },
                     {
                         id: MenuItems.Delete,
                         title: i18n('label_delete'), // for language change check
                         icon: <Icon data={DeleteIcon} size={16} />,
                         className: 'dashkit-overlay-controls__item_danger',
+                        visible: (item) => item.type !== 'custom',
                     },
                 ],
             });

@@ -137,6 +137,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
             </Button>
         );
     };
+
     private getDropDownMenuItemConfig(menuName: string, isDefaultMenu?: boolean) {
         switch (menuName) {
             case MenuItems.Copy: {
@@ -213,28 +214,28 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
     }
     private renderMenu() {
         const {view, size} = this.props;
-        const {menu} = this.context;
-        const withMenu = Array.isArray(menu) && menu.length;
+
+        const dropdown = this.renderDropdownMenu();
+
+        if (dropdown) {
+            return dropdown;
+        }
 
         return (
-            <React.Fragment>
-                {withMenu ? (
-                    this.renderDropdownMenu()
-                ) : (
-                    <Button
-                        view={view}
-                        size={size}
-                        title={i18n('label_delete')}
-                        pin="brick-round"
-                        onClick={this.onRemoveItem}
-                        qa="dashkit-overlay-control-menu"
-                    >
-                        <Icon data={CloseIcon} size="12" />
-                    </Button>
-                )}
-            </React.Fragment>
+            <Button
+                key={'delete-control'}
+                view={view}
+                size={size}
+                title={i18n('label_delete')}
+                pin="brick-round"
+                onClick={this.onRemoveItem}
+                qa="dashkit-overlay-control-menu"
+            >
+                <Icon data={CloseIcon} size="12" />
+            </Button>
         );
     }
+
     private isDefaultMenu(menu: Settings['menu']) {
         return menu?.every((item) =>
             (Object.values(MenuItems) as Array<string>).includes(String(item)),
@@ -289,6 +290,10 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                   return memo;
               }, []);
 
+        if (items.length === 0) {
+            return null;
+        }
+
         return (
             <DropdownMenu
                 items={items}
@@ -338,6 +343,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                 }),
             );
         }
+
         return controls;
     };
     private onCopyItem = () => {
@@ -391,19 +397,17 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         return 'brick-brick';
     }
     private getCustomControlsWithWidgets() {
-        // Добавляем контрол удаления виджета по умолчанию
-        const deleteControl = {
-            title: i18n('label_delete'),
-            icon: CloseIcon,
-            iconSize: 12,
-            handler: this.onRemoveItem,
-        };
         const items = this.getItems();
-        const customOverlayControls = [...items, deleteControl];
-        return customOverlayControls.map(
+
+        const result = items.map(
             (item: OverlayControlItem, index: number, controlItems: OverlayControlItem[]) =>
                 this.renderControlsItem(item, index, controlItems.length),
         );
+
+        // Добавляем контрол удаления или меню виджета по умолчанию
+        result.push(this.renderMenu());
+
+        return result;
     }
 }
 
