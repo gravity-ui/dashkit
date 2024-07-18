@@ -199,7 +199,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
               )
             : defaultControl;
 
-        const menu = this.renderMenu();
+        const menu = this.renderMenu(controls === null);
 
         return (
             <div
@@ -212,7 +212,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
             </div>
         );
     }
-    private renderMenu() {
+    private renderMenu(isOnlyOneItem: boolean) {
         const {view, size} = this.props;
 
         const dropdown = this.renderDropdownMenu();
@@ -227,7 +227,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                 view={view}
                 size={size}
                 title={i18n('label_delete')}
-                pin="brick-round"
+                pin={isOnlyOneItem ? 'round-round' : 'brick-round'}
                 onClick={this.onRemoveItem}
                 qa="dashkit-overlay-control-menu"
             >
@@ -403,9 +403,10 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
             (item: OverlayControlItem, index: number, controlItems: OverlayControlItem[]) =>
                 this.renderControlsItem(item, index, controlItems.length),
         );
+        const isOnlyOneItem = items.length === 0;
 
         // Добавляем контрол удаления или меню виджета по умолчанию
-        result.push(this.renderMenu());
+        result.push(this.renderMenu(isOnlyOneItem));
 
         return result;
     }
