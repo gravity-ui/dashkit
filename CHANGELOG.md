@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.7.2](https://github.com/gravity-ui/dashkit/compare/v8.7.1...v8.7.2) (2024-07-18)
+
+
+### Bug Fixes
+
+* fix for single dropdown menu ([#161](https://github.com/gravity-ui/dashkit/issues/161)) ([3cc4ffc](https://github.com/gravity-ui/dashkit/commit/3cc4ffc3100489bc1b554c022864867c66a24060))
+
 ## [8.7.1](https://github.com/gravity-ui/dashkit/compare/v8.7.0...v8.7.1) (2024-07-18)
 
 
