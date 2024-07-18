@@ -40,6 +40,7 @@ type DashKitDemoState = {
     customControlsActionData: number;
     enableActionPanel: boolean;
     enableAnimations: boolean;
+    enableOverlayControls: boolean;
     overlayMenuItems: DashKitProps['overlayMenuItems'];
 };
 
@@ -59,6 +60,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
         customControlsActionData: 0,
         enableActionPanel: false,
         enableAnimations: true,
+        enableOverlayControls: true,
         overlayMenuItems: null,
     };
 
@@ -130,6 +132,17 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                             {this.state.enableAnimations
                                 ? 'Disable animations'
                                 : 'Enable animations'}
+                        </Button>
+                        <Button
+                            view="normal"
+                            size="m"
+                            onClick={this.toggleOverlayControls}
+                            className={b('btn-contol')}
+                            disabled={!editMode}
+                        >
+                            {this.state.enableOverlayControls
+                                ? 'Hide left controls'
+                                : 'Show left controls'}
                         </Button>
                         <Button
                             view="normal"
@@ -213,7 +226,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                         onChange={this.onChange}
                         settings={this.state.settings}
                         ref={this.dashKitRef}
-                        overlayControls={this.controls}
+                        overlayControls={this.state.enableOverlayControls ? this.controls : null}
                         overlayMenuItems={this.state.overlayMenuItems}
                         focusable={!editMode}
                     />
@@ -352,6 +365,10 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
     private isTitleInConfig() {
         return Boolean(this.state.config.items.find((item) => item.id === titleId));
     }
+
+    private toggleOverlayControls = () => {
+        this.setState({enableOverlayControls: !this.state.enableOverlayControls});
+    };
 
     private toggleCustomMenu = () => {
         if (this.state.overlayMenuItems) {
