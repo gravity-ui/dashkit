@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.7.1](https://github.com/gravity-ui/dashkit/compare/v8.7.0...v8.7.1) (2024-07-18)
+
+
+### Bug Fixes
+
+* fix shadow for rounded cornered single control ([#159](https://github.com/gravity-ui/dashkit/issues/159)) ([168584d](https://github.com/gravity-ui/dashkit/commit/168584d2386388ddf9a68e7d0acc47e6acb4d28d))
+
 ## [8.7.0](https://github.com/gravity-ui/dashkit/compare/v8.6.0...v8.7.0) (2024-07-18)
 
 
