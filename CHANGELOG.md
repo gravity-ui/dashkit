@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.8.0](https://github.com/gravity-ui/dashkit/compare/v8.7.2...v8.8.0) (2024-07-19)
+
+
+### Features
+
+* add context to render group method ([#163](https://github.com/gravity-ui/dashkit/issues/163)) ([76eaf01](https://github.com/gravity-ui/dashkit/commit/76eaf01adfec6368c28eb71abeb5f5baa26f474a))
+
 ## [8.7.2](https://github.com/gravity-ui/dashkit/compare/v8.7.1...v8.7.2) (2024-07-18)
 
 
