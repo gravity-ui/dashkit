@@ -71,12 +71,19 @@ function useMemoStateContext(props) {
         (layout) => {
             const currentInnerLayout = layout.map((item) => {
                 if (item.i in originalLayouts.current) {
-                    return {
-                        ...originalLayouts.current[item.i],
-                        w: item.w,
-                        x: item.x,
-                        y: item.y,
-                    };
+                    // eslint-disable-next-line no-unused-vars
+                    const {parent, ...originalCopy} = originalLayouts.current[item.i];
+
+                    // Updating original if parent has changed and saving copy as original
+                    // or leaving default
+                    if (item.parent) {
+                        originalCopy.parent = item.parent;
+                    }
+                    originalCopy.w = item.w;
+                    originalCopy.x = item.x;
+                    originalCopy.y = item.y;
+
+                    return originalCopy;
                 } else {
                     return {...item};
                 }
@@ -329,18 +336,19 @@ function useMemoStateContext(props) {
     }, [dragProps, props.registerManager]);
 
     const onDropDragOver = React.useCallback(
-        (_e, gridProps, groupLayout) => {
+        (_e, gridProps, groupLayout, predefinedItem) => {
             if (temporaryLayout) {
                 resetTemporaryLayout();
                 return false;
             }
-            if (!dragOverPlugin) {
+
+            if (!dragOverPlugin && !predefinedItem) {
                 return false;
             }
 
             let maxW = gridProps.cols;
-            const {defaultLayout} = dragOverPlugin;
-            const maxH = Math.min(gridProps.maxRows || Infinity, defaultLayout.maxH || Infinity);
+            const currentLayout = predefinedItem || dragOverPlugin.defaultLayout;
+            const maxH = Math.min(gridProps.maxRows || Infinity, currentLayout.maxH || Infinity);
 
             if (gridProps.compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP) {
                 maxW = groupLayout.reduce((memo, item) => memo - item.w, gridProps.cols);
@@ -349,16 +357,16 @@ function useMemoStateContext(props) {
             if (
                 maxW === 0 ||
                 maxH === 0 ||
-                maxW < defaultLayout.minW ||
-                maxH < defaultLayout.minH
+                maxW < currentLayout.minW ||
+                maxH < currentLayout.minH
             ) {
                 return false;
             }
 
             const {
-                h = defaultLayout?.h || DEFAULT_WIDGET_HEIGHT,
-                w = defaultLayout?.w || DEFAULT_WIDGET_WIDTH,
-            } = dragProps.layout || {};
+                h = currentLayout?.h || DEFAULT_WIDGET_HEIGHT,
+                w = currentLayout?.w || DEFAULT_WIDGET_WIDTH,
+            } = dragProps?.layout || {};
 
             return {
                 h: maxH ? Math.min(h, maxH) : h,
