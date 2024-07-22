@@ -6,6 +6,17 @@ import {OVERLAY_CLASS_NAME} from '../../constants';
 
 const {compact, compactType} = utils;
 
+// pointer-events disabled to make mouse events be able to passthrought
+// while dragging element out of the grid the mouse positioned over grid item
+// so there is only two ways to get it, calculate rect or just give browser make his work
+const DRAGGING_PLACEHOLDER_STYLE = {pointerEvents: 'none'};
+
+// when shared element is dragged over another group we still creating placeholder for it
+// cause react-grid-layout is havely dependent on this element
+// while in future there will be some wey not to create dummy div and hide it with opacity
+// this hack is all what i've got now
+const DRAGGING_PLACEHOLDER_HIDDEN_STYLE = {...DRAGGING_PLACEHOLDER_STYLE, opacity: 0};
+
 class DragOverLayout extends ReactGridLayout {
     constructor(...args) {
         super(...args);
@@ -24,6 +35,8 @@ class DragOverLayout extends ReactGridLayout {
     componentDidMount() {
         super.componentDidMount?.();
 
+        // If cursor is moved out of the window there is a bug
+        // which leaves placeholder element in grid, this action needed to reset this state
         window.addEventListener('dragend', this.resetExternalPlaceholder);
         const innerElement = this.getInnerElement();
 
@@ -45,19 +58,30 @@ class DragOverLayout extends ReactGridLayout {
             innerElement.removeEventListener('mouseleave', this.mouseLeaveHandler);
             innerElement.removeEventListener('mousemove', this.mouseMoveHandler);
         }
+
+        // Resetting instance props
+        this._isExited = false;
+        this._savedLayout = null;
+        this._savesActiveDragId = null;
     }
 
     containerHeight() {
-        // Resetting height when last element removed
+        // react-grid-layout doens't calculate it's height when last element is removed
+        // and just keeps the previous value
+        // so for autosize to work in that case we are resetting it's height value
         if (this.props.autoSize && this.state.layout.length === 0) {
-            return 'unset';
+            return;
         }
 
         return super.containerHeight();
     }
 
+    // innerRef is passed by WithProvider without this wrapper there are only
+    // * findDOMNode - deprecated
+    // * rewrite whole ReactGridLayout.render method
+    // so in that case don't try to use this class on it's own
+    // or pass innerRef: React.MutableRef as it's not optional prop
     getInnerElement() {
-        // innerRef is passed by WithProvider
         return this.props.innerRef?.current || null;
     }
 
@@ -73,7 +97,7 @@ class DragOverLayout extends ReactGridLayout {
                 rect.right <= e.clientX)
         ) {
             if (!this._isExited) {
-                this.placeholderLocalReset(i);
+                this.hideLocalPlaceholder(i);
                 this._isExited = true;
                 this.props.onDragExit?.();
             }
@@ -87,8 +111,8 @@ class DragOverLayout extends ReactGridLayout {
     };
 
     extendedOnDragStop = (i, x, y, sintEv) => {
+        // Restoring layout if item was dropped outside of the grid
         if (this._isExited && this._savedLayout) {
-            // Restoring layout
             const l = utils.getLayoutItem(this._savedLayout, i);
 
             // Create placeholder (display only)
@@ -100,23 +124,23 @@ class DragOverLayout extends ReactGridLayout {
                 placeholder: true,
                 i: i,
             };
+            const savedLayout = this._savedLayout;
 
             this.setState(
                 {
-                    layout: this._savedLayout,
+                    layout: savedLayout,
                     activeDrag: placeholder,
                 },
                 () => {
-                    this._savesActiveDragId = null;
                     this.parentOnDragStop(i, x, y, sintEv);
-                    this._savedLayout = null;
                 },
             );
         } else {
-            this._savesActiveDragId = null;
             this.parentOnDragStop(i, x, y, sintEv);
         }
 
+        this._savedLayout = null;
+        this._savesActiveDragId = null;
         this._isExited = false;
     };
 
@@ -136,7 +160,6 @@ class DragOverLayout extends ReactGridLayout {
     mouseMoveHandler = (e) => {
         if (this.props.sourceGroup) {
             this.onDragOver(e);
-            // this.removeDroppingPlaceholder();
         }
     };
 
@@ -155,6 +178,7 @@ class DragOverLayout extends ReactGridLayout {
         }
     };
 
+    // Reset placeholder when item dragged from outside
     resetExternalPlaceholder = () => {
         if (this.dragEnterCounter) {
             this.dragEnterCounter = 0;
@@ -162,7 +186,8 @@ class DragOverLayout extends ReactGridLayout {
         }
     };
 
-    placeholderLocalReset = (i) => {
+    // Hide placeholder when element is dragged out
+    hideLocalPlaceholder = (i) => {
         const {layout} = this.state;
         const {cols} = this.props;
         this._savedLayout = layout.map((item) => ({...item}));
@@ -203,31 +228,45 @@ class DragOverLayout extends ReactGridLayout {
         if (!gridItem) {
             return gridItem;
         }
-        const {props} = gridItem;
+        const {props: itemProps} = gridItem;
 
         if (isDroppingItem) {
-            const {containerWidth, cols, w, h, rowHeight, margin, transformScale} = props;
+            const {
+                containerWidth,
+                cols,
+                w,
+                h,
+                rowHeight,
+                margin,
+                transformScale,
+                droppingPosition,
+            } = itemProps;
 
             const leftOffset = (((containerWidth / cols) * w) / 2 || 0) * transformScale;
             const topOffset = ((h * rowHeight + (h - 1) * margin[1]) / 2 || 0) * transformScale;
-            const dragStyles = this.props.sourceGroup
-                ? // Hiding duplicate placeholder
-                  {opacity: 0, pointerEvents: 'none'}
-                : {pointerEvents: 'none'};
 
+            const dragStyles = this.props.sourceGroup
+                ? DRAGGING_PLACEHOLDER_HIDDEN_STYLE
+                : DRAGGING_PLACEHOLDER_STYLE;
+
+            // React.cloneElement is just cleaner then copy-paste whole processGridItem method
             return React.cloneElement(gridItem, {
-                style: props.style ? {...props.style, ...dragStyles} : dragStyles,
+                style: itemProps.style ? {...itemProps.style, ...dragStyles} : dragStyles,
                 className: OVERLAY_CLASS_NAME,
                 droppingPosition: {
-                    ...props.droppingPosition,
-                    left: props.droppingPosition.left - leftOffset,
-                    top: props.droppingPosition.top - topOffset,
+                    ...droppingPosition,
+                    left: droppingPosition.left - leftOffset,
+                    top: droppingPosition.top - topOffset,
                 },
             });
-        } else if (props.i === this.state.activeDrag?.i || props.i === this._savesActiveDragId) {
-            const dragStyles = {pointerEvents: 'none'};
+        } else if (
+            itemProps.i === this.state.activeDrag?.i ||
+            itemProps.i === this._savesActiveDragId
+        ) {
+            const dragStyles = DRAGGING_PLACEHOLDER_STYLE;
+
             return React.cloneElement(gridItem, {
-                style: props.style ? {...props.style, ...dragStyles} : dragStyles,
+                style: itemProps.style ? {...itemProps.style, ...dragStyles} : dragStyles,
             });
         }
 
