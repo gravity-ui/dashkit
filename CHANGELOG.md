@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.8.1](https://github.com/gravity-ui/dashkit/compare/v8.8.0...v8.8.1) (2024-07-22)
+
+
+### Bug Fixes
+
+* removed undefined parent ([#165](https://github.com/gravity-ui/dashkit/issues/165)) ([0286e01](https://github.com/gravity-ui/dashkit/commit/0286e01e02c444480e347cb0af8c1f45f7202632))
+
 ## [8.8.0](https://github.com/gravity-ui/dashkit/compare/v8.7.2...v8.8.0) (2024-07-19)
 
 
