@@ -133,7 +133,6 @@ class DragOverLayout extends ReactGridLayout {
         if (!this._isMouseOver) {
             if (!this._savedDragoutState) {
                 this._savedDragoutState = this.hideLocalPlaceholder(i);
-                this.props.onDragExit?.();
             }
 
             return;
@@ -177,12 +176,15 @@ class DragOverLayout extends ReactGridLayout {
 
     extendedOnDragEnter = (...args) => {
         this._isMouseOver = true;
-        return this.parentOnDragEnter(...args);
+
+        this.parentOnDragEnter(...args);
     };
 
     extendedOnDragLeave = (...args) => {
-        this._isMouseOver = true;
-        return this.parentOnDragLeave(...args);
+        this._isMouseOver = false;
+
+        this.parentOnDragLeave(...args);
+        this.props.onDragExit?.();
     };
 
     // Proxy mouse events -> drag methods for dnd between groups
@@ -199,6 +201,7 @@ class DragOverLayout extends ReactGridLayout {
 
         if (this.props.hasSharedDragItem) {
             this.parentOnDragLeave(e);
+            this.props.onDragExit?.();
         }
     };
 
