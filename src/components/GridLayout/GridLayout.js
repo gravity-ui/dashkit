@@ -121,7 +121,6 @@ export default class GridLayout extends React.PureComponent {
             const onDrop = this._onDrop.bind(this, group);
             const onDropDragOver = this._onDropDragOver.bind(this, group);
             const onDragExit = this._onDragExit.bind(this, group);
-            const onSharedDrop = this._onSharedDrop.bind(this, group);
 
             this._memoCallbacksForGroups[group] = {
                 onDragStart,
@@ -130,7 +129,6 @@ export default class GridLayout extends React.PureComponent {
                 onDrop,
                 onDropDragOver,
                 onDragExit,
-                onSharedDrop,
             };
         }
 
@@ -215,16 +213,22 @@ export default class GridLayout extends React.PureComponent {
         }
     }
 
-    _onDragStart = (group, _newLayout, item) => {
+    _onDragStart = (group, _newLayout, layoutItem) => {
         if (this.temporaryLayout) return;
+
+        let currentDraggingElement = this.state.currentDraggingElement;
+        if (!currentDraggingElement) {
+            const _id = layoutItem.i;
+            const item = this.context.config.items.find(({id}) => id === _id);
+            currentDraggingElement = [group, layoutItem, item];
+        }
 
         if (this.context.dragOverPlugin) {
             this.setState({isDragging: true});
         } else {
             this.setState({
                 isDragging: true,
-                // Think about it
-                currentDraggingElement: this.state.currentDraggingElement || [group, item],
+                currentDraggingElement,
                 draggedOverGroup: group,
             });
         }
@@ -251,7 +255,8 @@ export default class GridLayout extends React.PureComponent {
             draggedOverGroup !== null &&
             draggedOverGroup !== currentDraggingElement[0]
         ) {
-            this.setState({isDragging: false});
+            // Skipping layout update when change event called for source grid
+            // and waiting _onDrop
             return;
         }
 
@@ -310,15 +315,8 @@ export default class GridLayout extends React.PureComponent {
         layoutChange(groupedLayout);
     };
 
-    _onDrop = (group, newLayout, item, e) => {
-        if (!item) {
-            return false;
-        }
-
-        const {editMode, onDrop} = this.context;
-        if (!editMode) {
-            return false;
-        }
+    _onExternalDrop = (group, newLayout, item, e) => {
+        const {onDrop} = this.context;
 
         if (group !== DEFAULT_GROUP) {
             item.parent = group;
@@ -328,6 +326,19 @@ export default class GridLayout extends React.PureComponent {
         this.setState({isDragging: false});
 
         onDrop?.(groupedLayout, item, e);
+    };
+
+    _onDrop = (group, newLayout, item, e) => {
+        if (!item || !this.context.editMode) {
+            return false;
+        }
+
+        const {draggedOverGroup, currentDraggingElement} = this.state;
+        if (currentDraggingElement && draggedOverGroup === group) {
+            this._onSharedDrop(group, newLayout, item);
+        } else {
+            this._onExternalDrop(group, newLayout, item, e);
+        }
     };
 
     _onDropDragOver = (group, e) => {
@@ -341,8 +352,8 @@ export default class GridLayout extends React.PureComponent {
         const {properties, layout} = this.getLayoutAndPropsByGroup(group);
 
         if (currentDraggingElement) {
-            const [, {h, w}] = currentDraggingElement;
-            return onDropDragOver(e, properties, layout, {h, w});
+            const [, {h, w, i}, {type}] = currentDraggingElement;
+            return onDropDragOver(e, properties, layout, {h, w, i, type});
         }
 
         if (dragOverPlugin) {
@@ -401,11 +412,9 @@ export default class GridLayout extends React.PureComponent {
         }
 
         const {callbacks, layout} = this.getMemoGroupProps(group, renderLayout, properties);
-        let sharedDragProps = {};
-
-        if (currentDraggingElement && currentDraggingElement[0] !== group) {
-            sharedDragProps = {sourceGroup: currentDraggingElement[0]};
-        }
+        const hasSharedDragItem = Boolean(
+            currentDraggingElement && currentDraggingElement[0] !== group,
+        );
 
         return (
             <Layout
@@ -422,8 +431,7 @@ export default class GridLayout extends React.PureComponent {
                 onDragExit={callbacks.onDragExit}
                 onDropDragOver={callbacks.onDropDragOver}
                 onDrop={callbacks.onDrop}
-                onSharedDrop={callbacks.onSharedDrop}
-                {...sharedDragProps}
+                hasSharedDragItem={hasSharedDragItem}
                 {...(draggableHandleClassName
                     ? {draggableHandle: `.${draggableHandleClassName}`}
                     : null)}

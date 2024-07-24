@@ -60,7 +60,7 @@ function useMemoStateContext(props) {
                 props.onChange({config, itemsStateAndParams, groups});
             }
         },
-        [props.config, props.itemsStateAndParams, props.onChange],
+        [props.config, props.groups, props.itemsStateAndParams, props.onChange],
     );
 
     // каллбэк вызывающийся при изменение лэйаута сетки, первым аргументом приходит актуальный конфиг лэйаута,
@@ -336,19 +336,25 @@ function useMemoStateContext(props) {
     }, [dragProps, props.registerManager]);
 
     const onDropDragOver = React.useCallback(
-        (_e, gridProps, groupLayout, predefinedItem) => {
+        (_e, gridProps, groupLayout, sharedItem) => {
             if (temporaryLayout) {
                 resetTemporaryLayout();
                 return false;
             }
 
-            if (!dragOverPlugin && !predefinedItem) {
+            let defaultLayout;
+            if (sharedItem) {
+                const {type, h, w} = sharedItem;
+                const _defaults = props.registerManager.getItem(type);
+                defaultLayout = _defaults ? {..._defaults.defaultLayout, h, w} : {h, w};
+            } else if (dragOverPlugin) {
+                defaultLayout = dragOverPlugin.defaultLayout;
+            } else {
                 return false;
             }
 
             let maxW = gridProps.cols;
-            const currentLayout = predefinedItem || dragOverPlugin.defaultLayout;
-            const maxH = Math.min(gridProps.maxRows || Infinity, currentLayout.maxH || Infinity);
+            const maxH = Math.min(gridProps.maxRows || Infinity, defaultLayout.maxH || Infinity);
 
             if (gridProps.compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP) {
                 maxW = groupLayout.reduce((memo, item) => memo - item.w, gridProps.cols);
@@ -357,15 +363,15 @@ function useMemoStateContext(props) {
             if (
                 maxW === 0 ||
                 maxH === 0 ||
-                maxW < currentLayout.minW ||
-                maxH < currentLayout.minH
+                maxW < defaultLayout.minW ||
+                maxH < defaultLayout.minH
             ) {
                 return false;
             }
 
             const {
-                h = currentLayout?.h || DEFAULT_WIDGET_HEIGHT,
-                w = currentLayout?.w || DEFAULT_WIDGET_WIDTH,
+                h = defaultLayout?.h || DEFAULT_WIDGET_HEIGHT,
+                w = defaultLayout?.w || DEFAULT_WIDGET_WIDTH,
             } = dragProps?.layout || {};
 
             return {
