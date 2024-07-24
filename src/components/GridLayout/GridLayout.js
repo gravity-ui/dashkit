@@ -216,16 +216,16 @@ export default class GridLayout extends React.PureComponent {
     _onDragStart = (group, _newLayout, layoutItem) => {
         if (this.temporaryLayout) return;
 
-        let currentDraggingElement = this.state.currentDraggingElement;
-        if (!currentDraggingElement) {
-            const _id = layoutItem.i;
-            const item = this.context.config.items.find(({id}) => id === _id);
-            currentDraggingElement = [group, layoutItem, item];
-        }
-
         if (this.context.dragOverPlugin) {
             this.setState({isDragging: true});
         } else {
+            let currentDraggingElement = this.state.currentDraggingElement;
+            if (!currentDraggingElement) {
+                const _id = layoutItem.i;
+                const item = this.context.config.items.find(({id}) => id === _id);
+                currentDraggingElement = [group, layoutItem, item];
+            }
+
             this.setState({
                 isDragging: true,
                 currentDraggingElement,
