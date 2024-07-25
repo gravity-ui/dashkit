@@ -64,6 +64,8 @@
     transition: none;
     z-index: 3;
     will-change: transform;
+    // needs for drag n drop between multiple groups
+    pointer-events: none;
 }
 
 .react-grid-item.dashkit-grid-item_is-focused {

@@ -120,7 +120,7 @@ export default class GridLayout extends React.PureComponent {
             const onStop = this._onStop.bind(this, group);
             const onDrop = this._onDrop.bind(this, group);
             const onDropDragOver = this._onDropDragOver.bind(this, group);
-            const onDragExit = this._onDragExit.bind(this, group);
+            const onDragTargetRestore = this._onTargetRestore.bind(this, group);
 
             this._memoCallbacksForGroups[group] = {
                 onDragStart,
@@ -128,7 +128,7 @@ export default class GridLayout extends React.PureComponent {
                 onResizeStop: onStop,
                 onDrop,
                 onDropDragOver,
-                onDragExit,
+                onDragTargetRestore,
             };
         }
 
@@ -240,10 +240,14 @@ export default class GridLayout extends React.PureComponent {
         });
     };
 
-    _onDragExit = () => {
-        this.setState({
-            draggedOverGroup: null,
-        });
+    _onTargetRestore = () => {
+        const {currentDraggingElement} = this.state;
+
+        if (currentDraggingElement) {
+            this.setState({
+                draggedOverGroup: currentDraggingElement[0],
+            });
+        }
     };
 
     _onStop = (group, newLayout) => {
@@ -398,7 +402,7 @@ export default class GridLayout extends React.PureComponent {
             outerDnDEnable,
         } = this.context;
 
-        const {currentDraggingElement} = this.state;
+        const {currentDraggingElement, draggedOverGroup} = this.state;
 
         const properties = groupGridProperties
             ? groupGridProperties({
@@ -415,6 +419,11 @@ export default class GridLayout extends React.PureComponent {
         const hasSharedDragItem = Boolean(
             currentDraggingElement && currentDraggingElement[0] !== group,
         );
+        const isDragCaptured =
+            currentDraggingElement &&
+            group === currentDraggingElement[0] &&
+            draggedOverGroup !== null &&
+            draggedOverGroup !== group;
 
         return (
             <Layout
@@ -428,10 +437,11 @@ export default class GridLayout extends React.PureComponent {
                 onDragStart={callbacks.onDragStart}
                 onDragStop={callbacks.onDragStop}
                 onResizeStop={callbacks.onResizeStop}
-                onDragExit={callbacks.onDragExit}
+                onDragTargetRestore={callbacks.onDragTargetRestore}
                 onDropDragOver={callbacks.onDropDragOver}
                 onDrop={callbacks.onDrop}
                 hasSharedDragItem={hasSharedDragItem}
+                isDragCaptured={isDragCaptured}
                 {...(draggableHandleClassName
                     ? {draggableHandle: `.${draggableHandleClassName}`}
                     : null)}
