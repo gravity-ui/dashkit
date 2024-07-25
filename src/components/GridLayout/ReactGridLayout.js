@@ -138,12 +138,13 @@ class DragOverLayout extends ReactGridLayout {
             return;
         }
 
+        this._savedDragoutState = null;
         // parent onDrag will show new placeholder again
         this.parentOnDrag(i, x, y, sintEv);
     };
 
     extendedOnDragStop = (i, x, y, sintEv) => {
-        // Restoring layout if item was dropped outside of the grid and wasn't captured
+        // Restoring layout if item was dropped outside of the grid
         if (this._savedDragoutState) {
             const savedLayout = this._savedDragoutState.layout;
             const l = utils.getLayoutItem(savedLayout, i);
