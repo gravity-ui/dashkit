@@ -174,7 +174,11 @@ export default class GridLayout extends React.PureComponent {
 
         const newItemsLayoutById = newLayout.reduce((memo, item) => {
             const parent = itemsByGroup[item.i].parent;
-            memo[item.i] = {...item, ...(parent ? {parent} : {})};
+            memo[item.i] = {...item};
+
+            if (parent) {
+                memo[item.i].parent = parent;
+            }
             return memo;
         }, {});
 
