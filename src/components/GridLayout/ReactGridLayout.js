@@ -164,6 +164,7 @@ class DragOverLayout extends ReactGridLayout {
     mouseLeaveHandler = (e) => {
         if (this.props.hasSharedDragItem) {
             this.onDragLeave(e);
+            this.props.onDragTargetRestore?.();
         }
     };
 
