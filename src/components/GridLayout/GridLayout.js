@@ -18,6 +18,8 @@ export default class GridLayout extends React.PureComponent {
         this.state = {
             isDragging: false,
             isPageHidden: false,
+            currentDraggingElement: null,
+            draggedOverGroup: null,
         };
     }
 
@@ -114,18 +116,19 @@ export default class GridLayout extends React.PureComponent {
 
     getMemoGroupCallbacks = (group) => {
         if (!this._memoCallbacksForGroups[group]) {
-            const onStart = this._onStart;
+            const onDragStart = this._onDragStart.bind(this, group);
             const onStop = this._onStop.bind(this, group);
             const onDrop = this._onDrop.bind(this, group);
             const onDropDragOver = this._onDropDragOver.bind(this, group);
+            const onDragTargetRestore = this._onTargetRestore.bind(this, group);
 
             this._memoCallbacksForGroups[group] = {
-                onDragStart: onStart,
-                onResizeStart: onStart,
+                onDragStart,
                 onDragStop: onStop,
                 onResizeStop: onStop,
-                onDrop: onDrop,
+                onDrop,
                 onDropDragOver,
+                onDragTargetRestore,
             };
         }
 
@@ -171,13 +174,11 @@ export default class GridLayout extends React.PureComponent {
 
         const newItemsLayoutById = newLayout.reduce((memo, item) => {
             const parent = itemsByGroup[item.i].parent;
-
             memo[item.i] = {...item};
 
             if (parent) {
                 memo[item.i].parent = parent;
             }
-
             return memo;
         }, {});
 
@@ -216,15 +217,64 @@ export default class GridLayout extends React.PureComponent {
         }
     }
 
-    _onStart = () => {
+    _onDragStart = (group, _newLayout, layoutItem) => {
         if (this.temporaryLayout) return;
 
-        this.setState({isDragging: true});
+        if (this.context.dragOverPlugin) {
+            this.setState({isDragging: true});
+        } else {
+            let currentDraggingElement = this.state.currentDraggingElement;
+            if (!currentDraggingElement) {
+                const _id = layoutItem.i;
+                const item = this.context.config.items.find(({id}) => id === _id);
+                currentDraggingElement = [group, layoutItem, item];
+            }
+
+            this.setState({
+                isDragging: true,
+                currentDraggingElement,
+                draggedOverGroup: group,
+            });
+        }
+    };
+
+    _onResizeStart = () => {
+        this.setState({
+            isDragging: true,
+        });
+    };
+
+    _onTargetRestore = () => {
+        const {currentDraggingElement} = this.state;
+
+        if (currentDraggingElement) {
+            this.setState({
+                draggedOverGroup: currentDraggingElement[0],
+            });
+        }
     };
 
     _onStop = (group, newLayout) => {
         const {layoutChange, onDrop, temporaryLayout} = this.context;
+        const {draggedOverGroup, currentDraggingElement} = this.state;
+
+        if (
+            currentDraggingElement &&
+            draggedOverGroup !== null &&
+            draggedOverGroup !== currentDraggingElement[0]
+        ) {
+            // Skipping layout update when change event called for source grid
+            // and waiting _onDrop
+            return;
+        }
+
         const groupedLayout = this.mergeGroupsLayout(group, newLayout);
+
+        this.setState({
+            isDragging: false,
+            currentDraggingElement: null,
+            draggedOverGroup: null,
+        });
 
         if (temporaryLayout) {
             onDrop?.(
@@ -234,38 +284,91 @@ export default class GridLayout extends React.PureComponent {
         } else {
             layoutChange(groupedLayout);
         }
-        this.setState({isDragging: false});
     };
 
-    _onDropDragOver = (group, e) => {
-        const {editMode, dragOverPlugin} = this.context;
+    _onSharedDrop = (targetGroup, newLayout, tempItem) => {
+        const {currentDraggingElement} = this.state;
+        const {layoutChange} = this.context;
 
-        if (!editMode || !dragOverPlugin) {
-            return false;
+        if (!currentDraggingElement) {
+            return;
         }
 
-        const {properties, layout} = this.getLayoutAndPropsByGroup(group);
+        const [, sourceItem] = currentDraggingElement;
 
-        return this.context.onDropDragOver(e, properties, layout);
+        const groupedLayout = this.mergeGroupsLayout(targetGroup, newLayout, tempItem).map(
+            (item) => {
+                if (item.i === sourceItem.i) {
+                    const copy = {...tempItem};
+
+                    delete copy.parent;
+                    if (targetGroup !== DEFAULT_GROUP) {
+                        copy.parent = targetGroup;
+                    }
+                    copy.i = sourceItem.i;
+
+                    return copy;
+                }
+
+                return item;
+            },
+        );
+
+        this.setState({
+            isDragging: false,
+            currentDraggingElement: null,
+            draggedOverGroup: null,
+        });
+
+        layoutChange(groupedLayout);
     };
 
-    _onDrop = (group, newLayout, item, e) => {
-        if (!item) {
-            return false;
-        }
-
-        const {editMode, onDrop} = this.context;
-        if (!editMode) {
-            return false;
-        }
+    _onExternalDrop = (group, newLayout, item, e) => {
+        const {onDrop} = this.context;
 
         if (group !== DEFAULT_GROUP) {
             item.parent = group;
         }
 
         const groupedLayout = this.mergeGroupsLayout(group, newLayout, item);
+        this.setState({isDragging: false});
 
         onDrop?.(groupedLayout, item, e);
+    };
+
+    _onDrop = (group, newLayout, item, e) => {
+        if (!item || !this.context.editMode) {
+            return false;
+        }
+
+        const {draggedOverGroup, currentDraggingElement} = this.state;
+        if (currentDraggingElement && draggedOverGroup === group) {
+            this._onSharedDrop(group, newLayout, item);
+        } else {
+            this._onExternalDrop(group, newLayout, item, e);
+        }
+    };
+
+    _onDropDragOver = (group, e) => {
+        const {editMode, dragOverPlugin, onDropDragOver} = this.context;
+        const {currentDraggingElement} = this.state;
+
+        if (!editMode || (!dragOverPlugin && !currentDraggingElement)) {
+            return false;
+        }
+
+        const {properties, layout} = this.getLayoutAndPropsByGroup(group);
+
+        if (currentDraggingElement) {
+            const [, {h, w, i}, {type}] = currentDraggingElement;
+            return onDropDragOver(e, properties, layout, {h, w, i, type});
+        }
+
+        if (dragOverPlugin) {
+            return onDropDragOver(e, properties, layout);
+        }
+
+        return false;
     };
 
     renderTemporaryPlaceholder() {
@@ -303,6 +406,8 @@ export default class GridLayout extends React.PureComponent {
             outerDnDEnable,
         } = this.context;
 
+        const {currentDraggingElement, draggedOverGroup} = this.state;
+
         const properties = groupGridProperties
             ? groupGridProperties({
                   ...registerManager.gridLayout,
@@ -315,6 +420,14 @@ export default class GridLayout extends React.PureComponent {
         }
 
         const {callbacks, layout} = this.getMemoGroupProps(group, renderLayout, properties);
+        const hasSharedDragItem = Boolean(
+            currentDraggingElement && currentDraggingElement[0] !== group,
+        );
+        const isDragCaptured =
+            currentDraggingElement &&
+            group === currentDraggingElement[0] &&
+            draggedOverGroup !== null &&
+            draggedOverGroup !== group;
 
         return (
             <Layout
@@ -324,18 +437,21 @@ export default class GridLayout extends React.PureComponent {
                 key={`group_${group}`}
                 isDraggable={editMode}
                 isResizable={editMode}
+                onResizeStart={this._onResizeStart}
                 onDragStart={callbacks.onDragStart}
                 onDragStop={callbacks.onDragStop}
-                onResizeStart={callbacks.onResizeStart}
                 onResizeStop={callbacks.onResizeStop}
+                onDragTargetRestore={callbacks.onDragTargetRestore}
+                onDropDragOver={callbacks.onDropDragOver}
+                onDrop={callbacks.onDrop}
+                hasSharedDragItem={hasSharedDragItem}
+                isDragCaptured={isDragCaptured}
                 {...(draggableHandleClassName
                     ? {draggableHandle: `.${draggableHandleClassName}`}
                     : null)}
                 {...(outerDnDEnable
                     ? {
                           isDroppable: true,
-                          onDropDragOver: callbacks.onDropDragOver,
-                          onDrop: callbacks.onDrop,
                       }
                     : null)}
                 draggableCancel={`.${OVERLAY_CONTROLS_CLASS_NAME}`}

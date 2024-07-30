@@ -1,5 +1,6 @@
 import React from 'react';
 
+import {cn} from '@bem-react/classname';
 import {ChartColumn, Copy, Heading, Sliders, TextAlignLeft} from '@gravity-ui/icons';
 import {Button, Icon} from '@gravity-ui/uikit';
 
@@ -20,6 +21,8 @@ import {DeleteIcon} from '../../../icons/DeleteIcon';
 
 import {Demo, DemoRow} from './Demo';
 import {fixedGroup, getConfig} from './utils';
+
+const b = cn('dashkit-demo');
 
 export const DashKitGroupsShowcase: React.FC = () => {
     const [editMode, setEditMode] = React.useState(true);
@@ -158,29 +161,11 @@ export const DashKitGroupsShowcase: React.FC = () => {
             {
                 id: fixedGroup,
                 render: (id: string, children: React.ReactNode, props: DashkitGroupRenderProps) => {
-                    const defaultStyles: React.CSSProperties = {
-                        backgroundColor: '#ccc',
-                        display: 'flex',
-                        flexDirection: 'column',
-                    };
-
-                    const style: React.CSSProperties = props.editMode
-                        ? {
-                              position: 'static',
-                              overflow: 'visible',
-                              minHeight: 48,
-                          }
-                        : {
-                              position: 'sticky',
-                              overflow: 'auto',
-                              top: 0,
-                              zIndex: 3,
-                              maxHeight: 300,
-                              minHeight: 'unset',
-                          };
-
                     return (
-                        <div key={id} style={{...defaultStyles, ...style}}>
+                        <div
+                            key={id}
+                            className={b('inline-group', {['edit-mode']: props.editMode})}
+                        >
                             {children}
                         </div>
                     );
