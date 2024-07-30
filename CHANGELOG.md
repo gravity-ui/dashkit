@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.9.0](https://github.com/gravity-ui/dashkit/compare/v8.8.1...v8.9.0) (2024-07-30)
+
+
+### Features
+
+* dnd between different groups ([#166](https://github.com/gravity-ui/dashkit/issues/166)) ([c0e21e4](https://github.com/gravity-ui/dashkit/commit/c0e21e405f8c01dbbce0bb937a32458a32d64e30))
+
 ## [8.8.1](https://github.com/gravity-ui/dashkit/compare/v8.8.0...v8.8.1) (2024-07-22)
 
 
