@@ -1,5 +1,6 @@
 import React from 'react';
 
+import {Ellipsis, Gear, Xmark} from '@gravity-ui/icons';
 import {
     Button,
     ButtonSize,
@@ -12,12 +13,14 @@ import {
 } from '@gravity-ui/uikit';
 import noop from 'lodash/noop';
 
-import {COPIED_WIDGET_STORE_KEY, MenuItems, OVERLAY_CONTROLS_CLASS_NAME} from '../../constants';
+import {
+    COPIED_WIDGET_STORE_KEY,
+    MenuItems,
+    OVERLAY_CONTROLS_CLASS_NAME,
+    OVERLAY_ICON_SIZE,
+} from '../../constants';
 import {DashkitOvelayControlsContext} from '../../context/DashKitContext';
 import {i18n} from '../../i18n';
-import {CloseIcon} from '../../icons/CloseIcon';
-import {CogIcon} from '../../icons/CogIcon';
-import {DotsIcon} from '../../icons/DotsIcon';
 import type {ConfigItem, ConfigLayout, ItemState, PluginBase, StringParams} from '../../shared';
 import {MenuItem, Settings} from '../../typings';
 import {cn} from '../../utils/cn';
@@ -133,7 +136,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                 onClick={() => onItemClickHandler(this.props.configItem)}
                 qa={qa}
             >
-                <Icon data={icon || CogIcon} size={icon ? iconSize : 24} />
+                <Icon data={icon || Gear} size={icon ? iconSize : OVERLAY_ICON_SIZE} />
             </Button>
         );
     };
@@ -182,7 +185,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                 onClick={this.onEditItem}
                 qa="dashkit-overlay-control-settings"
             >
-                <Icon data={CogIcon} size="24" />
+                <Icon data={Gear} size={OVERLAY_ICON_SIZE} />
             </Button>
         );
     };
@@ -231,7 +234,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                 onClick={this.onRemoveItem}
                 qa="dashkit-overlay-control-menu"
             >
-                <Icon data={CloseIcon} size="12" />
+                <Icon data={Xmark} size={OVERLAY_ICON_SIZE} />
             </Button>
         );
     }
@@ -305,7 +308,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                         pin={isOnlyOneItem ? 'round-round' : 'brick-round'}
                         qa="dashkit-overlay-control-menu"
                     >
-                        <Icon data={DotsIcon} size="16" />
+                        <Icon data={Ellipsis} size={OVERLAY_ICON_SIZE} />
                     </Button>
                 )}
             />

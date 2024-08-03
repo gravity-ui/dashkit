@@ -6,6 +6,8 @@ export const OVERLAY_CONTROLS_CLASS_NAME = 'dashkit-overlay-controls';
 
 export const OVERLAY_CLASS_NAME = 'dashkit-grid-item__overlay';
 
+export const OVERLAY_ICON_SIZE = 16;
+
 export const TEMPORARY_ITEM_ID = '__dropping-elem__';
 
 export const MenuItems = {
