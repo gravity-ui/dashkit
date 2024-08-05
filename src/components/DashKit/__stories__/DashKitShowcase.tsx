@@ -2,22 +2,22 @@ import React from 'react';
 
 import {
     ChartColumn,
+    Check,
+    CircleExclamationFill,
+    Copy,
+    Gear,
     Heading,
     Layers3Diagonal,
     PlugConnection,
     Sliders,
     TextAlignLeft,
+    TrashBin,
 } from '@gravity-ui/icons';
 import {Button, Icon} from '@gravity-ui/uikit';
 
 import {ActionPanel, DashKit, DashKitProps} from '../../..';
 import {MenuItems} from '../../../helpers';
 import {i18n} from '../../../i18n';
-import {CogIcon} from '../../../icons/CogIcon';
-import {CopyIcon} from '../../../icons/CopyIcon';
-import {DeleteIcon} from '../../../icons/DeleteIcon';
-import {TickIcon} from '../../../icons/TickIcon';
-import {WarningIcon} from '../../../icons/WarningIcon';
 import type {ConfigItem, OverlayControlItem} from '../../../index';
 import {cn} from '../../../utils/cn';
 
@@ -75,7 +75,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
             custom: [
                 {
                     title: 'Edit custom widget',
-                    icon: TickIcon,
+                    icon: Check,
                     handler: this.onCustomWidgetControlClick,
                     iconSize: 16,
                 },
@@ -84,7 +84,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                 {
                     allWidgetsControls: true,
                     title: 'Icon tooltip 1',
-                    icon: TickIcon,
+                    icon: Check,
                     handler: () => console.log('overlayControls::custom click'),
                     iconSize: 16,
                     visible: (item) => item.type !== 'text',
@@ -94,8 +94,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                     excludeWidgetsTypes: ['title'],
                     id: MenuItems.Settings,
                     title: 'Settings default',
-                    icon: WarningIcon,
-                    visible: (item) => item.type !== 'text',
+                    icon: CircleExclamationFill,
                 },
                 {
                     allWidgetsControls: true,
@@ -379,7 +378,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                     {
                         id: 'settings',
                         title: 'Menu setting text',
-                        icon: <Icon data={CogIcon} size={16} />,
+                        icon: <Icon data={Gear} size={16} />,
                         handler: () => {
                             console.log('menu::settings::click');
                         },
@@ -388,13 +387,13 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                     {
                         id: MenuItems.Copy,
                         title: 'Menu setting copy',
-                        icon: <Icon data={CopyIcon} size={16} />,
+                        icon: <Icon data={Copy} size={16} />,
                         visible: (item) => item.type !== 'custom',
                     },
                     {
                         id: MenuItems.Delete,
                         title: i18n('label_delete'), // for language change check
-                        icon: <Icon data={DeleteIcon} size={16} />,
+                        icon: <Icon data={TrashBin} size={16} />,
                         className: 'dashkit-overlay-controls__item_danger',
                         visible: (item) => item.type !== 'custom',
                     },
