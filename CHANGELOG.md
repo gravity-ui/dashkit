@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.9.1](https://github.com/gravity-ui/dashkit/compare/v8.9.0...v8.9.1) (2024-08-05)
+
+
+### Bug Fixes
+
+* icons changed to uikit ([#170](https://github.com/gravity-ui/dashkit/issues/170)) ([4650e49](https://github.com/gravity-ui/dashkit/commit/4650e49a8eb825221874db8124ed48cb9a75e4ee))
+
 ## [8.9.0](https://github.com/gravity-ui/dashkit/compare/v8.8.1...v8.9.0) (2024-07-30)
 
 
