@@ -404,6 +404,8 @@ export default class GridLayout extends React.PureComponent {
             focusable,
             draggableHandleClassName,
             outerDnDEnable,
+            onItemMountChange,
+            onItemRender,
         } = this.context;
 
         const {currentDraggingElement, draggedOverGroup} = this.state;
@@ -469,6 +471,8 @@ export default class GridLayout extends React.PureComponent {
                             noOverlay={noOverlay}
                             focusable={focusable}
                             withCustomHandle={Boolean(draggableHandleClassName)}
+                            onItemMountChange={onItemMountChange}
+                            onItemRender={onItemRender}
                         />
                     );
                 })}

@@ -71,6 +71,8 @@ class GridItem extends React.PureComponent {
 
     static contextType = DashKitContext;
 
+    _isAsyncItem = false;
+
     state = {
         isFocused: false,
     };
@@ -113,6 +115,36 @@ class GridItem extends React.PureComponent {
         });
     };
 
+    onMountChange = (isMounted) => {
+        if (isMounted) {
+            this._inited = true;
+
+            this.props.onItemMountChange?.(this.props.item, {
+                isAsync: this._isAsyncItem,
+                isMounted: isMounted,
+            });
+
+            if (!this._isAsyncItem) {
+                this.props.onItemRender?.(this.props.item);
+            }
+        } else {
+            this.props.onItemMountChange?.(this.props.item, {
+                isAsync: this._isAsyncItem,
+                isMounted: isMounted,
+            });
+        }
+    };
+
+    onBeforeLoad = () => {
+        this._isAsyncItem = true;
+
+        return this.onLoad;
+    };
+
+    onLoad = () => {
+        this.props.onItemRender?.(this.props.item);
+    };
+
     render() {
         // из-за бага, что Grid Items unmounts при изменении static, isDraggable, isResaizable
         // https://github.com/STRML/react-grid-layout/issues/721
@@ -128,7 +160,7 @@ class GridItem extends React.PureComponent {
             noOverlay,
             focusable,
             withCustomHandle,
-            isPlaceholder,
+            isPlaceholder = false,
         } = this.props;
         const {editMode} = this.context;
         const width = Number.parseInt(style.width, 10);
@@ -176,6 +208,8 @@ class GridItem extends React.PureComponent {
                         adjustWidgetLayout={this.props.adjustWidgetLayout}
                         layout={this.props.layout}
                         forwardedPluginRef={this.props.forwardedPluginRef}
+                        onMountChange={this.onMountChange}
+                        onBeforeLoad={this.onBeforeLoad}
                     />
                 </div>
                 {!noOverlay && this.renderOverlay()}

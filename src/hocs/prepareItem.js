@@ -18,6 +18,7 @@ export function prepareItem(Component) {
             isPlaceholder: PropTypes.bool,
 
             forwardedPluginRef: PropTypes.any,
+            onMountChange: PropTypes.func,
         };
 
         shouldComponentUpdate(nextProps) {
@@ -78,17 +79,20 @@ export function prepareItem(Component) {
         };
 
         render() {
-            const {item, isPlaceholder} = this.props;
+            const {item, isPlaceholder, forwardedPluginRef, onMountChange, onBeforeLoad} =
+                this.props;
             const {registerManager} = this.context;
             const {type} = item;
 
             return (
                 <Component
-                    forwardedPluginRef={this.props.forwardedPluginRef}
+                    forwardedPluginRef={forwardedPluginRef}
                     rendererProps={this.getRenderProps()}
                     registerManager={registerManager}
                     type={type}
                     isPlaceholder={isPlaceholder}
+                    onMountChange={onMountChange}
+                    onBeforeLoad={onBeforeLoad}
                 />
             );
         }

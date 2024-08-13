@@ -27,6 +27,7 @@ export interface PluginTextProps extends PluginWidgetProps {
     data: {
         text: string;
     } & PluginWidgetProps['data'];
+    onBeforeRender: () => () => void;
 }
 
 interface PluginTextState {
@@ -130,6 +131,8 @@ export class PluginText extends React.PureComponent<PluginTextProps, PluginTextS
         }
         this.setState({status: LoadStatus.Pending});
 
+        const onLoadComplete = this.props.onBeforeRender();
+
         try {
             let htmlText = '';
             if (this.state.text && this.state.text.trim()) {
@@ -137,6 +140,7 @@ export class PluginText extends React.PureComponent<PluginTextProps, PluginTextS
                 htmlText = loadedData.result;
             }
             if (this._isUnmounted) {
+                onLoadComplete();
                 return;
             }
             this.setState({
@@ -145,10 +149,12 @@ export class PluginText extends React.PureComponent<PluginTextProps, PluginTextS
             });
         } catch (e) {
             if (this._isUnmounted) {
+                onLoadComplete();
                 return;
             }
             this.setState({status: LoadStatus.Fail});
         }
+        onLoadComplete();
     }
 
     private onRetryClick = () => {
@@ -177,8 +183,15 @@ const plugin: PluginTextObject = {
         plugin._apiHandler = apiHandler;
         return plugin;
     },
-    renderer(props, forwardedRef) {
-        return <PluginText {...props} apiHandler={plugin._apiHandler} ref={forwardedRef} />;
+    renderer(props, forwardedRef, onBeforeRender) {
+        return (
+            <PluginText
+                {...props}
+                onBeforeRender={onBeforeRender}
+                apiHandler={plugin._apiHandler}
+                ref={forwardedRef}
+            />
+        );
     },
 };
 
