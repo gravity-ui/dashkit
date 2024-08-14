@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.10.0](https://github.com/gravity-ui/dashkit/compare/v8.9.1...v8.10.0) (2024-08-14)
+
+
+### Features
+
+* add mount and after render callbacks ([#172](https://github.com/gravity-ui/dashkit/issues/172)) ([2eaa1dc](https://github.com/gravity-ui/dashkit/commit/2eaa1dced6b3285e1458a292f31ad0a473f65437))
+
 ## [8.9.1](https://github.com/gravity-ui/dashkit/compare/v8.9.0...v8.9.1) (2024-08-05)
 
 
