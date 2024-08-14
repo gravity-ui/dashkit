@@ -404,6 +404,7 @@ export default class GridLayout extends React.PureComponent {
             focusable,
             draggableHandleClassName,
             outerDnDEnable,
+            layoutChange,
         } = this.context;
 
         const {currentDraggingElement, draggedOverGroup} = this.state;
@@ -444,6 +445,7 @@ export default class GridLayout extends React.PureComponent {
                 onDragTargetRestore={callbacks.onDragTargetRestore}
                 onDropDragOver={callbacks.onDropDragOver}
                 onDrop={callbacks.onDrop}
+                onLayoutChange={layoutChange}
                 hasSharedDragItem={hasSharedDragItem}
                 isDragCaptured={isDragCaptured}
                 {...(draggableHandleClassName
