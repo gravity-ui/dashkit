@@ -16,8 +16,10 @@ export function prepareItem(Component) {
             height: PropTypes.number,
             transform: PropTypes.string,
             isPlaceholder: PropTypes.bool,
+            onBeforeLoad: PropTypes.func,
 
             forwardedPluginRef: PropTypes.any,
+            onMountChange: PropTypes.func,
         };
 
         shouldComponentUpdate(nextProps) {
@@ -42,7 +44,16 @@ export function prepareItem(Component) {
 
         _currentRenderProps = {};
         getRenderProps = () => {
-            const {id, width, height, item, adjustWidgetLayout, layout, isPlaceholder} = this.props;
+            const {
+                id,
+                width,
+                height,
+                item,
+                adjustWidgetLayout,
+                layout,
+                isPlaceholder,
+                onBeforeLoad,
+            } = this.props;
             const {itemsState, itemsParams, registerManager, settings, context, editMode} =
                 this.context;
             const {data, defaults, namespace} = item;
@@ -53,6 +64,7 @@ export function prepareItem(Component) {
                 params: itemsParams[id],
                 state: itemsState[id],
                 onStateAndParamsChange: this._onStateAndParamsChange,
+                onBeforeLoad,
                 width,
                 height,
                 id,
@@ -78,17 +90,18 @@ export function prepareItem(Component) {
         };
 
         render() {
-            const {item, isPlaceholder} = this.props;
+            const {item, isPlaceholder, forwardedPluginRef, onMountChange} = this.props;
             const {registerManager} = this.context;
             const {type} = item;
 
             return (
                 <Component
-                    forwardedPluginRef={this.props.forwardedPluginRef}
+                    forwardedPluginRef={forwardedPluginRef}
                     rendererProps={this.getRenderProps()}
                     registerManager={registerManager}
                     type={type}
                     isPlaceholder={isPlaceholder}
+                    onMountChange={onMountChange}
                 />
             );
         }

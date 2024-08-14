@@ -117,15 +117,29 @@ export const DashKitDnDShowcase: React.FC = () => {
         [config],
     );
 
+    const onDragStart = React.useCallback(() => {
+        console.log('dragStarted');
+    }, []);
+
+    const onDragEnd = React.useCallback(() => {
+        console.log('dragEnded');
+    }, []);
+
+    const onItemMountChange = React.useCallback<
+        Exclude<DashKitProps['onItemMountChange'], undefined>
+    >((item, state) => {
+        console.log('onItemMountChange', item, state);
+    }, []);
+
+    const onItemRender = React.useCallback<Exclude<DashKitProps['onItemRender'], undefined>>(
+        (item) => {
+            console.log('onItemRender', item);
+        },
+        [],
+    );
+
     return (
-        <DashKitDnDWrapper
-            onDragStart={() => {
-                console.log('dragStarted');
-            }}
-            onDragEnd={() => {
-                console.log('dragEnded');
-            }}
-        >
+        <DashKitDnDWrapper onDragStart={onDragStart} onDragEnd={onDragEnd}>
             <Demo title="Drag'n'Drop example">
                 <DemoRow title="Component view">
                     <DashKit
@@ -134,6 +148,8 @@ export const DashKitDnDShowcase: React.FC = () => {
                         overlayControls={null}
                         onChange={onChange}
                         onDrop={onDrop}
+                        onItemMountChange={onItemMountChange}
+                        onItemRender={onItemRender}
                     />
                     <ActionPanel items={items} />
                 </DemoRow>

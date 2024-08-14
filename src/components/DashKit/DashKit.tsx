@@ -42,6 +42,8 @@ interface DashKitDefaultProps {
         groups?: DashKitGroup[];
     }) => void;
     onDrop: (dropProps: ItemDropProps) => void;
+    onItemMountChange?: (item: ConfigItem, state: {isAsync: boolean; isMounted: boolean}) => void;
+    onItemRender?: (item: ConfigItem) => void;
     defaultGlobalParams: GlobalParams;
     globalParams: GlobalParams;
     itemsStateAndParams: ItemsStateAndParams;

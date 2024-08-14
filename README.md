@@ -30,6 +30,8 @@ interface DashKitProps {
   onItemEdit: ({id}: {id: string}) => void;
   onChange: (data: {config: Config; itemsStateAndParams: ItemsStateAndParams}) => void;
   onDrop: (dropProps: ItemDropProps) => void;
+  onItemMountChange: (item: ConfigItem, state: {isAsync: boolead; isMounted: boolean}) => void;
+  onItemRender: (item: ConfigItem) => void;
   defaultGlobalParams: GlobalParams;
   globalParams: GlobalParams;
   itemsStateAndParams: ItemsStateAndParams;
@@ -48,6 +50,8 @@ interface DashKitProps {
 - **onItemEdit**: Called when you click to edit a widget.
 - **onChange**: Called when config or [itemsStateAndParams](#temsStateAndParams) are changed.
 - **onDrop**: Called when item dropped from ActionPanel using (#DashKitDnDWrapper)
+- **onItemMountChange**: Called when item mount state changed
+- **onItemRender**: Called when item render complete
 - **defaultGlobalParams**, **globalParams**: [Parameters](#Params) that affect all widgets. In DataLens, `defaultGlobalParams` are global parameters set in the dashboard settings. `globalParams` are globals parameters that can be set in the url.
 - **itemsStateAndParams**: [itemsStateAndParams](#temsStateAndParams).
 - **settings**: DashKit settings.
