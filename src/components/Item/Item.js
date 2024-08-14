@@ -17,7 +17,6 @@ const Item = ({
     isPlaceholder,
     forwardedPluginRef,
     onMountChange,
-    onBeforeLoad,
 }) => {
     const isRegisteredType = registerManager.check(type);
 
@@ -47,9 +46,7 @@ const Item = ({
 
     return (
         <div className={b('renderer')}>
-            {registerManager
-                .getItem(type)
-                .renderer(rendererProps, forwardedPluginRef, onBeforeLoad)}
+            {registerManager.getItem(type).renderer(rendererProps, forwardedPluginRef)}
         </div>
     );
 };

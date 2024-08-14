@@ -16,6 +16,7 @@ export function prepareItem(Component) {
             height: PropTypes.number,
             transform: PropTypes.string,
             isPlaceholder: PropTypes.bool,
+            onBeforeLoad: PropTypes.func,
 
             forwardedPluginRef: PropTypes.any,
             onMountChange: PropTypes.func,
@@ -43,7 +44,16 @@ export function prepareItem(Component) {
 
         _currentRenderProps = {};
         getRenderProps = () => {
-            const {id, width, height, item, adjustWidgetLayout, layout, isPlaceholder} = this.props;
+            const {
+                id,
+                width,
+                height,
+                item,
+                adjustWidgetLayout,
+                layout,
+                isPlaceholder,
+                onBeforeLoad,
+            } = this.props;
             const {itemsState, itemsParams, registerManager, settings, context, editMode} =
                 this.context;
             const {data, defaults, namespace} = item;
@@ -54,6 +64,7 @@ export function prepareItem(Component) {
                 params: itemsParams[id],
                 state: itemsState[id],
                 onStateAndParamsChange: this._onStateAndParamsChange,
+                onBeforeLoad,
                 width,
                 height,
                 id,
@@ -79,8 +90,7 @@ export function prepareItem(Component) {
         };
 
         render() {
-            const {item, isPlaceholder, forwardedPluginRef, onMountChange, onBeforeLoad} =
-                this.props;
+            const {item, isPlaceholder, forwardedPluginRef, onMountChange} = this.props;
             const {registerManager} = this.context;
             const {type} = item;
 
@@ -92,7 +102,6 @@ export function prepareItem(Component) {
                     type={type}
                     isPlaceholder={isPlaceholder}
                     onMountChange={onMountChange}
-                    onBeforeLoad={onBeforeLoad}
                 />
             );
         }
