@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.10.1](https://github.com/gravity-ui/dashkit/compare/v8.10.0...v8.10.1) (2024-08-21)
+
+
+### Bug Fixes
+
+* correctly remove items and layout elements if they are desync ([#175](https://github.com/gravity-ui/dashkit/issues/175)) ([93b7278](https://github.com/gravity-ui/dashkit/commit/93b7278196d8f28ec5dd4f96337353291dcdba35))
+
 ## [8.10.0](https://github.com/gravity-ui/dashkit/compare/v8.9.1...v8.10.0) (2024-08-14)
 
 
