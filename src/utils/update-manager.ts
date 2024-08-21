@@ -390,13 +390,13 @@ export class UpdateManager {
         namespace = DEFAULT_NAMESPACE,
         layout,
         config,
-        options,
+        options = {},
     }: {
         item: AddConfigItem;
         namespace: string;
         layout: RegisterManagerPluginLayout;
         config: Config;
-        options: SetNewItemOptions;
+        options?: SetNewItemOptions;
     }) {
         const salt = config.salt;
 
@@ -440,12 +440,12 @@ export class UpdateManager {
         item,
         namespace = DEFAULT_NAMESPACE,
         config,
-        options,
+        options = {},
     }: {
         item: ConfigItem;
         namespace: string;
         config: Config;
-        options: SetItemOptions;
+        options?: SetItemOptions;
     }) {
         const itemIndex = config.items.findIndex(({id}) => item.id === id);
 
@@ -471,6 +471,7 @@ export class UpdateManager {
             return removeItemVersion1({id, config, itemsStateAndParams});
         }
         const itemIndex = config.items.findIndex((item) => item.id === id);
+        const layoutIndex = config.layout.findIndex((item) => item.i === id);
         const item = config.items[itemIndex];
         let itemIds = [id];
         if (isItemWithTabs(item)) {
@@ -488,7 +489,7 @@ export class UpdateManager {
                     $splice: [[itemIndex, 1]],
                 },
                 layout: {
-                    $splice: [[itemIndex, 1]],
+                    $splice: [[layoutIndex, 1]],
                 },
                 connections: {
                     $set: connections,

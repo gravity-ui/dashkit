@@ -7,8 +7,8 @@ interface RegisterManagerDefaultLayout {
     y: number;
     w: number;
     h: number;
-    minW: number;
-    minH: number;
+    minW?: number;
+    minH?: number;
 }
 
 export type RegisterManagerPluginLayout = RegisterManagerDefaultLayout & PluginDefaultLayout;
