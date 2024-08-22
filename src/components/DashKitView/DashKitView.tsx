@@ -20,6 +20,7 @@ type DashKitViewProps = DashKitProps & {
 function DashKitView() {
     const context = React.useContext(DashKitContext);
     const {registerManager, forwardedMetaRef} = context;
+
     return (
         <div className={b({theme: registerManager.settings.theme})}>
             {registerManager.settings.isMobile ? (
