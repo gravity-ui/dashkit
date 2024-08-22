@@ -9,11 +9,11 @@ export type SetConfigItem = ConfigItem | AddConfigItem;
 
 export type SetItemOptions = {
     excludeIds?: string[];
-};
-
-export type SetNewItemOptions = SetItemOptions & {
     updateLayout?: ConfigLayout[];
 };
+
+export type SetNewItemOptions = SetItemOptions;
+
 export interface DashkitGroupRenderProps {
     config: Config;
     editMode: boolean;

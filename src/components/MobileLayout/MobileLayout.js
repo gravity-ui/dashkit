@@ -48,6 +48,36 @@ export default class MobileLayout extends React.PureComponent {
         }
     };
 
+    onMountChange = (isMounted) => {
+        if (isMounted) {
+            this._inited = true;
+
+            this.context.onItemMountChange?.(this.props.item, {
+                isAsync: this._isAsyncItem,
+                isMounted: isMounted,
+            });
+
+            if (!this._isAsyncItem) {
+                this.context.onItemRender?.(this.props.item);
+            }
+        } else {
+            this.context.onItemMountChange?.(this.props.item, {
+                isAsync: this._isAsyncItem,
+                isMounted: isMounted,
+            });
+        }
+    };
+
+    onBeforeLoad = () => {
+        this._isAsyncItem = true;
+
+        return this.onLoad;
+    };
+
+    onLoad = () => {
+        this.context.onItemRender?.(this.props.item);
+    };
+
     render() {
         const {config, layout} = this.context;
 
@@ -75,6 +105,8 @@ export default class MobileLayout extends React.PureComponent {
                                 forwardedPluginRef={(pluginRef) => {
                                     this.pluginsRefs[index] = pluginRef;
                                 }}
+                                onMountChange={this.onMountChange}
+                                onBeforeLoad={this.onBeforeLoad}
                             />
                         </div>
                     );
