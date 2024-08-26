@@ -181,14 +181,6 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                         <Button
                             view="normal"
                             size="m"
-                            onClick={this.prependTitle}
-                            className={b('btn-contol')}
-                        >
-                            Prepend widget Title
-                        </Button>
-                        <Button
-                            view="normal"
-                            size="m"
                             onClick={this.changeTitle}
                             className={b('btn-contol')}
                         >
