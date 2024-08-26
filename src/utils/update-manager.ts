@@ -489,7 +489,6 @@ export class UpdateManager {
                     config.layout.map((t) => ({...t, ...(byId[t.i] || {})})),
                     options.reflowLayoutOptions,
                 );
-                console.log(newLayout);
             } else {
                 newLayout = [
                     ...config.layout.map((t) => ({...t, ...(byId[t.i] || {})})),
