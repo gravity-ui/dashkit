@@ -363,7 +363,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                     },
                     type: 'title',
                     layout: {
-                        y: specialWidget.y + specialWidget.h,
+                        y: specialWidget.y + specialWidget.h - 1,
                         x: specialWidget.x,
                         h: 5,
                         w: 10,
