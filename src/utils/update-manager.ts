@@ -431,6 +431,11 @@ function reflowLayout(
             if (reflowLayoutOptions?.groups?.[groupId]) {
                 reflowOptions = reflowLayoutOptions?.groups[groupId];
             }
+
+            if (reflowOptions.compactType === null) {
+                return memo.concat(layoutItems);
+            }
+
             const compactedList = compact(
                 layoutItems,
                 reflowOptions.compactType,
