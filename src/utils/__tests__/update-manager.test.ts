@@ -199,7 +199,7 @@ describe('UpdateManager', () => {
                         type: 'widget',
                     },
                     namespace: 'default',
-                    layout: {h: 4, w: 4, x: 0, y: 0},
+                    layout: {h: 4, w: 4, x: 0, y: Infinity},
                     config: config,
                 }),
             ).toEqual({
@@ -227,7 +227,7 @@ describe('UpdateManager', () => {
                         type: 'widget',
                     },
                     namespace: 'default',
-                    layout: {h: 4, w: 4, x: 0, y: 0},
+                    layout: {h: 4, w: 4, x: 0, y: Infinity},
                     config: config,
                     options: {
                         excludeIds: ['EZ'],
