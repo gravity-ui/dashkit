@@ -190,7 +190,7 @@ function useMemoStateContext(props) {
     React.useMemo(() => {
         const groups = props.groups;
         const layout = props.layout;
-        const defaultProps = props.registerManager._gridLayout || {};
+        const defaultProps = props.registerManager.gridLayout || {};
         const nowrapGroups = {};
         let hasNowrapGroups = false;
 

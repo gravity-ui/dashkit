@@ -12,6 +12,8 @@ export function makeid(length: number) {
 
 export const titleId = 'nk';
 
+export const specialWidgetId = 'Ea';
+
 export const fixedGroup = 'fixedGroup';
 
 export const getConfig = (withGroups?: boolean): DashKitProps['config'] => ({
@@ -30,7 +32,7 @@ export const getConfig = (withGroups?: boolean): DashKitProps['config'] => ({
             orderId: 1,
         },
         {
-            id: 'Ea',
+            id: specialWidgetId,
             data: {
                 text: 'special mode _editActive',
                 _editActive: true,

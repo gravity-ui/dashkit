@@ -1,8 +1,9 @@
 import React from 'react';
 
 import noop from 'lodash/noop';
+import pick from 'lodash/pick';
 
-import {DEFAULT_NAMESPACE} from '../../constants';
+import {DEFAULT_GROUP, DEFAULT_NAMESPACE} from '../../constants';
 import type {
     Config,
     ConfigItem,
@@ -12,12 +13,14 @@ import type {
 } from '../../shared';
 import {
     AddConfigItem,
+    AddNewItemOptions,
     ContextProps,
     DashKitGroup,
+    GridReflowOptions,
     MenuItem,
     Plugin,
+    ReactGridLayoutProps,
     SetConfigItem,
-    SetNewItemOptions,
     Settings,
     SettingsProps,
 } from '../../typings';
@@ -60,6 +63,12 @@ type DashKitInnerProps = DashKitGeneralProps & DashKitDefaultProps;
 
 const registerManager = new RegisterManager();
 
+const getReflowProps = (props: ReactGridLayoutProps): GridReflowOptions =>
+    Object.assign(
+        {compactType: 'vertical', cols: 36},
+        pick(props, 'cols', 'maxRows', 'compactType'),
+    );
+
 export class DashKit extends React.PureComponent<DashKitInnerProps> {
     static defaultProps: DashKitDefaultProps = {
         onItemEdit: noop,
@@ -92,28 +101,53 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
         namespace = DEFAULT_NAMESPACE,
         config,
         options = {},
+        groups = [],
     }: {
         item: SetConfigItem;
         namespace?: string;
         config: Config;
-        options?: SetNewItemOptions;
+        options?: Omit<AddNewItemOptions, 'reflowLayoutOptions'>;
+        groups?: DashKitGroup[];
     }): Config {
         if (setItem.id) {
-            return UpdateManager.editItem({item: setItem, namespace, config, options});
+            return UpdateManager.editItem({
+                item: setItem,
+                namespace,
+                config,
+                options,
+            });
         } else {
             const item = setItem as AddConfigItem;
             const layout = {...registerManager.getItem(item.type).defaultLayout};
 
-            if (item.layout) {
-                Object.assign(layout, item.layout);
+            const defaultGridProps = getReflowProps(registerManager.gridLayout);
+            const reflowLayoutOptions = {
+                defaultProps: defaultGridProps,
+                groups: groups.reduce<Record<string, GridReflowOptions>>((memo, g) => {
+                    const groupId = g.id || DEFAULT_GROUP;
+                    if (g.gridProperties) {
+                        memo[groupId] = getReflowProps(g.gridProperties(defaultGridProps));
+                    } else {
+                        memo[groupId] = defaultGridProps;
+                    }
+
+                    return memo;
+                }, {}),
+            };
+
+            const copyItem = {...item};
+
+            if (copyItem.layout) {
+                Object.assign(layout, copyItem.layout);
+                delete copyItem.layout;
             }
 
             return UpdateManager.addItem({
-                item,
+                item: copyItem,
                 namespace,
                 config,
                 layout,
-                options,
+                options: {...options, reflowLayoutOptions},
             });
         }
     }

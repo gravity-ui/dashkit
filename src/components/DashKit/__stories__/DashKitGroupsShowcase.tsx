@@ -120,6 +120,31 @@ export const DashKitGroupsShowcase: React.FC = () => {
         setConfig(config);
     }, []);
 
+    const groups = React.useMemo<DashKitGroup[]>(
+        () => [
+            {
+                id: fixedGroup,
+                render: (id: string, children: React.ReactNode, props: DashkitGroupRenderProps) => {
+                    return (
+                        <div
+                            key={id}
+                            className={b('inline-group', {['edit-mode']: props.editMode})}
+                        >
+                            {children}
+                        </div>
+                    );
+                },
+                gridProperties: (props: ReactGridLayoutProps) => {
+                    return {...props, compactType: 'horizontal-nowrap', maxRows: 2};
+                },
+            },
+            {
+                id: DEFAULT_GROUP,
+            },
+        ],
+        [],
+    );
+
     const onDrop = React.useCallback<Exclude<DashKitProps['onDrop'], undefined>>(
         (dropProps) => {
             let data = null;
@@ -152,38 +177,14 @@ export const DashKitGroupsShowcase: React.FC = () => {
                     options: {
                         updateLayout: dropProps.newLayout,
                     },
+                    groups,
                 });
                 setConfig(newConfig);
             }
 
             dropProps.commit();
         },
-        [config],
-    );
-
-    const groups = React.useMemo<DashKitGroup[]>(
-        () => [
-            {
-                id: fixedGroup,
-                render: (id: string, children: React.ReactNode, props: DashkitGroupRenderProps) => {
-                    return (
-                        <div
-                            key={id}
-                            className={b('inline-group', {['edit-mode']: props.editMode})}
-                        >
-                            {children}
-                        </div>
-                    );
-                },
-                gridProperties: (props: ReactGridLayoutProps) => {
-                    return {...props, compactType: 'horizontal-nowrap', maxRows: 2};
-                },
-            },
-            {
-                id: DEFAULT_GROUP,
-            },
-        ],
-        [],
+        [config, groups],
     );
 
     return (
