@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.11.0](https://github.com/gravity-ui/dashkit/compare/v8.10.2...v8.11.0) (2024-08-27)
+
+
+### Features
+
+* add all around resize handlers support ([#179](https://github.com/gravity-ui/dashkit/issues/179)) ([5fa3426](https://github.com/gravity-ui/dashkit/commit/5fa34260ffd46f8fb60ff62e94d7afef342882a5))
+
 ## [8.10.2](https://github.com/gravity-ui/dashkit/compare/v8.10.1...v8.10.2) (2024-08-22)
 
 
