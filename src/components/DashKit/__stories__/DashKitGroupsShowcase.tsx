@@ -181,6 +181,16 @@ export const DashKitGroupsShowcase: React.FC = () => {
             },
             {
                 id: DEFAULT_GROUP,
+                gridProperties: (props: ReactGridLayoutProps) => {
+                    const copy = {...props};
+
+                    return {
+                        ...copy,
+                        compactType: null,
+                        allowOverlap: true,
+                        resizeHandles: ['s', 'w', 'e', 'n', 'sw', 'nw', 'se', 'ne'],
+                    };
+                },
             },
         ],
         [],
