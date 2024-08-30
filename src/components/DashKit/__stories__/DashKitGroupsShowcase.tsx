@@ -1,19 +1,13 @@
 import React from 'react';
 
 import {cn} from '@bem-react/classname';
-import {
-    ChartColumn,
-    Copy,
-    Gear,
-    Heading,
-    Sliders,
-    TextAlignLeft,
-    TrashBin,
-} from '@gravity-ui/icons';
+import {ChartColumn, Copy, Heading, Pin, Sliders, TextAlignLeft, TrashBin} from '@gravity-ui/icons';
 import {Button, Icon} from '@gravity-ui/uikit';
 
 import {
     ActionPanel,
+    ConfigItem,
+    ConfigLayout,
     DashKit,
     DashKitDnDWrapper,
     DashKitGroup,
@@ -29,29 +23,11 @@ import {fixedGroup, getConfig} from './utils';
 
 const b = cn('dashkit-demo');
 
+const MAX_ROWS = 2;
+const GRID_COLUMNS = 36;
+
 export const DashKitGroupsShowcase: React.FC = () => {
     const [editMode, setEditMode] = React.useState(true);
-
-    const overlayMenuItems = React.useMemo(() => {
-        return [
-            {
-                id: 'settings',
-                title: 'Menu setting text',
-                icon: <Icon data={Gear} size={16} />,
-            },
-            {
-                id: MenuItems.Copy,
-                title: 'Menu setting copy',
-                icon: <Icon data={Copy} size={16} />,
-            },
-            {
-                id: MenuItems.Delete,
-                title: i18n('label_delete'), // for language change check
-                icon: <Icon data={TrashBin} size={16} />,
-                className: 'dashkit-overlay-controls__item_danger',
-            },
-        ];
-    }, []);
 
     const onClick = () => {
         console.log('click');
@@ -135,7 +111,7 @@ export const DashKitGroupsShowcase: React.FC = () => {
                     );
                 },
                 gridProperties: (props: ReactGridLayoutProps) => {
-                    return {...props, compactType: 'horizontal-nowrap', maxRows: 2};
+                    return {...props, compactType: 'horizontal-nowrap', maxRows: MAX_ROWS};
                 },
             },
             {
@@ -144,6 +120,80 @@ export const DashKitGroupsShowcase: React.FC = () => {
         ],
         [],
     );
+
+    const overlayMenuItems = React.useMemo(() => {
+        const layoutById = config.layout.reduce<Record<string, ConfigLayout>>((memo, item) => {
+            memo[item.i] = item;
+            return memo;
+        }, {});
+        const maxOffset = config.layout
+            .filter(({parent}) => parent === fixedGroup)
+            .reduce((offset, {x, w}) => Math.max(offset, x + w), 0);
+        const maxWidth = GRID_COLUMNS - maxOffset;
+
+        const changeParent = (item: ConfigItem) => {
+            const itemId = item.id;
+            const layoutItem = config.layout.find(({i}) => i === itemId);
+
+            if (!layoutItem) {
+                return;
+            }
+
+            const copyItem = {
+                ...layoutItem,
+            };
+            const fromParent = layoutItem.parent;
+
+            if (fromParent) {
+                delete copyItem.parent;
+                copyItem.x = 0;
+                copyItem.y = 0;
+            } else {
+                copyItem.parent = fixedGroup;
+                copyItem.x = maxOffset;
+                copyItem.y = 0;
+                copyItem.h = MAX_ROWS;
+            }
+
+            setConfig({
+                ...config,
+                layout: DashKit.reflowLayout(
+                    copyItem,
+                    config.layout.filter(({i}) => i !== itemId),
+                    groups,
+                ),
+            });
+        };
+
+        const controls: DashKitProps['overlayMenuItems'] = [
+            {
+                id: 'unpin-item',
+                title: 'Unpin',
+                icon: <Icon data={Pin} size={16} />,
+                visible: (item) => Boolean(layoutById[item.id]?.parent),
+                handler: changeParent,
+            },
+            {
+                id: 'pin-item',
+                title: 'Pin',
+                icon: <Icon data={Pin} size={16} />,
+                visible: (item) => {
+                    const layoutItem = layoutById[item.id];
+
+                    return !layoutItem?.parent && layoutItem.w <= maxWidth;
+                },
+                handler: changeParent,
+            },
+            {
+                id: MenuItems.Delete,
+                title: i18n('label_delete'), // for language change check
+                icon: <Icon data={TrashBin} size={16} />,
+                className: 'dashkit-overlay-controls__item_danger',
+            },
+        ];
+
+        return controls;
+    }, [config, groups, setConfig]);
 
     const onDrop = React.useCallback<Exclude<DashKitProps['onDrop'], undefined>>(
         (dropProps) => {

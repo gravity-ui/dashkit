@@ -391,7 +391,7 @@ function changeGroupParams({
     return update(itemsStateAndParams, obj);
 }
 
-function reflowLayout(
+export function reflowLayout(
     newLayoutItem: ConfigLayout,
     layout: ConfigLayout[],
     reflowLayoutOptions: ReflowLayoutOptions,

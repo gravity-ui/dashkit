@@ -7,6 +7,7 @@ import {DEFAULT_GROUP, DEFAULT_NAMESPACE} from '../../constants';
 import type {
     Config,
     ConfigItem,
+    ConfigLayout,
     GlobalParams,
     ItemDropProps,
     ItemsStateAndParams,
@@ -24,7 +25,7 @@ import {
     Settings,
     SettingsProps,
 } from '../../typings';
-import {RegisterManager, UpdateManager} from '../../utils';
+import {RegisterManager, UpdateManager, reflowLayout} from '../../utils';
 import DashKitView from '../DashKitView/DashKitView';
 import GridLayout from '../GridLayout/GridLayout';
 import {OverlayControlItem} from '../OverlayControls/OverlayControls';
@@ -68,6 +69,22 @@ const getReflowProps = (props: ReactGridLayoutProps): GridReflowOptions =>
         {compactType: 'vertical', cols: 36},
         pick(props, 'cols', 'maxRows', 'compactType'),
     );
+
+const getReflowGroupsConfig = (groups: DashKitGroup[] = []) => {
+    const defaultGridProps = getReflowProps(registerManager.gridLayout);
+
+    return {
+        defaultProps: defaultGridProps,
+        groups: groups.reduce<Record<string, GridReflowOptions>>((memo, g) => {
+            const groupId = g.id || DEFAULT_GROUP;
+            memo[groupId] = g.gridProperties
+                ? getReflowProps(g.gridProperties(defaultGridProps))
+                : defaultGridProps;
+
+            return memo;
+        }, {}),
+    };
+};
 
 export class DashKit extends React.PureComponent<DashKitInnerProps> {
     static defaultProps: DashKitDefaultProps = {
@@ -120,20 +137,7 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
             const item = setItem as AddConfigItem;
             const layout = {...registerManager.getItem(item.type).defaultLayout};
 
-            const defaultGridProps = getReflowProps(registerManager.gridLayout);
-            const reflowLayoutOptions = {
-                defaultProps: defaultGridProps,
-                groups: groups.reduce<Record<string, GridReflowOptions>>((memo, g) => {
-                    const groupId = g.id || DEFAULT_GROUP;
-                    if (g.gridProperties) {
-                        memo[groupId] = getReflowProps(g.gridProperties(defaultGridProps));
-                    } else {
-                        memo[groupId] = defaultGridProps;
-                    }
-
-                    return memo;
-                }, {}),
-            };
+            const reflowLayoutOptions = getReflowGroupsConfig(groups);
 
             const copyItem = {...item};
 
@@ -162,6 +166,14 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
         itemsStateAndParams: ItemsStateAndParams;
     }): {config: Config; itemsStateAndParams: ItemsStateAndParams} {
         return UpdateManager.removeItem({id, config, itemsStateAndParams});
+    }
+
+    static reflowLayout(
+        newLayoutItem: ConfigLayout,
+        layout: ConfigLayout[],
+        groups?: DashKitGroup[],
+    ) {
+        return reflowLayout(newLayoutItem, layout, getReflowGroupsConfig(groups));
     }
 
     metaRef = React.createRef<GridLayout>();
