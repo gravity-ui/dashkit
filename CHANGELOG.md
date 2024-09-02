@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.12.0](https://github.com/gravity-ui/dashkit/compare/v8.11.0...v8.12.0) (2024-09-02)
+
+
+### Features
+
+* add item with grid reflow ([#180](https://github.com/gravity-ui/dashkit/issues/180)) ([aaa6a6d](https://github.com/gravity-ui/dashkit/commit/aaa6a6da5e814b55c3d36ee2495e4cd02338efb4))
+
 ## [8.11.0](https://github.com/gravity-ui/dashkit/compare/v8.10.2...v8.11.0) (2024-08-27)
 
 
