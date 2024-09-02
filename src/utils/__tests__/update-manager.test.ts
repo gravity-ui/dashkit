@@ -199,7 +199,7 @@ describe('UpdateManager', () => {
                         type: 'widget',
                     },
                     namespace: 'default',
-                    layout: {h: 4, w: 4, x: 0, y: 0},
+                    layout: {h: 4, w: 4, x: 0, y: Infinity},
                     config: config,
                 }),
             ).toEqual({
@@ -227,7 +227,7 @@ describe('UpdateManager', () => {
                         type: 'widget',
                     },
                     namespace: 'default',
-                    layout: {h: 4, w: 4, x: 0, y: 0},
+                    layout: {h: 4, w: 4, x: 0, y: Infinity},
                     config: config,
                     options: {
                         excludeIds: ['EZ'],
@@ -287,6 +287,85 @@ describe('UpdateManager', () => {
                     },
                 ],
                 layout: [...updateLayout, {h: 4, w: 12, x: 0, y: 0, i: 'EZ'}],
+            });
+        });
+
+        it('prepend new item', () => {
+            expect(
+                UpdateManager.addItem({
+                    item: {
+                        data: {},
+                        type: 'widget',
+                    },
+                    namespace: 'default',
+                    layout: {h: 4, w: 36, x: 0, y: 0},
+                    config: config,
+                    options: {
+                        reflowLayoutOptions: {
+                            defaultProps: {
+                                cols: 36,
+                            },
+                        },
+                    },
+                }),
+            ).toEqual({
+                ...config,
+                salt: '0.09852189776033704',
+                counter: 15,
+                items: [
+                    ...config.items,
+                    {
+                        id: 'EZ',
+                        data: {},
+                        type: 'widget',
+                        namespace: 'default',
+                    },
+                ],
+                layout: [
+                    {i: 'al', h: 4, w: 4, x: 8, y: 4},
+                    {i: 'Q8', h: 16, w: 12, x: 12, y: 4},
+                    {i: 'L5', h: 2, w: 8, x: 0, y: 4},
+                    {i: 'C8', h: 2, w: 8, x: 10, y: 30},
+                    {i: 'lko', h: 2, w: 8, x: 0, y: 12},
+                    {i: 'qY', h: 2, w: 8, x: 0, y: 24},
+                    {i: 'EZ', h: 4, w: 36, x: 0, y: 0},
+                ],
+            });
+        });
+
+        it('add item with no compactType', () => {
+            expect(
+                UpdateManager.addItem({
+                    item: {
+                        data: {},
+                        type: 'widget',
+                    },
+                    namespace: 'default',
+                    layout: {h: 4, w: 36, x: 0, y: 0},
+                    config: config,
+                    options: {
+                        reflowLayoutOptions: {
+                            defaultProps: {
+                                cols: 36,
+                                compactType: null,
+                            },
+                        },
+                    },
+                }),
+            ).toEqual({
+                ...config,
+                salt: '0.09852189776033704',
+                counter: 15,
+                items: [
+                    ...config.items,
+                    {
+                        id: 'EZ',
+                        data: {},
+                        type: 'widget',
+                        namespace: 'default',
+                    },
+                ],
+                layout: [...config.layout, {i: 'EZ', h: 4, w: 36, x: 0, y: 0}],
             });
         });
     });

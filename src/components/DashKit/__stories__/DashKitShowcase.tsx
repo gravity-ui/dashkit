@@ -22,7 +22,7 @@ import type {ConfigItem, OverlayControlItem} from '../../../index';
 import {cn} from '../../../utils/cn';
 
 import {Demo, DemoRow} from './Demo';
-import {getConfig, makeid, titleId} from './utils';
+import {getConfig, makeid, specialWidgetId, titleId} from './utils';
 
 import './DashKitShowcase.scss';
 
@@ -165,10 +165,18 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                         <Button
                             view="normal"
                             size="m"
-                            onClick={this.addTitle}
+                            onClick={this.prependTitle}
                             className={b('btn-contol')}
                         >
-                            Add widget Title
+                            Prepend widget Title
+                        </Button>
+                        <Button
+                            view="normal"
+                            size="m"
+                            onClick={this.addAfterSpecialItem}
+                            className={b('btn-contol')}
+                        >
+                            Add Title after special
                         </Button>
                         <Button
                             view="normal"
@@ -332,7 +340,38 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
         });
     };
 
-    private addTitle = () => {
+    private addAfterSpecialItem = () => {
+        const specialWidget = this.state.config.layout.find(({i}) => {
+            return i === specialWidgetId;
+        });
+
+        if (specialWidget) {
+            const config = DashKit.setItem({
+                item: {
+                    data: {
+                        size: 'm',
+                        text: `addTitle rand-${makeid(4)}`,
+                        showInTOC: false,
+                    },
+                    type: 'title',
+                    layout: {
+                        y: specialWidget.y + specialWidget.h - 1,
+                        x: specialWidget.x,
+                        h: 5,
+                        w: 10,
+                    },
+                },
+                namespace: 'default',
+                config: this.state.config,
+            });
+            this.setState({
+                config,
+                lastAction: `[DashKit.setItem] added after new widget Title: ${new Date().toISOString()}`,
+            });
+        }
+    };
+
+    private prependTitle = () => {
         const config = DashKit.setItem({
             item: {
                 data: {
@@ -341,13 +380,19 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                     showInTOC: false,
                 },
                 type: 'title',
+                layout: {
+                    y: 0,
+                    x: 0,
+                    h: 5,
+                    w: 10,
+                },
             },
             namespace: 'default',
             config: this.state.config,
         });
         this.setState({
             config,
-            lastAction: `[DashKit.setItem] add  new widget Title: ${new Date().toISOString()}`,
+            lastAction: `[DashKit.setItem] prepended new widget Title: ${new Date().toISOString()}`,
         });
     };
 

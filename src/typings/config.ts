@@ -3,16 +3,31 @@ import type {Config, ConfigItem, ConfigLayout} from '../shared';
 export interface AddConfigItem extends Omit<ConfigItem, 'id' | 'namespace'> {
     id?: null;
     namespace?: string;
-    layout?: ConfigLayout;
+    layout?: Omit<ConfigLayout, 'i'>;
 }
 export type SetConfigItem = ConfigItem | AddConfigItem;
 
 export type SetItemOptions = {
     excludeIds?: string[];
-    updateLayout?: ConfigLayout[];
 };
 
-export type SetNewItemOptions = SetItemOptions;
+export type GridReflowOptions = {
+    cols: number;
+    maxRows?: number;
+    compactType?: CompactType;
+};
+
+export type CompactType = ReactGridLayout.ReactGridLayoutProps['compactType'] | 'horizontal-nowrap';
+
+export type ReflowLayoutOptions = {
+    defaultProps: GridReflowOptions;
+    groups?: Record<string, GridReflowOptions>;
+};
+
+export type AddNewItemOptions = SetItemOptions & {
+    updateLayout?: ConfigLayout[];
+    reflowLayoutOptions?: ReflowLayoutOptions;
+};
 
 export interface DashkitGroupRenderProps {
     config: Config;
@@ -40,7 +55,7 @@ export type ReactGridLayoutProps = Omit<
     | 'onDrop'
     | 'draggableCancel'
 > & {
-    compactType?: ReactGridLayout.ReactGridLayoutProps['compactType'] | 'horizontal-nowrap';
+    compactType?: CompactType;
 };
 
 export interface DashKitGroup {

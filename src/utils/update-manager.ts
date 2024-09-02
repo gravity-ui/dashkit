@@ -2,7 +2,7 @@ import update, {CustomCommands, Spec, extend} from 'immutability-helper';
 import omit from 'lodash/omit';
 import pick from 'lodash/pick';
 
-import {DEFAULT_NAMESPACE} from '../constants';
+import {DEFAULT_GROUP, DEFAULT_NAMESPACE} from '../constants';
 import {
     ConfigLayout,
     META_KEY,
@@ -31,9 +31,16 @@ import type {
     StateAndParamsMetaData,
     StringParams,
 } from '../shared';
-import type {AddConfigItem, SetItemOptions, SetNewItemOptions, WidgetLayout} from '../typings';
+import type {
+    AddConfigItem,
+    AddNewItemOptions,
+    ReflowLayoutOptions,
+    SetItemOptions,
+    WidgetLayout,
+} from '../typings';
 
 import {getNewId} from './get-new-id';
+import {bottom, compact} from './grid-layout';
 import {RegisterManagerPluginLayout} from './register-manager';
 
 extend('$auto', (value, object) => (object ? update(object, value) : update({}, value)));
@@ -384,6 +391,70 @@ function changeGroupParams({
     return update(itemsStateAndParams, obj);
 }
 
+export function reflowLayout(
+    newLayoutItem: ConfigLayout,
+    layout: ConfigLayout[],
+    reflowLayoutOptions: ReflowLayoutOptions,
+) {
+    const byGroup: Record<string, ConfigLayout[]> = {};
+    const reducer = (
+        memo: Record<string, number>,
+        item: ConfigLayout,
+        i: number,
+        _items: ConfigLayout[],
+        isNewItem?: boolean,
+    ) => {
+        memo[item.i] = i;
+        const parent = item.parent || DEFAULT_GROUP;
+
+        if (byGroup[parent]) {
+            if (isNewItem) {
+                byGroup[parent].unshift(item);
+            } else {
+                byGroup[parent].push(item);
+            }
+        } else {
+            byGroup[parent] = [item];
+        }
+
+        return memo;
+    };
+
+    const orderById = layout.reduce<Record<string, number>>(reducer, {});
+    reducer(orderById, newLayoutItem, layout.length, layout, true);
+
+    const {defaultProps} = reflowLayoutOptions;
+
+    return Object.entries(byGroup)
+        .reduce<ConfigLayout[]>((memo, [groupId, layoutItems]) => {
+            let reflowOptions = defaultProps;
+            if (reflowLayoutOptions?.groups?.[groupId]) {
+                reflowOptions = reflowLayoutOptions?.groups[groupId];
+            }
+
+            if (reflowOptions.compactType === null) {
+                return memo.concat(layoutItems);
+            }
+
+            const compactedList = compact(
+                layoutItems,
+                reflowOptions.compactType,
+                reflowOptions.cols,
+            ).map((item) => {
+                const cleanCopy = pick(item, ['i', 'h', 'w', 'x', 'y', 'parent']) as ConfigLayout;
+
+                if (groupId === DEFAULT_GROUP) {
+                    return cleanCopy;
+                }
+
+                return {...cleanCopy, parent: groupId};
+            });
+
+            return memo.concat(compactedList);
+        }, [])
+        .sort((a, b) => orderById[a.i] - orderById[b.i]);
+}
+
 export class UpdateManager {
     static addItem({
         item,
@@ -396,7 +467,7 @@ export class UpdateManager {
         namespace: string;
         layout: RegisterManagerPluginLayout;
         config: Config;
-        options?: SetNewItemOptions;
+        options?: AddNewItemOptions;
     }) {
         const salt = config.salt;
 
@@ -414,10 +485,36 @@ export class UpdateManager {
                 memo[t.i] = t;
                 return memo;
             }, {});
-            const newLayout = [
-                ...config.layout.map((t) => ({...t, ...(byId[t.i] || {})})),
-                {...saveDefaultLayout, i: newItem.id},
-            ];
+            let newLayout;
+            const newLayoutItem = {...saveDefaultLayout, i: newItem.id};
+
+            if (options.reflowLayoutOptions) {
+                newLayout = reflowLayout(
+                    newLayoutItem,
+                    config.layout.map((t) => ({...t, ...(byId[t.i] || {})})),
+                    options.reflowLayoutOptions,
+                );
+            } else {
+                newLayout = [
+                    ...config.layout.map((t) => ({...t, ...(byId[t.i] || {})})),
+                    {...saveDefaultLayout, i: newItem.id},
+                ];
+            }
+
+            return update(config, {
+                items: {$push: [newItem]},
+                layout: {$set: newLayout},
+                counter: {$set: counter},
+            });
+        } else if (isFinite(layout.y)) {
+            let newLayout;
+            const newLayoutItem = {...saveDefaultLayout, i: newItem.id};
+
+            if (options.reflowLayoutOptions) {
+                newLayout = reflowLayout(newLayoutItem, config.layout, options.reflowLayoutOptions);
+            } else {
+                newLayout = [...config.layout, newLayoutItem];
+            }
 
             return update(config, {
                 items: {$push: [newItem]},
@@ -425,7 +522,7 @@ export class UpdateManager {
                 counter: {$set: counter},
             });
         } else {
-            const layoutY = Math.max(0, ...config.layout.map(({h, y}) => h + y));
+            const layoutY = bottom(config.layout);
             const newLayoutItem = {...saveDefaultLayout, y: layoutY, i: newItem.id};
 
             return update(config, {
