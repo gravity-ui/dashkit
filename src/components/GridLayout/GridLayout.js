@@ -217,7 +217,7 @@ export default class GridLayout extends React.PureComponent {
         }
     }
 
-    _onDragStart = (group, _newLayout, layoutItem) => {
+    _onDragStart = (group, _newLayout, layoutItem, _newItem, _placeholder, e) => {
         if (this.temporaryLayout) return;
 
         if (this.context.dragOverPlugin) {
@@ -225,9 +225,11 @@ export default class GridLayout extends React.PureComponent {
         } else {
             let currentDraggingElement = this.state.currentDraggingElement;
             if (!currentDraggingElement) {
-                const _id = layoutItem.i;
-                const item = this.context.config.items.find(({id}) => id === _id);
-                currentDraggingElement = [group, layoutItem, item];
+                const layoutId = layoutItem.i;
+                const item = this.context.config.items.find(({id}) => id === layoutId);
+                const {offsetX, offsetY} = e.nativeEvent;
+
+                currentDraggingElement = [group, layoutItem, item, {offsetX, offsetY}];
             }
 
             this.setState({
@@ -447,6 +449,7 @@ export default class GridLayout extends React.PureComponent {
                 onDropDragOver={callbacks.onDropDragOver}
                 onDrop={callbacks.onDrop}
                 hasSharedDragItem={hasSharedDragItem}
+                sharedDragPosition={currentDraggingElement?.[3]}
                 isDragCaptured={isDragCaptured}
                 {...(draggableHandleClassName
                     ? {draggableHandle: `.${draggableHandleClassName}`}
