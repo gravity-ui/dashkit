@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.12.1](https://github.com/gravity-ui/dashkit/compare/v8.12.0...v8.12.1) (2024-09-04)
+
+
+### Bug Fixes
+
+* save drag position between groups ([#183](https://github.com/gravity-ui/dashkit/issues/183)) ([084b7a3](https://github.com/gravity-ui/dashkit/commit/084b7a366633ff2775af441a6c53e02f862aa066))
+
 ## [8.12.0](https://github.com/gravity-ui/dashkit/compare/v8.11.0...v8.12.0) (2024-09-02)
 
 
