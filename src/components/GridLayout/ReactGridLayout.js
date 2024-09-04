@@ -198,6 +198,7 @@ class DragOverLayout extends ReactGridLayout {
         if (!gridItem) {
             return gridItem;
         }
+
         const {props: itemProps} = gridItem;
 
         if (isDroppingItem) {
@@ -211,20 +212,28 @@ class DragOverLayout extends ReactGridLayout {
                 transformScale,
                 droppingPosition,
             } = itemProps;
+            const {sharedDragPosition, hasSharedDragItem} = this.props;
 
-            const leftOffset = (((containerWidth / cols) * w) / 2 || 0) * transformScale;
-            const topOffset = ((h * rowHeight + (h - 1) * margin[1]) / 2 || 0) * transformScale;
+            let offsetX, offsetY;
+
+            if (sharedDragPosition) {
+                offsetX = sharedDragPosition.offsetX;
+                offsetY = sharedDragPosition.offsetY;
+            } else {
+                offsetX = (((containerWidth / cols) * w) / 2 || 0) * transformScale;
+                offsetY = ((h * rowHeight + (h - 1) * margin[1]) / 2 || 0) * transformScale;
+            }
 
             const style = gridItem.props.style || null;
             // React.cloneElement is just cleaner then copy-paste whole processGridItem method
             return React.cloneElement(gridItem, {
                 // hiding previre if dragging shared item
-                style: this.props.hasSharedDragItem ? {...style, opacity: 0} : style,
+                style: hasSharedDragItem ? {...style, opacity: 0} : style,
                 className: OVERLAY_CLASS_NAME,
                 droppingPosition: {
                     ...droppingPosition,
-                    left: droppingPosition.left - leftOffset,
-                    top: droppingPosition.top - topOffset,
+                    left: droppingPosition.left - offsetX,
+                    top: droppingPosition.top - offsetY,
                 },
             });
         }
