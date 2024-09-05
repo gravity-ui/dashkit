@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.13.0](https://github.com/gravity-ui/dashkit/compare/v8.12.1...v8.13.0) (2024-09-05)
+
+
+### Features
+
+* make newItemLayout optional in reflowLayout ([#185](https://github.com/gravity-ui/dashkit/issues/185)) ([4309e8e](https://github.com/gravity-ui/dashkit/commit/4309e8e389fdf9771f9bb39e7e6f387de269ea60))
+
 ## [8.12.1](https://github.com/gravity-ui/dashkit/compare/v8.12.0...v8.12.1) (2024-09-04)
 
 
