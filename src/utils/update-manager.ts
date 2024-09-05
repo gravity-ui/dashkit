@@ -391,11 +391,15 @@ function changeGroupParams({
     return update(itemsStateAndParams, obj);
 }
 
-export function reflowLayout(
-    newLayoutItem: ConfigLayout,
-    layout: ConfigLayout[],
-    reflowLayoutOptions: ReflowLayoutOptions,
-) {
+export function reflowLayout({
+    newLayoutItem,
+    layout,
+    reflowLayoutOptions,
+}: {
+    newLayoutItem?: ConfigLayout;
+    layout: ConfigLayout[];
+    reflowLayoutOptions: ReflowLayoutOptions;
+}) {
     const byGroup: Record<string, ConfigLayout[]> = {};
     const reducer = (
         memo: Record<string, number>,
@@ -421,7 +425,10 @@ export function reflowLayout(
     };
 
     const orderById = layout.reduce<Record<string, number>>(reducer, {});
-    reducer(orderById, newLayoutItem, layout.length, layout, true);
+
+    if (newLayoutItem) {
+        reducer(orderById, newLayoutItem, layout.length, layout, true);
+    }
 
     const {defaultProps} = reflowLayoutOptions;
 
@@ -489,11 +496,11 @@ export class UpdateManager {
             const newLayoutItem = {...saveDefaultLayout, i: newItem.id};
 
             if (options.reflowLayoutOptions) {
-                newLayout = reflowLayout(
+                newLayout = reflowLayout({
                     newLayoutItem,
-                    config.layout.map((t) => ({...t, ...(byId[t.i] || {})})),
-                    options.reflowLayoutOptions,
-                );
+                    layout: config.layout.map((t) => ({...t, ...(byId[t.i] || {})})),
+                    reflowLayoutOptions: options.reflowLayoutOptions,
+                });
             } else {
                 newLayout = [
                     ...config.layout.map((t) => ({...t, ...(byId[t.i] || {})})),
@@ -511,7 +518,11 @@ export class UpdateManager {
             const newLayoutItem = {...saveDefaultLayout, i: newItem.id};
 
             if (options.reflowLayoutOptions) {
-                newLayout = reflowLayout(newLayoutItem, config.layout, options.reflowLayoutOptions);
+                newLayout = reflowLayout({
+                    newLayoutItem,
+                    layout: config.layout,
+                    reflowLayoutOptions: options.reflowLayoutOptions,
+                });
             } else {
                 newLayout = [...config.layout, newLayoutItem];
             }

@@ -168,12 +168,20 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
         return UpdateManager.removeItem({id, config, itemsStateAndParams});
     }
 
-    static reflowLayout(
-        newLayoutItem: ConfigLayout,
-        layout: ConfigLayout[],
-        groups?: DashKitGroup[],
-    ) {
-        return reflowLayout(newLayoutItem, layout, getReflowGroupsConfig(groups));
+    static reflowLayout({
+        newLayoutItem,
+        layout,
+        groups,
+    }: {
+        newLayoutItem?: ConfigLayout;
+        layout: ConfigLayout[];
+        groups?: DashKitGroup[];
+    }) {
+        return reflowLayout({
+            newLayoutItem,
+            layout,
+            reflowLayoutOptions: getReflowGroupsConfig(groups),
+        });
     }
 
     metaRef = React.createRef<GridLayout>();

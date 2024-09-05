@@ -167,11 +167,11 @@ export const DashKitGroupsShowcase: React.FC = () => {
 
             setConfig({
                 ...config,
-                layout: DashKit.reflowLayout(
-                    copyItem,
-                    config.layout.filter(({i}) => i !== itemId),
+                layout: DashKit.reflowLayout({
+                    newLayoutItem: copyItem,
+                    layout: config.layout.filter(({i}) => i !== itemId),
                     groups,
-                ),
+                }),
             });
         };
 
