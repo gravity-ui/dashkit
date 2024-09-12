@@ -3,7 +3,7 @@ import React from 'react';
 import {
     COMPACT_TYPE_HORIZONTAL_NOWRAP,
     DEFAULT_GROUP,
-    OVERLAY_CONTROLS_CLASS_NAME,
+    DRAGGABLE_CANCEL_CLASS_NAME,
     TEMPORARY_ITEM_ID,
 } from '../../constants';
 import {DashKitContext} from '../../context/DashKitContext';
@@ -534,7 +534,7 @@ export default class GridLayout extends React.PureComponent {
                 key={`group_${group}`}
                 isDraggable={editMode}
                 isResizable={editMode}
-                draggableCancel={`.${OVERLAY_CONTROLS_CLASS_NAME}`}
+                draggableCancel={`.${DRAGGABLE_CANCEL_CLASS_NAME}`}
                 {...(draggableHandleClassName
                     ? {draggableHandle: `.${draggableHandleClassName}`}
                     : null)}
