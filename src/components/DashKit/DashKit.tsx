@@ -2,7 +2,6 @@ import React from 'react';
 
 import noop from 'lodash/noop';
 import pick from 'lodash/pick';
-import type {Layout, Layouts} from 'react-grid-layout';
 
 import {DEFAULT_GROUP, DEFAULT_NAMESPACE} from '../../constants';
 import type {
@@ -19,6 +18,7 @@ import {
     ContextProps,
     DashKitGroup,
     GridReflowOptions,
+    ItemManipulationCallback,
     MenuItem,
     Plugin,
     ReactGridLayoutProps,
@@ -38,15 +38,6 @@ interface DashKitGeneralProps {
     overlayControls?: Record<string, OverlayControlItem[]> | null;
     overlayMenuItems?: MenuItem[] | null;
 }
-
-type ItemManipulationCallback = (eventData: {
-    layout: Layouts;
-    oldItem: Layout;
-    newItem: Layout;
-    placeholder: Layout;
-    e: MouseEvent;
-    element: HTMLElement;
-}) => void;
 
 interface DashKitDefaultProps {
     onItemEdit: (item: ConfigItem) => void;

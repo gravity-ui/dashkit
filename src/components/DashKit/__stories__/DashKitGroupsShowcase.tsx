@@ -13,6 +13,7 @@ import {
     DashKitGroup,
     DashKitProps,
     DashkitGroupRenderProps,
+    ItemManipulationCallback,
     ReactGridLayoutProps,
 } from '../../..';
 import {DEFAULT_GROUP, MenuItems} from '../../../helpers';
@@ -247,7 +248,7 @@ export const DashKitGroupsShowcase: React.FC = () => {
         [config, groups],
     );
 
-    const updateConfigOrder = React.useCallback(
+    const updateConfigOrder = React.useCallback<ItemManipulationCallback>(
         (eventProps) => {
             const index = config.items.findIndex((item) => item.id === eventProps.newItem.i);
 
