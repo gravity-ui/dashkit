@@ -398,7 +398,6 @@ export default class GridLayout extends React.PureComponent {
                 return item;
             },
         );
-        console.log(groupedLayout);
 
         this.setState({
             isDragging: false,
