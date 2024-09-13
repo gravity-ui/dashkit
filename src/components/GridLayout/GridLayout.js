@@ -7,6 +7,7 @@ import {
     TEMPORARY_ITEM_ID,
 } from '../../constants';
 import {DashKitContext} from '../../context/DashKitContext';
+import {resolveLayoutGroup} from '../../utils';
 import GridItem from '../GridItem/GridItem';
 
 import {Layout} from './ReactGridLayout';
@@ -93,7 +94,7 @@ export default class GridLayout extends React.PureComponent {
         return temporaryLayout?.data || layout;
     }
 
-    getMemoGroupLayout = (group, layout) => {
+    getMemoGroupLayout(group, layout) {
         // fastest possible way to match json
         const key = JSON.stringify(layout);
 
@@ -112,20 +113,29 @@ export default class GridLayout extends React.PureComponent {
         }
 
         return this._memoGroupsLayouts[group];
-    };
+    }
 
-    getMemoGroupCallbacks = (group) => {
+    getMemoGroupCallbacks(group) {
         if (!this._memoCallbacksForGroups[group]) {
             const onDragStart = this._onDragStart.bind(this, group);
-            const onStop = this._onStop.bind(this, group);
+            const onDrag = this._onDrag.bind(this, group);
+            const onDragStop = this._onDragStop.bind(this, group);
+
+            const onResizeStart = this._onResizeStart.bind(this, group);
+            const onResize = this._onResize.bind(this, group);
+            const onResizeStop = this._onResizeStop.bind(this, group);
+
             const onDrop = this._onDrop.bind(this, group);
             const onDropDragOver = this._onDropDragOver.bind(this, group);
             const onDragTargetRestore = this._onTargetRestore.bind(this, group);
 
             this._memoCallbacksForGroups[group] = {
                 onDragStart,
-                onDragStop: onStop,
-                onResizeStop: onStop,
+                onDrag,
+                onDragStop,
+                onResizeStart,
+                onResize,
+                onResizeStop,
                 onDrop,
                 onDropDragOver,
                 onDragTargetRestore,
@@ -133,7 +143,7 @@ export default class GridLayout extends React.PureComponent {
         }
 
         return this._memoCallbacksForGroups[group];
-    };
+    }
 
     getMemoGroupProps = (group, renderLayout, properties) => {
         // Needed for _onDropDragOver
@@ -183,7 +193,7 @@ export default class GridLayout extends React.PureComponent {
         }, {});
 
         return renderLayout.map((currentItem) => {
-            const itemParent = itemsByGroup[currentItem.i].parent || DEFAULT_GROUP;
+            const itemParent = resolveLayoutGroup(itemsByGroup[currentItem.i]);
 
             if (itemParent === group) {
                 return newItemsLayoutById[currentItem.i];
@@ -217,42 +227,109 @@ export default class GridLayout extends React.PureComponent {
         }
     }
 
-    _onDragStart = (group, _newLayout, layoutItem, _newItem, _placeholder, e) => {
-        if (this.temporaryLayout) return;
+    prepareDefaultArguments(group, layout, oldItem, newItem, placeholder, e, element) {
+        return {
+            group,
+            layout,
+            oldItem,
+            newItem,
+            placeholder,
+            e,
+            element,
+        };
+    }
+
+    updateeDraggingElementState(group, layoutItem, e) {
+        let currentDraggingElement = this.state.currentDraggingElement;
+
+        if (!currentDraggingElement) {
+            const {temporaryLayout} = this.context;
+            const layoutId = layoutItem.i;
+
+            const item = temporaryLayout
+                ? temporaryLayout.dragProps
+                : this.context.config.items.find(({id}) => id === layoutId);
+            const {offsetX, offsetY} = e.nativeEvent;
+
+            currentDraggingElement = {
+                group,
+                layoutItem,
+                item,
+                cursorPosition: {offsetX, offsetY},
+            };
+        }
+
+        this.setState({currentDraggingElement, draggedOverGroup: group});
+    }
+
+    _onDragStart(group, _newLayout, layoutItem, _newItem, _placeholder, e, element) {
+        this.context.onDragStart?.call(
+            this,
+            this.prepareDefaultArguments(
+                group,
+                _newLayout,
+                layoutItem,
+                _newItem,
+                _placeholder,
+                e,
+                element,
+            ),
+        );
 
         if (this.context.dragOverPlugin) {
             this.setState({isDragging: true});
         } else {
-            let currentDraggingElement = this.state.currentDraggingElement;
-
-            if (!currentDraggingElement) {
-                const layoutId = layoutItem.i;
-                const item = this.context.config.items.find(({id}) => id === layoutId);
-                const {offsetX, offsetY} = e.nativeEvent;
-
-                currentDraggingElement = {
-                    group,
-                    layoutItem,
-                    item,
-                    cursorPosition: {offsetX, offsetY},
-                };
-            }
-
-            this.setState({
-                isDragging: true,
-                currentDraggingElement,
-                draggedOverGroup: group,
-            });
+            this.updateeDraggingElementState(group, layoutItem, e);
+            this.setState({isDragging: true});
         }
-    };
+    }
 
-    _onResizeStart = () => {
+    _onDrag(group, layout, oldItem, newItem, placeholder, e, element) {
+        this.context.onDrag?.call(
+            this,
+            this.prepareDefaultArguments(group, layout, oldItem, newItem, placeholder, e, element),
+        );
+    }
+
+    _onDragStop(group, layout, oldItem, newItem, placeholder, e, element) {
+        this._onStop(group, layout);
+
+        this.context.onDragStop?.call(
+            this,
+            this.prepareDefaultArguments(group, layout, oldItem, newItem, placeholder, e, element),
+        );
+    }
+
+    _onResizeStart(group, layout, oldItem, newItem, placeholder, e, element) {
         this.setState({
             isDragging: true,
         });
-    };
 
-    _onTargetRestore = () => {
+        this.context.onResizeStart?.call(
+            this,
+            this.prepareDefaultArguments(group, layout, oldItem, newItem, placeholder, e, element),
+        );
+    }
+
+    _onResize(group, layout, oldItem, newItem, placeholder, e, element) {
+        this.context.onResize?.call(
+            this,
+            this.prepareDefaultArguments(group, layout, oldItem, newItem, placeholder, e, element),
+        );
+    }
+
+    _onResizeStop(group, layout, oldItem, newItem, placeholder, e, element) {
+        this.context.onResizeStop?.call(
+            this,
+            this.prepareDefaultArguments(group, layout, oldItem, newItem, placeholder, e, element),
+        );
+    }
+
+    _onTargetRestore() {
+        if (this.context.temporaryLayout) {
+            return;
+        }
+
         const {currentDraggingElement} = this.state;
 
         if (currentDraggingElement) {
@@ -260,7 +337,7 @@ export default class GridLayout extends React.PureComponent {
                 draggedOverGroup: currentDraggingElement.group,
             });
         }
-    };
+    }
 
     _onStop = (group, newLayout) => {
         const {layoutChange, onDrop, temporaryLayout} = this.context;
@@ -321,6 +398,7 @@ export default class GridLayout extends React.PureComponent {
                 return item;
             },
         );
+        console.log(groupedLayout);
 
         this.setState({
             isDragging: false,
@@ -328,6 +406,7 @@ export default class GridLayout extends React.PureComponent {
             draggedOverGroup: null,
         });
 
+        // TODO temporaryLayout
         layoutChange(groupedLayout);
     };
 
@@ -358,8 +437,13 @@ export default class GridLayout extends React.PureComponent {
     };
 
     _onDropDragOver = (group, e) => {
-        const {editMode, dragOverPlugin, onDropDragOver} = this.context;
+        const {editMode, dragOverPlugin, onDropDragOver, temporaryLayout} = this.context;
         const {currentDraggingElement} = this.state;
+
+        // TODO If temporary item is trying to change group
+        if (temporaryLayout && currentDraggingElement) {
+            return false;
+        }
 
         if (!editMode || (!dragOverPlugin && !currentDraggingElement)) {
             return false;
@@ -443,31 +527,37 @@ export default class GridLayout extends React.PureComponent {
 
         return (
             <Layout
+                // Group properties
                 {...properties}
+                // Layout props
                 compactType={compactType}
                 layout={layout}
                 key={`group_${group}`}
                 isDraggable={editMode}
                 isResizable={editMode}
-                onResizeStart={this._onResizeStart}
+                draggableCancel={`.${OVERLAY_CONTROLS_CLASS_NAME}`}
+                {...(draggableHandleClassName
+                    ? {draggableHandle: `.${draggableHandleClassName}`}
+                    : null)}
+                // Default callbacks
                 onDragStart={callbacks.onDragStart}
+                onDrag={callbacks.onDrag}
                 onDragStop={callbacks.onDragStop}
+                onResizeStart={callbacks.onResizeStart}
+                onResize={callbacks.onResize}
                 onResizeStop={callbacks.onResizeStop}
+                // External Drag N Drop options
                 onDragTargetRestore={callbacks.onDragTargetRestore}
                 onDropDragOver={callbacks.onDropDragOver}
                 onDrop={callbacks.onDrop}
                 hasSharedDragItem={hasSharedDragItem}
                 sharedDragPosition={currentDraggingElement?.cursorPosition}
                 isDragCaptured={isDragCaptured}
-                {...(draggableHandleClassName
-                    ? {draggableHandle: `.${draggableHandleClassName}`}
-                    : null)}
                 {...(outerDnDEnable
                     ? {
                           isDroppable: true,
                       }
                     : null)}
-                draggableCancel={`.${OVERLAY_CONTROLS_CLASS_NAME}`}
             >
                 {renderItems.map((item, i) => {
                     return (

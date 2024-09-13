@@ -247,6 +247,25 @@ export const DashKitGroupsShowcase: React.FC = () => {
         [config, groups],
     );
 
+    const updateConfigOrder = React.useCallback(
+        (eventProps) => {
+            const index = config.items.findIndex((item) => item.id === eventProps.newItem.i);
+
+            const copyItems = [...config.items];
+            copyItems.push(copyItems.splice(index, 1)[0]);
+
+            const copyLyaout = [...config.layout];
+            copyLyaout.push(copyLyaout.splice(index, 1)[0]);
+
+            setConfig({
+                ...config,
+                items: copyItems,
+                layout: copyLyaout,
+            });
+        },
+        [config],
+    );
+
     return (
         <DashKitDnDWrapper
             onDragStart={() => {
@@ -270,6 +289,8 @@ export const DashKitGroupsShowcase: React.FC = () => {
                         onChange={onChange}
                         onDrop={onDrop}
                         overlayMenuItems={overlayMenuItems}
+                        onDragStart={updateConfigOrder}
+                        onResizeStart={updateConfigOrder}
                     />
                     <ActionPanel items={items} />
                 </DemoRow>

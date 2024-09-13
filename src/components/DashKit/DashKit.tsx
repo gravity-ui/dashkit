@@ -2,6 +2,7 @@ import React from 'react';
 
 import noop from 'lodash/noop';
 import pick from 'lodash/pick';
+import type {Layout, Layouts} from 'react-grid-layout';
 
 import {DEFAULT_GROUP, DEFAULT_NAMESPACE} from '../../constants';
 import type {
@@ -38,6 +39,15 @@ interface DashKitGeneralProps {
     overlayMenuItems?: MenuItem[] | null;
 }
 
+type ItemManipulationCallback = (eventData: {
+    layout: Layouts;
+    oldItem: Layout;
+    newItem: Layout;
+    placeholder: Layout;
+    e: MouseEvent;
+    element: HTMLElement;
+}) => void;
+
 interface DashKitDefaultProps {
     onItemEdit: (item: ConfigItem) => void;
     onChange: (data: {
@@ -45,9 +55,18 @@ interface DashKitDefaultProps {
         itemsStateAndParams: ItemsStateAndParams;
         groups?: DashKitGroup[];
     }) => void;
-    onDrop: (dropProps: ItemDropProps) => void;
+    onDrop?: (dropProps: ItemDropProps) => void;
+
     onItemMountChange?: (item: ConfigItem, state: {isAsync: boolean; isMounted: boolean}) => void;
     onItemRender?: (item: ConfigItem) => void;
+
+    onDragStart?: ItemManipulationCallback;
+    onDrag?: ItemManipulationCallback;
+    onDragStop?: ItemManipulationCallback;
+    onResizeStart?: ItemManipulationCallback;
+    onResize?: ItemManipulationCallback;
+    onResizeStop?: ItemManipulationCallback;
+
     defaultGlobalParams: GlobalParams;
     globalParams: GlobalParams;
     itemsStateAndParams: ItemsStateAndParams;
