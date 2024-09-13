@@ -24,6 +24,15 @@ Plugins are required to create custom widgets.
 ### Props
 
 ```ts
+type ItemManipulationCallback = (eventData: {
+    layout: Layouts;
+    oldItem: Layout;
+    newItem: Layout;
+    placeholder: Layout;
+    e: MouseEvent;
+    element: HTMLElement;
+}) => void;
+
 interface DashKitProps {
   config: Config;
   editMode: boolean;
@@ -32,6 +41,14 @@ interface DashKitProps {
   onDrop: (dropProps: ItemDropProps) => void;
   onItemMountChange: (item: ConfigItem, state: {isAsync: boolead; isMounted: boolean}) => void;
   onItemRender: (item: ConfigItem) => void;
+
+  onDragStart?: ItemManipulationCallback;
+  onDrag?: ItemManipulationCallback;
+  onDragStop?: ItemManipulationCallback;
+  onResizeStart?: ItemManipulationCallback;
+  onResize?: ItemManipulationCallback;
+  onResizeStop?: ItemManipulationCallback;
+
   defaultGlobalParams: GlobalParams;
   globalParams: GlobalParams;
   itemsStateAndParams: ItemsStateAndParams;
@@ -61,6 +78,12 @@ interface DashKitProps {
 - **noOverlay**: If `true`, overlay and controls are not displayed while editing.
 - **focusable**: If `true`, grid items will be focusable.
 - **draggableHandleClassName** : СSS class name of the element that makes the widget draggable.
+- **onDragStart**: ReactGridLayout called when item drag started
+- **onDrag**: ReactGridLayout called while item drag
+- **onDragStop**: ReactGridLayout called when item drag stopped
+- **onResizeStart**: ReactGridLayout called when item resize started
+- **onResize**: ReactGridLayout called while item resizing
+- **onResizeStop**: ReactGridLayout called when item resize stoped
 
 ## Usage
 
