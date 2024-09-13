@@ -18,6 +18,7 @@ import {
     ContextProps,
     DashKitGroup,
     GridReflowOptions,
+    ItemManipulationCallback,
     MenuItem,
     Plugin,
     ReactGridLayoutProps,
@@ -45,9 +46,18 @@ interface DashKitDefaultProps {
         itemsStateAndParams: ItemsStateAndParams;
         groups?: DashKitGroup[];
     }) => void;
-    onDrop: (dropProps: ItemDropProps) => void;
+    onDrop?: (dropProps: ItemDropProps) => void;
+
     onItemMountChange?: (item: ConfigItem, state: {isAsync: boolean; isMounted: boolean}) => void;
     onItemRender?: (item: ConfigItem) => void;
+
+    onDragStart?: ItemManipulationCallback;
+    onDrag?: ItemManipulationCallback;
+    onDragStop?: ItemManipulationCallback;
+    onResizeStart?: ItemManipulationCallback;
+    onResize?: ItemManipulationCallback;
+    onResizeStop?: ItemManipulationCallback;
+
     defaultGlobalParams: GlobalParams;
     globalParams: GlobalParams;
     itemsStateAndParams: ItemsStateAndParams;

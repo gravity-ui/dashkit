@@ -41,6 +41,7 @@ import type {
 
 import {getNewId} from './get-new-id';
 import {bottom, compact} from './grid-layout';
+import {resolveLayoutGroup} from './group-helpers';
 import {RegisterManagerPluginLayout} from './register-manager';
 
 extend('$auto', (value, object) => (object ? update(object, value) : update({}, value)));
@@ -409,7 +410,7 @@ export function reflowLayout({
         isNewItem?: boolean,
     ) => {
         memo[item.i] = i;
-        const parent = item.parent || DEFAULT_GROUP;
+        const parent = resolveLayoutGroup(item);
 
         if (byGroup[parent]) {
             if (isNewItem) {

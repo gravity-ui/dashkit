@@ -17,7 +17,7 @@ import {
 } from '../context/DashKitContext';
 import {useDeepEqualMemo} from '../hooks/useDeepEqualMemo';
 import {getItemsParams, getItemsState} from '../shared';
-import {UpdateManager} from '../utils';
+import {UpdateManager, resolveLayoutGroup} from '../utils';
 
 const ITEM_PROPS = ['i', 'h', 'w', 'x', 'y', 'parent'];
 
@@ -219,7 +219,7 @@ function useMemoStateContext(props) {
         if (hasNowrapGroups) {
             layout.forEach((item) => {
                 const widgetId = item.i;
-                const parentId = item.parent || DEFAULT_GROUP;
+                const parentId = resolveLayoutGroup(item);
 
                 if (nowrapGroups[parentId]) {
                     // Collecting nowrap elements
@@ -390,7 +390,7 @@ function useMemoStateContext(props) {
             }
 
             setTemporaryLayout({
-                data: newLayout,
+                data: [...newLayout, item],
                 dragProps,
             });
 
@@ -440,6 +440,14 @@ function useMemoStateContext(props) {
             draggableHandleClassName: props.draggableHandleClassName,
             outerDnDEnable,
             dragOverPlugin,
+
+            /* default bypassing handlers */
+            onDragStart: props.onDragStart,
+            onDrag: props.onDrag,
+            onDragStop: props.onDragStop,
+            onResizeStart: props.onResizeStart,
+            onResize: props.onResize,
+            onResizeStop: props.onResizeStop,
         }),
         [
             resultLayout,
@@ -469,6 +477,13 @@ function useMemoStateContext(props) {
             props.draggableHandleClassName,
             outerDnDEnable,
             dragOverPlugin,
+
+            props.onDragStart,
+            props.onDrag,
+            props.onDragStop,
+            props.onResizeStart,
+            props.onResize,
+            props.onResizeStop,
         ],
     );
 

@@ -1,3 +1,5 @@
+import type {Layout, Layouts} from 'react-grid-layout';
+
 import type {Config, ConfigItem, ConfigLayout} from '../shared';
 
 export interface AddConfigItem extends Omit<ConfigItem, 'id' | 'namespace'> {
@@ -67,3 +69,12 @@ export interface DashKitGroup {
     ) => React.ReactNode;
     gridProperties?: (props: ReactGridLayoutProps) => ReactGridLayoutProps;
 }
+
+export type ItemManipulationCallback = (eventData: {
+    layout: Layouts;
+    oldItem: Layout;
+    newItem: Layout;
+    placeholder: Layout;
+    e: MouseEvent;
+    element: HTMLElement;
+}) => void;
