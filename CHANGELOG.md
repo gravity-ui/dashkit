@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.14.0](https://github.com/gravity-ui/dashkit/compare/v8.13.0...v8.14.0) (2024-09-13)
+
+
+### Features
+
+* added default react-grid-layout handlers ([#188](https://github.com/gravity-ui/dashkit/issues/188)) ([442a9ef](https://github.com/gravity-ui/dashkit/commit/442a9efb0e95949ee49a0ceec05f027ee12ec6c7))
+
 ## [8.13.0](https://github.com/gravity-ui/dashkit/compare/v8.12.1...v8.13.0) (2024-09-05)
 
 
