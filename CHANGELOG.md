@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.14.1](https://github.com/gravity-ui/dashkit/compare/v8.14.0...v8.14.1) (2024-09-16)
+
+
+### Bug Fixes
+
+* do not allow drag by dropdown menu ([#187](https://github.com/gravity-ui/dashkit/issues/187)) ([eaf1038](https://github.com/gravity-ui/dashkit/commit/eaf10384c6c3a6d17003785bc186aa60cfb26482))
+
 ## [8.14.0](https://github.com/gravity-ui/dashkit/compare/v8.13.0...v8.14.0) (2024-09-13)
 
 
