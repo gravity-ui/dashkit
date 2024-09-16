@@ -15,6 +15,7 @@ import noop from 'lodash/noop';
 
 import {
     COPIED_WIDGET_STORE_KEY,
+    DRAGGABLE_CANCEL_CLASS_NAME,
     MenuItems,
     OVERLAY_CONTROLS_CLASS_NAME,
     OVERLAY_ICON_SIZE,
@@ -111,7 +112,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
             ? this.getCustomControlsWithWidgets()
             : this.renderControls();
 
-        return <div className={b({position})}>{controls}</div>;
+        return <div className={b({position}, [DRAGGABLE_CANCEL_CLASS_NAME])}>{controls}</div>;
     }
 
     private getItems = () => {
@@ -311,6 +312,9 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                         <Icon data={Ellipsis} size={OVERLAY_ICON_SIZE} />
                     </Button>
                 )}
+                popupProps={{
+                    contentClassName: DRAGGABLE_CANCEL_CLASS_NAME,
+                }}
             />
         );
     }
