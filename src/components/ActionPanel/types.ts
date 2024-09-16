@@ -10,6 +10,9 @@ export type ActionPanelItem = {
     qa?: string;
     onClick?: () => void;
     dragProps?: ItemDragProps;
+    renderItem?: (
+        props: Omit<ActionPanelItem, 'renderItem'> & {key: React.Key; children: React.ReactNode},
+    ) => JSX.Element;
 };
 
 export type ActionPanelProps = {
