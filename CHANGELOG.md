@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.15.0](https://github.com/gravity-ui/dashkit/compare/v8.14.1...v8.15.0) (2024-09-16)
+
+
+### Features
+
+* add wrapTo method for action panel items ([#191](https://github.com/gravity-ui/dashkit/issues/191)) ([1dab089](https://github.com/gravity-ui/dashkit/commit/1dab089424e22de753d40fce9471693402c394d7))
+
 ## [8.14.1](https://github.com/gravity-ui/dashkit/compare/v8.14.0...v8.14.1) (2024-09-16)
 
 
