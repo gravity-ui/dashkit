@@ -10,6 +10,9 @@ export type ActionPanelItem = {
     qa?: string;
     onClick?: () => void;
     dragProps?: ItemDragProps;
+    wrapTo?: (
+        props: Omit<ActionPanelItem, 'wrapTo'> & {key: React.Key; children: React.ReactNode},
+    ) => React.ReactNode;
 };
 
 export type ActionPanelProps = {

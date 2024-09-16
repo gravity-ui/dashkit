@@ -37,9 +37,12 @@ export const ActionPanel = (props: ActionPanelProps) => {
 
     const content = (
         <div ref={nodeRef} className={b(null, props.className)}>
-            {props.items.map((item) => (
-                <ActionPanelItemContainer key={`dk-action-panel-${item.id}`} item={item} />
-            ))}
+            {props.items.map(({wrapTo, ...item}) => {
+                const key = `dk-action-panel-${item.id}`;
+                const children = <ActionPanelItemContainer key={key} item={item} />;
+
+                return wrapTo ? wrapTo({...item, key, children}) : children;
+            })}
         </div>
     );
 
