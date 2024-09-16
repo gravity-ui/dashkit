@@ -12,7 +12,7 @@ export type ActionPanelItem = {
     dragProps?: ItemDragProps;
     renderItem?: (
         props: Omit<ActionPanelItem, 'renderItem'> & {key: React.Key; children: React.ReactNode},
-    ) => JSX.Element;
+    ) => React.ReactNode;
 };
 
 export type ActionPanelProps = {
