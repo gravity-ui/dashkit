@@ -36,6 +36,7 @@ export interface DashkitGroupRenderProps {
     editMode: boolean;
     items: ConfigItem[];
     layout: ConfigLayout[];
+    context: any;
 }
 
 export type ReactGridLayoutProps = Omit<
