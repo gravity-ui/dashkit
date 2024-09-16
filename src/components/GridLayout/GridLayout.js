@@ -319,6 +319,8 @@ export default class GridLayout extends React.PureComponent {
     }
 
     _onResizeStop(group, layout, oldItem, newItem, placeholder, e, element) {
+        this._onStop(group, layout);
+
         this.context.onResizeStop?.call(
             this,
             this.prepareDefaultArguments(group, layout, oldItem, newItem, placeholder, e, element),
