@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.15.1](https://github.com/gravity-ui/dashkit/compare/v8.15.0...v8.15.1) (2024-09-17)
+
+
+### Bug Fixes
+
+* resize element handler ([#194](https://github.com/gravity-ui/dashkit/issues/194)) ([5506c56](https://github.com/gravity-ui/dashkit/commit/5506c562af1549559e568f60b483dbb3eea39a28))
+
 ## [8.15.0](https://github.com/gravity-ui/dashkit/compare/v8.14.1...v8.15.0) (2024-09-16)
 
 
