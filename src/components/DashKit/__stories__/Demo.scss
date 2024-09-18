@@ -50,4 +50,8 @@
             flex: 1;
         }
     }
+
+    .dashkit_focused {
+        outline: 1px dashed var(--g-color-text-danger);
+    }
 }

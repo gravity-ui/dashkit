@@ -2,6 +2,7 @@ import React from 'react';
 
 import PropTypes from 'prop-types';
 
+import {FOCUSED_CLASS_NAME} from '../../constants';
 import {DashKitContext} from '../../context/DashKitContext';
 import {cn} from '../../utils/cn';
 import Item from '../Item/Item';
@@ -85,15 +86,45 @@ class GridItem extends React.PureComponent {
             return null;
         }
 
-        const {item} = this.props;
+        const {item, focusable} = this.props;
 
         return (
             <React.Fragment>
                 <div className={b('overlay')} />
-                <OverlayControls configItem={item} />
+                <OverlayControls
+                    configItem={item}
+                    onItemClick={focusable ? this.onOverlayItemClick : null}
+                />
             </React.Fragment>
         );
     }
+
+    onOverlayItemClick = () => {
+        // Creating button element to trigger focus out
+        const focusDummy = document.createElement('button');
+        const styles = {
+            width: '0',
+            height: '0',
+            opacity: '0',
+            position: 'fixed',
+            top: '0',
+            left: '0',
+        };
+
+        Object.entries(styles).forEach(([key, value]) => {
+            focusDummy.style[key] = value;
+        });
+
+        // requestAnimationFrame to make call after alert() or confirm()
+        requestAnimationFrame(() => {
+            // Adding elment an changing focus
+            document.body.appendChild(focusDummy);
+            focusDummy.focus();
+            document.body.removeChild(focusDummy);
+
+            this.setState({isFocused: false});
+        });
+    };
 
     onFocusHandler = () => {
         this.setState({isFocused: true});
@@ -166,9 +197,14 @@ class GridItem extends React.PureComponent {
         const width = Number.parseInt(style.width, 10);
         const height = Number.parseInt(style.height, 10);
         const transform = style.transform;
-        const preparedClassName = editMode
-            ? className
-            : className.replace('react-resizable', '').replace('react-draggable', '');
+        const preparedClassName =
+            (editMode
+                ? className
+                : className
+                      .replace('react-resizable', '')
+                      .replace('react-draggable', '')
+                      .replace(FOCUSED_CLASS_NAME, '')) +
+            (this.state.isFocused ? ` ${FOCUSED_CLASS_NAME}` : '');
         const preparedChildren = editMode ? children : null;
         const reactGridLayoutProps = editMode
             ? {onMouseDown, onMouseUp, onTouchEnd, onTouchStart}
