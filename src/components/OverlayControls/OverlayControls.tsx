@@ -353,8 +353,8 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                         ...item,
                         handler:
                             typeof item.handler === 'function'
-                                ? (arg) => {
-                                      const result = item.handler?.(arg);
+                                ? (...args) => {
+                                      const result = item.handler?.(...args);
                                       onItemClick?.();
                                       return result;
                                   }
