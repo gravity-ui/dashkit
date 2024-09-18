@@ -235,7 +235,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                         ref={this.dashKitRef}
                         overlayControls={this.state.enableOverlayControls ? this.controls : null}
                         overlayMenuItems={this.state.overlayMenuItems}
-                        focusable={!editMode}
+                        focusable={true}
                     />
                 </DemoRow>
             </Demo>

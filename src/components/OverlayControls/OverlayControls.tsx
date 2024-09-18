@@ -68,6 +68,7 @@ interface OverlayControlsDefaultProps {
 
 interface OverlayControlsProps extends OverlayControlsDefaultProps {
     configItem: ConfigItem;
+    onItemClick?: () => void | null;
 }
 
 type PreparedCopyItemOptionsArg = Pick<ConfigItem, 'data' | 'type' | 'defaults' | 'namespace'> & {
@@ -123,7 +124,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
     };
 
     private renderControlsItem = (item: OverlayControlItem, index: number, length: number) => {
-        const {view, size} = this.props;
+        const {view, size, onItemClick} = this.props;
         const {title, handler, icon, iconSize, qa} = item;
 
         const onItemClickHandler = typeof handler === 'function' ? handler : noop;
@@ -134,7 +135,10 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                 size={size}
                 title={title}
                 pin={this.getControlItemPinStyle(index, length)}
-                onClick={() => onItemClickHandler(this.props.configItem)}
+                onClick={() => {
+                    onItemClickHandler(this.props.configItem);
+                    onItemClick?.();
+                }}
                 qa={qa}
             >
                 <Icon data={icon || Gear} size={icon ? iconSize : OVERLAY_ICON_SIZE} />
@@ -246,7 +250,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         );
     }
     private renderDropdownMenu(isOnlyOneItem: boolean) {
-        const {view, size} = this.props;
+        const {view, size, onItemClick} = this.props;
         const {menu: contextMenu, itemsParams, itemsState} = this.context;
 
         const configItem = this.props.configItem;
@@ -279,7 +283,11 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
 
                   const itemAction =
                       typeof itemHandler === 'function'
-                          ? () => itemHandler(configItem, itemParams, itemState)
+                          ? () => {
+                                const result = itemHandler(configItem, itemParams, itemState);
+                                onItemClick?.();
+                                return result;
+                            }
                           : this.getDropDownMenuItemConfig(item.id)?.action || (() => {});
 
                   memo.push({
@@ -322,6 +330,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         // выбираем только items-ы у которых проставлено поле `allWidgetsControls:true`
         // те контролы, которые будут показываться слева от меню
         let controls: OverlayControlItem[] = [];
+        const {onItemClick} = this.props;
 
         for (const controlItem of Object.values(this.context.overlayControls || {})) {
             controls = controls.concat(
@@ -344,7 +353,11 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                         ...item,
                         handler:
                             typeof item.handler === 'function'
-                                ? item.handler
+                                ? (...args) => {
+                                      const result = item.handler?.(...args);
+                                      onItemClick?.();
+                                      return result;
+                                  }
                                 : this.getDropDownMenuItemConfig(item.id)?.action || (() => {}),
                     };
                 }),
@@ -376,13 +389,16 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         localStorage.setItem(COPIED_WIDGET_STORE_KEY, JSON.stringify(options));
         // https://stackoverflow.com/questions/35865481/storage-event-not-firing
         window.dispatchEvent(new Event('storage'));
+        this.props.onItemClick?.();
     };
     private onEditItem = () => {
         this.context.editItem(this.props.configItem);
+        this.props.onItemClick?.();
     };
     private onRemoveItem = () => {
         const {id} = this.props.configItem;
         this.context.removeItem(id);
+        this.props.onItemClick?.();
     };
     private getControlItemPinStyle(index: number, itemsLength: number) {
         const isOnlyOneItem = itemsLength === 1;
