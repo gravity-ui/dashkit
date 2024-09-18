@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.15.2](https://github.com/gravity-ui/dashkit/compare/v8.15.1...v8.15.2) (2024-09-17)
+
+
+### Bug Fixes
+
+* group render props typing ([#193](https://github.com/gravity-ui/dashkit/issues/193)) ([4ca030b](https://github.com/gravity-ui/dashkit/commit/4ca030b940f59ebb356b52b7e9fce46de01f45ff))
+
 ## [8.15.1](https://github.com/gravity-ui/dashkit/compare/v8.15.0...v8.15.1) (2024-09-17)
 
 
