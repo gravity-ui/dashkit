@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.15.3](https://github.com/gravity-ui/dashkit/compare/v8.15.2...v8.15.3) (2024-09-18)
+
+
+### Bug Fixes
+
+* unfocus item when overlay button or menu item is clicked ([#197](https://github.com/gravity-ui/dashkit/issues/197)) ([b0b6b9a](https://github.com/gravity-ui/dashkit/commit/b0b6b9aa3fba6f8a15a76313320f91f917c58249))
+
 ## [8.15.2](https://github.com/gravity-ui/dashkit/compare/v8.15.1...v8.15.2) (2024-09-17)
 
 
