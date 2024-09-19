@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.16.0](https://github.com/gravity-ui/dashkit/compare/v8.15.3...v8.16.0) (2024-09-19)
+
+
+### Features
+
+* add dashkit reload plugins method ([#199](https://github.com/gravity-ui/dashkit/issues/199)) ([078bf73](https://github.com/gravity-ui/dashkit/commit/078bf73583134e09e3800abb4a9eba62d55752a1))
+
 ## [8.15.3](https://github.com/gravity-ui/dashkit/compare/v8.15.2...v8.15.3) (2024-09-18)
 
 
