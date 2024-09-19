@@ -119,6 +119,12 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
         });
     }
 
+    static reloadPlugins(...plugins: Plugin[]) {
+        plugins.forEach((plugin) => {
+            registerManager.reloadPlugin(plugin);
+        });
+    }
+
     static setSettings(settings: Settings) {
         registerManager.setSettings(settings);
     }
