@@ -13,6 +13,7 @@ import {
     ConfigItemGroup,
     ConfigItemWithGroup,
     ConfigItemWithTabs,
+    ItemState,
     ItemStateAndParams,
     ItemsStateAndParams,
     ItemsStateAndParamsBase,
@@ -24,6 +25,12 @@ import {
 
 function getNormalizedPlugins(plugins: PluginBase[]) {
     return keyBy(plugins, 'type');
+}
+
+function isItemStateAndParams(
+    itemStateAndParams: ItemStateAndParams | ItemState,
+): itemStateAndParams is ItemStateAndParams {
+    return 'state' in itemStateAndParams;
 }
 
 export function prerenderItems({
@@ -179,11 +186,17 @@ export function resolveItemInnerId({
     itemsStateAndParams,
 }: {
     item: Pick<ConfigItemWithTabs, 'data' | 'id'>;
-    itemsStateAndParams: ItemsStateAndParams;
+    itemsStateAndParams: ItemsStateAndParamsBase | Record<string, ItemState>;
 }): string {
     const {id} = item;
-    const stateTabId: string | undefined = (itemsStateAndParams as ItemsStateAndParamsBase)[id]
-        ?.state?.tabId;
+    const itemStateAndParams = itemsStateAndParams[id];
+    let stateTabId: string | undefined;
+    if (itemStateAndParams) {
+        stateTabId = isItemStateAndParams(itemStateAndParams)
+            ? itemStateAndParams?.state?.tabId
+            : itemStateAndParams?.tabId;
+    }
+
     const {tabs} = (item as ConfigItemWithTabs).data;
     if (stateTabId && tabs.some((tab) => tab.id === stateTabId)) {
         return stateTabId;

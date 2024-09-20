@@ -22,7 +22,15 @@ import {
 } from '../../constants';
 import {DashkitOvelayControlsContext} from '../../context/DashKitContext';
 import {i18n} from '../../i18n';
-import type {ConfigItem, ConfigLayout, ItemState, PluginBase, StringParams} from '../../shared';
+import {
+    type ConfigItem,
+    type ConfigLayout,
+    type ItemState,
+    type PluginBase,
+    type StringParams,
+    isItemWithTabs,
+    resolveItemInnerId,
+} from '../../shared';
 import {MenuItem, Settings} from '../../typings';
 import {cn} from '../../utils/cn';
 
@@ -78,6 +86,7 @@ type PreparedCopyItemOptionsArg = Pick<ConfigItem, 'data' | 'type' | 'defaults' 
         h: number;
     };
     targetId: string;
+    targetInnerId?: string;
 };
 
 export type PreparedCopyItemOptions<C extends object = {}> = PreparedCopyItemOptionsArg & {
@@ -371,6 +380,15 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         const {configItem} = this.props;
         const correspondedItemLayout = this.context.getLayoutItem(configItem.id);
 
+        let targetInnerId;
+
+        if (isItemWithTabs(this.props.configItem)) {
+            targetInnerId = resolveItemInnerId({
+                item: this.props.configItem,
+                itemsStateAndParams: this.context.itemsState,
+            });
+        }
+
         let options: PreparedCopyItemOptions = {
             timestamp: Date.now(),
             data: configItem.data,
@@ -382,6 +400,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                 h: correspondedItemLayout!.h,
             },
             targetId: this.props.configItem.id,
+            targetInnerId,
         };
 
         if (typeof this.context.context?.getPreparedCopyItemOptions === 'function') {
