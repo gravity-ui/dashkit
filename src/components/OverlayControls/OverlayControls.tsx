@@ -80,6 +80,7 @@ type PreparedCopyItemOptionsArg = Pick<ConfigItem, 'data' | 'type' | 'defaults' 
         w: number;
         h: number;
     };
+    targetId: string;
 };
 
 export type PreparedCopyItemOptions<C extends object = {}> = PreparedCopyItemOptionsArg & {
@@ -335,6 +336,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                 w: correspondedItemLayout!.w,
                 h: correspondedItemLayout!.h,
             },
+            targetId: this.props.configItem.id,
         };
 
         if (typeof this.context.context?.getPreparedCopyItemOptions === 'function') {
