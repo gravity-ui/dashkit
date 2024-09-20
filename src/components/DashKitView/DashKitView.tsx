@@ -17,15 +17,16 @@ type DashKitViewProps = DashKitProps & {
     registerManager: RegisterManager;
 };
 
-function DashKitView(props: DashKitViewProps) {
+function DashKitView() {
     const context = React.useContext(DashKitContext);
     const {registerManager, forwardedMetaRef} = context;
+
     return (
         <div className={b({theme: registerManager.settings.theme})}>
             {registerManager.settings.isMobile ? (
                 <MobileLayout />
             ) : (
-                <GridLayout ref={forwardedMetaRef} overlayControls={props.overlayControls} />
+                <GridLayout ref={forwardedMetaRef} />
             )}
         </div>
     );
@@ -35,6 +36,7 @@ const DashKitViewWithContext = withContext(DashKitView);
 
 const DashKitViewForwardedMeta = React.forwardRef((props: DashKitViewProps, ref) => {
     const layout = useCalcPropsLayout(props.config, props.registerManager);
+
     return <DashKitViewWithContext {...props} layout={layout} forwardedMetaRef={ref} />;
 });
 

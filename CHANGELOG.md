@@ -1,5 +1,180 @@
 # Changelog
 
+## [8.16.0](https://github.com/gravity-ui/dashkit/compare/v8.15.3...v8.16.0) (2024-09-19)
+
+
+### Features
+
+* add dashkit reload plugins method ([#199](https://github.com/gravity-ui/dashkit/issues/199)) ([078bf73](https://github.com/gravity-ui/dashkit/commit/078bf73583134e09e3800abb4a9eba62d55752a1))
+
+## [8.15.3](https://github.com/gravity-ui/dashkit/compare/v8.15.2...v8.15.3) (2024-09-18)
+
+
+### Bug Fixes
+
+* unfocus item when overlay button or menu item is clicked ([#197](https://github.com/gravity-ui/dashkit/issues/197)) ([b0b6b9a](https://github.com/gravity-ui/dashkit/commit/b0b6b9aa3fba6f8a15a76313320f91f917c58249))
+
+## [8.15.2](https://github.com/gravity-ui/dashkit/compare/v8.15.1...v8.15.2) (2024-09-17)
+
+
+### Bug Fixes
+
+* group render props typing ([#193](https://github.com/gravity-ui/dashkit/issues/193)) ([4ca030b](https://github.com/gravity-ui/dashkit/commit/4ca030b940f59ebb356b52b7e9fce46de01f45ff))
+
+## [8.15.1](https://github.com/gravity-ui/dashkit/compare/v8.15.0...v8.15.1) (2024-09-17)
+
+
+### Bug Fixes
+
+* resize element handler ([#194](https://github.com/gravity-ui/dashkit/issues/194)) ([5506c56](https://github.com/gravity-ui/dashkit/commit/5506c562af1549559e568f60b483dbb3eea39a28))
+
+## [8.15.0](https://github.com/gravity-ui/dashkit/compare/v8.14.1...v8.15.0) (2024-09-16)
+
+
+### Features
+
+* add wrapTo method for action panel items ([#191](https://github.com/gravity-ui/dashkit/issues/191)) ([1dab089](https://github.com/gravity-ui/dashkit/commit/1dab089424e22de753d40fce9471693402c394d7))
+
+## [8.14.1](https://github.com/gravity-ui/dashkit/compare/v8.14.0...v8.14.1) (2024-09-16)
+
+
+### Bug Fixes
+
+* do not allow drag by dropdown menu ([#187](https://github.com/gravity-ui/dashkit/issues/187)) ([eaf1038](https://github.com/gravity-ui/dashkit/commit/eaf10384c6c3a6d17003785bc186aa60cfb26482))
+
+## [8.14.0](https://github.com/gravity-ui/dashkit/compare/v8.13.0...v8.14.0) (2024-09-13)
+
+
+### Features
+
+* added default react-grid-layout handlers ([#188](https://github.com/gravity-ui/dashkit/issues/188)) ([442a9ef](https://github.com/gravity-ui/dashkit/commit/442a9efb0e95949ee49a0ceec05f027ee12ec6c7))
+
+## [8.13.0](https://github.com/gravity-ui/dashkit/compare/v8.12.1...v8.13.0) (2024-09-05)
+
+
+### Features
+
+* make newItemLayout optional in reflowLayout ([#185](https://github.com/gravity-ui/dashkit/issues/185)) ([4309e8e](https://github.com/gravity-ui/dashkit/commit/4309e8e389fdf9771f9bb39e7e6f387de269ea60))
+
+## [8.12.1](https://github.com/gravity-ui/dashkit/compare/v8.12.0...v8.12.1) (2024-09-04)
+
+
+### Bug Fixes
+
+* save drag position between groups ([#183](https://github.com/gravity-ui/dashkit/issues/183)) ([084b7a3](https://github.com/gravity-ui/dashkit/commit/084b7a366633ff2775af441a6c53e02f862aa066))
+
+## [8.12.0](https://github.com/gravity-ui/dashkit/compare/v8.11.0...v8.12.0) (2024-09-02)
+
+
+### Features
+
+* add item with grid reflow ([#180](https://github.com/gravity-ui/dashkit/issues/180)) ([aaa6a6d](https://github.com/gravity-ui/dashkit/commit/aaa6a6da5e814b55c3d36ee2495e4cd02338efb4))
+
+## [8.11.0](https://github.com/gravity-ui/dashkit/compare/v8.10.2...v8.11.0) (2024-08-27)
+
+
+### Features
+
+* add all around resize handlers support ([#179](https://github.com/gravity-ui/dashkit/issues/179)) ([5fa3426](https://github.com/gravity-ui/dashkit/commit/5fa34260ffd46f8fb60ff62e94d7afef342882a5))
+
+## [8.10.2](https://github.com/gravity-ui/dashkit/compare/v8.10.1...v8.10.2) (2024-08-22)
+
+
+### Bug Fixes
+
+* mobile onload callbacks ([#177](https://github.com/gravity-ui/dashkit/issues/177)) ([da6a713](https://github.com/gravity-ui/dashkit/commit/da6a71374ca1ab0e8df436db0dd57afcdb5f20bc))
+
+## [8.10.1](https://github.com/gravity-ui/dashkit/compare/v8.10.0...v8.10.1) (2024-08-21)
+
+
+### Bug Fixes
+
+* correctly remove items and layout elements if they are desync ([#175](https://github.com/gravity-ui/dashkit/issues/175)) ([93b7278](https://github.com/gravity-ui/dashkit/commit/93b7278196d8f28ec5dd4f96337353291dcdba35))
+
+## [8.10.0](https://github.com/gravity-ui/dashkit/compare/v8.9.1...v8.10.0) (2024-08-14)
+
+
+### Features
+
+* add mount and after render callbacks ([#172](https://github.com/gravity-ui/dashkit/issues/172)) ([2eaa1dc](https://github.com/gravity-ui/dashkit/commit/2eaa1dced6b3285e1458a292f31ad0a473f65437))
+
+## [8.9.1](https://github.com/gravity-ui/dashkit/compare/v8.9.0...v8.9.1) (2024-08-05)
+
+
+### Bug Fixes
+
+* icons changed to uikit ([#170](https://github.com/gravity-ui/dashkit/issues/170)) ([4650e49](https://github.com/gravity-ui/dashkit/commit/4650e49a8eb825221874db8124ed48cb9a75e4ee))
+
+## [8.9.0](https://github.com/gravity-ui/dashkit/compare/v8.8.1...v8.9.0) (2024-07-30)
+
+
+### Features
+
+* dnd between different groups ([#166](https://github.com/gravity-ui/dashkit/issues/166)) ([c0e21e4](https://github.com/gravity-ui/dashkit/commit/c0e21e405f8c01dbbce0bb937a32458a32d64e30))
+
+## [8.8.1](https://github.com/gravity-ui/dashkit/compare/v8.8.0...v8.8.1) (2024-07-22)
+
+
+### Bug Fixes
+
+* removed undefined parent ([#165](https://github.com/gravity-ui/dashkit/issues/165)) ([0286e01](https://github.com/gravity-ui/dashkit/commit/0286e01e02c444480e347cb0af8c1f45f7202632))
+
+## [8.8.0](https://github.com/gravity-ui/dashkit/compare/v8.7.2...v8.8.0) (2024-07-19)
+
+
+### Features
+
+* add context to render group method ([#163](https://github.com/gravity-ui/dashkit/issues/163)) ([76eaf01](https://github.com/gravity-ui/dashkit/commit/76eaf01adfec6368c28eb71abeb5f5baa26f474a))
+
+## [8.7.2](https://github.com/gravity-ui/dashkit/compare/v8.7.1...v8.7.2) (2024-07-18)
+
+
+### Bug Fixes
+
+* fix for single dropdown menu ([#161](https://github.com/gravity-ui/dashkit/issues/161)) ([3cc4ffc](https://github.com/gravity-ui/dashkit/commit/3cc4ffc3100489bc1b554c022864867c66a24060))
+
+## [8.7.1](https://github.com/gravity-ui/dashkit/compare/v8.7.0...v8.7.1) (2024-07-18)
+
+
+### Bug Fixes
+
+* fix shadow for rounded cornered single control ([#159](https://github.com/gravity-ui/dashkit/issues/159)) ([168584d](https://github.com/gravity-ui/dashkit/commit/168584d2386388ddf9a68e7d0acc47e6acb4d28d))
+
+## [8.7.0](https://github.com/gravity-ui/dashkit/compare/v8.6.0...v8.7.0) (2024-07-18)
+
+
+### Features
+
+* moved overlay controls into separated context ([#157](https://github.com/gravity-ui/dashkit/issues/157)) ([29fca8c](https://github.com/gravity-ui/dashkit/commit/29fca8c160491bfd488d4f668d0e654aba2a7976))
+
+## [8.6.0](https://github.com/gravity-ui/dashkit/compare/v8.5.0...v8.6.0) (2024-07-12)
+
+
+### Features
+
+* add horizontal-nowrap compactType ([#155](https://github.com/gravity-ui/dashkit/issues/155)) ([7f4e8f9](https://github.com/gravity-ui/dashkit/commit/7f4e8f91aa7f6f68644a7b234280bf4dfac88c52))
+
+## [8.5.0](https://github.com/gravity-ui/dashkit/compare/v8.4.0...v8.5.0) (2024-07-04)
+
+
+### Features
+
+* group properties ([#152](https://github.com/gravity-ui/dashkit/issues/152)) ([ac39f67](https://github.com/gravity-ui/dashkit/commit/ac39f677a0131b3196e0d913c0952fa0eab1ee26))
+
+## [8.4.0](https://github.com/gravity-ui/dashkit/compare/v8.3.0...v8.4.0) (2024-06-28)
+
+
+### Features
+
+* dashkit groups ([#150](https://github.com/gravity-ui/dashkit/issues/150)) ([641f008](https://github.com/gravity-ui/dashkit/commit/641f008674edacea8ceebd2eecb72b55bebc6534))
+
+## [8.3.0](https://github.com/gravity-ui/dashkit/compare/v8.2.0...v8.3.0) (2024-06-11)
+
+
+### Features
+
+* support useStateAsInitial in getItemsParams ([#148](https://github.com/gravity-ui/dashkit/issues/148)) ([ede2db0](https://github.com/gravity-ui/dashkit/commit/ede2db0b219697016aafd4fed9a210f2b9c52fb4))
+
 ## [8.2.0](https://github.com/gravity-ui/dashkit/compare/v8.1.0...v8.2.0) (2024-05-21)
 
 

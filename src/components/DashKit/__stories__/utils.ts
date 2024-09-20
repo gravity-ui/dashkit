@@ -12,7 +12,11 @@ export function makeid(length: number) {
 
 export const titleId = 'nk';
 
-export const getConfig = (): DashKitProps['config'] => ({
+export const specialWidgetId = 'Ea';
+
+export const fixedGroup = 'fixedGroup';
+
+export const getConfig = (withGroups?: boolean): DashKitProps['config'] => ({
     salt: '0.46703554571365613',
     counter: 5,
     items: [
@@ -28,7 +32,7 @@ export const getConfig = (): DashKitProps['config'] => ({
             orderId: 1,
         },
         {
-            id: 'Ea',
+            id: specialWidgetId,
             data: {
                 text: 'special mode _editActive',
                 _editActive: true,
@@ -54,6 +58,30 @@ export const getConfig = (): DashKitProps['config'] => ({
             namespace: 'default',
             orderId: 5,
         },
+        ...(withGroups
+            ? [
+                  {
+                      id: 'Fk',
+                      data: {
+                          size: 'm',
+                          text: 'Title group widget',
+                          showInTOC: true,
+                      },
+                      type: 'title',
+                      namespace: 'default',
+                      orderId: 1,
+                  },
+                  {
+                      id: 'Fr',
+                      data: {
+                          text: 'special mode _editActive',
+                          _editActive: true,
+                      },
+                      type: 'text',
+                      namespace: 'default',
+                  },
+              ]
+            : []),
     ],
     layout: [
         {
@@ -84,6 +112,26 @@ export const getConfig = (): DashKitProps['config'] => ({
             x: 0,
             y: 8,
         },
+        ...(withGroups
+            ? [
+                  {
+                      h: 2,
+                      i: 'Fk',
+                      w: 10,
+                      x: 0,
+                      y: 0,
+                      parent: fixedGroup,
+                  },
+                  {
+                      h: 2,
+                      i: 'Fr',
+                      w: 10,
+                      x: 10,
+                      y: 0,
+                      parent: fixedGroup,
+                  },
+              ]
+            : []),
     ],
     aliases: {},
     connections: [],

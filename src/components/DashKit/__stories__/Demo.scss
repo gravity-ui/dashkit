@@ -29,4 +29,29 @@
             color: var(--g-color-text-complementary);
         }
     }
+
+    &-inline-group {
+        background-color: var(--g-color-base-generic-ultralight);
+        position: sticky;
+        overflow: auto;
+        top: 0;
+        z-index: 3;
+        min-height: 44px;
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 8px;
+
+        &_edit-mode {
+            position: static;
+            overflow: visible;
+        }
+
+        > .react-grid-layout {
+            flex: 1;
+        }
+    }
+
+    .dashkit_focused {
+        outline: 1px dashed var(--g-color-text-danger);
+    }
 }

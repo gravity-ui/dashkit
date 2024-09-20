@@ -7,8 +7,8 @@ interface RegisterManagerDefaultLayout {
     y: number;
     w: number;
     h: number;
-    minW: number;
-    minH: number;
+    minW?: number;
+    minH?: number;
 }
 
 export type RegisterManagerPluginLayout = RegisterManagerDefaultLayout & PluginDefaultLayout;
@@ -40,13 +40,20 @@ export class RegisterManager {
     };
 
     registerPlugin(plugin: Plugin) {
-        const {type, defaultLayout = {}, ...item} = plugin;
+        const {type} = plugin;
         if (type in this._items) {
             throw new Error(`DashKit.registerPlugins: type ${type} уже был зарегистрирован`);
         }
+        this.reloadPlugin(plugin);
+    }
+
+    reloadPlugin(plugin: Plugin) {
+        const {type, defaultLayout = {}, ...item} = plugin;
+
         if (typeof plugin.renderer !== 'function') {
             throw new Error('DashKit.registerPlugins: renderer должна быть функцией');
         }
+
         this._items[type] = {
             ...item,
             type,

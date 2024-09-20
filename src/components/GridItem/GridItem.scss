@@ -1,3 +1,5 @@
+@use 'sass:map';
+
 .dashkit-grid-item {
     position: relative;
     $_border-radius: 3px;
@@ -64,6 +66,8 @@
     transition: none;
     z-index: 3;
     will-change: transform;
+    // needs for drag n drop between multiple groups
+    pointer-events: none;
 }
 
 .react-grid-item.dashkit-grid-item_is-focused {
@@ -85,18 +89,130 @@
     position: absolute;
     width: 20px;
     height: 20px;
-    bottom: 0;
-    right: 0;
-    cursor: se-resize;
     z-index: 6;
 }
 
 .react-grid-item .react-resizable-handle::after {
     content: '';
     position: absolute;
-    right: 3px;
-    bottom: 3px;
     border: 4px solid transparent;
-    border-right-color: rgba(0, 0, 0, 0.4);
-    border-bottom-color: rgba(0, 0, 0, 0.4);
+}
+
+$handle-color: rgba(0, 0, 0, 0.4);
+$handle-list: (
+    's': (
+        'wrapper': (
+            bottom: 0,
+            left: 50%,
+            transform: translateX(-50%) translateY(0),
+        ),
+        'icon': (
+            bottom: -3px,
+            left: 4px,
+            border: 6px solid transparent,
+            border-top-color: $handle-color,
+        ),
+    ),
+    'w': (
+        'wrapper': (
+            top: 50%,
+            left: 0,
+            transform: translateX(0) translateY(-50%),
+        ),
+        'icon': (
+            top: 4px,
+            left: -3px,
+            border: 6px solid transparent,
+            border-right-color: $handle-color,
+        ),
+    ),
+    'e': (
+        'wrapper': (
+            top: 50%,
+            right: 0,
+            transform: translateX(0) translateY(-50%),
+        ),
+        'icon': (
+            top: 4px,
+            right: -3px,
+            border: 6px solid transparent,
+            border-left-color: $handle-color,
+        ),
+    ),
+    'n': (
+        'wrapper': (
+            top: 0,
+            left: 50%,
+            transform: translateX(-50%) translateY(0),
+        ),
+        'icon': (
+            top: -3px,
+            left: 4px,
+            border: 6px solid transparent,
+            border-bottom-color: $handle-color,
+        ),
+    ),
+    'sw': (
+        'wrapper': (
+            bottom: 0,
+            left: 0,
+        ),
+        'icon': (
+            bottom: 3px,
+            left: 3px,
+            border-left-color: $handle-color,
+            border-bottom-color: $handle-color,
+        ),
+    ),
+    'nw': (
+        'wrapper': (
+            top: 0,
+            left: 0,
+        ),
+        'icon': (
+            top: 3px,
+            left: 3px,
+            border-left-color: $handle-color,
+            border-top-color: $handle-color,
+        ),
+    ),
+    'se': (
+        'wrapper': (
+            bottom: 0,
+            right: 0,
+        ),
+        'icon': (
+            bottom: 3px,
+            right: 3px,
+            border-right-color: $handle-color,
+            border-bottom-color: $handle-color,
+        ),
+    ),
+    'ne': (
+        'wrapper': (
+            top: 0,
+            right: 0,
+        ),
+        'icon': (
+            top: 3px,
+            right: 3px,
+            border-right-color: $handle-color,
+            border-top-color: $handle-color,
+        ),
+    ),
+);
+
+@each $handle, $props in $handle-list {
+    .react-grid-item .react-resizable-handle-#{$handle} {
+        cursor: #{$handle}-resize;
+        @each $prop, $value in map.get($props, 'wrapper') {
+            #{$prop}: $value;
+        }
+
+        &::after {
+            @each $prop, $value in map.get($props, 'icon') {
+                #{$prop}: $value;
+            }
+        }
+    }
 }

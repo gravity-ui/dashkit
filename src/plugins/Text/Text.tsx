@@ -27,6 +27,7 @@ export interface PluginTextProps extends PluginWidgetProps {
     data: {
         text: string;
     } & PluginWidgetProps['data'];
+    onBeforeRender: () => () => void;
 }
 
 interface PluginTextState {
@@ -130,6 +131,8 @@ export class PluginText extends React.PureComponent<PluginTextProps, PluginTextS
         }
         this.setState({status: LoadStatus.Pending});
 
+        const onLoadComplete = this.props.onBeforeLoad();
+
         try {
             let htmlText = '';
             if (this.state.text && this.state.text.trim()) {
@@ -149,6 +152,7 @@ export class PluginText extends React.PureComponent<PluginTextProps, PluginTextS
             }
             this.setState({status: LoadStatus.Fail});
         }
+        onLoadComplete();
     }
 
     private onRetryClick = () => {

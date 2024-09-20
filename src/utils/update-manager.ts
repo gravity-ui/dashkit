@@ -2,7 +2,7 @@ import update, {CustomCommands, Spec, extend} from 'immutability-helper';
 import omit from 'lodash/omit';
 import pick from 'lodash/pick';
 
-import {DEFAULT_NAMESPACE} from '../constants';
+import {DEFAULT_GROUP, DEFAULT_NAMESPACE} from '../constants';
 import {
     ConfigLayout,
     META_KEY,
@@ -31,9 +31,17 @@ import type {
     StateAndParamsMetaData,
     StringParams,
 } from '../shared';
-import type {AddConfigItem, SetItemOptions, SetNewItemOptions, WidgetLayout} from '../typings';
+import type {
+    AddConfigItem,
+    AddNewItemOptions,
+    ReflowLayoutOptions,
+    SetItemOptions,
+    WidgetLayout,
+} from '../typings';
 
 import {getNewId} from './get-new-id';
+import {bottom, compact} from './grid-layout';
+import {resolveLayoutGroup} from './group-helpers';
 import {RegisterManagerPluginLayout} from './register-manager';
 
 extend('$auto', (value, object) => (object ? update(object, value) : update({}, value)));
@@ -139,6 +147,14 @@ function getAllowableChangedParams(
 
     const stateParamsConf = stateAndParams.params;
 
+    // check if structure is StringParams or Record<string, StringParams>
+    // if it's Record<string, StringParams>, then this is a group application of params
+    // and checking for comparison of allowedParams and stateParamsConf is not necessary
+    const isGroupParamsApply =
+        typeof stateParamsConf?.[item.id] === 'object' &&
+        stateParamsConf?.[item.id] !== null &&
+        !Array.isArray(stateParamsConf?.[item.id]);
+
     if (isItemWithTabs(item)) {
         let tab;
         if ('state' in stateAndParams && stateAndParams.state?.tabId) {
@@ -150,15 +166,14 @@ function getAllowableChangedParams(
         }
         allowedParams = pick(stateParamsConf, Object.keys(tab?.params || {})) as StringParams;
     } else {
-        // check if structure is StringParams or Record<string, StringParams>
-        const paramsConf =
-            typeof stateParamsConf?.[item.id] === 'object' &&
-            !Array.isArray(stateParamsConf?.[item.id])
-                ? stateParamsConf[item.id]
-                : stateParamsConf;
+        const paramsConf = isGroupParamsApply ? stateParamsConf[item.id] : stateParamsConf;
         allowedParams = pick(paramsConf, Object.keys(item.defaults || {})) as StringParams;
     }
-    if (Object.keys(allowedParams || {}).length !== Object.keys(stateParamsConf || {}).length) {
+
+    if (
+        !isGroupParamsApply &&
+        Object.keys(allowedParams || {}).length !== Object.keys(stateParamsConf || {}).length
+    ) {
         console.warn('Параметры, которых нет в defaults, будут проигнорированы!');
     }
     return allowedParams;
@@ -293,6 +308,31 @@ function getNewItemData({item, config, counter: argsCounter, salt, options}: Get
     return {data, counter, excludeIds};
 }
 
+export const getChangedParams = ({
+    initiatorItem,
+    stateAndParams,
+    itemsStateAndParams,
+}: {
+    initiatorItem: ConfigItem | ConfigItemGroup;
+    stateAndParams: ItemStateAndParams;
+    itemsStateAndParams: ItemsStateAndParams;
+}) => {
+    const allowableParams = getAllowableChangedParams(
+        initiatorItem,
+        stateAndParams,
+        itemsStateAndParams,
+    );
+
+    const allowableActionParams = getAllowableChangedParams(
+        initiatorItem,
+        stateAndParams,
+        itemsStateAndParams,
+        {type: 'actionParams', returnPrefix: true},
+    );
+
+    return {...allowableParams, ...allowableActionParams};
+};
+
 function changeGroupParams({
     groupItemIds,
     initiatorId,
@@ -322,20 +362,13 @@ function changeGroupParams({
 
     for (const groupItem of initiatorItem.data.group) {
         if (groupItemIds.includes(groupItem.id)) {
-            const allowableParams = getAllowableChangedParams(
-                groupItem,
+            const changedParams = getChangedParams({
+                initiatorItem: groupItem,
                 stateAndParams,
                 itemsStateAndParams,
-            );
+            });
 
-            const allowableActionParams = getAllowableChangedParams(
-                groupItem,
-                stateAndParams,
-                itemsStateAndParams,
-                {type: 'actionParams', returnPrefix: true},
-            );
-
-            updatedItems[groupItem.id] = {...allowableParams, ...allowableActionParams};
+            updatedItems[groupItem.id] = changedParams;
 
             continue;
         }
@@ -359,19 +392,90 @@ function changeGroupParams({
     return update(itemsStateAndParams, obj);
 }
 
+export function reflowLayout({
+    newLayoutItem,
+    layout,
+    reflowLayoutOptions,
+}: {
+    newLayoutItem?: ConfigLayout;
+    layout: ConfigLayout[];
+    reflowLayoutOptions: ReflowLayoutOptions;
+}) {
+    const byGroup: Record<string, ConfigLayout[]> = {};
+    const reducer = (
+        memo: Record<string, number>,
+        item: ConfigLayout,
+        i: number,
+        _items: ConfigLayout[],
+        isNewItem?: boolean,
+    ) => {
+        memo[item.i] = i;
+        const parent = resolveLayoutGroup(item);
+
+        if (byGroup[parent]) {
+            if (isNewItem) {
+                byGroup[parent].unshift(item);
+            } else {
+                byGroup[parent].push(item);
+            }
+        } else {
+            byGroup[parent] = [item];
+        }
+
+        return memo;
+    };
+
+    const orderById = layout.reduce<Record<string, number>>(reducer, {});
+
+    if (newLayoutItem) {
+        reducer(orderById, newLayoutItem, layout.length, layout, true);
+    }
+
+    const {defaultProps} = reflowLayoutOptions;
+
+    return Object.entries(byGroup)
+        .reduce<ConfigLayout[]>((memo, [groupId, layoutItems]) => {
+            let reflowOptions = defaultProps;
+            if (reflowLayoutOptions?.groups?.[groupId]) {
+                reflowOptions = reflowLayoutOptions?.groups[groupId];
+            }
+
+            if (reflowOptions.compactType === null) {
+                return memo.concat(layoutItems);
+            }
+
+            const compactedList = compact(
+                layoutItems,
+                reflowOptions.compactType,
+                reflowOptions.cols,
+            ).map((item) => {
+                const cleanCopy = pick(item, ['i', 'h', 'w', 'x', 'y', 'parent']) as ConfigLayout;
+
+                if (groupId === DEFAULT_GROUP) {
+                    return cleanCopy;
+                }
+
+                return {...cleanCopy, parent: groupId};
+            });
+
+            return memo.concat(compactedList);
+        }, [])
+        .sort((a, b) => orderById[a.i] - orderById[b.i]);
+}
+
 export class UpdateManager {
     static addItem({
         item,
         namespace = DEFAULT_NAMESPACE,
         layout,
         config,
-        options,
+        options = {},
     }: {
         item: AddConfigItem;
         namespace: string;
         layout: RegisterManagerPluginLayout;
         config: Config;
-        options: SetNewItemOptions;
+        options?: AddNewItemOptions;
     }) {
         const salt = config.salt;
 
@@ -382,17 +486,47 @@ export class UpdateManager {
         counter = newIdData.counter;
 
         const newItem = {...item, id: newIdData.id, data: newItemData.data, namespace};
-        const saveDefaultLayout = pick(layout, ['h', 'w', 'x', 'y']);
+        const saveDefaultLayout = pick(layout, ['h', 'w', 'x', 'y', 'parent']);
 
         if (options.updateLayout) {
             const byId = options.updateLayout.reduce<Record<string, ConfigLayout>>((memo, t) => {
                 memo[t.i] = t;
                 return memo;
             }, {});
-            const newLayout = [
-                ...config.layout.map((t) => ({...t, ...(byId[t.i] || {})})),
-                {...saveDefaultLayout, i: newItem.id},
-            ];
+            let newLayout;
+            const newLayoutItem = {...saveDefaultLayout, i: newItem.id};
+
+            if (options.reflowLayoutOptions) {
+                newLayout = reflowLayout({
+                    newLayoutItem,
+                    layout: config.layout.map((t) => ({...t, ...(byId[t.i] || {})})),
+                    reflowLayoutOptions: options.reflowLayoutOptions,
+                });
+            } else {
+                newLayout = [
+                    ...config.layout.map((t) => ({...t, ...(byId[t.i] || {})})),
+                    {...saveDefaultLayout, i: newItem.id},
+                ];
+            }
+
+            return update(config, {
+                items: {$push: [newItem]},
+                layout: {$set: newLayout},
+                counter: {$set: counter},
+            });
+        } else if (isFinite(layout.y)) {
+            let newLayout;
+            const newLayoutItem = {...saveDefaultLayout, i: newItem.id};
+
+            if (options.reflowLayoutOptions) {
+                newLayout = reflowLayout({
+                    newLayoutItem,
+                    layout: config.layout,
+                    reflowLayoutOptions: options.reflowLayoutOptions,
+                });
+            } else {
+                newLayout = [...config.layout, newLayoutItem];
+            }
 
             return update(config, {
                 items: {$push: [newItem]},
@@ -400,7 +534,7 @@ export class UpdateManager {
                 counter: {$set: counter},
             });
         } else {
-            const layoutY = Math.max(0, ...config.layout.map(({h, y}) => h + y));
+            const layoutY = bottom(config.layout);
             const newLayoutItem = {...saveDefaultLayout, y: layoutY, i: newItem.id};
 
             return update(config, {
@@ -415,12 +549,12 @@ export class UpdateManager {
         item,
         namespace = DEFAULT_NAMESPACE,
         config,
-        options,
+        options = {},
     }: {
         item: ConfigItem;
         namespace: string;
         config: Config;
-        options: SetItemOptions;
+        options?: SetItemOptions;
     }) {
         const itemIndex = config.items.findIndex(({id}) => item.id === id);
 
@@ -446,6 +580,7 @@ export class UpdateManager {
             return removeItemVersion1({id, config, itemsStateAndParams});
         }
         const itemIndex = config.items.findIndex((item) => item.id === id);
+        const layoutIndex = config.layout.findIndex((item) => item.i === id);
         const item = config.items[itemIndex];
         let itemIds = [id];
         if (isItemWithTabs(item)) {
@@ -463,7 +598,7 @@ export class UpdateManager {
                     $splice: [[itemIndex, 1]],
                 },
                 layout: {
-                    $splice: [[itemIndex, 1]],
+                    $splice: [[layoutIndex, 1]],
                 },
                 connections: {
                     $set: connections,
@@ -485,7 +620,7 @@ export class UpdateManager {
     static updateLayout({layout, config}: {layout: WidgetLayout[]; config: Config}) {
         return update(config, {
             layout: {
-                $set: layout.map(({x, y, w, h, i}) => ({x, y, w, h, i})),
+                $set: layout.map((item) => pick(item, ['i', 'h', 'w', 'x', 'y', 'parent'])),
             },
         });
     }
@@ -546,18 +681,11 @@ export class UpdateManager {
         }
 
         if ('params' in stateAndParams) {
-            const allowableParams = getAllowableChangedParams(
+            const changedParams = getChangedParams({
                 initiatorItem,
                 stateAndParams,
                 itemsStateAndParams,
-            );
-
-            const allowableActionParams = getAllowableChangedParams(
-                initiatorItem,
-                stateAndParams,
-                itemsStateAndParams,
-                {type: 'actionParams', returnPrefix: true},
-            );
+            });
 
             const tabId: string | undefined = isItemWithTabs(initiatorItem)
                 ? newTabId || resolveItemInnerId({item: initiatorItem, itemsStateAndParams})
@@ -577,10 +705,7 @@ export class UpdateManager {
                 [initiatorId]: {
                     $auto: {
                         params: {
-                            [commandUpdateParams]: {
-                                ...allowableParams,
-                                ...allowableActionParams,
-                            },
+                            [commandUpdateParams]: changedParams,
                         },
                         ...(hasState ? {state: {$set: stateAndParams.state}} : {}),
                     },

@@ -16,8 +16,10 @@ export function prepareItem(Component) {
             height: PropTypes.number,
             transform: PropTypes.string,
             isPlaceholder: PropTypes.bool,
+            onBeforeLoad: PropTypes.func,
 
             forwardedPluginRef: PropTypes.any,
+            onMountChange: PropTypes.func,
         };
 
         shouldComponentUpdate(nextProps) {
@@ -40,17 +42,29 @@ export function prepareItem(Component) {
             this.context.onItemStateAndParamsChange(this.props.id, stateAndParams, options);
         };
 
-        render() {
-            const {id, width, height, item, adjustWidgetLayout, layout, isPlaceholder} = this.props;
+        _currentRenderProps = {};
+        getRenderProps = () => {
+            const {
+                id,
+                width,
+                height,
+                item,
+                adjustWidgetLayout,
+                layout,
+                isPlaceholder,
+                onBeforeLoad,
+            } = this.props;
             const {itemsState, itemsParams, registerManager, settings, context, editMode} =
                 this.context;
-            const {type, data, defaults, namespace} = item;
+            const {data, defaults, namespace} = item;
+
             const rendererProps = {
                 data,
                 editMode,
                 params: itemsParams[id],
                 state: itemsState[id],
                 onStateAndParamsChange: this._onStateAndParamsChange,
+                onBeforeLoad,
                 width,
                 height,
                 id,
@@ -63,13 +77,31 @@ export function prepareItem(Component) {
                 adjustWidgetLayout,
                 isPlaceholder,
             };
+
+            const changedProp = Object.entries(rendererProps).find(
+                ([key, value]) => this._currentRenderProps[key] !== value,
+            );
+
+            if (changedProp) {
+                this._currentRenderProps = rendererProps;
+            }
+
+            return this._currentRenderProps;
+        };
+
+        render() {
+            const {item, isPlaceholder, forwardedPluginRef, onMountChange} = this.props;
+            const {registerManager} = this.context;
+            const {type} = item;
+
             return (
                 <Component
-                    forwardedPluginRef={this.props.forwardedPluginRef}
-                    rendererProps={rendererProps}
+                    forwardedPluginRef={forwardedPluginRef}
+                    rendererProps={this.getRenderProps()}
                     registerManager={registerManager}
                     type={type}
                     isPlaceholder={isPlaceholder}
+                    onMountChange={onMountChange}
                 />
             );
         }

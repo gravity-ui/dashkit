@@ -24,18 +24,38 @@ Plugins are required to create custom widgets.
 ### Props
 
 ```ts
+type ItemManipulationCallback = (eventData: {
+    layout: Layouts;
+    oldItem: Layout;
+    newItem: Layout;
+    placeholder: Layout;
+    e: MouseEvent;
+    element: HTMLElement;
+}) => void;
+
 interface DashKitProps {
   config: Config;
   editMode: boolean;
   onItemEdit: ({id}: {id: string}) => void;
   onChange: (data: {config: Config; itemsStateAndParams: ItemsStateAndParams}) => void;
   onDrop: (dropProps: ItemDropProps) => void;
+  onItemMountChange: (item: ConfigItem, state: {isAsync: boolead; isMounted: boolean}) => void;
+  onItemRender: (item: ConfigItem) => void;
+
+  onDragStart?: ItemManipulationCallback;
+  onDrag?: ItemManipulationCallback;
+  onDragStop?: ItemManipulationCallback;
+  onResizeStart?: ItemManipulationCallback;
+  onResize?: ItemManipulationCallback;
+  onResizeStop?: ItemManipulationCallback;
+
   defaultGlobalParams: GlobalParams;
   globalParams: GlobalParams;
   itemsStateAndParams: ItemsStateAndParams;
   settings: SettingsProps;
   context: ContextProps;
-  overlayControls?: Record<string, OverlayControlItem[]>;
+  overlayControls?: Record<string, OverlayControlItem[]> | null;
+  overlayMenuItems?: MenuItems[] | null;
   noOverlay?: boolean;
   focusable?: boolean;
   draggableHandleClassName?: string;
@@ -47,14 +67,23 @@ interface DashKitProps {
 - **onItemEdit**: Called when you click to edit a widget.
 - **onChange**: Called when config or [itemsStateAndParams](#temsStateAndParams) are changed.
 - **onDrop**: Called when item dropped from ActionPanel using (#DashKitDnDWrapper)
+- **onItemMountChange**: Called when item mount state changed
+- **onItemRender**: Called when item render complete
 - **defaultGlobalParams**, **globalParams**: [Parameters](#Params) that affect all widgets. In DataLens, `defaultGlobalParams` are global parameters set in the dashboard settings. `globalParams` are globals parameters that can be set in the url.
 - **itemsStateAndParams**: [itemsStateAndParams](#temsStateAndParams).
 - **settings**: DashKit settings.
 - **context**: Object that will be propped up on all widgets.
-- **overlayControls**: Object that overrides widget controls at the time of editing. If not transmitted, basic controls will be displayed.
+- **overlayControls**: Object that overrides widget controls at the time of editing. If not transmitted, basic controls will be displayed. If `null` passed only close button or custom menu will be displayed.
+- **overlayMenuItems**: Custom dropdown menu items
 - **noOverlay**: If `true`, overlay and controls are not displayed while editing.
 - **focusable**: If `true`, grid items will be focusable.
 - **draggableHandleClassName** : СSS class name of the element that makes the widget draggable.
+- **onDragStart**: ReactGridLayout called when item drag started
+- **onDrag**: ReactGridLayout called while item drag
+- **onDragStop**: ReactGridLayout called when item drag stopped
+- **onResizeStart**: ReactGridLayout called when item resize started
+- **onResize**: ReactGridLayout called while item resizing
+- **onResizeStop**: ReactGridLayout called when item resize stoped
 
 ## Usage
 
@@ -343,6 +372,10 @@ type MenuItem = {
 };
 
 // use array of menu items in settings
+<Dashkit overlayMenuItems={[] as Array<MenuItem> | null} />
+
+[deprecated]
+// overlayMenuItems property has greater priority over setSettings menu
 DashKit.setSettings({menu: [] as Array<MenuItem>});
 ```
 
@@ -386,7 +419,7 @@ type ItemDropProps = {
 #### Example:
 
 ```jsx
-const menuItems = [
+const overlayMenuItems = [
   {
     id: 'chart',
     icon: <Icon data={ChartColumn} />,
@@ -405,7 +438,7 @@ const onDrop = (dropProps: ItemDropProps) => {
 
 <DashKitDnDWrapper>
   <DashKit editMode={true} config={config} onChange={onChange} onDrop={onDrop} />
-  <ActionPanel items={menuItems} />
+  <ActionPanel items={overlayMenuItems} />
 </DashKitDnDWrapper>
 ```
 
@@ -474,6 +507,7 @@ const CustomThemeWrapper = (props: {
 
 By default, storybook runs on `http://localhost:7120/`.
 New changes from a project aren't always picked up when storybook is running, so it's better to rebuild a project manually and restart storybook.
+
 
 ### Example of an nginx config for development on a dev machine
 

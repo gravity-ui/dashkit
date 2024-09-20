@@ -6,6 +6,8 @@ export const OVERLAY_CONTROLS_CLASS_NAME = 'dashkit-overlay-controls';
 
 export const OVERLAY_CLASS_NAME = 'dashkit-grid-item__overlay';
 
+export const OVERLAY_ICON_SIZE = 16;
+
 export const TEMPORARY_ITEM_ID = '__dropping-elem__';
 
 export const MenuItems = {
@@ -16,3 +18,11 @@ export const MenuItems = {
 
 export const DEFAULT_WIDGET_HEIGHT = 3;
 export const DEFAULT_WIDGET_WIDTH = 3;
+
+export const DEFAULT_GROUP = '__default';
+
+export const COMPACT_TYPE_HORIZONTAL_NOWRAP = 'horizontal-nowrap';
+
+export const DRAGGABLE_CANCEL_CLASS_NAME = 'dashkit_draggable_cancel';
+
+export const FOCUSED_CLASS_NAME = 'dashkit_focused';

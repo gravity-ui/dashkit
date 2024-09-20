@@ -10,9 +10,26 @@ import './Item.scss';
 const b = cn('dashkit-item');
 
 // TODO: getDerivedStateFromError и заглушка с ошибкой
+const Item = ({
+    registerManager,
+    rendererProps,
+    type,
+    isPlaceholder,
+    forwardedPluginRef,
+    onMountChange,
+}) => {
+    const isRegisteredType = registerManager.check(type);
 
-const Item = ({registerManager, rendererProps, type, isPlaceholder, forwardedPluginRef}) => {
-    if (!registerManager.check(type)) {
+    React.useLayoutEffect(() => {
+        if (isRegisteredType && !isPlaceholder) {
+            onMountChange?.(true);
+            return () => {
+                onMountChange?.(false);
+            };
+        }
+    }, []);
+
+    if (!isRegisteredType) {
         console.warn(`type [${type}] не зарегистрирован`);
         return null;
     }
@@ -40,6 +57,8 @@ Item.propTypes = {
     registerManager: PropTypes.object,
     type: PropTypes.string,
     isPlaceholder: PropTypes.bool,
+    onMountChange: PropTypes.func,
+    onBeforeLoad: PropTypes.func,
 };
 
 export default prepareItem(Item);

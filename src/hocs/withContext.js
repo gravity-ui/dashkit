@@ -1,11 +1,25 @@
 import React from 'react';
 
 import isEqual from 'lodash/isEqual';
+import pick from 'lodash/pick';
 
-import {DEFAULT_WIDGET_HEIGHT, DEFAULT_WIDGET_WIDTH, TEMPORARY_ITEM_ID} from '../constants/common';
-import {DashKitContext, DashKitDnDContext} from '../context/DashKitContext';
+import {
+    COMPACT_TYPE_HORIZONTAL_NOWRAP,
+    DEFAULT_GROUP,
+    DEFAULT_WIDGET_HEIGHT,
+    DEFAULT_WIDGET_WIDTH,
+    TEMPORARY_ITEM_ID,
+} from '../constants/common';
+import {
+    DashKitContext,
+    DashKitDnDContext,
+    DashkitOvelayControlsContext,
+} from '../context/DashKitContext';
+import {useDeepEqualMemo} from '../hooks/useDeepEqualMemo';
 import {getItemsParams, getItemsState} from '../shared';
-import {UpdateManager} from '../utils';
+import {UpdateManager, resolveLayoutGroup} from '../utils';
+
+const ITEM_PROPS = ['i', 'h', 'w', 'x', 'y', 'parent'];
 
 function useMemoStateContext(props) {
     // так как мы не хотим хранить параметры виджета с активированной автовысотой в сторе и на сервере, актуальный
@@ -16,6 +30,8 @@ function useMemoStateContext(props) {
 
     const originalLayouts = React.useRef({});
     const adjustedLayouts = React.useRef({});
+    const nowrapAdjustedLayouts = React.useRef({});
+
     const [temporaryLayout, setTemporaryLayout] = React.useState(null);
     const resetTemporaryLayout = React.useCallback(
         () => setTemporaryLayout(null),
@@ -29,17 +45,22 @@ function useMemoStateContext(props) {
     const [layoutUpdateCounter, forceUpdateLayout] = React.useState(0);
 
     const onChange = React.useCallback(
-        ({config = props.config, itemsStateAndParams = props.itemsStateAndParams}) => {
+        ({
+            config = props.config,
+            itemsStateAndParams = props.itemsStateAndParams,
+            groups = props.groups,
+        }) => {
             if (
                 !(
                     isEqual(config, props.config) &&
-                    isEqual(itemsStateAndParams, props.itemsStateAndParams)
+                    isEqual(itemsStateAndParams, props.itemsStateAndParams) &&
+                    isEqual(groups, props.groups)
                 )
             ) {
-                props.onChange({config, itemsStateAndParams});
+                props.onChange({config, itemsStateAndParams, groups});
             }
         },
-        [props.config, props.itemsStateAndParams, props.onChange],
+        [props.config, props.groups, props.itemsStateAndParams, props.onChange],
     );
 
     // каллбэк вызывающийся при изменение лэйаута сетки, первым аргументом приходит актуальный конфиг лэйаута,
@@ -50,12 +71,19 @@ function useMemoStateContext(props) {
         (layout) => {
             const currentInnerLayout = layout.map((item) => {
                 if (item.i in originalLayouts.current) {
-                    return {
-                        ...originalLayouts.current[item.i],
-                        w: item.w,
-                        x: item.x,
-                        y: item.y,
-                    };
+                    // eslint-disable-next-line no-unused-vars
+                    const {parent, ...originalCopy} = originalLayouts.current[item.i];
+
+                    // Updating original if parent has changed and saving copy as original
+                    // or leaving default
+                    if (item.parent) {
+                        originalCopy.parent = item.parent;
+                    }
+                    originalCopy.w = item.w;
+                    originalCopy.x = item.x;
+                    originalCopy.y = item.y;
+
+                    return originalCopy;
                 } else {
                     return {...item};
                 }
@@ -73,8 +101,19 @@ function useMemoStateContext(props) {
         [props.config, onChange],
     );
 
+    const getLayoutItem = React.useCallback(
+        (id) => {
+            return props.config.layout.find(({i}) => i === id);
+        },
+        [props.config.layout],
+    );
+
     const onItemRemove = React.useCallback(
         (id) => {
+            delete nowrapAdjustedLayouts.current[id];
+            delete adjustedLayouts.current[id];
+            delete originalLayouts.current[id];
+
             if (id === TEMPORARY_ITEM_ID) {
                 resetTemporaryLayout();
             } else {
@@ -148,7 +187,60 @@ function useMemoStateContext(props) {
         }
     }, []);
 
-    const itemsParams = React.useMemo(
+    React.useMemo(() => {
+        const groups = props.groups;
+        const layout = props.layout;
+        const defaultProps = props.registerManager.gridLayout || {};
+        const nowrapGroups = {};
+        let hasNowrapGroups = false;
+
+        if (defaultProps.compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP) {
+            nowrapGroups[DEFAULT_GROUP] = {
+                items: [],
+                leftSpace: defaultProps.cols,
+            };
+            hasNowrapGroups = true;
+        }
+
+        if (groups) {
+            groups.forEach((group) => {
+                const resultProps = group.gridProperties?.(defaultProps) || {};
+
+                if (resultProps.compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP) {
+                    nowrapGroups[group.id] = {
+                        items: [],
+                        leftSpace: resultProps.cols,
+                    };
+                    hasNowrapGroups = true;
+                }
+            });
+        }
+
+        if (hasNowrapGroups) {
+            layout.forEach((item) => {
+                const widgetId = item.i;
+                const parentId = resolveLayoutGroup(item);
+
+                if (nowrapGroups[parentId]) {
+                    // Collecting nowrap elements
+                    nowrapGroups[parentId].items.push(item);
+                    nowrapGroups[parentId].leftSpace -= item.w;
+                } else if (nowrapAdjustedLayouts.current[widgetId]) {
+                    // If element is not in horizontal-nowrap cleaning up and reverting adjustLayout values
+                    delete nowrapAdjustedLayouts.current[widgetId];
+                }
+            });
+
+            Object.entries(nowrapGroups).forEach(([, {items, leftSpace}]) => {
+                items.forEach((item) => {
+                    // setting maxW with adjustLayout fields and saving previous
+                    nowrapAdjustedLayouts.current[item.i] = item.w + leftSpace;
+                });
+            });
+        }
+    }, [props.registerManager, props.groups, props.layout]);
+
+    const itemsParams = useDeepEqualMemo(
         () =>
             getItemsParams({
                 defaultGlobalParams: props.defaultGlobalParams,
@@ -166,7 +258,7 @@ function useMemoStateContext(props) {
         ],
     );
 
-    const itemsState = React.useMemo(
+    const itemsState = useDeepEqualMemo(
         () =>
             getItemsState({
                 config: props.config,
@@ -187,16 +279,36 @@ function useMemoStateContext(props) {
     }, []);
 
     const resultLayout = React.useMemo(() => {
+        const adjusted = adjustedLayouts.current;
+        const original = originalLayouts.current;
+        const nowrapAdjust = nowrapAdjustedLayouts.current;
+
         return props.layout.map((item) => {
-            if (item.i in adjustedLayouts.current) {
-                return {
-                    ...adjustedLayouts.current[item.i],
-                    w: item.w,
-                    x: item.x,
-                    y: item.y,
-                };
+            const widgetId = item.i;
+
+            if (widgetId in adjusted || widgetId in nowrapAdjust) {
+                original[widgetId] = item;
+                // eslint-disable-next-line no-unused-vars
+                const {parent, ...adjustedItem} = adjusted[widgetId] || item;
+
+                adjustedItem.w = item.w;
+                adjustedItem.x = item.x;
+                adjustedItem.y = item.y;
+
+                if (item.parent) {
+                    adjustedItem.parent = item.parent;
+                }
+
+                if (widgetId in nowrapAdjust) {
+                    adjustedItem.maxW = nowrapAdjust[widgetId];
+                }
+
+                return adjustedItem;
             } else {
-                return {...item};
+                if (widgetId in original) {
+                    delete original[widgetId];
+                }
+                return item;
             }
         });
     }, [props.layout, layoutUpdateCounter]);
@@ -223,25 +335,54 @@ function useMemoStateContext(props) {
         }
     }, [dragProps, props.registerManager]);
 
-    const onDropDragOver = React.useCallback(() => {
-        if (temporaryLayout) {
-            resetTemporaryLayout();
-            return false;
-        }
+    const onDropDragOver = React.useCallback(
+        (_e, gridProps, groupLayout, sharedItem) => {
+            if (temporaryLayout) {
+                resetTemporaryLayout();
+                return false;
+            }
 
-        if (dragOverPlugin) {
-            const {defaultLayout} = dragOverPlugin;
+            let defaultLayout;
+            if (sharedItem) {
+                const {type, h, w} = sharedItem;
+                const _defaults = props.registerManager.getItem(type);
+                defaultLayout = _defaults ? {..._defaults.defaultLayout, h, w} : {h, w};
+            } else if (dragOverPlugin) {
+                defaultLayout = dragOverPlugin.defaultLayout;
+            } else {
+                return false;
+            }
+
+            let maxW = gridProps.cols;
+            const maxH = Math.min(gridProps.maxRows || Infinity, defaultLayout.maxH || Infinity);
+
+            if (gridProps.compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP) {
+                maxW = groupLayout.reduce((memo, item) => memo - item.w, gridProps.cols);
+            }
+
+            if (
+                maxW === 0 ||
+                maxH === 0 ||
+                maxW < defaultLayout.minW ||
+                maxH < defaultLayout.minH
+            ) {
+                return false;
+            }
+
             const {
                 h = defaultLayout?.h || DEFAULT_WIDGET_HEIGHT,
                 w = defaultLayout?.w || DEFAULT_WIDGET_WIDTH,
-            } = dragProps.layout || {};
+            } = dragProps?.layout || {};
 
-            return {h, w};
-        }
+            return {
+                h: maxH ? Math.min(h, maxH) : h,
+                w: maxW ? Math.min(w, maxW) : w,
+            };
+        },
+        [resetTemporaryLayout, temporaryLayout, dragOverPlugin, dragProps],
+    );
 
-        return false;
-    }, [resetTemporaryLayout, temporaryLayout, dragOverPlugin, dragProps]);
-
+    const onDropProp = props.onDrop;
     const onDrop = React.useCallback(
         (newLayout, item) => {
             if (!dragProps) {
@@ -249,31 +390,32 @@ function useMemoStateContext(props) {
             }
 
             setTemporaryLayout({
-                data: newLayout,
+                data: [...newLayout, item],
                 dragProps,
             });
-            const {i, w, h, x, y} = item;
 
-            props.onDrop({
+            onDropProp({
                 newLayout: newLayout.reduce((memo, l) => {
-                    if (l.i !== i) {
-                        memo.push({i: l.i, w: l.w, h: l.h, x: l.x, y: l.y});
+                    if (l.i !== item.i) {
+                        memo.push(pick(l, ITEM_PROPS));
                     }
+
                     return memo;
                 }, []),
-                itemLayout: {w, h, x, y},
+                itemLayout: pick(item, ITEM_PROPS),
                 commit: resetTemporaryLayout,
                 dragProps,
             });
         },
-        [dragProps, props.onDrop, setTemporaryLayout, resetTemporaryLayout],
+        [dragProps, onDropProp, setTemporaryLayout, resetTemporaryLayout],
     );
 
-    return React.useMemo(
+    const dashkitContextValue = React.useMemo(
         () => ({
             layout: resultLayout,
             temporaryLayout,
             config: props.config,
+            groups: props.groups,
             context: props.context,
             noOverlay: props.noOverlay,
             focusable: props.focusable,
@@ -285,10 +427,10 @@ function useMemoStateContext(props) {
             itemsParams,
             registerManager: props.registerManager,
             onItemStateAndParamsChange,
-            removeItem: onItemRemove,
             onDrop,
             onDropDragOver,
-            editItem: props.onItemEdit,
+            onItemMountChange: props.onItemMountChange,
+            onItemRender: props.onItemRender,
             layoutChange: onLayoutChange,
             getItemsMeta,
             reloadItems,
@@ -298,11 +440,20 @@ function useMemoStateContext(props) {
             draggableHandleClassName: props.draggableHandleClassName,
             outerDnDEnable,
             dragOverPlugin,
+
+            /* default bypassing handlers */
+            onDragStart: props.onDragStart,
+            onDrag: props.onDrag,
+            onDragStop: props.onDragStop,
+            onResizeStart: props.onResizeStart,
+            onResize: props.onResize,
+            onResizeStop: props.onResizeStop,
         }),
         [
             resultLayout,
             temporaryLayout,
             props.config,
+            props.groups,
             props.context,
             props.noOverlay,
             props.focusable,
@@ -313,11 +464,11 @@ function useMemoStateContext(props) {
             itemsParams,
             props.registerManager,
             onItemStateAndParamsChange,
-            onItemRemove,
             onDrop,
             onDropDragOver,
-            props.onItemEdit,
             onLayoutChange,
+            props.onItemMountChange,
+            props.onItemRender,
             getItemsMeta,
             reloadItems,
             memorizeOriginalLayout,
@@ -326,17 +477,52 @@ function useMemoStateContext(props) {
             props.draggableHandleClassName,
             outerDnDEnable,
             dragOverPlugin,
+
+            props.onDragStart,
+            props.onDrag,
+            props.onDragStop,
+            props.onResizeStart,
+            props.onResize,
+            props.onResizeStop,
         ],
     );
+
+    const overlayMenuItems = props.overlayMenuItems || props.registerManager.settings.menu;
+    const controlsContextValue = React.useMemo(
+        () => ({
+            overlayControls: props.overlayControls,
+            context: props.context,
+            menu: overlayMenuItems,
+            itemsParams: itemsParams,
+            itemsState: itemsState,
+            editItem: props.onItemEdit,
+            removeItem: onItemRemove,
+            getLayoutItem: getLayoutItem,
+        }),
+        [
+            itemsParams,
+            itemsState,
+            props.context,
+            props.onItemEdit,
+            onItemRemove,
+            props.overlayControls,
+            overlayMenuItems,
+            getLayoutItem,
+        ],
+    );
+
+    return {controlsContextValue, dashkitContextValue};
 }
 
 export function withContext(Component) {
     const WithContext = (props) => {
-        const contextValue = useMemoStateContext(props);
+        const {dashkitContextValue, controlsContextValue} = useMemoStateContext(props);
 
         return (
-            <DashKitContext.Provider value={contextValue}>
-                <Component overlayControls={props.overlayControls} />
+            <DashKitContext.Provider value={dashkitContextValue}>
+                <DashkitOvelayControlsContext.Provider value={controlsContextValue}>
+                    <Component />
+                </DashkitOvelayControlsContext.Provider>
             </DashKitContext.Provider>
         );
     };

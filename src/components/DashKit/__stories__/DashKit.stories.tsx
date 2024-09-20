@@ -9,6 +9,7 @@ import {DashKit, DashKitProps} from '../DashKit';
 
 import {CssApiShowcase} from './CssApiShowcase';
 import {DashKitDnDShowcase} from './DashKitDnDShowcase';
+import {DashKitGroupsShowcase} from './DashKitGroupsShowcase';
 import {DashKitShowcase} from './DashKitShowcase';
 import {getConfig} from './utils';
 
@@ -46,11 +47,12 @@ if (!getInitialized()) {
             apiHandler: ({text}) => Promise.resolve({result: text}),
         }),
     );
-    DashKit.registerPlugins({
+
+    const customPlugin = {
         type: 'custom',
         defaultLayout: {
-            w: 10,
-            h: 10,
+            w: 20,
+            h: 20,
         },
         renderer: function CustomPlugin() {
             return (
@@ -60,6 +62,15 @@ if (!getInitialized()) {
                     </div>
                 </div>
             );
+        },
+    };
+
+    DashKit.registerPlugins(customPlugin);
+    DashKit.reloadPlugins({
+        ...customPlugin,
+        defaultLayout: {
+            w: 10,
+            h: 10,
         },
     });
 
@@ -81,3 +92,6 @@ export const CSS_API = CssApiShowcaseTemplate.bind({});
 
 const DndShowcaseTemplate: Story<DashKitProps> = () => <DashKitDnDShowcase />;
 export const DragNDrop = DndShowcaseTemplate.bind({});
+
+const GroupsShowcaseTemplate: Story<DashKitProps> = () => <DashKitGroupsShowcase />;
+export const Groups = GroupsShowcaseTemplate.bind({});

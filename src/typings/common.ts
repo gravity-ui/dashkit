@@ -2,11 +2,13 @@ import type ReactGridLayout from 'react-grid-layout';
 
 import type {OverlayCustomControlItem} from '../components/OverlayControls/OverlayControls';
 import {MenuItems} from '../constants';
+import {AdditionalWidgetLayout} from '../shared';
 
 export interface Settings {
     gridLayout?: ReactGridLayout.ReactGridLayoutProps;
     theme?: string;
     isMobile?: boolean;
+    // @deprecated as it's possibly mutable property use Dashkit overlayMenuItems property instead
     menu?: Array<MenuItem>;
 }
 
@@ -21,7 +23,7 @@ export interface ContextProps {
     [key: string]: any;
 }
 
-export interface WidgetLayout {
+export interface WidgetLayout extends AdditionalWidgetLayout {
     i: string;
     w: number;
     h: number;
