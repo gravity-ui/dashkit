@@ -26,6 +26,7 @@ import {
     type ConfigItem,
     type ConfigLayout,
     type ItemState,
+    type ItemsStateAndParamsBase,
     type PluginBase,
     type StringParams,
     isItemWithTabs,
@@ -97,8 +98,8 @@ type DashKitCtx = React.Context<{
     overlayControls?: Record<string, OverlayControlItem[]>;
     context: Record<string, any>;
     menu: MenuItem[];
+    itemsStateAndParams: ItemsStateAndParamsBase;
     itemsParams: Record<string, StringParams>;
-    itemsState: Record<string, ItemState>;
     editItem: (item: ConfigItem) => void;
     removeItem: (id: string) => void;
     getLayoutItem: (id: string) => ConfigLayout | void;
@@ -261,11 +262,11 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
     }
     private renderDropdownMenu(isOnlyOneItem: boolean) {
         const {view, size, onItemClick} = this.props;
-        const {menu: contextMenu, itemsParams, itemsState} = this.context;
+        const {menu: contextMenu, itemsParams, itemsStateAndParams} = this.context;
 
         const configItem = this.props.configItem;
         const itemParams = itemsParams[configItem.id];
-        const itemState = itemsState[configItem.id];
+        const itemState = itemsStateAndParams[configItem.id]?.state || {};
 
         const menu = contextMenu?.length > 0 ? contextMenu : DEFAULT_DROPDOWN_MENU;
 
@@ -385,7 +386,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         if (isItemWithTabs(this.props.configItem)) {
             targetInnerId = resolveItemInnerId({
                 item: this.props.configItem,
-                itemsStateAndParams: this.context.itemsState,
+                itemsStateAndParams: this.context.itemsStateAndParams,
             });
         }
 
