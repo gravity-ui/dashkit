@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.17.1](https://github.com/gravity-ui/dashkit/compare/v8.17.0...v8.17.1) (2024-09-23)
+
+
+### Bug Fixes
+
+* make targetId in PreparedCopyItemOptionsArg optional ([#203](https://github.com/gravity-ui/dashkit/issues/203)) ([c8c0a83](https://github.com/gravity-ui/dashkit/commit/c8c0a83f7c70a4e2de59208d40378fc4fc827a4a))
+
 ## [8.17.0](https://github.com/gravity-ui/dashkit/compare/v8.16.0...v8.17.0) (2024-09-23)
 
 
