@@ -22,7 +22,16 @@ import {
 } from '../../constants';
 import {DashkitOvelayControlsContext} from '../../context/DashKitContext';
 import {i18n} from '../../i18n';
-import type {ConfigItem, ConfigLayout, ItemState, PluginBase, StringParams} from '../../shared';
+import {
+    type ConfigItem,
+    type ConfigLayout,
+    type ItemState,
+    type ItemsStateAndParamsBase,
+    type PluginBase,
+    type StringParams,
+    isItemWithTabs,
+    resolveItemInnerId,
+} from '../../shared';
 import {MenuItem, Settings} from '../../typings';
 import {cn} from '../../utils/cn';
 
@@ -77,6 +86,8 @@ type PreparedCopyItemOptionsArg = Pick<ConfigItem, 'data' | 'type' | 'defaults' 
         w: number;
         h: number;
     };
+    targetId: string;
+    targetInnerId?: string;
 };
 
 export type PreparedCopyItemOptions<C extends object = {}> = PreparedCopyItemOptionsArg & {
@@ -87,8 +98,8 @@ type DashKitCtx = React.Context<{
     overlayControls?: Record<string, OverlayControlItem[]>;
     context: Record<string, any>;
     menu: MenuItem[];
+    itemsStateAndParams: ItemsStateAndParamsBase;
     itemsParams: Record<string, StringParams>;
-    itemsState: Record<string, ItemState>;
     editItem: (item: ConfigItem) => void;
     removeItem: (id: string) => void;
     getLayoutItem: (id: string) => ConfigLayout | void;
@@ -251,11 +262,11 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
     }
     private renderDropdownMenu(isOnlyOneItem: boolean) {
         const {view, size, onItemClick} = this.props;
-        const {menu: contextMenu, itemsParams, itemsState} = this.context;
+        const {menu: contextMenu, itemsParams, itemsStateAndParams} = this.context;
 
         const configItem = this.props.configItem;
         const itemParams = itemsParams[configItem.id];
-        const itemState = itemsState[configItem.id];
+        const itemState = itemsStateAndParams[configItem.id]?.state || {};
 
         const menu = contextMenu?.length > 0 ? contextMenu : DEFAULT_DROPDOWN_MENU;
 
@@ -370,6 +381,15 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         const {configItem} = this.props;
         const correspondedItemLayout = this.context.getLayoutItem(configItem.id);
 
+        let targetInnerId;
+
+        if (isItemWithTabs(this.props.configItem)) {
+            targetInnerId = resolveItemInnerId({
+                item: this.props.configItem,
+                itemsStateAndParams: this.context.itemsStateAndParams,
+            });
+        }
+
         let options: PreparedCopyItemOptions = {
             timestamp: Date.now(),
             data: configItem.data,
@@ -380,6 +400,8 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                 w: correspondedItemLayout!.w,
                 h: correspondedItemLayout!.h,
             },
+            targetId: this.props.configItem.id,
+            targetInnerId,
         };
 
         if (typeof this.context.context?.getPreparedCopyItemOptions === 'function') {

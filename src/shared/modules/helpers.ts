@@ -184,6 +184,7 @@ export function resolveItemInnerId({
     const {id} = item;
     const stateTabId: string | undefined = (itemsStateAndParams as ItemsStateAndParamsBase)[id]
         ?.state?.tabId;
+
     const {tabs} = (item as ConfigItemWithTabs).data;
     if (stateTabId && tabs.some((tab) => tab.id === stateTabId)) {
         return stateTabId;
