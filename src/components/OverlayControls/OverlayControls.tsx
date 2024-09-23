@@ -86,7 +86,7 @@ type PreparedCopyItemOptionsArg = Pick<ConfigItem, 'data' | 'type' | 'defaults' 
         w: number;
         h: number;
     };
-    targetId: string;
+    targetId?: string;
     targetInnerId?: string;
 };
 
