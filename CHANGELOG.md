@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.17.0](https://github.com/gravity-ui/dashkit/compare/v8.16.0...v8.17.0) (2024-09-23)
+
+
+### Features
+
+* add targetId and targetInnerId to options on copy item ([#201](https://github.com/gravity-ui/dashkit/issues/201)) ([3739a79](https://github.com/gravity-ui/dashkit/commit/3739a794e99a382e18c8af852f5166f3dcf02627))
+
 ## [8.16.0](https://github.com/gravity-ui/dashkit/compare/v8.15.3...v8.16.0) (2024-09-19)
 
 
