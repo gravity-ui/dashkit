@@ -544,10 +544,6 @@ export default class GridLayout extends React.PureComponent {
         return false;
     };
 
-    renderRectBlocks() {
-        return <div className="test">123</div>;
-    }
-
     renderTemporaryPlaceholder() {
         const {temporaryLayout, noOverlay, draggableHandleClassName} = this.context;
 
