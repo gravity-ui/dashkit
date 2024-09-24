@@ -51,6 +51,10 @@ export default class GridLayout extends React.PureComponent {
     _memoGroupsLayouts = {};
     _memoCallbacksForGroups = {};
 
+    _previousRectScroll = null;
+    _rectScrollObserver = null;
+    _isRectCalculateRunning = false;
+
     _timeout;
     _lastReloadAt;
 
@@ -272,56 +276,65 @@ export default class GridLayout extends React.PureComponent {
                 return;
             }
 
-            if (
-                boundingClientRect.height < rootBounds.height &&
-                boundingClientRect.width < rootBounds.width
-            ) {
-                // If element is smaller the rootNode using scrollIntoView
-                target.scrollIntoView({
-                    behavior: 'instant',
-                    block: 'nearest',
-                    inline: 'nearest',
-                });
-            } else {
-                // If element is bigger than rootNode using scrollTop\scrollLeft with gaps
-                const topOffset = -1 * boundingClientRect.top;
-                const bottomOffset = boundingClientRect.bottom - rootBounds.bottom;
-                const leftOffset = -1 * boundingClientRect.left;
-                const rightOffset = boundingClientRect.right - rootBounds.right;
+            const topOffset = -1 * boundingClientRect.top;
+            const bottomOffset = boundingClientRect.bottom - rootBounds.bottom;
+            const leftOffset = -1 * boundingClientRect.left;
+            const rightOffset = boundingClientRect.right - rootBounds.right;
 
-                // If dimension of element bigger than root
-                // Then 1/4 of width or height is getting out of scroll area scroll will be triggered
-                const verticalLimit =
-                    boundingClientRect.height > rootBounds.height
-                        ? boundingClientRect.height / 4
-                        : 1;
-                const horizontalLimit =
-                    boundingClientRect.width > rootBounds.width ? boundingClientRect.width / 4 : 1;
+            // If dimension of element bigger than root
+            // Then 1/4 of width or height is getting out of scroll area scroll will be triggered
+            const verticalLimit =
+                boundingClientRect.height > rootBounds.height ? boundingClientRect.height / 4 : 1;
+            const horizontalLimit =
+                boundingClientRect.width > rootBounds.width ? boundingClientRect.width / 4 : 1;
 
-                if (topOffset >= verticalLimit || bottomOffset >= verticalLimit) {
-                    if (topOffset > bottomOffset) {
-                        rootNode.scrollTop -= scrollStep;
-                    } else {
-                        rootNode.scrollTop += scrollStep;
-                    }
-                }
-
-                if (rightOffset >= horizontalLimit || leftOffset >= horizontalLimit) {
-                    if (leftOffset > rightOffset) {
-                        rootNode.scrollLeft -= scrollStep;
-                    } else {
-                        rootNode.scrollLeft += scrollStep;
-                    }
+            if (topOffset >= verticalLimit || bottomOffset >= verticalLimit) {
+                // Updating horizontal scroll position if needed
+                if (topOffset > bottomOffset) {
+                    rootNode.scrollTop -= scrollStep;
+                } else {
+                    rootNode.scrollTop += scrollStep;
                 }
             }
 
-            // Requesting next animation frame to recalculate next scroll step
-            requestAnimationFrame(() => {
-                if (this._rectScrollObserver) {
-                    this._rectScrollObserver.unobserve(target);
-                    this._rectScrollObserver.observe(target);
+            if (rightOffset >= horizontalLimit || leftOffset >= horizontalLimit) {
+                // Updating vertical scroll position if needed
+                if (leftOffset > rightOffset) {
+                    rootNode.scrollLeft -= scrollStep;
+                } else {
+                    rootNode.scrollLeft += scrollStep;
                 }
-            });
+            }
+
+            // Saving current scroll position and check if it has changed
+            const {scrollTop, scrollLeft} = rootNode;
+
+            if (!this._previousRectScroll) {
+                this._previousRectScroll = {scrollTop, scrollLeft};
+            } else if (
+                this._previousRectScroll.scrollTop === scrollTop &&
+                this._previousRectScroll.scrollLeft === scrollLeft
+            ) {
+                // Stopping animation requests if scroll position can't be changed
+                this._isRectCalculateRunning = false;
+                return;
+            } else {
+                this._previousRectScroll.scrollTop = scrollTop;
+                this._previousRectScroll.scrollLeft = scrollLeft;
+            }
+
+            this._isRectCalculateRunning = true;
+            // Requesting next animation frame to recalculate next scroll step
+            this._requestNextCalculation(target);
+        });
+    }
+
+    _requestNextCalculation(element) {
+        requestAnimationFrame(() => {
+            if (this._rectScrollObserver) {
+                this._rectScrollObserver.unobserve(element);
+                this._rectScrollObserver.observe(element);
+            }
         });
     }
 
@@ -337,6 +350,8 @@ export default class GridLayout extends React.PureComponent {
     }
 
     _disconnectRectBlock() {
+        this._previousRectScroll = null;
+
         if (this._rectScrollObserver) {
             this._rectScrollObserver.disconnect();
             this._rectScrollObserver = null;
@@ -370,6 +385,10 @@ export default class GridLayout extends React.PureComponent {
     }
 
     _onDrag(group, layout, oldItem, newItem, placeholder, e, element) {
+        if (!this._isRectCalculateRunning) {
+            this._requestNextCalculation(element);
+        }
+
         this.context.onDrag?.call(
             this,
             this.prepareDefaultArguments(group, layout, oldItem, newItem, placeholder, e, element),
