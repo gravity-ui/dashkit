@@ -239,7 +239,7 @@ export default class GridLayout extends React.PureComponent {
         };
     }
 
-    updateeDraggingElementState(group, layoutItem, e) {
+    updateDraggingElementState(group, layoutItem, e) {
         let currentDraggingElement = this.state.currentDraggingElement;
 
         if (!currentDraggingElement) {
@@ -262,36 +262,73 @@ export default class GridLayout extends React.PureComponent {
         this.setState({currentDraggingElement, draggedOverGroup: group});
     }
 
-    _rectIntersectionObserver(ratioLimit, entries) {
+    _rectIntersectionObserver(rootNode, entries) {
         entries.forEach((entry) => {
-            const {intersectionRatio, target, boundingClientRect} = entry;
+            const {intersectionRatio, target, boundingClientRect, rootBounds} = entry;
+            const scrollStep = 20;
+
+            // Prevent scroll if element on screen
+            if (intersectionRatio === 1) {
+                return;
+            }
 
             if (
-                intersectionRatio < ratioLimit &&
-                boundingClientRect.x >= 0 &&
-                boundingClientRect.y >= 0
+                boundingClientRect.height < rootBounds.height &&
+                boundingClientRect.width < rootBounds.width
             ) {
+                // If element is smaller the rootNode using scrollIntoView
                 target.scrollIntoView({
                     behavior: 'instant',
                     block: 'nearest',
                     inline: 'nearest',
                 });
+            } else {
+                // If element is bigger than rootNode using scrollTop\scrollLeft with gaps
+                const topOffset = -1 * boundingClientRect.top;
+                const bottomOffset = boundingClientRect.bottom - rootBounds.bottom;
+                const leftOffset = -1 * boundingClientRect.left;
+                const rightOffset = boundingClientRect.right - rootBounds.right;
 
-                requestAnimationFrame(() => {
-                    if (this._rectScrollObserver) {
-                        this._rectScrollObserver.unobserve(target);
-                        this._rectScrollObserver.observe(target);
+                // If dimension of element bigger than root
+                // Then 1/4 of width or height is getting out of scroll area scroll will be triggered
+                const verticalLimit =
+                    boundingClientRect.height > rootBounds.height
+                        ? boundingClientRect.height / 4
+                        : 1;
+                const horizontalLimit =
+                    boundingClientRect.width > rootBounds.width ? boundingClientRect.width / 4 : 1;
+
+                if (topOffset >= verticalLimit || bottomOffset >= verticalLimit) {
+                    if (topOffset > bottomOffset) {
+                        rootNode.scrollTop -= scrollStep;
+                    } else {
+                        rootNode.scrollTop += scrollStep;
                     }
-                });
+                }
+
+                if (rightOffset >= horizontalLimit || leftOffset >= horizontalLimit) {
+                    if (leftOffset > rightOffset) {
+                        rootNode.scrollLeft -= scrollStep;
+                    } else {
+                        rootNode.scrollLeft += scrollStep;
+                    }
+                }
             }
+
+            // Requesting next animation frame to recalculate next scroll step
+            requestAnimationFrame(() => {
+                if (this._rectScrollObserver) {
+                    this._rectScrollObserver.unobserve(target);
+                    this._rectScrollObserver.observe(target);
+                }
+            });
         });
     }
 
     _initRectObserver(element) {
         this._rectScrollObserver = new IntersectionObserver(
-            this._rectIntersectionObserver.bind(this, 1),
+            this._rectIntersectionObserver.bind(this, document.documentElement),
             {
-                rootMargin: '0px',
                 threshold: 1,
             },
         );
@@ -327,7 +364,7 @@ export default class GridLayout extends React.PureComponent {
         if (this.context.dragOverPlugin) {
             this.setState({isDragging: true});
         } else {
-            this.updateeDraggingElementState(group, layoutItem, e);
+            this.updateDraggingElementState(group, layoutItem, e);
             this.setState({isDragging: true});
         }
     }
