@@ -264,12 +264,24 @@ export default class GridLayout extends React.PureComponent {
 
     _rectIntersectionObserver(ratioLimit, entries) {
         entries.forEach((entry) => {
-            const {intersectionRatio, target} = entry;
-            if (intersectionRatio < ratioLimit) {
+            const {intersectionRatio, target, boundingClientRect} = entry;
+
+            if (
+                intersectionRatio < ratioLimit &&
+                boundingClientRect.x >= 0 &&
+                boundingClientRect.y >= 0
+            ) {
                 target.scrollIntoView({
                     behavior: 'instant',
                     block: 'nearest',
                     inline: 'nearest',
+                });
+
+                requestAnimationFrame(() => {
+                    if (this._rectScrollObserver) {
+                        this._rectScrollObserver.unobserve(target);
+                        this._rectScrollObserver.observe(target);
+                    }
                 });
             }
         });
