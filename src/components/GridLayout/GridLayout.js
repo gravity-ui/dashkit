@@ -262,6 +262,60 @@ export default class GridLayout extends React.PureComponent {
         this.setState({currentDraggingElement, draggedOverGroup: group});
     }
 
+    _renderRectBlock(element) {
+        const parent = element.parentElement;
+        const elementRect = element.getBoundingClientRect();
+        this._rectBlocks = {
+            spacers: {
+                top: document.createElement('div'),
+                bottom: document.createElement('div'),
+            },
+            parent,
+        };
+
+        Object.entries(this._rectBlocks.spacers).forEach(([pos, block]) => {
+            block.style.position = 'absolute';
+            block.style.width = `${elementRect.width}px`;
+            block.style.height = '1px';
+            block.style.left = '0px';
+
+            if (pos === 'top') {
+                block.style.top = '0px';
+            } else {
+                block.style.top = `${elementRect.height - 1}px`;
+            }
+
+            parent.appendChild(block);
+        });
+
+        this._updateRectBlock(element);
+    }
+
+    _updateRectBlock(element) {
+        if (!this._rectBlocks) {
+            return;
+        }
+
+        const parent = this._rectBlocks.parent;
+        const parentRect = parent.getBoundingClientRect();
+        const elementRect = element.getBoundingClientRect();
+        const left = elementRect.left - parentRect.left;
+        const top = elementRect.top - parentRect.top;
+
+        Object.values(this._rectBlocks.spacers).forEach((block) => {
+            block.style.transform = `translate(${left}px, ${top}px)`;
+        });
+    }
+
+    _cleanRectBlock() {
+        if (this._rectBlocks) {
+            Object.values(this._rectBlocks.spacers).forEach((block) => {
+                block.remove();
+            });
+            this._rectBlocks = null;
+        }
+    }
+
     _onDragStart(group, _newLayout, layoutItem, _newItem, _placeholder, e, element) {
         this.context.onDragStart?.call(
             this,
@@ -276,6 +330,10 @@ export default class GridLayout extends React.PureComponent {
             ),
         );
 
+        if (!this.state.currentDraggingElement) {
+            this._renderRectBlock(element);
+        }
+
         if (this.context.dragOverPlugin) {
             this.setState({isDragging: true});
         } else {
@@ -285,6 +343,8 @@ export default class GridLayout extends React.PureComponent {
     }
 
     _onDrag(group, layout, oldItem, newItem, placeholder, e, element) {
+        this._updateRectBlock(element);
+
         this.context.onDrag?.call(
             this,
             this.prepareDefaultArguments(group, layout, oldItem, newItem, placeholder, e, element),
@@ -292,6 +352,8 @@ export default class GridLayout extends React.PureComponent {
     }
 
     _onDragStop(group, layout, oldItem, newItem, placeholder, e, element) {
+        this._cleanRectBlock();
+
         this._onStop(group, layout);
 
         this.context.onDragStop?.call(
@@ -465,6 +527,10 @@ export default class GridLayout extends React.PureComponent {
 
         return false;
     };
+
+    renderRectBlocks() {
+        return <div className="test">123</div>;
+    }
 
     renderTemporaryPlaceholder() {
         const {temporaryLayout, noOverlay, draggableHandleClassName} = this.context;
