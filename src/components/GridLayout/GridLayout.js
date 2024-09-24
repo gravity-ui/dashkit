@@ -262,6 +262,15 @@ export default class GridLayout extends React.PureComponent {
         this.setState({currentDraggingElement, draggedOverGroup: group});
     }
 
+    _rectInterscectionObserver = (entries) => {
+        entries.forEach((entry) => {
+            const {intersectionRatio} = entry;
+            if (intersectionRatio === 0) {
+                entry.target.scrollIntoView();
+            }
+        });
+    };
+
     _renderRectBlock(element) {
         const parent = element.parentElement;
         const elementRect = element.getBoundingClientRect();
@@ -271,6 +280,10 @@ export default class GridLayout extends React.PureComponent {
                 bottom: document.createElement('div'),
             },
             parent,
+            scrollObserver: new IntersectionObserver(this._rectInterscectionObserver, {
+                rootMargin: '0px',
+                threshold: 0,
+            }),
         };
 
         Object.entries(this._rectBlocks.spacers).forEach(([pos, block]) => {
@@ -286,6 +299,8 @@ export default class GridLayout extends React.PureComponent {
             }
 
             parent.appendChild(block);
+
+            this._rectBlocks.scrollObserver.observe(block);
         });
 
         this._updateRectBlock(element);
@@ -309,6 +324,7 @@ export default class GridLayout extends React.PureComponent {
 
     _cleanRectBlock() {
         if (this._rectBlocks) {
+            this._rectBlocks.scrollObserver.disconnect();
             Object.values(this._rectBlocks.spacers).forEach((block) => {
                 block.remove();
             });
