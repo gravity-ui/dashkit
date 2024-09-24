@@ -265,70 +265,25 @@ export default class GridLayout extends React.PureComponent {
     _rectInterscectionObserver = (entries) => {
         entries.forEach((entry) => {
             const {intersectionRatio} = entry;
-            if (intersectionRatio === 0) {
-                entry.target.scrollIntoView();
+            if (intersectionRatio < 0.5) {
+                entry.target.scrollIntoView({behavior: 'smooth'});
             }
         });
     };
 
-    _renderRectBlock(element) {
-        const parent = element.parentElement;
-        const elementRect = element.getBoundingClientRect();
-        this._rectBlocks = {
-            spacers: {
-                top: document.createElement('div'),
-                bottom: document.createElement('div'),
-            },
-            parent,
-            scrollObserver: new IntersectionObserver(this._rectInterscectionObserver, {
-                rootMargin: '0px',
-                threshold: 0,
-            }),
-        };
-
-        Object.entries(this._rectBlocks.spacers).forEach(([pos, block]) => {
-            block.style.position = 'absolute';
-            block.style.width = `${elementRect.width}px`;
-            block.style.height = '1px';
-            block.style.left = '0px';
-
-            if (pos === 'top') {
-                block.style.top = '0px';
-            } else {
-                block.style.top = `${elementRect.height - 1}px`;
-            }
-
-            parent.appendChild(block);
-
-            this._rectBlocks.scrollObserver.observe(block);
+    _initRectObserver(element) {
+        this._rectScrollObserver = new IntersectionObserver(this._rectInterscectionObserver, {
+            rootMargin: '0px',
+            threshold: 0.5,
         });
 
-        this._updateRectBlock(element);
+        this._rectScrollObserver.observe(element);
     }
 
-    _updateRectBlock(element) {
-        if (!this._rectBlocks) {
-            return;
-        }
-
-        const parent = this._rectBlocks.parent;
-        const parentRect = parent.getBoundingClientRect();
-        const elementRect = element.getBoundingClientRect();
-        const left = elementRect.left - parentRect.left;
-        const top = elementRect.top - parentRect.top;
-
-        Object.values(this._rectBlocks.spacers).forEach((block) => {
-            block.style.transform = `translate(${left}px, ${top}px)`;
-        });
-    }
-
-    _cleanRectBlock() {
-        if (this._rectBlocks) {
-            this._rectBlocks.scrollObserver.disconnect();
-            Object.values(this._rectBlocks.spacers).forEach((block) => {
-                block.remove();
-            });
-            this._rectBlocks = null;
+    _disconnectRectBlock() {
+        if (this._rectScrollObserver) {
+            this._rectScrollObserver.disconnect();
+            this._rectScrollObserver = null;
         }
     }
 
@@ -347,7 +302,7 @@ export default class GridLayout extends React.PureComponent {
         );
 
         if (!this.state.currentDraggingElement) {
-            this._renderRectBlock(element);
+            this._initRectObserver(element);
         }
 
         if (this.context.dragOverPlugin) {
@@ -359,8 +314,6 @@ export default class GridLayout extends React.PureComponent {
     }
 
     _onDrag(group, layout, oldItem, newItem, placeholder, e, element) {
-        this._updateRectBlock(element);
-
         this.context.onDrag?.call(
             this,
             this.prepareDefaultArguments(group, layout, oldItem, newItem, placeholder, e, element),
@@ -368,7 +321,7 @@ export default class GridLayout extends React.PureComponent {
     }
 
     _onDragStop(group, layout, oldItem, newItem, placeholder, e, element) {
-        this._cleanRectBlock();
+        this._disconnectRectBlock();
 
         this._onStop(group, layout);
 
