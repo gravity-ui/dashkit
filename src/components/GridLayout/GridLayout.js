@@ -262,20 +262,27 @@ export default class GridLayout extends React.PureComponent {
         this.setState({currentDraggingElement, draggedOverGroup: group});
     }
 
-    _rectInterscectionObserver = (entries) => {
+    _rectIntersectionObserver(ratioLimit, entries) {
         entries.forEach((entry) => {
-            const {intersectionRatio} = entry;
-            if (intersectionRatio < 0.5) {
-                entry.target.scrollIntoView({behavior: 'smooth'});
+            const {intersectionRatio, target} = entry;
+            if (intersectionRatio < ratioLimit) {
+                target.scrollIntoView({
+                    behavior: 'instant',
+                    block: 'nearest',
+                    inline: 'nearest',
+                });
             }
         });
-    };
+    }
 
     _initRectObserver(element) {
-        this._rectScrollObserver = new IntersectionObserver(this._rectInterscectionObserver, {
-            rootMargin: '0px',
-            threshold: 0.5,
-        });
+        this._rectScrollObserver = new IntersectionObserver(
+            this._rectIntersectionObserver.bind(this, 1),
+            {
+                rootMargin: '0px',
+                threshold: 1,
+            },
+        );
 
         this._rectScrollObserver.observe(element);
     }
