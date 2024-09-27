@@ -14,6 +14,11 @@ export default class MobileLayout extends React.PureComponent {
     static contextType = DashKitContext;
 
     pluginsRefs = [];
+    sortedLayoutItems;
+
+    _memoLayout = this.context.layout;
+    _memoForwardedPluginRef = [];
+    _memoAdjustWidgetLayout = [];
 
     state = {
         activeTabId: null,
@@ -28,6 +33,30 @@ export default class MobileLayout extends React.PureComponent {
             });
         }
     }
+
+    getSortedLayoutItems() {
+        if (this.sortedLayoutItems && this.context.layout === this._memoLayout) {
+            return this.sortedLayoutItems;
+        }
+
+        this._memoLayout = this.context.layout;
+
+        const hasOrderId = Boolean(this.context.config.items.find((item) => item.orderId));
+
+        this.sortedLayoutItems = getSortedConfigItems(this.context.config, hasOrderId);
+
+        return this.sortedLayoutItems;
+    }
+
+    getMemoForwardRefCallback = (refIndex) => {
+        if (!this._memoForwardedPluginRef[refIndex]) {
+            this._memoForwardedPluginRef[refIndex] = (pluginRef) => {
+                this.pluginsRefs[refIndex] = pluginRef;
+            };
+        }
+
+        return this._memoForwardedPluginRef[refIndex];
+    };
 
     adjustWidgetLayout = (index, {needSetDefault}) => {
         if (needSetDefault) {
@@ -46,6 +75,14 @@ export default class MobileLayout extends React.PureComponent {
                 ),
             });
         }
+    };
+
+    getMemoAdjustWidgetLayout = (index) => {
+        if (!this._memoAdjustWidgetLayout[index]) {
+            this._memoAdjustWidgetLayout[index] = this.adjustWidgetLayout.bind(this, index);
+        }
+
+        return this._memoAdjustWidgetLayout[index];
     };
 
     onMountChange = (isMounted) => {
@@ -83,14 +120,14 @@ export default class MobileLayout extends React.PureComponent {
 
         this.pluginsRefs.length = config.items.length;
 
-        const hasOrderId = Boolean(config.items.find((item) => item.orderId));
-        const sortedItems = getSortedConfigItems(config, hasOrderId);
+        const sortedItems = this.getSortedLayoutItems();
 
         return (
             <div className={b()}>
                 {sortedItems.map((item, index) => {
                     const isItemWithActiveAutoheight =
                         index in this.state.indexesOfItemsWithActiveAutoheight;
+
                     return (
                         <div
                             className={b('item', {autoheight: isItemWithActiveAutoheight})}
@@ -101,10 +138,8 @@ export default class MobileLayout extends React.PureComponent {
                                 item={item}
                                 layout={layout}
                                 shouldItemUpdate={false}
-                                adjustWidgetLayout={this.adjustWidgetLayout.bind(this, index)}
-                                forwardedPluginRef={(pluginRef) => {
-                                    this.pluginsRefs[index] = pluginRef;
-                                }}
+                                adjustWidgetLayout={this.getMemoAdjustWidgetLayout(index)}
+                                forwardedPluginRef={this.getMemoForwardRefCallback(index)}
                                 onMountChange={this.onMountChange}
                                 onBeforeLoad={this.onBeforeLoad}
                             />
