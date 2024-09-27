@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.17.2](https://github.com/gravity-ui/dashkit/compare/v8.17.1...v8.17.2) (2024-09-27)
+
+
+### Bug Fixes
+
+* add memorizing some props in MobileLayout ([#206](https://github.com/gravity-ui/dashkit/issues/206)) ([1f410a5](https://github.com/gravity-ui/dashkit/commit/1f410a5522971aafa2cc0abdc9c6664d69da092f))
+
 ## [8.17.1](https://github.com/gravity-ui/dashkit/compare/v8.17.0...v8.17.1) (2024-09-23)
 
 
