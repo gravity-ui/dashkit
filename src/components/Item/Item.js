@@ -16,18 +16,47 @@ const Item = ({
     type,
     isPlaceholder,
     forwardedPluginRef,
-    onMountChange,
+    onItemRender,
+    onItemMountChange,
+    item,
 }) => {
+    const _isAsyncItem = React.useRef(false);
+
     const isRegisteredType = registerManager.check(type);
 
     React.useLayoutEffect(() => {
         if (isRegisteredType && !isPlaceholder) {
-            onMountChange?.(true);
+            onItemMountChange?.(item, {
+                isAsync: _isAsyncItem.current,
+                isMounted: true,
+            });
+
+            if (!_isAsyncItem.current) {
+                onItemRender?.(item);
+            }
+
             return () => {
-                onMountChange?.(false);
+                onItemMountChange?.(item, {
+                    isAsync: _isAsyncItem.current,
+                    isMounted: false,
+                });
             };
         }
-    }, []);
+    }, [item]);
+
+    const onLoad = React.useCallback(() => {
+        onItemRender?.(item);
+    }, [item, onItemRender]);
+
+    const onBeforeLoad = React.useCallback(() => {
+        _isAsyncItem.current = true;
+
+        return onLoad;
+    }, [onLoad]);
+
+    const itemRendererProps = React.useMemo(() => {
+        return {...rendererProps, onBeforeLoad};
+    }, [rendererProps, onBeforeLoad]);
 
     if (!isRegisteredType) {
         console.warn(`type [${type}] не зарегистрирован`);
@@ -39,14 +68,14 @@ const Item = ({
             <div className={b('placeholder')}>
                 {registerManager
                     .getItem(type)
-                    .placeholderRenderer?.(rendererProps, forwardedPluginRef) || null}
+                    .placeholderRenderer?.(itemRendererProps, forwardedPluginRef) || null}
             </div>
         );
     }
 
     return (
         <div className={b('renderer')}>
-            {registerManager.getItem(type).renderer(rendererProps, forwardedPluginRef)}
+            {registerManager.getItem(type).renderer(itemRendererProps, forwardedPluginRef)}
         </div>
     );
 };
@@ -57,8 +86,9 @@ Item.propTypes = {
     registerManager: PropTypes.object,
     type: PropTypes.string,
     isPlaceholder: PropTypes.bool,
-    onMountChange: PropTypes.func,
-    onBeforeLoad: PropTypes.func,
+    onItemRender: PropTypes.func,
+    onItemMountChange: PropTypes.func,
+    item: PropTypes.object,
 };
 
 export default prepareItem(Item);

@@ -57,6 +57,9 @@ class GridItem extends React.PureComponent {
         forwardedPluginRef: PropTypes.any,
         isPlaceholder: PropTypes.bool,
 
+        onItemMountChange: PropTypes.func,
+        onItemRender: PropTypes.func,
+
         // from react-grid-layout:
         children: PropTypes.node,
         className: PropTypes.string,
@@ -146,36 +149,6 @@ class GridItem extends React.PureComponent {
         });
     };
 
-    onMountChange = (isMounted) => {
-        if (isMounted) {
-            this._inited = true;
-
-            this.props.onItemMountChange?.(this.props.item, {
-                isAsync: this._isAsyncItem,
-                isMounted: isMounted,
-            });
-
-            if (!this._isAsyncItem) {
-                this.props.onItemRender?.(this.props.item);
-            }
-        } else {
-            this.props.onItemMountChange?.(this.props.item, {
-                isAsync: this._isAsyncItem,
-                isMounted: isMounted,
-            });
-        }
-    };
-
-    onBeforeLoad = () => {
-        this._isAsyncItem = true;
-
-        return this.onLoad;
-    };
-
-    onLoad = () => {
-        this.props.onItemRender?.(this.props.item);
-    };
-
     render() {
         // из-за бага, что Grid Items unmounts при изменении static, isDraggable, isResaizable
         // https://github.com/STRML/react-grid-layout/issues/721
@@ -244,8 +217,8 @@ class GridItem extends React.PureComponent {
                         adjustWidgetLayout={this.props.adjustWidgetLayout}
                         layout={this.props.layout}
                         forwardedPluginRef={this.props.forwardedPluginRef}
-                        onMountChange={this.onMountChange}
-                        onBeforeLoad={this.onBeforeLoad}
+                        onItemMountChange={this.props.onItemMountChange}
+                        onItemRender={this.props.onItemRender}
                     />
                 </div>
                 {!noOverlay && this.renderOverlay()}
