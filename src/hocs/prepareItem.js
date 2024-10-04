@@ -16,10 +16,11 @@ export function prepareItem(Component) {
             height: PropTypes.number,
             transform: PropTypes.string,
             isPlaceholder: PropTypes.bool,
-            onBeforeLoad: PropTypes.func,
+
+            onItemRender: PropTypes.func,
+            onItemMountChange: PropTypes.func,
 
             forwardedPluginRef: PropTypes.any,
-            onMountChange: PropTypes.func,
         };
 
         shouldComponentUpdate(nextProps) {
@@ -44,16 +45,7 @@ export function prepareItem(Component) {
 
         _currentRenderProps = {};
         getRenderProps = () => {
-            const {
-                id,
-                width,
-                height,
-                item,
-                adjustWidgetLayout,
-                layout,
-                isPlaceholder,
-                onBeforeLoad,
-            } = this.props;
+            const {id, width, height, item, adjustWidgetLayout, layout, isPlaceholder} = this.props;
             const {itemsState, itemsParams, registerManager, settings, context, editMode} =
                 this.context;
             const {data, defaults, namespace} = item;
@@ -64,7 +56,6 @@ export function prepareItem(Component) {
                 params: itemsParams[id],
                 state: itemsState[id],
                 onStateAndParamsChange: this._onStateAndParamsChange,
-                onBeforeLoad,
                 width,
                 height,
                 id,
@@ -90,7 +81,8 @@ export function prepareItem(Component) {
         };
 
         render() {
-            const {item, isPlaceholder, forwardedPluginRef, onMountChange} = this.props;
+            const {item, isPlaceholder, forwardedPluginRef, onItemMountChange, onItemRender} =
+                this.props;
             const {registerManager} = this.context;
             const {type} = item;
 
@@ -101,7 +93,9 @@ export function prepareItem(Component) {
                     registerManager={registerManager}
                     type={type}
                     isPlaceholder={isPlaceholder}
-                    onMountChange={onMountChange}
+                    onItemMountChange={onItemMountChange}
+                    onItemRender={onItemRender}
+                    item={item}
                 />
             );
         }

@@ -85,36 +85,6 @@ export default class MobileLayout extends React.PureComponent {
         return this._memoAdjustWidgetLayout[index];
     };
 
-    onMountChange = (isMounted) => {
-        if (isMounted) {
-            this._inited = true;
-
-            this.context.onItemMountChange?.(this.props.item, {
-                isAsync: this._isAsyncItem,
-                isMounted: isMounted,
-            });
-
-            if (!this._isAsyncItem) {
-                this.context.onItemRender?.(this.props.item);
-            }
-        } else {
-            this.context.onItemMountChange?.(this.props.item, {
-                isAsync: this._isAsyncItem,
-                isMounted: isMounted,
-            });
-        }
-    };
-
-    onBeforeLoad = () => {
-        this._isAsyncItem = true;
-
-        return this.onLoad;
-    };
-
-    onLoad = () => {
-        this.context.onItemRender?.(this.props.item);
-    };
-
     render() {
         const {config, layout} = this.context;
 
@@ -141,7 +111,8 @@ export default class MobileLayout extends React.PureComponent {
                                 adjustWidgetLayout={this.getMemoAdjustWidgetLayout(index)}
                                 forwardedPluginRef={this.getMemoForwardRefCallback(index)}
                                 onMountChange={this.onMountChange}
-                                onBeforeLoad={this.onBeforeLoad}
+                                onItemMountChange={this.context.onItemMountChange}
+                                onItemRender={this.context.onItemRender}
                             />
                         </div>
                     );
