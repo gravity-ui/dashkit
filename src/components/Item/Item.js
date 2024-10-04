@@ -20,36 +20,44 @@ const Item = ({
     onItemMountChange,
     item,
 }) => {
-    const _isAsyncItem = React.useRef(false);
+    // to avoid too frequent re-creation of functions that do not affect the rendering
+    const isAsyncItemRef = React.useRef(false);
+    const itemRef = React.useRef(item);
+    const onItemRenderRef = React.useRef(onItemRender);
+    const onItemMountChangeRef = React.useRef(onItemMountChange);
+
+    itemRef.current = item;
+    onItemRenderRef.current = onItemRender;
+    onItemMountChangeRef.current = onItemMountChange;
 
     const isRegisteredType = registerManager.check(type);
 
     React.useLayoutEffect(() => {
         if (isRegisteredType && !isPlaceholder) {
-            onItemMountChange?.(item, {
-                isAsync: _isAsyncItem.current,
+            onItemMountChangeRef.current?.(itemRef.current, {
+                isAsync: isAsyncItemRef.current,
                 isMounted: true,
             });
 
-            if (!_isAsyncItem.current) {
-                onItemRender?.(item);
+            if (!isAsyncItemRef.current) {
+                onItemRenderRef.current?.(itemRef.current);
             }
 
             return () => {
-                onItemMountChange?.(item, {
-                    isAsync: _isAsyncItem.current,
+                onItemMountChangeRef.current?.(itemRef.current, {
+                    isAsync: isAsyncItemRef.current,
                     isMounted: false,
                 });
             };
         }
-    }, [item]);
+    }, []);
 
     const onLoad = React.useCallback(() => {
-        onItemRender?.(item);
-    }, [item, onItemRender]);
+        onItemRenderRef.current?.(itemRef.current);
+    }, []);
 
     const onBeforeLoad = React.useCallback(() => {
-        _isAsyncItem.current = true;
+        isAsyncItemRef.current = true;
 
         return onLoad;
     }, [onLoad]);
