@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.17.3](https://github.com/gravity-ui/dashkit/compare/v8.17.2...v8.17.3) (2024-10-04)
+
+
+### Bug Fixes
+
+* item life cycle callbacks for mobile ([#208](https://github.com/gravity-ui/dashkit/issues/208)) ([c429fb7](https://github.com/gravity-ui/dashkit/commit/c429fb7e62c053a0727ebe5af9e86ed68e16d097))
+
 ## [8.17.2](https://github.com/gravity-ui/dashkit/compare/v8.17.1...v8.17.2) (2024-09-27)
 
 
