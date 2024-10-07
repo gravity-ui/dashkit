@@ -21,6 +21,7 @@ export default class GridLayout extends React.PureComponent {
             isPageHidden: false,
             currentDraggingElement: null,
             draggedOverGroup: null,
+            draggedOut: false,
         };
     }
 
@@ -262,6 +263,32 @@ export default class GridLayout extends React.PureComponent {
         this.setState({currentDraggingElement, draggedOverGroup: group});
     }
 
+    _initDragCoordinatesWatcher(element) {
+        if (!this.state.draggedOut) {
+            this._parendDragNode = element.parentElement;
+            this.setState({draggedOut: false});
+        }
+    }
+
+    _updateDragCoordinates(e) {
+        const parent = this._parendDragNode;
+        const parentRect = parent.getBoundingClientRect();
+
+        if (
+            e.clientX < parentRect.left ||
+            e.clientX > parentRect.right ||
+            e.clientY < parentRect.top ||
+            e.clientY > parentRect.bottom
+        ) {
+            this.setState({draggedOut: true});
+        }
+    }
+
+    _resetDragWatcher() {
+        this._parendDragNode = null;
+        this.setState({draggedOut: false});
+    }
+
     _onDragStart(group, _newLayout, layoutItem, _newItem, _placeholder, e, element) {
         this.context.onDragStart?.call(
             this,
@@ -276,6 +303,8 @@ export default class GridLayout extends React.PureComponent {
             ),
         );
 
+        this._initDragCoordinatesWatcher(element);
+
         if (this.context.dragOverPlugin) {
             this.setState({isDragging: true});
         } else {
@@ -285,6 +314,8 @@ export default class GridLayout extends React.PureComponent {
     }
 
     _onDrag(group, layout, oldItem, newItem, placeholder, e, element) {
+        this._updateDragCoordinates(e);
+
         this.context.onDrag?.call(
             this,
             this.prepareDefaultArguments(group, layout, oldItem, newItem, placeholder, e, element),
@@ -292,6 +323,8 @@ export default class GridLayout extends React.PureComponent {
     }
 
     _onDragStop(group, layout, oldItem, newItem, placeholder, e, element) {
+        this._resetDragWatcher();
+
         this._onStop(group, layout);
 
         this.context.onDragStop?.call(
@@ -332,6 +365,7 @@ export default class GridLayout extends React.PureComponent {
             return;
         }
 
+        console.log('_onTargetRestore');
         const {currentDraggingElement} = this.state;
 
         if (currentDraggingElement) {
@@ -570,6 +604,7 @@ export default class GridLayout extends React.PureComponent {
                             layout={layout}
                             adjustWidgetLayout={this.adjustWidgetLayout}
                             isDragging={this.state.isDragging}
+                            draggedOut={this.state.draggedOut}
                             noOverlay={noOverlay}
                             focusable={focusable}
                             withCustomHandle={Boolean(draggableHandleClassName)}
