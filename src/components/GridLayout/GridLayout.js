@@ -264,24 +264,56 @@ export default class GridLayout extends React.PureComponent {
     }
 
     _initDragCoordinatesWatcher(element) {
-        if (!this.state.draggedOut) {
+        if (!this._parendDragNode) {
             this._parendDragNode = element.parentElement;
             this.setState({draggedOut: false});
         }
     }
 
+    _forceCursorCapture(parentElement, position) {
+        const div = document.createElement('div');
+        const blockSize = 50;
+        const offset = blockSize / 2;
+
+        div.style.position = 'absolute';
+        div.style.display = 'block';
+        div.style.zIndex = 10;
+
+        div.style.width = `${blockSize}px`;
+        div.style.height = `${blockSize}px`;
+        div.style.top = `${position.top - offset}px`;
+        div.style.left = `${position.left - offset}px`;
+
+        parentElement.appendChild(div);
+        setTimeout(() => {
+            div.remove();
+        }, 100);
+    }
+
     _updateDragCoordinates(e) {
         const parent = this._parendDragNode;
         const parentRect = parent.getBoundingClientRect();
+        const {clientX, clientY} = e;
 
+        let draggedOut = this.state.draggedOut;
         if (
-            e.clientX < parentRect.left ||
-            e.clientX > parentRect.right ||
-            e.clientY < parentRect.top ||
-            e.clientY > parentRect.bottom
+            clientX < parentRect.left ||
+            clientX > parentRect.right ||
+            clientY < parentRect.top ||
+            clientY > parentRect.bottom
         ) {
-            this.setState({draggedOut: true});
+            draggedOut = true;
+        } else {
+            draggedOut = false;
         }
+
+        if (draggedOut !== this.state.draggedOut) {
+            this._forceCursorCapture(parent, {
+                top: clientY - parentRect.top,
+                left: clientX - parentRect.left,
+            });
+        }
+        this.setState({draggedOut});
     }
 
     _resetDragWatcher() {
@@ -314,7 +346,7 @@ export default class GridLayout extends React.PureComponent {
     }
 
     _onDrag(group, layout, oldItem, newItem, placeholder, e, element) {
-        this._updateDragCoordinates(e);
+        this._updateDragCoordinates(e, element);
 
         this.context.onDrag?.call(
             this,

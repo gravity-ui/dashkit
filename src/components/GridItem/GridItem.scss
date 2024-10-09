@@ -43,6 +43,7 @@
         }
     }
 
+    // needs for drag n drop between multiple groups
     &_is-dragged-out {
         pointer-events: none;
     }
@@ -70,7 +71,6 @@
     transition: none;
     z-index: 3;
     will-change: transform;
-    // needs for drag n drop between multiple groups
 }
 
 .react-grid-item.dashkit-grid-item_is-focused {
