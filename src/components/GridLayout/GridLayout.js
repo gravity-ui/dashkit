@@ -240,7 +240,7 @@ export default class GridLayout extends React.PureComponent {
         };
     }
 
-    updateeDraggingElementState(group, layoutItem, e) {
+    updateDraggingElementState(group, layoutItem, e) {
         let currentDraggingElement = this.state.currentDraggingElement;
 
         if (!currentDraggingElement) {
@@ -270,23 +270,28 @@ export default class GridLayout extends React.PureComponent {
         }
     }
 
-    _forceCursorCapture(parentElement, position) {
-        const div = document.createElement('div');
-        const blockSize = 50;
+    // When element is going back and prointer-event: none is removed mouse enter event is not fired
+    // So to trigger it we are forcing this event by adding transparent block under the mouse
+    _forceCursorCapture(parentElement, position, parentRect) {
+        const block = document.createElement('div');
+        block.classList.add('react-grid-focus-capture');
+
+        const blockSize = 44;
         const offset = blockSize / 2;
 
-        div.style.position = 'absolute';
-        div.style.display = 'block';
-        div.style.zIndex = 10;
+        // Keeping elemnt inside current grid
+        const top = Math.min(Math.max(position.top - offset, 0), parentRect.height - blockSize);
+        const left = Math.min(Math.max(position.left - offset, 0), parentRect.width - blockSize);
 
-        div.style.width = `${blockSize}px`;
-        div.style.height = `${blockSize}px`;
-        div.style.top = `${position.top - offset}px`;
-        div.style.left = `${position.left - offset}px`;
+        block.style.width = `${blockSize}px`;
+        block.style.height = `${blockSize}px`;
+        block.style.top = `${top}px`;
+        block.style.left = `${left}px`;
 
-        parentElement.appendChild(div);
+        parentElement.appendChild(block);
+
         setTimeout(() => {
-            div.remove();
+            block.remove();
         }, 100);
     }
 
@@ -308,12 +313,19 @@ export default class GridLayout extends React.PureComponent {
         }
 
         if (draggedOut !== this.state.draggedOut) {
-            this._forceCursorCapture(parent, {
-                top: clientY - parentRect.top,
-                left: clientX - parentRect.left,
-            });
+            this.setState({draggedOut});
+
+            if (!draggedOut) {
+                this._forceCursorCapture(
+                    parent,
+                    {
+                        top: clientY - parentRect.top,
+                        left: clientX - parentRect.left,
+                    },
+                    parentRect,
+                );
+            }
         }
-        this.setState({draggedOut});
     }
 
     _resetDragWatcher() {
@@ -340,13 +352,13 @@ export default class GridLayout extends React.PureComponent {
         if (this.context.dragOverPlugin) {
             this.setState({isDragging: true});
         } else {
-            this.updateeDraggingElementState(group, layoutItem, e);
+            this.updateDraggingElementState(group, layoutItem, e);
             this.setState({isDragging: true});
         }
     }
 
     _onDrag(group, layout, oldItem, newItem, placeholder, e, element) {
-        this._updateDragCoordinates(e, element);
+        this._updateDragCoordinates(e);
 
         this.context.onDrag?.call(
             this,
@@ -397,7 +409,6 @@ export default class GridLayout extends React.PureComponent {
             return;
         }
 
-        console.log('_onTargetRestore');
         const {currentDraggingElement} = this.state;
 
         if (currentDraggingElement) {
@@ -627,6 +638,9 @@ export default class GridLayout extends React.PureComponent {
                     : null)}
             >
                 {renderItems.map((item, i) => {
+                    const isCurrentItem = currentDraggingElement?.item.id === item.id;
+                    const isDraggedOut = isCurrentItem && this.state.draggedOut;
+
                     return (
                         <GridItem
                             forwardedPluginRef={this.getMemoForwardRefCallback(offset + i)} // forwarded ref to plugin
@@ -636,7 +650,7 @@ export default class GridLayout extends React.PureComponent {
                             layout={layout}
                             adjustWidgetLayout={this.adjustWidgetLayout}
                             isDragging={this.state.isDragging}
-                            draggedOut={this.state.draggedOut}
+                            isDraggedOut={isDraggedOut}
                             noOverlay={noOverlay}
                             focusable={focusable}
                             withCustomHandle={Boolean(draggableHandleClassName)}
