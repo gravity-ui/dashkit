@@ -51,6 +51,7 @@ class GridItem extends React.PureComponent {
         id: PropTypes.string,
         item: PropTypes.object,
         isDragging: PropTypes.bool,
+        isDraggedOut: PropTypes.bool,
         layout: PropTypes.array,
 
         forwardedRef: PropTypes.any,
@@ -161,6 +162,7 @@ class GridItem extends React.PureComponent {
             children,
             className,
             isDragging,
+            isDraggedOut,
             noOverlay,
             focusable,
             withCustomHandle,
@@ -188,6 +190,7 @@ class GridItem extends React.PureComponent {
                 className={b(
                     {
                         'is-dragging': isDragging,
+                        'is-dragged-out': isDraggedOut,
                         'is-focused': this.state.isFocused,
                         'with-custom-handle': withCustomHandle,
                     },
