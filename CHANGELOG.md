@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.17.4](https://github.com/gravity-ui/dashkit/compare/v8.17.3...v8.17.4) (2024-10-11)
+
+
+### Bug Fixes
+
+* enable pointer-events: none only when widget is dragged out from container ([#210](https://github.com/gravity-ui/dashkit/issues/210)) ([8c79564](https://github.com/gravity-ui/dashkit/commit/8c795640d57fb914b1be51f69981fc5bb404573f))
+
 ## [8.17.3](https://github.com/gravity-ui/dashkit/compare/v8.17.2...v8.17.3) (2024-10-04)
 
 
