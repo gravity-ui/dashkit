@@ -605,18 +605,16 @@ export default class GridLayout extends React.PureComponent {
 
         return (
             <Layout
+                isDraggable={editMode}
+                isResizable={editMode}
                 // Group properties
                 {...properties}
+                key={`group_${group}`}
                 // Layout props
                 compactType={compactType}
                 layout={layout}
-                key={`group_${group}`}
-                isDraggable={editMode}
-                isResizable={editMode}
                 draggableCancel={`.${DRAGGABLE_CANCEL_CLASS_NAME}`}
-                {...(draggableHandleClassName
-                    ? {draggableHandle: `.${draggableHandleClassName}`}
-                    : null)}
+                draggableHandle={draggableHandleClassName ? `.${draggableHandleClassName}` : null}
                 // Default callbacks
                 onDragStart={callbacks.onDragStart}
                 onDrag={callbacks.onDrag}
@@ -631,27 +629,27 @@ export default class GridLayout extends React.PureComponent {
                 hasSharedDragItem={hasSharedDragItem}
                 sharedDragPosition={currentDraggingElement?.cursorPosition}
                 isDragCaptured={isDragCaptured}
-                {...(outerDnDEnable
-                    ? {
-                          isDroppable: true,
-                      }
-                    : null)}
+                isDroppable={Boolean(outerDnDEnable)}
             >
                 {renderItems.map((item, i) => {
-                    const isCurrentItem = currentDraggingElement?.item.id === item.id;
+                    const keyId = item.id;
+                    const isCurrentItem = currentDraggingElement?.item.id === keyId;
                     const isDraggedOut = isCurrentItem && this.state.draggedOut;
+                    const isDragging = this.state.isDragging;
+                    const itemNoOverlay =
+                        'noOverlay' in properties ? properties.noOverlay : noOverlay;
 
                     return (
                         <GridItem
                             forwardedPluginRef={this.getMemoForwardRefCallback(offset + i)} // forwarded ref to plugin
-                            key={item.id}
-                            id={item.id}
+                            key={keyId}
+                            id={keyId}
                             item={item}
                             layout={layout}
                             adjustWidgetLayout={this.adjustWidgetLayout}
-                            isDragging={this.state.isDragging}
+                            isDragging={isDragging}
                             isDraggedOut={isDraggedOut}
-                            noOverlay={noOverlay}
+                            noOverlay={itemNoOverlay}
                             focusable={focusable}
                             withCustomHandle={Boolean(draggableHandleClassName)}
                             onItemMountChange={onItemMountChange}

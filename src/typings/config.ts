@@ -2,6 +2,8 @@ import type {Layout, Layouts} from 'react-grid-layout';
 
 import type {Config, ConfigItem, ConfigLayout} from '../shared';
 
+import {GridLayoutSettings} from './common';
+
 export interface AddConfigItem extends Omit<ConfigItem, 'id' | 'namespace'> {
     id?: null;
     namespace?: string;
@@ -40,14 +42,12 @@ export interface DashkitGroupRenderProps {
 }
 
 export type ReactGridLayoutProps = Omit<
-    ReactGridLayout.ReactGridLayoutProps,
+    GridLayoutSettings,
     | 'children'
     | 'compactType'
     | 'innerRef'
     | 'key'
     | 'layout'
-    | 'isDraggable'
-    | 'isResizable'
     | 'onDragStart'
     | 'onDragStop'
     | 'onResizeStart'

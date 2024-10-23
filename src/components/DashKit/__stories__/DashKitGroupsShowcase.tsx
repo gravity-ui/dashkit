@@ -112,7 +112,12 @@ export const DashKitGroupsShowcase: React.FC = () => {
                     );
                 },
                 gridProperties: (props: ReactGridLayoutProps) => {
-                    return {...props, compactType: 'horizontal-nowrap', maxRows: MAX_ROWS};
+                    return {
+                        ...props,
+                        compactType: 'horizontal-nowrap',
+                        maxRows: MAX_ROWS,
+                        noOverlay: true,
+                    };
                 },
             },
             {
