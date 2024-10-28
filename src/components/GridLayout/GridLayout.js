@@ -533,11 +533,17 @@ export default class GridLayout extends React.PureComponent {
             const {h, w, i} = currentDraggingElement.layoutItem;
             const {type} = currentDraggingElement.item;
 
-            return onDropDragOver(e, properties, layout, {h, w, i, type});
+            return onDropDragOver(e, group, properties, layout, {
+                h,
+                w,
+                i,
+                type,
+                parent: currentDraggingElement.group,
+            });
         }
 
         if (dragOverPlugin) {
-            return onDropDragOver(e, properties, layout);
+            return onDropDragOver(e, group, properties, layout);
         }
 
         return false;
@@ -581,11 +587,9 @@ export default class GridLayout extends React.PureComponent {
         } = this.context;
 
         const {currentDraggingElement, draggedOverGroup} = this.state;
-
-        const properties = groupGridProperties
-            ? groupGridProperties({
-                  ...registerManager.gridLayout,
-              })
+        const hasOwnGroupProperties = typeof groupGridProperties === 'function';
+        const properties = hasOwnGroupProperties
+            ? groupGridProperties({...registerManager.gridLayout})
             : registerManager.gridLayout;
         let {compactType} = properties;
 
@@ -637,7 +641,9 @@ export default class GridLayout extends React.PureComponent {
                     const isDraggedOut = isCurrentItem && this.state.draggedOut;
                     const isDragging = this.state.isDragging;
                     const itemNoOverlay =
-                        'noOverlay' in properties ? properties.noOverlay : noOverlay;
+                        hasOwnGroupProperties && 'noOverlay' in properties
+                            ? properties.noOverlay
+                            : noOverlay;
 
                     return (
                         <GridItem
@@ -720,13 +726,14 @@ export default class GridLayout extends React.PureComponent {
                 offset += items.length;
 
                 if (group.render) {
-                    return group.render(id, element, {
+                    const groupContext = {
                         config,
                         editMode,
                         items,
                         layout,
                         context,
-                    });
+                    };
+                    return group.render(id, element, groupContext);
                 }
 
                 return element;

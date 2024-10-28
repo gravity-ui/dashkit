@@ -29,6 +29,7 @@ const GRID_COLUMNS = 36;
 
 export const DashKitGroupsShowcase: React.FC = () => {
     const [editMode, setEditMode] = React.useState(true);
+    const [headerInteractions, setHeaderInteractions] = React.useState(true);
 
     const onClick = () => {
         console.log('click');
@@ -112,21 +113,30 @@ export const DashKitGroupsShowcase: React.FC = () => {
                     );
                 },
                 gridProperties: (props: ReactGridLayoutProps) => {
-                    return {
+                    const overrideProps: ReactGridLayoutProps = {
                         ...props,
                         compactType: 'horizontal-nowrap',
                         maxRows: MAX_ROWS,
+                    };
+
+                    if (headerInteractions) {
+                        return overrideProps;
+                    }
+
+                    return {
+                        ...overrideProps,
                         noOverlay: true,
+                        isResizable: false,
+                        isDraggable: false,
+                        resizeHandles: [],
                     };
                 },
             },
             {
                 id: DEFAULT_GROUP,
                 gridProperties: (props: ReactGridLayoutProps) => {
-                    const copy = {...props};
-
                     return {
-                        ...copy,
+                        ...props,
                         compactType: null,
                         allowOverlap: true,
                         resizeHandles: ['s', 'w', 'e', 'n', 'sw', 'nw', 'se', 'ne'],
@@ -134,7 +144,7 @@ export const DashKitGroupsShowcase: React.FC = () => {
                 },
             },
         ],
-        [],
+        [headerInteractions],
     );
 
     const overlayMenuItems = React.useMemo(() => {
@@ -280,11 +290,28 @@ export const DashKitGroupsShowcase: React.FC = () => {
             onDragEnd={() => {
                 console.log('dragEnded');
             }}
+            onDropDragOver={(item) => {
+                if (!headerInteractions && item.parent === fixedGroup) {
+                    return false;
+                }
+
+                return true;
+            }}
         >
             <Demo title="Groups">
                 <DemoRow title="Controls">
                     <Button view="action" size="m" onClick={() => setEditMode(!editMode)}>
                         {editMode ? 'Disable editMode' : 'Enable editMode'}
+                    </Button>
+                    <Button
+                        view="action"
+                        size="m"
+                        onClick={() => setHeaderInteractions(!headerInteractions)}
+                        disabled={!editMode}
+                    >
+                        {headerInteractions
+                            ? 'Disable header interactions'
+                            : 'Enable header interactions'}
                     </Button>
                 </DemoRow>
                 <DemoRow title="Component view">
@@ -297,6 +324,7 @@ export const DashKitGroupsShowcase: React.FC = () => {
                         overlayMenuItems={overlayMenuItems}
                         onDragStart={updateConfigOrder}
                         onResizeStart={updateConfigOrder}
+                        context={{editModeHeader: headerInteractions}}
                     />
                     <ActionPanel items={items} />
                 </DemoRow>
