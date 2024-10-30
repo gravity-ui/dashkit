@@ -381,7 +381,6 @@ function useMemoStateContext(props) {
             };
 
             if (
-                onDropDragOverContext &&
                 onDropDragOverContext?.(
                     {
                         ...sharedItem,
