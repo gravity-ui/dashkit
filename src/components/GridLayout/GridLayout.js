@@ -18,10 +18,10 @@ export default class GridLayout extends React.PureComponent {
         this.pluginsRefs = [];
         this.state = {
             isDragging: false,
+            isDraggedOut: false,
             isPageHidden: false,
             currentDraggingElement: null,
             draggedOverGroup: null,
-            draggedOut: false,
         };
     }
 
@@ -266,7 +266,7 @@ export default class GridLayout extends React.PureComponent {
     _initDragCoordinatesWatcher(element) {
         if (!this._parendDragNode) {
             this._parendDragNode = element.parentElement;
-            this.setState({draggedOut: false});
+            this.setState({isDraggedOut: false});
         }
     }
 
@@ -300,22 +300,22 @@ export default class GridLayout extends React.PureComponent {
         const parentRect = parent.getBoundingClientRect();
         const {clientX, clientY} = e;
 
-        let draggedOut = this.state.draggedOut;
+        let isDraggedOut = this.state.isDraggedOut;
         if (
             clientX < parentRect.left ||
             clientX > parentRect.right ||
             clientY < parentRect.top ||
             clientY > parentRect.bottom
         ) {
-            draggedOut = true;
+            isDraggedOut = true;
         } else {
-            draggedOut = false;
+            isDraggedOut = false;
         }
 
-        if (draggedOut !== this.state.draggedOut) {
-            this.setState({draggedOut});
+        if (isDraggedOut !== this.state.isDraggedOut) {
+            this.setState({isDraggedOut});
 
-            if (!draggedOut) {
+            if (!isDraggedOut) {
                 this._forceCursorCapture(
                     parent,
                     {
@@ -330,7 +330,7 @@ export default class GridLayout extends React.PureComponent {
 
     _resetDragWatcher() {
         this._parendDragNode = null;
-        this.setState({draggedOut: false});
+        this.setState({isDraggedOut: false});
     }
 
     _onDragStart(group, _newLayout, layoutItem, _newItem, _placeholder, e, element) {
@@ -638,9 +638,9 @@ export default class GridLayout extends React.PureComponent {
             >
                 {renderItems.map((item, i) => {
                     const keyId = item.id;
-                    const isCurrentItem = currentDraggingElement?.item.id === keyId;
-                    const isDraggedOut = isCurrentItem && this.state.draggedOut;
                     const isDragging = this.state.isDragging;
+                    const isCurrentDraggedItem = currentDraggingElement?.item.id === keyId;
+                    const isDraggedOut = isCurrentDraggedItem && this.state.isDraggedOut;
                     const itemNoOverlay =
                         hasOwnGroupProperties && 'noOverlay' in properties
                             ? properties.noOverlay
