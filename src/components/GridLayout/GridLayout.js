@@ -18,10 +18,10 @@ export default class GridLayout extends React.PureComponent {
         this.pluginsRefs = [];
         this.state = {
             isDragging: false,
+            isDraggedOut: false,
             isPageHidden: false,
             currentDraggingElement: null,
             draggedOverGroup: null,
-            draggedOut: false,
         };
     }
 
@@ -266,7 +266,7 @@ export default class GridLayout extends React.PureComponent {
     _initDragCoordinatesWatcher(element) {
         if (!this._parendDragNode) {
             this._parendDragNode = element.parentElement;
-            this.setState({draggedOut: false});
+            this.setState({isDraggedOut: false});
         }
     }
 
@@ -300,22 +300,22 @@ export default class GridLayout extends React.PureComponent {
         const parentRect = parent.getBoundingClientRect();
         const {clientX, clientY} = e;
 
-        let draggedOut = this.state.draggedOut;
+        let isDraggedOut = this.state.isDraggedOut;
         if (
             clientX < parentRect.left ||
             clientX > parentRect.right ||
             clientY < parentRect.top ||
             clientY > parentRect.bottom
         ) {
-            draggedOut = true;
+            isDraggedOut = true;
         } else {
-            draggedOut = false;
+            isDraggedOut = false;
         }
 
-        if (draggedOut !== this.state.draggedOut) {
-            this.setState({draggedOut});
+        if (isDraggedOut !== this.state.isDraggedOut) {
+            this.setState({isDraggedOut});
 
-            if (!draggedOut) {
+            if (!isDraggedOut) {
                 this._forceCursorCapture(
                     parent,
                     {
@@ -330,7 +330,7 @@ export default class GridLayout extends React.PureComponent {
 
     _resetDragWatcher() {
         this._parendDragNode = null;
-        this.setState({draggedOut: false});
+        this.setState({isDraggedOut: false});
     }
 
     _onDragStart(group, _newLayout, layoutItem, _newItem, _placeholder, e, element) {
@@ -347,18 +347,19 @@ export default class GridLayout extends React.PureComponent {
             ),
         );
 
-        this._initDragCoordinatesWatcher(element);
-
         if (this.context.dragOverPlugin) {
             this.setState({isDragging: true});
         } else {
+            this._initDragCoordinatesWatcher(element);
             this.updateDraggingElementState(group, layoutItem, e);
             this.setState({isDragging: true});
         }
     }
 
     _onDrag(group, layout, oldItem, newItem, placeholder, e, element) {
-        this._updateDragCoordinates(e);
+        if (!this.context.dragOverPlugin) {
+            this._updateDragCoordinates(e);
+        }
 
         this.context.onDrag?.call(
             this,
@@ -532,12 +533,19 @@ export default class GridLayout extends React.PureComponent {
         if (currentDraggingElement) {
             const {h, w, i} = currentDraggingElement.layoutItem;
             const {type} = currentDraggingElement.item;
+            const sharedItem = {
+                h,
+                w,
+                i,
+                type,
+                parent: currentDraggingElement.group,
+            };
 
-            return onDropDragOver(e, properties, layout, {h, w, i, type});
+            return onDropDragOver(e, group, properties, layout, sharedItem);
         }
 
         if (dragOverPlugin) {
-            return onDropDragOver(e, properties, layout);
+            return onDropDragOver(e, group, properties, layout);
         }
 
         return false;
@@ -581,11 +589,9 @@ export default class GridLayout extends React.PureComponent {
         } = this.context;
 
         const {currentDraggingElement, draggedOverGroup} = this.state;
-
-        const properties = groupGridProperties
-            ? groupGridProperties({
-                  ...registerManager.gridLayout,
-              })
+        const hasOwnGroupProperties = typeof groupGridProperties === 'function';
+        const properties = hasOwnGroupProperties
+            ? groupGridProperties({...registerManager.gridLayout})
             : registerManager.gridLayout;
         let {compactType} = properties;
 
@@ -605,18 +611,16 @@ export default class GridLayout extends React.PureComponent {
 
         return (
             <Layout
+                isDraggable={editMode}
+                isResizable={editMode}
                 // Group properties
                 {...properties}
+                key={`group_${group}`}
                 // Layout props
                 compactType={compactType}
                 layout={layout}
-                key={`group_${group}`}
-                isDraggable={editMode}
-                isResizable={editMode}
                 draggableCancel={`.${DRAGGABLE_CANCEL_CLASS_NAME}`}
-                {...(draggableHandleClassName
-                    ? {draggableHandle: `.${draggableHandleClassName}`}
-                    : null)}
+                draggableHandle={draggableHandleClassName ? `.${draggableHandleClassName}` : null}
                 // Default callbacks
                 onDragStart={callbacks.onDragStart}
                 onDrag={callbacks.onDrag}
@@ -631,27 +635,29 @@ export default class GridLayout extends React.PureComponent {
                 hasSharedDragItem={hasSharedDragItem}
                 sharedDragPosition={currentDraggingElement?.cursorPosition}
                 isDragCaptured={isDragCaptured}
-                {...(outerDnDEnable
-                    ? {
-                          isDroppable: true,
-                      }
-                    : null)}
+                isDroppable={Boolean(outerDnDEnable) && editMode}
             >
                 {renderItems.map((item, i) => {
-                    const isCurrentItem = currentDraggingElement?.item.id === item.id;
-                    const isDraggedOut = isCurrentItem && this.state.draggedOut;
+                    const keyId = item.id;
+                    const isDragging = this.state.isDragging;
+                    const isCurrentDraggedItem = currentDraggingElement?.item.id === keyId;
+                    const isDraggedOut = isCurrentDraggedItem && this.state.isDraggedOut;
+                    const itemNoOverlay =
+                        hasOwnGroupProperties && 'noOverlay' in properties
+                            ? properties.noOverlay
+                            : noOverlay;
 
                     return (
                         <GridItem
                             forwardedPluginRef={this.getMemoForwardRefCallback(offset + i)} // forwarded ref to plugin
-                            key={item.id}
-                            id={item.id}
+                            key={keyId}
+                            id={keyId}
                             item={item}
                             layout={layout}
                             adjustWidgetLayout={this.adjustWidgetLayout}
-                            isDragging={this.state.isDragging}
+                            isDragging={isDragging}
                             isDraggedOut={isDraggedOut}
-                            noOverlay={noOverlay}
+                            noOverlay={itemNoOverlay}
                             focusable={focusable}
                             withCustomHandle={Boolean(draggableHandleClassName)}
                             onItemMountChange={onItemMountChange}
@@ -722,13 +728,14 @@ export default class GridLayout extends React.PureComponent {
                 offset += items.length;
 
                 if (group.render) {
-                    return group.render(id, element, {
+                    const groupContext = {
                         config,
                         editMode,
                         items,
                         layout,
                         context,
-                    });
+                    };
+                    return group.render(id, element, groupContext);
                 }
 
                 return element;

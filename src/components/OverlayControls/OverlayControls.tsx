@@ -141,7 +141,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         const onItemClickHandler = typeof handler === 'function' ? handler : noop;
         return (
             <Button
-                key={index}
+                key={`control_${index}`}
                 view={view}
                 size={size}
                 title={title}
@@ -194,6 +194,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
 
         return (
             <Button
+                key={'control_default'}
                 view={view}
                 size={size}
                 title={i18n('label_settings')}
@@ -210,13 +211,12 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         const customLeftControls = this.getCustomLeftOverlayControls();
         const hasCustomOverlayLeftControls = Boolean(customLeftControls.length);
 
-        const defaultControl = this.getDefaultControls();
         const controls = hasCustomOverlayLeftControls
             ? customLeftControls.map(
                   (item: OverlayControlItem, index: number, items: OverlayControlItem[]) =>
                       this.renderControlsItem(item, index, items.length + 1),
               )
-            : defaultControl;
+            : this.getDefaultControls();
 
         const menu = this.renderMenu(controls === null);
 
@@ -319,6 +319,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
 
         return (
             <DropdownMenu
+                key={'controls_dropdown'}
                 items={items}
                 renderSwitcher={(props) => (
                     <Button

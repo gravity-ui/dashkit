@@ -1,10 +1,14 @@
 import React from 'react';
 
 import {DashKitDnDContext} from '../../context/DashKitContext';
-import type {ItemDragProps} from '../../shared';
+import type {DraggedOverItem, ItemDragProps} from '../../shared';
 
 type DashKitDnDWrapperProps = {
     dragImageSrc?: string;
+    onDropDragOver?: (
+        draggedItem: DraggedOverItem,
+        sharedItem: DraggedOverItem | null,
+    ) => void | boolean;
     onDragStart?: (dragProps: ItemDragProps) => void;
     onDragEnd?: () => void;
     children: React.ReactElement;
@@ -22,20 +26,22 @@ export const DashKitDnDWrapper: React.FC<DashKitDnDWrapperProps> = (props) => {
         return img;
     }, [props.dragImageSrc]);
 
+    const onDragStartProp = props.onDragStart;
     const onDragStart = React.useCallback(
         (_: React.DragEvent<Element>, itemDragProps: ItemDragProps) => {
             setDragProps(itemDragProps);
-            props.onDragStart?.(itemDragProps);
+            onDragStartProp?.(itemDragProps);
         },
-        [setDragProps, props.onDragStart],
+        [setDragProps, onDragStartProp],
     );
 
+    const onDragEndProp = props.onDragEnd;
     const onDragEnd = React.useCallback(
         (_: React.DragEvent<Element>) => {
             setDragProps(null);
-            props.onDragEnd?.();
+            onDragEndProp?.();
         },
-        [setDragProps, props.onDragEnd],
+        [setDragProps, onDragEndProp],
     );
 
     const contextValue = React.useMemo(() => {
@@ -44,8 +50,9 @@ export const DashKitDnDWrapper: React.FC<DashKitDnDWrapperProps> = (props) => {
             dragImagePreview,
             onDragStart,
             onDragEnd,
+            onDropDragOver: props.onDropDragOver,
         };
-    }, [dragProps, dragImagePreview, onDragStart, onDragEnd]);
+    }, [dragProps, dragImagePreview, onDragStart, onDragEnd, props.onDropDragOver]);
 
     return (
         <DashKitDnDContext.Provider value={contextValue}>

@@ -384,10 +384,19 @@ DashKit.setSettings({menu: [] as Array<MenuItem>});
 #### DashKitDnDWrapper
 
 ```ts
+type DraggedOverItem = {
+  h: number;
+  w: number;
+  type: string;
+  parent: string;
+  i?: number;
+};
+
 interface DashKitDnDWrapperProps {
   dragImageSrc?: string;
   onDragStart?: (dragProps: ItemDragProps) => void;
   onDragEnd?: () => void;
+  onDropDragOver?: (draggedItem: DraggedOverItem, sharedItem: DraggedOverItem | null) => void | boolean;
 }
 ```
 

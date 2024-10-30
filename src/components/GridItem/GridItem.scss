@@ -49,6 +49,12 @@
     }
 }
 
+.react-grid-item.dropping {
+    // Disable evety mouse event for dropping element placeholder
+    user-select: none;
+    pointer-events: none;
+}
+
 .react-grid-layout {
     position: relative;
     transition: height 200ms ease;

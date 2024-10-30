@@ -317,14 +317,15 @@ function useMemoStateContext(props) {
         pluginsRefs.forEach((ref) => ref && ref.reload && ref.reload(data));
     }, []);
 
-    const dragProps = dndContext?.dragProps;
+    const dragPropsContext = dndContext?.dragProps;
+    const onDropDragOverContext = dndContext?.onDropDragOver;
 
     const dragOverPlugin = React.useMemo(() => {
-        if (!dragProps) {
+        if (!dragPropsContext) {
             return null;
         }
 
-        const pluginType = dragProps.type;
+        const pluginType = dragPropsContext.type;
 
         if (props.registerManager.check(pluginType)) {
             return props.registerManager.getItem(pluginType);
@@ -333,10 +334,10 @@ function useMemoStateContext(props) {
             console.error(`Uknown pluginType: ${pluginType}`);
             return null;
         }
-    }, [dragProps, props.registerManager]);
+    }, [dragPropsContext, props.registerManager]);
 
     const onDropDragOver = React.useCallback(
-        (_e, gridProps, groupLayout, sharedItem) => {
+        (_e, group, gridProps, groupLayout, sharedItem) => {
             if (temporaryLayout) {
                 resetTemporaryLayout();
                 return false;
@@ -372,26 +373,47 @@ function useMemoStateContext(props) {
             const {
                 h = defaultLayout?.h || DEFAULT_WIDGET_HEIGHT,
                 w = defaultLayout?.w || DEFAULT_WIDGET_WIDTH,
-            } = dragProps?.layout || {};
+            } = dragPropsContext?.layout || {};
 
-            return {
+            const itemLayout = {
                 h: maxH ? Math.min(h, maxH) : h,
                 w: maxW ? Math.min(w, maxW) : w,
             };
+
+            if (
+                onDropDragOverContext?.(
+                    {
+                        ...sharedItem,
+                        ...itemLayout,
+                        parent: group,
+                    },
+                    sharedItem ?? null,
+                ) === false
+            ) {
+                return false;
+            }
+
+            return itemLayout;
         },
-        [resetTemporaryLayout, temporaryLayout, dragOverPlugin, dragProps],
+        [
+            resetTemporaryLayout,
+            temporaryLayout,
+            dragOverPlugin,
+            dragPropsContext,
+            onDropDragOverContext,
+        ],
     );
 
     const onDropProp = props.onDrop;
     const onDrop = React.useCallback(
         (newLayout, item) => {
-            if (!dragProps) {
+            if (!dragPropsContext) {
                 return;
             }
 
             setTemporaryLayout({
                 data: [...newLayout, item],
-                dragProps,
+                dragProps: dragPropsContext,
             });
 
             onDropProp({
@@ -404,10 +426,10 @@ function useMemoStateContext(props) {
                 }, []),
                 itemLayout: pick(item, ITEM_PROPS),
                 commit: resetTemporaryLayout,
-                dragProps,
+                dragProps: dragPropsContext,
             });
         },
-        [dragProps, onDropProp, setTemporaryLayout, resetTemporaryLayout],
+        [dragPropsContext, onDropProp, setTemporaryLayout, resetTemporaryLayout],
     );
 
     const dashkitContextValue = React.useMemo(

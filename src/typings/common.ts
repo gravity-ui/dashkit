@@ -4,8 +4,12 @@ import type {OverlayCustomControlItem} from '../components/OverlayControls/Overl
 import {MenuItems} from '../constants';
 import {AdditionalWidgetLayout} from '../shared';
 
+export type GridLayoutSettings = ReactGridLayout.ReactGridLayoutProps & {
+    noOverlay?: boolean;
+};
+
 export interface Settings {
-    gridLayout?: ReactGridLayout.ReactGridLayoutProps;
+    gridLayout?: GridLayoutSettings;
     theme?: string;
     isMobile?: boolean;
     // @deprecated as it's possibly mutable property use Dashkit overlayMenuItems property instead
