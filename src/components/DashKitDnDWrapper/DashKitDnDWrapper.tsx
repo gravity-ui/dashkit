@@ -1,13 +1,13 @@
 import React from 'react';
 
 import {DashKitDnDContext} from '../../context/DashKitContext';
-import type {ItemDragProps, ItemDropDragOver} from '../../shared';
+import type {DraggedOverItem, ItemDragProps} from '../../shared';
 
 type DashKitDnDWrapperProps = {
     dragImageSrc?: string;
     onDropDragOver?: (
-        draggedItem: ItemDropDragOver,
-        sharedItem: ItemDropDragOver | null,
+        draggedItem: DraggedOverItem,
+        sharedItem: DraggedOverItem | null,
     ) => void | boolean;
     onDragStart?: (dragProps: ItemDragProps) => void;
     onDragEnd?: () => void;

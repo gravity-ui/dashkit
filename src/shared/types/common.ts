@@ -16,7 +16,7 @@ export type ItemDragProps = {
     extra?: any;
 };
 
-export type ItemDropDragOver = Omit<ConfigLayout, 'x' | 'y' | 'i'> & {
+export type DraggedOverItem = Omit<ConfigLayout, 'x' | 'y' | 'i'> & {
     type: string;
     i?: ConfigLayout['i'];
 };
