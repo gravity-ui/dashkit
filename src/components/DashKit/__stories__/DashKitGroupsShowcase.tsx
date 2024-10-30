@@ -292,13 +292,7 @@ export const DashKitGroupsShowcase: React.FC = () => {
             onDragEnd={() => {
                 console.log('dragEnded');
             }}
-            onDropDragOver={(item) => {
-                if (!headerInteractions && item.parent === fixedGroup) {
-                    return false;
-                }
-
-                return true;
-            }}
+            onDropDragOver={(item) => headerInteractions || item.parent !== fixedGroup}
         >
             <Demo title="Groups">
                 <DemoRow title="Controls">
