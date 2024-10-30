@@ -49,8 +49,8 @@
     }
 }
 
-// Disable evety mouse event for dropping element placeholder
 .react-grid-item.dropping {
+    // Disable evety mouse event for dropping element placeholder
     user-select: none;
     pointer-events: none;
 }
