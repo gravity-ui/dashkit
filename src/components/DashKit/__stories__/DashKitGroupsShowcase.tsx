@@ -1,6 +1,5 @@
 import React from 'react';
 
-import {cn} from '@bem-react/classname';
 import {ChartColumn, Copy, Heading, Pin, Sliders, TextAlignLeft, TrashBin} from '@gravity-ui/icons';
 import {Button, Icon} from '@gravity-ui/uikit';
 
@@ -18,11 +17,14 @@ import {
 } from '../../..';
 import {DEFAULT_GROUP, MenuItems} from '../../../helpers';
 import {i18n} from '../../../i18n';
+import {cn} from '../../../utils/cn';
 
 import {Demo, DemoRow} from './Demo';
 import {fixedGroup, getConfig} from './utils';
 
-const b = cn('dashkit-demo');
+import './DashKitShowcase.scss';
+
+const b = cn('stories-dashkit-showcase');
 
 const MAX_ROWS = 2;
 const GRID_COLUMNS = 36;
@@ -300,19 +302,27 @@ export const DashKitGroupsShowcase: React.FC = () => {
         >
             <Demo title="Groups">
                 <DemoRow title="Controls">
-                    <Button view="action" size="m" onClick={() => setEditMode(!editMode)}>
-                        {editMode ? 'Disable editMode' : 'Enable editMode'}
-                    </Button>
-                    <Button
-                        view="action"
-                        size="m"
-                        onClick={() => setHeaderInteractions(!headerInteractions)}
-                        disabled={!editMode}
-                    >
-                        {headerInteractions
-                            ? 'Disable header interactions'
-                            : 'Enable header interactions'}
-                    </Button>
+                    <div className={b('controls-line')}>
+                        <Button
+                            view="action"
+                            size="m"
+                            className={b('btn-contol')}
+                            onClick={() => setEditMode(!editMode)}
+                        >
+                            {editMode ? 'Disable editMode' : 'Enable editMode'}
+                        </Button>
+                        <Button
+                            view="action"
+                            size="m"
+                            className={b('btn-contol')}
+                            onClick={() => setHeaderInteractions(!headerInteractions)}
+                            disabled={!editMode}
+                        >
+                            {headerInteractions
+                                ? 'Disable header interactions'
+                                : 'Enable header interactions'}
+                        </Button>
+                    </div>
                 </DemoRow>
                 <DemoRow title="Component view">
                     <DashKit

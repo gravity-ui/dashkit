@@ -188,6 +188,28 @@ class DragOverLayout extends ReactGridLayout {
         }
     };
 
+    calculateDroppingPosition(itemProps) {
+        const {containerWidth, cols, w, h, rowHeight, margin, transformScale, droppingPosition} =
+            itemProps;
+        const {sharedDragPosition} = this.props;
+
+        let offsetX, offsetY;
+
+        if (sharedDragPosition) {
+            offsetX = sharedDragPosition.offsetX;
+            offsetY = sharedDragPosition.offsetY;
+        } else {
+            offsetX = (((containerWidth / cols) * w) / 2 || 0) * transformScale;
+            offsetY = ((h * rowHeight + (h - 1) * margin[1]) / 2 || 0) * transformScale;
+        }
+
+        return {
+            ...droppingPosition,
+            left: droppingPosition.left - offsetX,
+            top: droppingPosition.top - offsetY,
+        };
+    }
+
     // Drop item from outside gets 0,0 droppingPosition
     // centering cursor on newly creted grid item
     // And cause grid-layout using it's own GridItem to make it look
@@ -199,42 +221,15 @@ class DragOverLayout extends ReactGridLayout {
             return gridItem;
         }
 
-        const {props: itemProps} = gridItem;
-
         if (isDroppingItem) {
-            const {
-                containerWidth,
-                cols,
-                w,
-                h,
-                rowHeight,
-                margin,
-                transformScale,
-                droppingPosition,
-            } = itemProps;
-            const {sharedDragPosition, hasSharedDragItem} = this.props;
-
-            let offsetX, offsetY;
-
-            if (sharedDragPosition) {
-                offsetX = sharedDragPosition.offsetX;
-                offsetY = sharedDragPosition.offsetY;
-            } else {
-                offsetX = (((containerWidth / cols) * w) / 2 || 0) * transformScale;
-                offsetY = ((h * rowHeight + (h - 1) * margin[1]) / 2 || 0) * transformScale;
-            }
-
-            const style = gridItem.props.style || null;
             // React.cloneElement is just cleaner then copy-paste whole processGridItem method
             return React.cloneElement(gridItem, {
                 // hiding preview if dragging shared item
-                style: hasSharedDragItem ? {...style, opacity: 0} : style,
+                style: this.props.hasSharedDragItem
+                    ? {...gridItem.props.style, opacity: 0}
+                    : gridItem.props.style,
                 className: `${OVERLAY_CLASS_NAME} ${DROPPING_ELEMENT_CLASS_NAME}`,
-                droppingPosition: {
-                    ...droppingPosition,
-                    left: droppingPosition.left - offsetX,
-                    top: droppingPosition.top - offsetY,
-                },
+                droppingPosition: this.calculateDroppingPosition(gridItem.props),
             });
         }
 
