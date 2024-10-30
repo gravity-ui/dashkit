@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.18.0](https://github.com/gravity-ui/dashkit/compare/v8.17.4...v8.18.0) (2024-10-30)
+
+
+### Features
+
+* extend grid properties ([#212](https://github.com/gravity-ui/dashkit/issues/212)) ([bb5cb0d](https://github.com/gravity-ui/dashkit/commit/bb5cb0d7e3bdcd8d98b2014180c24f5fc7a263cc))
+
 ## [8.17.4](https://github.com/gravity-ui/dashkit/compare/v8.17.3...v8.17.4) (2024-10-11)
 
 
