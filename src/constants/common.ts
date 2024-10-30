@@ -26,3 +26,5 @@ export const COMPACT_TYPE_HORIZONTAL_NOWRAP = 'horizontal-nowrap';
 export const DRAGGABLE_CANCEL_CLASS_NAME = 'dashkit_draggable_cancel';
 
 export const FOCUSED_CLASS_NAME = 'dashkit_focused';
+
+export const DROPPING_ELEMENT_CLASS_NAME = 'dropping';

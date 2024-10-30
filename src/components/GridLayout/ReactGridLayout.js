@@ -2,7 +2,7 @@ import React from 'react';
 
 import ReactGridLayout, {WidthProvider, utils} from 'react-grid-layout';
 
-import {OVERLAY_CLASS_NAME} from '../../constants';
+import {DROPPING_ELEMENT_CLASS_NAME, OVERLAY_CLASS_NAME} from '../../constants';
 
 class DragOverLayout extends ReactGridLayout {
     constructor(...args) {
@@ -228,10 +228,8 @@ class DragOverLayout extends ReactGridLayout {
             // React.cloneElement is just cleaner then copy-paste whole processGridItem method
             return React.cloneElement(gridItem, {
                 // hiding preview if dragging shared item
-                style: hasSharedDragItem
-                    ? {...style, opacity: 0}
-                    : {...style, pointerEvents: 'none'},
-                className: OVERLAY_CLASS_NAME,
+                style: hasSharedDragItem ? {...style, opacity: 0} : style,
+                className: `${OVERLAY_CLASS_NAME} ${DROPPING_ELEMENT_CLASS_NAME}`,
                 droppingPosition: {
                     ...droppingPosition,
                     left: droppingPosition.left - offsetX,

@@ -347,18 +347,19 @@ export default class GridLayout extends React.PureComponent {
             ),
         );
 
-        this._initDragCoordinatesWatcher(element);
-
         if (this.context.dragOverPlugin) {
             this.setState({isDragging: true});
         } else {
+            this._initDragCoordinatesWatcher(element);
             this.updateDraggingElementState(group, layoutItem, e);
             this.setState({isDragging: true});
         }
     }
 
     _onDrag(group, layout, oldItem, newItem, placeholder, e, element) {
-        this._updateDragCoordinates(e);
+        if (!this.context.dragOverPlugin) {
+            this._updateDragCoordinates(e);
+        }
 
         this.context.onDrag?.call(
             this,
