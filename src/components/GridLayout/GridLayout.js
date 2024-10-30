@@ -532,14 +532,15 @@ export default class GridLayout extends React.PureComponent {
         if (currentDraggingElement) {
             const {h, w, i} = currentDraggingElement.layoutItem;
             const {type} = currentDraggingElement.item;
-
-            return onDropDragOver(e, group, properties, layout, {
+            const sharedItem = {
                 h,
                 w,
                 i,
                 type,
                 parent: currentDraggingElement.group,
-            });
+            };
+
+            return onDropDragOver(e, group, properties, layout, sharedItem);
         }
 
         if (dragOverPlugin) {
@@ -633,7 +634,7 @@ export default class GridLayout extends React.PureComponent {
                 hasSharedDragItem={hasSharedDragItem}
                 sharedDragPosition={currentDraggingElement?.cursorPosition}
                 isDragCaptured={isDragCaptured}
-                isDroppable={Boolean(outerDnDEnable)}
+                isDroppable={Boolean(outerDnDEnable) && editMode}
             >
                 {renderItems.map((item, i) => {
                     const keyId = item.id;

@@ -375,7 +375,7 @@ function useMemoStateContext(props) {
                 w = defaultLayout?.w || DEFAULT_WIDGET_WIDTH,
             } = dragPropsContext?.layout || {};
 
-            const resultLayout = {
+            const itemLayout = {
                 h: maxH ? Math.min(h, maxH) : h,
                 w: maxW ? Math.min(w, maxW) : w,
             };
@@ -385,8 +385,7 @@ function useMemoStateContext(props) {
                 onDropDragOverContext?.(
                     {
                         ...sharedItem,
-                        ...resultLayout,
-                        ...dragPropsContext,
+                        ...itemLayout,
                         parent: group,
                     },
                     sharedItem ?? null,
@@ -395,7 +394,7 @@ function useMemoStateContext(props) {
                 return false;
             }
 
-            return resultLayout;
+            return itemLayout;
         },
         [
             resetTemporaryLayout,

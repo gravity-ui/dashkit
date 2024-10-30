@@ -227,8 +227,10 @@ class DragOverLayout extends ReactGridLayout {
             const style = gridItem.props.style || null;
             // React.cloneElement is just cleaner then copy-paste whole processGridItem method
             return React.cloneElement(gridItem, {
-                // hiding previre if dragging shared item
-                style: hasSharedDragItem ? {...style, opacity: 0} : style,
+                // hiding preview if dragging shared item
+                style: hasSharedDragItem
+                    ? {...style, opacity: 0}
+                    : {...style, pointerEvents: 'none'},
                 className: OVERLAY_CLASS_NAME,
                 droppingPosition: {
                     ...droppingPosition,
