@@ -159,7 +159,8 @@ export const DashKitGroupsShowcase: React.FC = () => {
             ...chartGroups.map((id) => ({
                 id,
                 render: (id: string, children: React.ReactNode, props: DashkitGroupRenderProps) => {
-                    const showPlaceholder = props.items.length === 0 && !props.isDragging;
+                    const itemsLength = props.items.length;
+                    const showPlaceholder = itemsLength === 0 && !props.isDragging;
 
                     const isMultipleGroups = chartGroups.length > 1;
                     const groupIndex = chartGroups.indexOf(id);
@@ -195,7 +196,7 @@ export const DashKitGroupsShowcase: React.FC = () => {
                                                 <Icon
                                                     data={props.expanded ? ChevronUp : ChevronDown}
                                                 />
-                                                {`Group: ${id}`}
+                                                {`${id}: (${itemsLength})`}
                                             </Button>
                                         </div>
                                         <div className={b('collapse-group-header-controls')}>
