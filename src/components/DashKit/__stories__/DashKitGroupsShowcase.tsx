@@ -172,6 +172,7 @@ export const DashKitGroupsShowcase: React.FC = () => {
                             className={b('collapse-group')}
                             key={`key_${id}`}
                             defaultExpanded={true}
+                            keepMounted={true}
                         >
                             <div
                                 key={id}
