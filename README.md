@@ -65,12 +65,12 @@ interface DashKitProps {
 - **config**: [сonfig](#Config).
 - **editMode**: Whether edit mode is enabled.
 - **onItemEdit**: Called when you click to edit a widget.
-- **onChange**: Called when config or [itemsStateAndParams](#temsStateAndParams) are changed.
+- **onChange**: Called when config or [itemsStateAndParams](#itemsStateAndParams) are changed.
 - **onDrop**: Called when item dropped from ActionPanel using (#DashKitDnDWrapper)
 - **onItemMountChange**: Called when item mount state changed
 - **onItemRender**: Called when item render complete
 - **defaultGlobalParams**, **globalParams**: [Parameters](#Params) that affect all widgets. In DataLens, `defaultGlobalParams` are global parameters set in the dashboard settings. `globalParams` are globals parameters that can be set in the url.
-- **itemsStateAndParams**: [itemsStateAndParams](#temsStateAndParams).
+- **itemsStateAndParams**: [itemsStateAndParams](#itemsStateAndParams).
 - **settings**: DashKit settings.
 - **context**: Object that will be propped up on all widgets.
 - **overlayControls**: Object that overrides widget controls at the time of editing. If not transmitted, basic controls will be displayed. If `null` passed only close button or custom menu will be displayed.
