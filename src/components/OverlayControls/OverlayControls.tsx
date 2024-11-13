@@ -94,7 +94,7 @@ export type PreparedCopyItemOptions<C extends object = {}> = PreparedCopyItemOpt
     copyContext?: C;
 };
 
-type DashKitCtx = React.Context<{
+export interface OverlayControlsCtxShape {
     overlayControls?: Record<string, OverlayControlItem[]>;
     context: Record<string, any>;
     menu: MenuItem[];
@@ -103,7 +103,11 @@ type DashKitCtx = React.Context<{
     editItem: (item: ConfigItem) => void;
     removeItem: (id: string) => void;
     getLayoutItem: (id: string) => ConfigLayout | void;
-}>;
+    getPreparedCopyItemOptions?: (options: PreparedCopyItemOptions) => PreparedCopyItemOptions;
+    onCopyFulfill?: (error: null | unknown, data?: PreparedCopyItemOptions) => void;
+}
+
+type OverlayControlsCtx = React.Context<OverlayControlsCtxShape>;
 
 const DEFAULT_DROPDOWN_MENU = [MenuItems.Copy, MenuItems.Delete];
 
@@ -114,7 +118,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         view: 'flat',
         size: 'm',
     };
-    context!: React.ContextType<DashKitCtx>;
+    context!: React.ContextType<OverlayControlsCtx>;
     render() {
         const {position} = this.props;
         const items = this.getItems();
@@ -405,19 +409,19 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
             targetInnerId,
         };
 
-        if (typeof this.context.context?.getPreparedCopyItemOptions === 'function') {
+        const getPreparedCopyItemOptions =
+            this.context?.getPreparedCopyItemOptions ??
+            this.context.context?.getPreparedCopyItemOptions;
+
+        if (typeof getPreparedCopyItemOptions === 'function') {
             options = this.context.context.getPreparedCopyItemOptions(options);
         }
 
         try {
             localStorage.setItem(COPIED_WIDGET_STORE_KEY, JSON.stringify(options));
-            if (typeof this.context.context?.onCopySuccess === 'function') {
-                this.context.context.onCopySuccess(options);
-            }
+            this.context.onCopyFulfill?.(null, options);
         } catch (e) {
-            if (typeof this.context.context?.onCopyError === 'function') {
-                this.context.context.onCopyError(e);
-            }
+            this.context.onCopyFulfill?.(e);
         }
         // https://stackoverflow.com/questions/35865481/storage-event-not-firing
         window.dispatchEvent(new Event('storage'));

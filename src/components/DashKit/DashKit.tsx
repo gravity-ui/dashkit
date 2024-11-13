@@ -29,9 +29,10 @@ import {
 import {RegisterManager, UpdateManager, reflowLayout} from '../../utils';
 import DashKitView from '../DashKitView/DashKitView';
 import GridLayout from '../GridLayout/GridLayout';
-import {OverlayControlItem} from '../OverlayControls/OverlayControls';
+import {OverlayControlItem, OverlayControlsCtxShape} from '../OverlayControls/OverlayControls';
 
-interface DashKitGeneralProps {
+interface DashKitGeneralProps
+    extends Pick<OverlayControlsCtxShape, 'getPreparedCopyItemOptions' | 'onCopyFulfill'> {
     config: Config;
     editMode: boolean;
     draggableHandleClassName?: string;

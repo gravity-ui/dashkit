@@ -18,7 +18,7 @@ import {Button, Icon} from '@gravity-ui/uikit';
 import {ActionPanel, DashKit, DashKitProps} from '../../..';
 import {MenuItems} from '../../../helpers';
 import {i18n} from '../../../i18n';
-import type {ConfigItem, OverlayControlItem, PreparedCopyItemOptions} from '../../../index';
+import type {ConfigItem, OverlayControlItem} from '../../../index';
 import {cn} from '../../../utils/cn';
 
 import {Demo, DemoRow} from './Demo';
@@ -236,10 +236,9 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                         overlayControls={this.state.enableOverlayControls ? this.controls : null}
                         overlayMenuItems={this.state.overlayMenuItems}
                         focusable={true}
-                        context={{
-                            onCopySuccess: (data: PreparedCopyItemOptions) =>
-                                console.info('Copied: ' + JSON.stringify(data)),
-                        }}
+                        onCopyFulfill={(_error, data) =>
+                            console.info('Copied: ' + JSON.stringify(data))
+                        }
                     />
                 </DemoRow>
             </Demo>
