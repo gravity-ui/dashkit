@@ -409,7 +409,16 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
             options = this.context.context.getPreparedCopyItemOptions(options);
         }
 
-        localStorage.setItem(COPIED_WIDGET_STORE_KEY, JSON.stringify(options));
+        try {
+            localStorage.setItem(COPIED_WIDGET_STORE_KEY, JSON.stringify(options));
+            if (typeof this.context.context?.onCopySuccess === 'function') {
+                this.context.context.onCopySuccess(options);
+            }
+        } catch (e) {
+            if (typeof this.context.context?.onCopyError === 'function') {
+                this.context.context.onCopyError(e);
+            }
+        }
         // https://stackoverflow.com/questions/35865481/storage-event-not-firing
         window.dispatchEvent(new Event('storage'));
         this.props.onItemClick?.();
