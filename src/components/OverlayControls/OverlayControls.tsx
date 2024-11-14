@@ -104,7 +104,7 @@ export interface OverlayControlsCtxShape {
     removeItem: (id: string) => void;
     getLayoutItem: (id: string) => ConfigLayout | void;
     getPreparedCopyItemOptions?: (options: PreparedCopyItemOptions) => PreparedCopyItemOptions;
-    onCopyFulfill?: (error: null | unknown, data?: PreparedCopyItemOptions) => void;
+    onCopyFulfill?: (error: null | Error, data?: PreparedCopyItemOptions) => void;
 }
 
 type OverlayControlsCtx = React.Context<OverlayControlsCtxShape>;
@@ -409,6 +409,12 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
             targetInnerId,
         };
 
+        if (this.context.context?.getPreparedCopyItemOptions) {
+            console.warn?.(
+                '`context.getPreparedCopyItemOptions` is deprecated. Please use `getPreparedCopyItemOptions` prop instead',
+            );
+        }
+
         const getPreparedCopyItemOptions =
             this.context?.getPreparedCopyItemOptions ??
             this.context.context?.getPreparedCopyItemOptions;
@@ -421,7 +427,8 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
             localStorage.setItem(COPIED_WIDGET_STORE_KEY, JSON.stringify(options));
             this.context.onCopyFulfill?.(null, options);
         } catch (e) {
-            this.context.onCopyFulfill?.(e);
+            const error = e instanceof Error ? e : new Error('Unknown error while copying item');
+            this.context.onCopyFulfill?.(error);
         }
         // https://stackoverflow.com/questions/35865481/storage-event-not-firing
         window.dispatchEvent(new Event('storage'));
