@@ -420,7 +420,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
             this.context.context?.getPreparedCopyItemOptions;
 
         if (typeof getPreparedCopyItemOptions === 'function') {
-            options = this.context.context.getPreparedCopyItemOptions(options);
+            options = getPreparedCopyItemOptions(options);
         }
 
         try {
