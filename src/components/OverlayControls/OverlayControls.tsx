@@ -94,7 +94,7 @@ export type PreparedCopyItemOptions<C extends object = {}> = PreparedCopyItemOpt
     copyContext?: C;
 };
 
-type DashKitCtx = React.Context<{
+export interface OverlayControlsCtxShape {
     overlayControls?: Record<string, OverlayControlItem[]>;
     context: Record<string, any>;
     menu: MenuItem[];
@@ -103,7 +103,11 @@ type DashKitCtx = React.Context<{
     editItem: (item: ConfigItem) => void;
     removeItem: (id: string) => void;
     getLayoutItem: (id: string) => ConfigLayout | void;
-}>;
+    getPreparedCopyItemOptions?: (options: PreparedCopyItemOptions) => PreparedCopyItemOptions;
+    onCopyFulfill?: (error: null | Error, data?: PreparedCopyItemOptions) => void;
+}
+
+type OverlayControlsCtx = React.Context<OverlayControlsCtxShape>;
 
 const DEFAULT_DROPDOWN_MENU = [MenuItems.Copy, MenuItems.Delete];
 
@@ -114,7 +118,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         view: 'flat',
         size: 'm',
     };
-    context!: React.ContextType<DashKitCtx>;
+    context!: React.ContextType<OverlayControlsCtx>;
     render() {
         const {position} = this.props;
         const items = this.getItems();
@@ -405,11 +409,27 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
             targetInnerId,
         };
 
-        if (typeof this.context.context?.getPreparedCopyItemOptions === 'function') {
+        if (this.context.context?.getPreparedCopyItemOptions) {
+            console.warn?.(
+                '`context.getPreparedCopyItemOptions` is deprecated. Please use `getPreparedCopyItemOptions` prop instead',
+            );
+        }
+
+        const getPreparedCopyItemOptions =
+            this.context?.getPreparedCopyItemOptions ??
+            this.context.context?.getPreparedCopyItemOptions;
+
+        if (typeof getPreparedCopyItemOptions === 'function') {
             options = this.context.context.getPreparedCopyItemOptions(options);
         }
 
-        localStorage.setItem(COPIED_WIDGET_STORE_KEY, JSON.stringify(options));
+        try {
+            localStorage.setItem(COPIED_WIDGET_STORE_KEY, JSON.stringify(options));
+            this.context.onCopyFulfill?.(null, options);
+        } catch (e) {
+            const error = e instanceof Error ? e : new Error('Unknown error while copying item');
+            this.context.onCopyFulfill?.(error);
+        }
         // https://stackoverflow.com/questions/35865481/storage-event-not-firing
         window.dispatchEvent(new Event('storage'));
         this.props.onItemClick?.();
