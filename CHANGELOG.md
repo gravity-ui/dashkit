@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.19.1](https://github.com/gravity-ui/dashkit/compare/v8.19.0...v8.19.1) (2024-11-14)
+
+
+### Bug Fixes
+
+* getPreparedCopyItemOptions prop usage ([#218](https://github.com/gravity-ui/dashkit/issues/218)) ([083a1bf](https://github.com/gravity-ui/dashkit/commit/083a1bf9592b0f12f8e7b03bc43274db158d2c3f))
+
 ## [8.19.0](https://github.com/gravity-ui/dashkit/compare/v8.18.0...v8.19.0) (2024-11-14)
 
 
