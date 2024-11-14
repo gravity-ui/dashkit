@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.19.0](https://github.com/gravity-ui/dashkit/compare/v8.18.0...v8.19.0) (2024-11-14)
+
+
+### Features
+
+* add support of onCopyFulfill prop & extract getPreparedCopyItemOptions prop from context ([#216](https://github.com/gravity-ui/dashkit/issues/216)) ([ee58616](https://github.com/gravity-ui/dashkit/commit/ee58616649c33797b7849f9b83a701e2cc7f033c))
+
 ## [8.18.0](https://github.com/gravity-ui/dashkit/compare/v8.17.4...v8.18.0) (2024-10-30)
 
 
