@@ -7,6 +7,7 @@ import {DashKitContext} from '../context/DashKitContext';
 export function prepareItem(Component) {
     return class PrepareItem extends React.Component {
         static propTypes = {
+            gridLayout: PropTypes.object,
             adjustWidgetLayout: PropTypes.func.isRequired,
             layout: PropTypes.array,
             id: PropTypes.string,
@@ -45,7 +46,8 @@ export function prepareItem(Component) {
 
         _currentRenderProps = {};
         getRenderProps = () => {
-            const {id, width, height, item, adjustWidgetLayout, layout, isPlaceholder} = this.props;
+            const {id, width, height, item, adjustWidgetLayout, layout, isPlaceholder, gridLayout} =
+                this.props;
             const {itemsState, itemsParams, registerManager, settings, context, editMode} =
                 this.context;
             const {data, defaults, namespace} = item;
@@ -64,7 +66,7 @@ export function prepareItem(Component) {
                 settings,
                 context,
                 layout,
-                gridLayout: registerManager.gridLayout,
+                gridLayout: gridLayout || registerManager.gridLayout,
                 adjustWidgetLayout,
                 isPlaceholder,
             };

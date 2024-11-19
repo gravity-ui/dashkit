@@ -551,7 +551,7 @@ export default class GridLayout extends React.PureComponent {
         return false;
     };
 
-    renderTemporaryPlaceholder() {
+    renderTemporaryPlaceholder(gridLayout) {
         const {temporaryLayout, noOverlay, draggableHandleClassName} = this.context;
 
         if (!temporaryLayout || !temporaryLayout.dragProps) {
@@ -572,6 +572,7 @@ export default class GridLayout extends React.PureComponent {
                 isPlaceholder={true}
                 noOverlay={noOverlay}
                 withCustomHandle={Boolean(draggableHandleClassName)}
+                gridLayout={gridLayout}
             />
         );
     }
@@ -662,10 +663,11 @@ export default class GridLayout extends React.PureComponent {
                             withCustomHandle={Boolean(draggableHandleClassName)}
                             onItemMountChange={onItemMountChange}
                             onItemRender={onItemRender}
+                            gridLayout={properties}
                         />
                     );
                 })}
-                {this.renderTemporaryPlaceholder()}
+                {this.renderTemporaryPlaceholder(properties)}
             </Layout>
         );
     }
