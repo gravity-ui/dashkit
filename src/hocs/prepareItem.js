@@ -1,5 +1,6 @@
 import React from 'react';
 
+import isEqual from 'lodash/isEqual';
 import PropTypes from 'prop-types';
 
 import {DashKitContext} from '../context/DashKitContext';
@@ -71,9 +72,14 @@ export function prepareItem(Component) {
                 isPlaceholder,
             };
 
-            const changedProp = Object.entries(rendererProps).find(
-                ([key, value]) => this._currentRenderProps[key] !== value,
-            );
+            const changedProp = Object.entries(rendererProps).find(([key, value]) => {
+                // Checking gridLayoout deep as groups gridProperties method has tendancy to creat new objects
+                if (key === 'gridLayout') {
+                    return !isEqual(this._currentRenderProps[key], value);
+                }
+
+                return this._currentRenderProps[key] !== value;
+            });
 
             if (changedProp) {
                 this._currentRenderProps = rendererProps;

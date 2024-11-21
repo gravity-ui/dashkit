@@ -284,6 +284,11 @@ export const DashKitGroupsShowcase: React.FC = () => {
         [config],
     );
 
+    const context = React.useMemo(
+        () => ({editModeHeader: headerInteractions}),
+        [headerInteractions],
+    );
+
     return (
         <DashKitDnDWrapper
             onDragStart={() => {
@@ -328,7 +333,7 @@ export const DashKitGroupsShowcase: React.FC = () => {
                         overlayMenuItems={overlayMenuItems}
                         onDragStart={updateConfigOrder}
                         onResizeStart={updateConfigOrder}
-                        context={{editModeHeader: headerInteractions}}
+                        context={context}
                     />
                     <ActionPanel items={items} />
                 </DemoRow>
