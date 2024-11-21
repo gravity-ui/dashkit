@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.20.1](https://github.com/gravity-ui/dashkit/compare/v8.20.0...v8.20.1) (2024-11-21)
+
+
+### Bug Fixes
+
+* onDropDragOver type property fo dragged item ([#222](https://github.com/gravity-ui/dashkit/issues/222)) ([b3cd7db](https://github.com/gravity-ui/dashkit/commit/b3cd7dbe7a09a67bab463b2319dc871db08eb580))
+
 ## [8.20.0](https://github.com/gravity-ui/dashkit/compare/v8.19.1...v8.20.0) (2024-11-21)
 
 
