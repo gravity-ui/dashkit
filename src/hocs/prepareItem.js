@@ -1,5 +1,6 @@
 import React from 'react';
 
+import isEqual from 'lodash/isEqual';
 import PropTypes from 'prop-types';
 
 import {DashKitContext} from '../context/DashKitContext';
@@ -7,6 +8,7 @@ import {DashKitContext} from '../context/DashKitContext';
 export function prepareItem(Component) {
     return class PrepareItem extends React.Component {
         static propTypes = {
+            gridLayout: PropTypes.object,
             adjustWidgetLayout: PropTypes.func.isRequired,
             layout: PropTypes.array,
             id: PropTypes.string,
@@ -45,7 +47,8 @@ export function prepareItem(Component) {
 
         _currentRenderProps = {};
         getRenderProps = () => {
-            const {id, width, height, item, adjustWidgetLayout, layout, isPlaceholder} = this.props;
+            const {id, width, height, item, adjustWidgetLayout, layout, isPlaceholder, gridLayout} =
+                this.props;
             const {itemsState, itemsParams, registerManager, settings, context, editMode} =
                 this.context;
             const {data, defaults, namespace} = item;
@@ -64,14 +67,19 @@ export function prepareItem(Component) {
                 settings,
                 context,
                 layout,
-                gridLayout: registerManager.gridLayout,
+                gridLayout: gridLayout || registerManager.gridLayout,
                 adjustWidgetLayout,
                 isPlaceholder,
             };
 
-            const changedProp = Object.entries(rendererProps).find(
-                ([key, value]) => this._currentRenderProps[key] !== value,
-            );
+            const changedProp = Object.entries(rendererProps).find(([key, value]) => {
+                // Checking gridLayoout deep as groups gridProperties method has tendancy to creat new objects
+                if (key === 'gridLayout') {
+                    return !isEqual(this._currentRenderProps[key], value);
+                }
+
+                return this._currentRenderProps[key] !== value;
+            });
 
             if (changedProp) {
                 this._currentRenderProps = rendererProps;
