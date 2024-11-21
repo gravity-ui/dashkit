@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.20.0](https://github.com/gravity-ui/dashkit/compare/v8.19.1...v8.20.0) (2024-11-21)
+
+
+### Features
+
+* pass gridLayout setting for each group ([#220](https://github.com/gravity-ui/dashkit/issues/220)) ([f148978](https://github.com/gravity-ui/dashkit/commit/f148978861c9dc95598d87c24c1110773a7d3fa2))
+
 ## [8.19.1](https://github.com/gravity-ui/dashkit/compare/v8.19.0...v8.19.1) (2024-11-14)
 
 
