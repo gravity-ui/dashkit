@@ -386,6 +386,7 @@ function useMemoStateContext(props) {
                         ...sharedItem,
                         ...itemLayout,
                         parent: group,
+                        type: sharedItem?.type || dragOverPlugin?.type,
                     },
                     sharedItem ?? null,
                 ) === false
