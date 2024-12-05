@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.20.2](https://github.com/gravity-ui/dashkit/compare/v8.20.1...v8.20.2) (2024-12-05)
+
+
+### Bug Fixes
+
+* add dnd context in dashkit with groups if there is no dnd wrapper presented ([#225](https://github.com/gravity-ui/dashkit/issues/225)) ([bffa7a0](https://github.com/gravity-ui/dashkit/commit/bffa7a02eb312c596b0a2dba09629b0862d7c58c))
+
 ## [8.20.1](https://github.com/gravity-ui/dashkit/compare/v8.20.0...v8.20.1) (2024-11-21)
 
 
