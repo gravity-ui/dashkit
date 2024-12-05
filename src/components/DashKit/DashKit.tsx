@@ -99,7 +99,7 @@ const getReflowGroupsConfig = (groups: DashKitGroup[] = []) => {
     };
 };
 
-export class DashKit extends React.Component<DashKitInnerProps> {
+export class DashKit extends React.PureComponent<DashKitInnerProps> {
     static defaultProps: DashKitDefaultProps = {
         onItemEdit: noop,
         onChange: noop,
