@@ -4,6 +4,7 @@ import noop from 'lodash/noop';
 import pick from 'lodash/pick';
 
 import {DEFAULT_GROUP, DEFAULT_NAMESPACE} from '../../constants';
+import {DashKitDnDContext} from '../../context/DashKitContext';
 import type {
     Config,
     ConfigItem,
@@ -27,6 +28,7 @@ import {
     SettingsProps,
 } from '../../typings';
 import {RegisterManager, UpdateManager, reflowLayout} from '../../utils';
+import {DashKitDnDWrapper} from '../DashKitDnDWrapper/DashKitDnDWrapper';
 import DashKitView from '../DashKitView/DashKitView';
 import GridLayout from '../GridLayout/GridLayout';
 import {OverlayControlItem, OverlayControlsCtxShape} from '../OverlayControls/OverlayControls';
@@ -113,6 +115,8 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
         noOverlay: false,
         focusable: false,
     };
+
+    static contextType = DashKitDnDContext;
 
     static registerPlugins(...plugins: Plugin[]) {
         plugins.forEach((plugin) => {
@@ -204,7 +208,15 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
     metaRef = React.createRef<GridLayout>();
 
     render() {
-        return <DashKitView registerManager={registerManager} ref={this.metaRef} {...this.props} />;
+        const content = (
+            <DashKitView registerManager={registerManager} ref={this.metaRef} {...this.props} />
+        );
+
+        if (!this.context && this.props.groups) {
+            return <DashKitDnDWrapper>{content}</DashKitDnDWrapper>;
+        }
+
+        return content;
     }
 
     getItemsMeta() {
