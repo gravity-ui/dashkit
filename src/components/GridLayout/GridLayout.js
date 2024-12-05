@@ -736,6 +736,7 @@ export default class GridLayout extends React.PureComponent {
                         items,
                         layout,
                         context,
+                        isDragging: this.state.isDragging,
                     };
                     return group.render(id, element, groupContext);
                 }
