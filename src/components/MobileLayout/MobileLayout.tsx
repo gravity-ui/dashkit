@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {DashKitContext} from '../../context/DashKitContext';
+import {DashKitContext} from '../../context';
 import {cn} from '../../utils/cn';
 import Item from '../Item/Item';
 
@@ -13,7 +13,6 @@ const b = cn('dashkit-mobile-layout');
 type MobileLayoutProps = {};
 
 type MobileLayoutState = {
-    activeTabId: string | null;
     indexesOfItemsWithActiveAutoheight: Record<string, boolean>;
 };
 
@@ -24,7 +23,7 @@ export default class MobileLayout extends React.PureComponent<
     MobileLayoutState
 > {
     static contextType = DashKitContext;
-    declare context: React.ContextType<typeof DashKitContext>;
+    context!: React.ContextType<typeof DashKitContext>;
 
     pluginsRefs: PlugibRefObject[] = [];
     sortedLayoutItems: ReturnType<typeof getSortedConfigItems> | null = null;
@@ -34,18 +33,8 @@ export default class MobileLayout extends React.PureComponent<
     _memoAdjustWidgetLayout: Array<(props: {needSetDefault: boolean}) => void> = [];
 
     state: MobileLayoutState = {
-        activeTabId: null,
         indexesOfItemsWithActiveAutoheight: {},
     };
-
-    componentDidUpdate(_prevProps: MobileLayoutProps, prevState: MobileLayoutState) {
-        if (prevState.activeTabId !== this.context.config.id) {
-            this.setState({
-                activeTabId: this.context.config.id,
-                indexesOfItemsWithActiveAutoheight: {},
-            });
-        }
-    }
 
     render() {
         const {config, layout} = this.context;
