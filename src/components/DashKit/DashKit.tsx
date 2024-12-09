@@ -4,7 +4,7 @@ import noop from 'lodash/noop';
 import pick from 'lodash/pick';
 
 import {DEFAULT_GROUP, DEFAULT_NAMESPACE} from '../../constants';
-import {DashKitDnDContext} from '../../context/DashKitContext';
+import {DashKitDnDContext} from '../../context';
 import type {
     Config,
     ConfigItem,
@@ -13,7 +13,7 @@ import type {
     ItemDropProps,
     ItemsStateAndParams,
 } from '../../shared';
-import {
+import type {
     AddConfigItem,
     AddNewItemOptions,
     ContextProps,
@@ -31,10 +31,9 @@ import {RegisterManager, UpdateManager, reflowLayout} from '../../utils';
 import {DashKitDnDWrapper} from '../DashKitDnDWrapper/DashKitDnDWrapper';
 import DashKitView from '../DashKitView/DashKitView';
 import GridLayout from '../GridLayout/GridLayout';
-import {OverlayControlItem, OverlayControlsCtxShape} from '../OverlayControls/OverlayControls';
+import type {OverlayControlItem, PreparedCopyItemOptions} from '../OverlayControls/OverlayControls';
 
-interface DashKitGeneralProps
-    extends Pick<OverlayControlsCtxShape, 'getPreparedCopyItemOptions' | 'onCopyFulfill'> {
+interface DashKitGeneralProps {
     config: Config;
     editMode: boolean;
     draggableHandleClassName?: string;
@@ -43,24 +42,6 @@ interface DashKitGeneralProps
 }
 
 interface DashKitDefaultProps {
-    onItemEdit: (item: ConfigItem) => void;
-    onChange: (data: {
-        config: Config;
-        itemsStateAndParams: ItemsStateAndParams;
-        groups?: DashKitGroup[];
-    }) => void;
-    onDrop?: (dropProps: ItemDropProps) => void;
-
-    onItemMountChange?: (item: ConfigItem, state: {isAsync: boolean; isMounted: boolean}) => void;
-    onItemRender?: (item: ConfigItem) => void;
-
-    onDragStart?: ItemManipulationCallback;
-    onDrag?: ItemManipulationCallback;
-    onDragStop?: ItemManipulationCallback;
-    onResizeStart?: ItemManipulationCallback;
-    onResize?: ItemManipulationCallback;
-    onResizeStop?: ItemManipulationCallback;
-
     defaultGlobalParams: GlobalParams;
     globalParams: GlobalParams;
     itemsStateAndParams: ItemsStateAndParams;
@@ -69,6 +50,28 @@ interface DashKitDefaultProps {
     noOverlay: boolean;
     focusable?: boolean;
     groups?: DashKitGroup[];
+
+    onItemEdit: (item: ConfigItem) => void;
+    onChange: (data: {
+        config: Config;
+        itemsStateAndParams: ItemsStateAndParams;
+        groups?: DashKitGroup[];
+    }) => void;
+
+    onDrop?: (dropProps: ItemDropProps) => void;
+
+    onItemMountChange?: (item: ConfigItem, state: {isAsync: boolean; isMounted: boolean}) => void;
+    onItemRender?: (item: ConfigItem) => void;
+
+    getPreparedCopyItemOptions?: (options: PreparedCopyItemOptions) => PreparedCopyItemOptions;
+    onCopyFulfill?: (error: null | Error, data?: PreparedCopyItemOptions) => void;
+
+    onDragStart?: ItemManipulationCallback;
+    onDrag?: ItemManipulationCallback;
+    onDragStop?: ItemManipulationCallback;
+    onResizeStart?: ItemManipulationCallback;
+    onResize?: ItemManipulationCallback;
+    onResizeStop?: ItemManipulationCallback;
 }
 
 export interface DashKitProps extends DashKitGeneralProps, Partial<DashKitDefaultProps> {}

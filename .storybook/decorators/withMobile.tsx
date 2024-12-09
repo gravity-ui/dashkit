@@ -1,13 +1,13 @@
 import React from 'react';
 import type {Decorator} from '@storybook/react';
-import {MobileProvider} from '@gravity-ui/uikit';
+import {DashKit} from '../../src/components/DashKit/DashKit';
 
 export const withMobile: Decorator = (Story, context) => {
     const platform = context.globals.platform;
 
-    return (
-        <MobileProvider mobile={platform === 'mobile'} platform={platform}>
-            <Story key={platform} {...context} />
-        </MobileProvider>
-    );
+    DashKit.setSettings({
+        isMobile: platform === 'mobile',
+    });
+
+    return <Story key={platform} {...context} />;
 };

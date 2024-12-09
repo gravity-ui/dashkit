@@ -179,10 +179,10 @@ export function resolveItemInnerId({
     itemsStateAndParams,
 }: {
     item: Pick<ConfigItemWithTabs, 'data' | 'id'>;
-    itemsStateAndParams: ItemsStateAndParams;
+    itemsStateAndParams?: ItemsStateAndParams;
 }): string {
     const {id} = item;
-    const stateTabId: string | undefined = (itemsStateAndParams as ItemsStateAndParamsBase)[id]
+    const stateTabId: string | undefined = (itemsStateAndParams as ItemsStateAndParamsBase)?.[id]
         ?.state?.tabId;
 
     const {tabs} = (item as ConfigItemWithTabs).data;
