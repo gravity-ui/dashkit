@@ -731,6 +731,7 @@ export default class GridLayout extends React.PureComponent {
 
                 if (group.render) {
                     const groupContext = {
+                        isMobile: false,
                         config,
                         editMode,
                         items,
