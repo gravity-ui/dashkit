@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.21.0](https://github.com/gravity-ui/dashkit/compare/v8.20.2...v8.21.0) (2024-12-16)
+
+
+### Features
+
+* add updated reloadItems method ([#231](https://github.com/gravity-ui/dashkit/issues/231)) ([d86441c](https://github.com/gravity-ui/dashkit/commit/d86441cac8f49ab302a39b2ba2484b1a21dcb6e5))
+
 ## [8.20.2](https://github.com/gravity-ui/dashkit/compare/v8.20.1...v8.20.2) (2024-12-05)
 
 
