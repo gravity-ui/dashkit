@@ -204,7 +204,9 @@ export default class GridLayout extends React.PureComponent {
         });
     }
 
-    reloadItems({targetIds, force} = {}) {
+    reloadItems(options) {
+        const {targetIds, force} = options || {};
+
         const {
             editMode,
             settings: {autoupdateInterval, silentLoading} = {},
