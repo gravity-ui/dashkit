@@ -16,7 +16,7 @@ const b = cn('dashkit-mobile-layout');
 type MobileLayoutProps = {};
 
 type MobileLayoutState = {
-    indexesOfItemsWithActiveAutoheight: Record<string, boolean>;
+    itemsWithActiveAutoheight: Record<string, boolean>;
 };
 
 type PlugibRefObject = React.RefObject<any>;
@@ -33,10 +33,10 @@ export default class MobileLayout extends React.PureComponent<
 
     _memoLayout = this.context.layout;
     _memoForwardedPluginRef: Array<(refObject: PlugibRefObject) => void> = [];
-    _memoAdjustWidgetLayout: Array<(props: {needSetDefault: boolean}) => void> = [];
+    _memoAdjustWidgetLayout: Record<string, (props: {needSetDefault: boolean}) => void> = {};
 
     state: MobileLayoutState = {
-        indexesOfItemsWithActiveAutoheight: {},
+        itemsWithActiveAutoheight: {},
     };
 
     render() {
@@ -45,6 +45,7 @@ export default class MobileLayout extends React.PureComponent<
         this.pluginsRefs.length = config.items.length;
 
         const sortedItems = this.getSortedLayoutItems();
+        let indexOffset = 0;
 
         return (
             <div className={b()}>
@@ -54,7 +55,7 @@ export default class MobileLayout extends React.PureComponent<
 
                     const children = items.map((item, index) => {
                         const isItemWithActiveAutoheight =
-                            index in this.state.indexesOfItemsWithActiveAutoheight;
+                            item.id in this.state.itemsWithActiveAutoheight;
 
                         return (
                             <div
@@ -66,14 +67,18 @@ export default class MobileLayout extends React.PureComponent<
                                     item={item}
                                     layout={layout}
                                     shouldItemUpdate={false}
-                                    adjustWidgetLayout={this.getMemoAdjustWidgetLayout(index)}
-                                    forwardedPluginRef={this.getMemoForwardRefCallback(index)}
+                                    adjustWidgetLayout={this.getMemoAdjustWidgetLayout(item.id)}
+                                    forwardedPluginRef={this.getMemoForwardRefCallback(
+                                        indexOffset + index,
+                                    )}
                                     onItemMountChange={this.context.onItemMountChange}
                                     onItemRender={this.context.onItemRender}
                                 />
                             </div>
                         );
                     });
+
+                    indexOffset += items.length;
 
                     if (group.render) {
                         return group.render(groupId, children, {
@@ -119,31 +124,29 @@ export default class MobileLayout extends React.PureComponent<
         return this._memoForwardedPluginRef[refIndex];
     }
 
-    adjustWidgetLayout(index: number, {needSetDefault}: {needSetDefault: boolean}) {
+    adjustWidgetLayout(id: string, {needSetDefault}: {needSetDefault: boolean}) {
         if (needSetDefault) {
             const indexesOfItemsWithActiveAutoheight = {
-                ...this.state.indexesOfItemsWithActiveAutoheight,
+                ...this.state.itemsWithActiveAutoheight,
             };
 
-            delete indexesOfItemsWithActiveAutoheight[index];
+            delete indexesOfItemsWithActiveAutoheight[id];
 
-            this.setState({indexesOfItemsWithActiveAutoheight});
+            this.setState({itemsWithActiveAutoheight: indexesOfItemsWithActiveAutoheight});
         } else {
             this.setState({
-                indexesOfItemsWithActiveAutoheight: Object.assign(
-                    {},
-                    this.state.indexesOfItemsWithActiveAutoheight,
-                    {[index]: true},
-                ),
+                itemsWithActiveAutoheight: Object.assign({}, this.state.itemsWithActiveAutoheight, {
+                    [id]: true,
+                }),
             });
         }
     }
 
-    getMemoAdjustWidgetLayout(index: number) {
-        if (!this._memoAdjustWidgetLayout[index]) {
-            this._memoAdjustWidgetLayout[index] = this.adjustWidgetLayout.bind(this, index);
+    getMemoAdjustWidgetLayout(id: string) {
+        if (!this._memoAdjustWidgetLayout[id]) {
+            this._memoAdjustWidgetLayout[id] = this.adjustWidgetLayout.bind(this, id);
         }
 
-        return this._memoAdjustWidgetLayout[index];
+        return this._memoAdjustWidgetLayout[id];
     }
 }
