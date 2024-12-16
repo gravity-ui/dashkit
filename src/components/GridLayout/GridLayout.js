@@ -204,15 +204,20 @@ export default class GridLayout extends React.PureComponent {
         });
     }
 
-    reloadItems() {
+    reloadItems(targetIds) {
         const {
             editMode,
             settings: {autoupdateInterval, silentLoading} = {},
             reloadItems,
         } = this.context;
+
         const {isPageHidden} = this.state;
         const autoupdateIntervalMs = Number(autoupdateInterval) * 1000;
-        if (autoupdateIntervalMs) {
+
+        if (targetIds) {
+            const targetPluginRefs = this.pluginsRefs.filter((ref) => targetIds.includes(ref.id));
+            reloadItems(targetPluginRefs, {silentLoading, noVeil: true, targetIds});
+        } else if (autoupdateIntervalMs) {
             const timeSinceLastReload = new Date().getTime() - (this._lastReloadAt || 0);
             const reloadIntervalRemains = autoupdateIntervalMs - timeSinceLastReload;
 
