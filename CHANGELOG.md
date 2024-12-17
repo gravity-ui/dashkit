@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.22.1](https://github.com/gravity-ui/dashkit/compare/v8.22.0...v8.22.1) (2024-12-17)
+
+
+### Bug Fixes
+
+* **GridLayout:** fix condition of reload ([#237](https://github.com/gravity-ui/dashkit/issues/237)) ([a3ddaae](https://github.com/gravity-ui/dashkit/commit/a3ddaaeb6f9e19af7e623e5e0c16463ece44a48b))
+
 ## [8.22.0](https://github.com/gravity-ui/dashkit/compare/v8.21.1...v8.22.0) (2024-12-17)
 
 
