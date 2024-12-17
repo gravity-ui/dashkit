@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.21.1](https://github.com/gravity-ui/dashkit/compare/v8.21.0...v8.21.1) (2024-12-17)
+
+
+### Bug Fixes
+
+* markdown error text ([#233](https://github.com/gravity-ui/dashkit/issues/233)) ([24b8d0f](https://github.com/gravity-ui/dashkit/commit/24b8d0f24ffcc8c7a4235ab10b89b390709f6a22))
+
 ## [8.21.0](https://github.com/gravity-ui/dashkit/compare/v8.20.2...v8.21.0) (2024-12-16)
 
 
