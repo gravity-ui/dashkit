@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.22.0](https://github.com/gravity-ui/dashkit/compare/v8.21.1...v8.22.0) (2024-12-17)
+
+
+### Features
+
+* **PluginTitle:** add xl size ([#235](https://github.com/gravity-ui/dashkit/issues/235)) ([7e1ab84](https://github.com/gravity-ui/dashkit/commit/7e1ab84f59d090404d3eae555bd1e61434e2648a))
+
 ## [8.21.1](https://github.com/gravity-ui/dashkit/compare/v8.21.0...v8.21.1) (2024-12-17)
 
 
