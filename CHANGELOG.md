@@ -1,5 +1,40 @@
 # Changelog
 
+## [8.22.1](https://github.com/gravity-ui/dashkit/compare/v8.22.0...v8.22.1) (2024-12-17)
+
+
+### Bug Fixes
+
+* **GridLayout:** fix condition of reload ([#237](https://github.com/gravity-ui/dashkit/issues/237)) ([a3ddaae](https://github.com/gravity-ui/dashkit/commit/a3ddaaeb6f9e19af7e623e5e0c16463ece44a48b))
+
+## [8.22.0](https://github.com/gravity-ui/dashkit/compare/v8.21.1...v8.22.0) (2024-12-17)
+
+
+### Features
+
+* **PluginTitle:** add xl size ([#235](https://github.com/gravity-ui/dashkit/issues/235)) ([7e1ab84](https://github.com/gravity-ui/dashkit/commit/7e1ab84f59d090404d3eae555bd1e61434e2648a))
+
+## [8.21.1](https://github.com/gravity-ui/dashkit/compare/v8.21.0...v8.21.1) (2024-12-17)
+
+
+### Bug Fixes
+
+* markdown error text ([#233](https://github.com/gravity-ui/dashkit/issues/233)) ([24b8d0f](https://github.com/gravity-ui/dashkit/commit/24b8d0f24ffcc8c7a4235ab10b89b390709f6a22))
+
+## [8.21.0](https://github.com/gravity-ui/dashkit/compare/v8.20.2...v8.21.0) (2024-12-16)
+
+
+### Features
+
+* add updated reloadItems method ([#231](https://github.com/gravity-ui/dashkit/issues/231)) ([d86441c](https://github.com/gravity-ui/dashkit/commit/d86441cac8f49ab302a39b2ba2484b1a21dcb6e5))
+
+## [8.20.2](https://github.com/gravity-ui/dashkit/compare/v8.20.1...v8.20.2) (2024-12-05)
+
+
+### Bug Fixes
+
+* add dnd context in dashkit with groups if there is no dnd wrapper presented ([#225](https://github.com/gravity-ui/dashkit/issues/225)) ([bffa7a0](https://github.com/gravity-ui/dashkit/commit/bffa7a02eb312c596b0a2dba09629b0862d7c58c))
+
 ## [8.20.1](https://github.com/gravity-ui/dashkit/compare/v8.20.0...v8.20.1) (2024-11-21)
 
 

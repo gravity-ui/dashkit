@@ -225,4 +225,8 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
     getItemsMeta() {
         return this.metaRef.current?.getItemsMeta();
     }
+
+    reloadItems(options?: {targetIds?: string[]; force?: boolean}) {
+        this.metaRef.current?.reloadItems(options);
+    }
 }
