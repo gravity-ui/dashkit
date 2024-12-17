@@ -51,7 +51,7 @@ export default class MobileLayout extends React.PureComponent<
             <div className={b()}>
                 {groups.map((group) => {
                     const groupId = group.id || DEFAULT_GROUP;
-                    const items = sortedItems[groupId];
+                    const items = sortedItems[groupId] || [];
 
                     const children = items.map((item, index) => {
                         const isItemWithActiveAutoheight =
