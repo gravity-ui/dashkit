@@ -10,11 +10,7 @@ import {
     DEFAULT_WIDGET_WIDTH,
     TEMPORARY_ITEM_ID,
 } from '../constants/common';
-import {
-    DashKitContext,
-    DashKitDnDContext,
-    DashkitOvelayControlsContext,
-} from '../context/DashKitContext';
+import {DashKitContext, DashKitDnDContext, DashkitOvelayControlsContext} from '../context';
 import {useDeepEqualMemo} from '../hooks/useDeepEqualMemo';
 import {getItemsParams, getItemsState} from '../shared';
 import {UpdateManager, resolveLayoutGroup} from '../utils';
@@ -397,6 +393,7 @@ function useMemoStateContext(props) {
             return itemLayout;
         },
         [
+            props.registerManager,
             resetTemporaryLayout,
             temporaryLayout,
             dragOverPlugin,
@@ -435,8 +432,6 @@ function useMemoStateContext(props) {
 
     const dashkitContextValue = React.useMemo(
         () => ({
-            layout: resultLayout,
-            temporaryLayout,
             config: props.config,
             groups: props.groups,
             context: props.context,
@@ -446,25 +441,32 @@ function useMemoStateContext(props) {
             globalParams: props.globalParams,
             editMode: props.editMode,
             settings: props.settings,
-            itemsState,
-            itemsParams,
-            registerManager: props.registerManager,
-            onItemStateAndParamsChange,
-            onDrop,
-            onDropDragOver,
             onItemMountChange: props.onItemMountChange,
             onItemRender: props.onItemRender,
+            draggableHandleClassName: props.draggableHandleClassName,
+
+            registerManager: props.registerManager,
+            forwardedMetaRef: props.forwardedMetaRef,
+
+            layout: resultLayout,
+            temporaryLayout,
             layoutChange: onLayoutChange,
-            getItemsMeta,
-            reloadItems,
             memorizeOriginalLayout,
             revertToOriginalLayout,
-            forwardedMetaRef: props.forwardedMetaRef,
-            draggableHandleClassName: props.draggableHandleClassName,
+
+            itemsState,
+            itemsParams,
+            onItemStateAndParamsChange,
+
+            getItemsMeta,
+            reloadItems,
+
+            onDrop,
+            onDropDragOver,
             outerDnDEnable,
             dragOverPlugin,
 
-            /* default bypassing handlers */
+            /* default handlers bypass */
             onDragStart: props.onDragStart,
             onDrag: props.onDrag,
             onDragStop: props.onDragStop,
@@ -515,14 +517,19 @@ function useMemoStateContext(props) {
         () => ({
             overlayControls: props.overlayControls,
             context: props.context,
-            menu: overlayMenuItems,
+
             itemsStateAndParams: props.itemsStateAndParams,
+            itemsState,
             itemsParams,
+
+            getPreparedCopyItemOptions: props.getPreparedCopyItemOptions,
+            onCopyFulfill: props.onCopyFulfill,
+
+            menu: overlayMenuItems,
+
             editItem: props.onItemEdit,
             removeItem: onItemRemove,
             getLayoutItem: getLayoutItem,
-            getPreparedCopyItemOptions: props.getPreparedCopyItemOptions,
-            onCopyFulfill: props.onCopyFulfill,
         }),
         [
             props.overlayControls,
@@ -532,6 +539,7 @@ function useMemoStateContext(props) {
             props.getPreparedCopyItemOptions,
             props.onCopyFulfill,
             overlayMenuItems,
+            itemsState,
             itemsParams,
             onItemRemove,
             getLayoutItem,

@@ -3,7 +3,7 @@ import React from 'react';
 import isEqual from 'lodash/isEqual';
 import PropTypes from 'prop-types';
 
-import {DashKitContext} from '../context/DashKitContext';
+import {DashKitContext} from '../context';
 
 export function prepareItem(Component) {
     return class PrepareItem extends React.Component {

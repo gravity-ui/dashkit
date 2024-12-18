@@ -6,7 +6,7 @@ import {
     DRAGGABLE_CANCEL_CLASS_NAME,
     TEMPORARY_ITEM_ID,
 } from '../../constants';
-import {DashKitContext} from '../../context/DashKitContext';
+import {DashKitContext} from '../../context';
 import {resolveLayoutGroup} from '../../utils';
 import GridItem from '../GridItem/GridItem';
 
@@ -742,6 +742,7 @@ export default class GridLayout extends React.PureComponent {
 
                 if (group.render) {
                     const groupContext = {
+                        isMobile: false,
                         config,
                         editMode,
                         items,

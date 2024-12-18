@@ -3,7 +3,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import {FOCUSED_CLASS_NAME} from '../../constants';
-import {DashKitContext} from '../../context/DashKitContext';
+import {DashKitContext} from '../../context';
 import {cn} from '../../utils/cn';
 import Item from '../Item/Item';
 import OverlayControls from '../OverlayControls/OverlayControls';
