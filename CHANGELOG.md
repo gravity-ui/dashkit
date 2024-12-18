@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.23.0](https://github.com/gravity-ui/dashkit/compare/v8.22.1...v8.23.0) (2024-12-18)
+
+
+### Features
+
+* add groups support for mobile layout ([#227](https://github.com/gravity-ui/dashkit/issues/227)) ([c43b6b7](https://github.com/gravity-ui/dashkit/commit/c43b6b712559dab79f75f63e5f96d4fdee3e6362))
+
 ## [8.22.1](https://github.com/gravity-ui/dashkit/compare/v8.22.0...v8.22.1) (2024-12-17)
 
 
