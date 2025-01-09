@@ -23,13 +23,9 @@ export const PluginTitle = React.forwardRef<HTMLDivElement, PluginTitleProps>(
         const {data} = props;
         const text = data.text ? data.text : '';
         const size = data.size ? data.size : false;
-        const styles =
-            data.fontSize && data.lineHeight
-                ? {
-                      fontSize: `${data.fontSize}px`,
-                      lineHeight: `${data.lineHeight}px`,
-                  }
-                : {};
+
+        const styles = getFontStyles(data);
+
         const id = data.showInTOC && text ? encodeURIComponent(text) : undefined;
 
         return (
@@ -45,6 +41,26 @@ export const PluginTitle = React.forwardRef<HTMLDivElement, PluginTitleProps>(
         );
     },
 );
+
+function getFontStyles(props: TitleFontDataProps) {
+    const {size, fontSize, lineHeight} = props;
+    const styles: React.CSSProperties = {};
+
+    if (lineHeight) {
+        styles.lineHeight = `${lineHeight}px`;
+    }
+    if (fontSize) {
+        styles.fontSize = `${fontSize}px`;
+
+        const shouldSetCustomLineHeight = !lineHeight && !size;
+        if (shouldSetCustomLineHeight) {
+            const recommendedLineHeight = Math.round(fontSize * 1.25);
+            styles.lineHeight = `${recommendedLineHeight}px`;
+        }
+    }
+
+    return styles;
+}
 
 const plugin: Plugin<PluginTitleProps> = {
     type: 'title',

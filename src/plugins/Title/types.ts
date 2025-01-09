@@ -5,12 +5,14 @@ export interface TitleFontParams {
     lineHeight: number;
 }
 
-interface FontSizeProps {
-    size: PluginTitleSize;
-}
-
-type UndefinedProps<T extends Object> = Partial<Record<keyof T, undefined>>;
-
 export type TitleFontDataProps =
-    | (FontSizeProps & UndefinedProps<TitleFontParams>)
-    | (UndefinedProps<FontSizeProps> & TitleFontParams);
+    | {
+          size: PluginTitleSize;
+          fontSize?: number;
+          lineHeight?: number;
+      }
+    | {
+          size?: PluginTitleSize;
+          fontSize: number;
+          lineHeight?: number;
+      };

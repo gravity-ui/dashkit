@@ -26,12 +26,58 @@ export const Size: Story = {
                     />
                 </Card>
             ))}
-            <Card key="custom">
+            <Card>
                 <PluginTitle
                     data={{
                         fontSize: 40,
                         lineHeight: 100,
-                        text: `Title with custom font params`,
+                        text: `Title fontSize=40, lineHeight=100`,
+                        showInTOC: true,
+                    }}
+                    {...args}
+                />
+            </Card>
+            <Card>
+                <PluginTitle
+                    data={{
+                        size: 'l',
+                        fontSize: 40,
+                        text: `Title size=l, fontSize=40`,
+                        showInTOC: true,
+                    }}
+                    {...args}
+                />
+            </Card>
+            <Card key="custom">
+                <PluginTitle
+                    data={{
+                        size: 'l',
+                        fontSize: 40,
+                        lineHeight: 20,
+                        text: `Title size=l, fontSize=40, lineHeight=20 🤷`,
+                        showInTOC: true,
+                    }}
+                    {...args}
+                />
+            </Card>
+            <Card key="custom">
+                <PluginTitle
+                    data={{
+                        size: 'l',
+                        fontSize: 40,
+                        lineHeight: 70,
+                        text: `Title size=l, fontSize=40, lineHeight=70`,
+                        showInTOC: true,
+                    }}
+                    {...args}
+                />
+            </Card>
+            <Card key="custom">
+                <PluginTitle
+                    data={{
+                        size: 'l',
+                        lineHeight: 70,
+                        text: `Title size=l, lineHeight=70`,
                         showInTOC: true,
                     }}
                     {...args}
