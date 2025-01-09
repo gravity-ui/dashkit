@@ -316,6 +316,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                         view={view}
                         size={size}
                         pin={isOnlyOneItem ? 'round-round' : 'brick-round'}
+                        extraProps={{'aria-label': i18n('label_more-options')}}
                         qa="dashkit-overlay-control-menu"
                     >
                         <Icon data={Ellipsis} size={OVERLAY_ICON_SIZE} />
