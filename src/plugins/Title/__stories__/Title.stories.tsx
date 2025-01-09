@@ -48,7 +48,7 @@ export const Size: Story = {
                     {...args}
                 />
             </Card>
-            <Card key="custom">
+            <Card>
                 <PluginTitle
                     data={{
                         size: 'l',
@@ -60,7 +60,7 @@ export const Size: Story = {
                     {...args}
                 />
             </Card>
-            <Card key="custom">
+            <Card>
                 <PluginTitle
                     data={{
                         size: 'l',
@@ -72,12 +72,22 @@ export const Size: Story = {
                     {...args}
                 />
             </Card>
-            <Card key="custom">
+            <Card>
                 <PluginTitle
                     data={{
                         size: 'l',
                         lineHeight: 70,
                         text: `Title size=l, lineHeight=70`,
+                        showInTOC: true,
+                    }}
+                    {...args}
+                />
+            </Card>
+            <Card>
+                <PluginTitle
+                    data={{
+                        fontSize: 40,
+                        text: `Title fontSize=40`,
                         showInTOC: true,
                     }}
                     {...args}
