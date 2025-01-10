@@ -20,15 +20,13 @@ import {
     OVERLAY_CONTROLS_CLASS_NAME,
     OVERLAY_ICON_SIZE,
 } from '../../constants';
-import {DashkitOvelayControlsContext} from '../../context/DashKitContext';
+import {DashkitOvelayControlsContext, OverlayControlsCtxShape} from '../../context';
 import {i18n} from '../../i18n';
 import {
     type ConfigItem,
-    type ConfigLayout,
+    type ItemParams,
     type ItemState,
-    type ItemsStateAndParamsBase,
     type PluginBase,
-    type StringParams,
     isItemWithTabs,
     resolveItemInnerId,
 } from '../../shared';
@@ -63,7 +61,7 @@ export interface OverlayCustomControlItem {
     title?: string;
     icon?: MenuItemProps['icon'];
     iconSize?: number | string;
-    handler?: (item: ConfigItem, params: StringParams, state: ItemState) => void;
+    handler?: (item: ConfigItem, params: ItemParams, state: ItemState) => void;
     visible?: (item: ConfigItem) => boolean;
     className?: string;
     qa?: string;
@@ -94,16 +92,7 @@ export type PreparedCopyItemOptions<C extends object = {}> = PreparedCopyItemOpt
     copyContext?: C;
 };
 
-type DashKitCtx = React.Context<{
-    overlayControls?: Record<string, OverlayControlItem[]>;
-    context: Record<string, any>;
-    menu: MenuItem[];
-    itemsStateAndParams: ItemsStateAndParamsBase;
-    itemsParams: Record<string, StringParams>;
-    editItem: (item: ConfigItem) => void;
-    removeItem: (id: string) => void;
-    getLayoutItem: (id: string) => ConfigLayout | void;
-}>;
+type OverlayControlsCtx = React.Context<OverlayControlsCtxShape>;
 
 const DEFAULT_DROPDOWN_MENU = [MenuItems.Copy, MenuItems.Delete];
 
@@ -114,7 +103,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         view: 'flat',
         size: 'm',
     };
-    context!: React.ContextType<DashKitCtx>;
+    context!: React.ContextType<OverlayControlsCtx>;
     render() {
         const {position} = this.props;
         const items = this.getItems();
@@ -262,13 +251,13 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
     }
     private renderDropdownMenu(isOnlyOneItem: boolean) {
         const {view, size, onItemClick} = this.props;
-        const {menu: contextMenu, itemsParams, itemsStateAndParams} = this.context;
+        const {menu: contextMenu, itemsParams, itemsState} = this.context;
 
         const configItem = this.props.configItem;
         const itemParams = itemsParams[configItem.id];
-        const itemState = itemsStateAndParams[configItem.id]?.state || {};
+        const itemState = itemsState?.[configItem.id] || {};
 
-        const menu = contextMenu?.length > 0 ? contextMenu : DEFAULT_DROPDOWN_MENU;
+        const menu = contextMenu && contextMenu.length > 0 ? contextMenu : DEFAULT_DROPDOWN_MENU;
 
         const isDefaultMenu = this.isDefaultMenu(menu);
 
@@ -405,17 +394,33 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
             targetInnerId,
         };
 
-        if (typeof this.context.context?.getPreparedCopyItemOptions === 'function') {
-            options = this.context.context.getPreparedCopyItemOptions(options);
+        if (this.context.context?.getPreparedCopyItemOptions) {
+            console.warn?.(
+                '`context.getPreparedCopyItemOptions` is deprecated. Please use `getPreparedCopyItemOptions` prop instead',
+            );
         }
 
-        localStorage.setItem(COPIED_WIDGET_STORE_KEY, JSON.stringify(options));
+        const getPreparedCopyItemOptions =
+            this.context?.getPreparedCopyItemOptions ??
+            this.context.context?.getPreparedCopyItemOptions;
+
+        if (typeof getPreparedCopyItemOptions === 'function') {
+            options = getPreparedCopyItemOptions(options);
+        }
+
+        try {
+            localStorage.setItem(COPIED_WIDGET_STORE_KEY, JSON.stringify(options));
+            this.context.onCopyFulfill?.(null, options);
+        } catch (e) {
+            const error = e instanceof Error ? e : new Error('Unknown error while copying item');
+            this.context.onCopyFulfill?.(error);
+        }
         // https://stackoverflow.com/questions/35865481/storage-event-not-firing
         window.dispatchEvent(new Event('storage'));
         this.props.onItemClick?.();
     };
     private onEditItem = () => {
-        this.context.editItem(this.props.configItem);
+        this.context.editItem?.(this.props.configItem);
         this.props.onItemClick?.();
     };
     private onRemoveItem = () => {

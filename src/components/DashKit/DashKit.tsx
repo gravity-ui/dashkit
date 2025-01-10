@@ -4,6 +4,7 @@ import noop from 'lodash/noop';
 import pick from 'lodash/pick';
 
 import {DEFAULT_GROUP, DEFAULT_NAMESPACE} from '../../constants';
+import {DashKitDnDContext} from '../../context';
 import type {
     Config,
     ConfigItem,
@@ -12,7 +13,7 @@ import type {
     ItemDropProps,
     ItemsStateAndParams,
 } from '../../shared';
-import {
+import type {
     AddConfigItem,
     AddNewItemOptions,
     ContextProps,
@@ -27,9 +28,10 @@ import {
     SettingsProps,
 } from '../../typings';
 import {RegisterManager, UpdateManager, reflowLayout} from '../../utils';
+import {DashKitDnDWrapper} from '../DashKitDnDWrapper/DashKitDnDWrapper';
 import DashKitView from '../DashKitView/DashKitView';
 import GridLayout from '../GridLayout/GridLayout';
-import {OverlayControlItem} from '../OverlayControls/OverlayControls';
+import type {OverlayControlItem, PreparedCopyItemOptions} from '../OverlayControls/OverlayControls';
 
 interface DashKitGeneralProps {
     config: Config;
@@ -40,24 +42,6 @@ interface DashKitGeneralProps {
 }
 
 interface DashKitDefaultProps {
-    onItemEdit: (item: ConfigItem) => void;
-    onChange: (data: {
-        config: Config;
-        itemsStateAndParams: ItemsStateAndParams;
-        groups?: DashKitGroup[];
-    }) => void;
-    onDrop?: (dropProps: ItemDropProps) => void;
-
-    onItemMountChange?: (item: ConfigItem, state: {isAsync: boolean; isMounted: boolean}) => void;
-    onItemRender?: (item: ConfigItem) => void;
-
-    onDragStart?: ItemManipulationCallback;
-    onDrag?: ItemManipulationCallback;
-    onDragStop?: ItemManipulationCallback;
-    onResizeStart?: ItemManipulationCallback;
-    onResize?: ItemManipulationCallback;
-    onResizeStop?: ItemManipulationCallback;
-
     defaultGlobalParams: GlobalParams;
     globalParams: GlobalParams;
     itemsStateAndParams: ItemsStateAndParams;
@@ -66,6 +50,28 @@ interface DashKitDefaultProps {
     noOverlay: boolean;
     focusable?: boolean;
     groups?: DashKitGroup[];
+
+    onItemEdit: (item: ConfigItem) => void;
+    onChange: (data: {
+        config: Config;
+        itemsStateAndParams: ItemsStateAndParams;
+        groups?: DashKitGroup[];
+    }) => void;
+
+    onDrop?: (dropProps: ItemDropProps) => void;
+
+    onItemMountChange?: (item: ConfigItem, state: {isAsync: boolean; isMounted: boolean}) => void;
+    onItemRender?: (item: ConfigItem) => void;
+
+    getPreparedCopyItemOptions?: (options: PreparedCopyItemOptions) => PreparedCopyItemOptions;
+    onCopyFulfill?: (error: null | Error, data?: PreparedCopyItemOptions) => void;
+
+    onDragStart?: ItemManipulationCallback;
+    onDrag?: ItemManipulationCallback;
+    onDragStop?: ItemManipulationCallback;
+    onResizeStart?: ItemManipulationCallback;
+    onResize?: ItemManipulationCallback;
+    onResizeStop?: ItemManipulationCallback;
 }
 
 export interface DashKitProps extends DashKitGeneralProps, Partial<DashKitDefaultProps> {}
@@ -112,6 +118,8 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
         noOverlay: false,
         focusable: false,
     };
+
+    static contextType = DashKitDnDContext;
 
     static registerPlugins(...plugins: Plugin[]) {
         plugins.forEach((plugin) => {
@@ -203,10 +211,22 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
     metaRef = React.createRef<GridLayout>();
 
     render() {
-        return <DashKitView registerManager={registerManager} ref={this.metaRef} {...this.props} />;
+        const content = (
+            <DashKitView registerManager={registerManager} ref={this.metaRef} {...this.props} />
+        );
+
+        if (!this.context && this.props.groups) {
+            return <DashKitDnDWrapper>{content}</DashKitDnDWrapper>;
+        }
+
+        return content;
     }
 
     getItemsMeta() {
         return this.metaRef.current?.getItemsMeta();
+    }
+
+    reloadItems(options?: {targetIds?: string[]; force?: boolean}) {
+        this.metaRef.current?.reloadItems(options);
     }
 }

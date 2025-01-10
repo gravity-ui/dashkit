@@ -236,6 +236,9 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                         overlayControls={this.state.enableOverlayControls ? this.controls : null}
                         overlayMenuItems={this.state.overlayMenuItems}
                         focusable={true}
+                        onCopyFulfill={(_error, data) =>
+                            console.info('Copied: ' + JSON.stringify(data))
+                        }
                     />
                 </DemoRow>
             </Demo>

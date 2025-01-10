@@ -3,7 +3,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import {FOCUSED_CLASS_NAME} from '../../constants';
-import {DashKitContext} from '../../context/DashKitContext';
+import {DashKitContext} from '../../context';
 import {cn} from '../../utils/cn';
 import Item from '../Item/Item';
 import OverlayControls from '../OverlayControls/OverlayControls';
@@ -48,6 +48,7 @@ const windowFocusObserver = new WindowFocusObserver();
 class GridItem extends React.PureComponent {
     static propTypes = {
         adjustWidgetLayout: PropTypes.func.isRequired,
+        gridLayout: PropTypes.object,
         id: PropTypes.string,
         item: PropTypes.object,
         isDragging: PropTypes.bool,
@@ -222,6 +223,7 @@ class GridItem extends React.PureComponent {
                         forwardedPluginRef={this.props.forwardedPluginRef}
                         onItemMountChange={this.props.onItemMountChange}
                         onItemRender={this.props.onItemRender}
+                        gridLayout={this.props.gridLayout}
                     />
                 </div>
                 {!noOverlay && this.renderOverlay()}

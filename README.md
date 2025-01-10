@@ -59,6 +59,8 @@ interface DashKitProps {
   noOverlay?: boolean;
   focusable?: boolean;
   draggableHandleClassName?: string;
+  getPreparedCopyItemOptions?: (options: PreparedCopyItemOptions) => PreparedCopyItemOptions;
+  onCopyFulfill?: (error: null | Error, data?: PreparedCopyItemOptions) => void;
 }
 ```
 
@@ -84,6 +86,8 @@ interface DashKitProps {
 - **onResizeStart**: ReactGridLayout called when item resize started
 - **onResize**: ReactGridLayout called while item resizing
 - **onResizeStop**: ReactGridLayout called when item resize stoped
+- **getPreparedCopyItemOptions**: Called for converting copied item to serializable object before saving it to localstorage. It should be used instead of deprecated `context.getPreparedCopyItemOptions` prop
+- **onCopyFulfill**: Called when item copy finished with `error=null` and defined `data` on successful operation done and with `error: Error` without `data` otherwise
 
 ## Usage
 

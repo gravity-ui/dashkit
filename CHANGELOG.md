@@ -1,5 +1,75 @@
 # Changelog
 
+## [8.23.0](https://github.com/gravity-ui/dashkit/compare/v8.22.1...v8.23.0) (2024-12-18)
+
+
+### Features
+
+* add groups support for mobile layout ([#227](https://github.com/gravity-ui/dashkit/issues/227)) ([c43b6b7](https://github.com/gravity-ui/dashkit/commit/c43b6b712559dab79f75f63e5f96d4fdee3e6362))
+
+## [8.22.1](https://github.com/gravity-ui/dashkit/compare/v8.22.0...v8.22.1) (2024-12-17)
+
+
+### Bug Fixes
+
+* **GridLayout:** fix condition of reload ([#237](https://github.com/gravity-ui/dashkit/issues/237)) ([a3ddaae](https://github.com/gravity-ui/dashkit/commit/a3ddaaeb6f9e19af7e623e5e0c16463ece44a48b))
+
+## [8.22.0](https://github.com/gravity-ui/dashkit/compare/v8.21.1...v8.22.0) (2024-12-17)
+
+
+### Features
+
+* **PluginTitle:** add xl size ([#235](https://github.com/gravity-ui/dashkit/issues/235)) ([7e1ab84](https://github.com/gravity-ui/dashkit/commit/7e1ab84f59d090404d3eae555bd1e61434e2648a))
+
+## [8.21.1](https://github.com/gravity-ui/dashkit/compare/v8.21.0...v8.21.1) (2024-12-17)
+
+
+### Bug Fixes
+
+* markdown error text ([#233](https://github.com/gravity-ui/dashkit/issues/233)) ([24b8d0f](https://github.com/gravity-ui/dashkit/commit/24b8d0f24ffcc8c7a4235ab10b89b390709f6a22))
+
+## [8.21.0](https://github.com/gravity-ui/dashkit/compare/v8.20.2...v8.21.0) (2024-12-16)
+
+
+### Features
+
+* add updated reloadItems method ([#231](https://github.com/gravity-ui/dashkit/issues/231)) ([d86441c](https://github.com/gravity-ui/dashkit/commit/d86441cac8f49ab302a39b2ba2484b1a21dcb6e5))
+
+## [8.20.2](https://github.com/gravity-ui/dashkit/compare/v8.20.1...v8.20.2) (2024-12-05)
+
+
+### Bug Fixes
+
+* add dnd context in dashkit with groups if there is no dnd wrapper presented ([#225](https://github.com/gravity-ui/dashkit/issues/225)) ([bffa7a0](https://github.com/gravity-ui/dashkit/commit/bffa7a02eb312c596b0a2dba09629b0862d7c58c))
+
+## [8.20.1](https://github.com/gravity-ui/dashkit/compare/v8.20.0...v8.20.1) (2024-11-21)
+
+
+### Bug Fixes
+
+* onDropDragOver type property fo dragged item ([#222](https://github.com/gravity-ui/dashkit/issues/222)) ([b3cd7db](https://github.com/gravity-ui/dashkit/commit/b3cd7dbe7a09a67bab463b2319dc871db08eb580))
+
+## [8.20.0](https://github.com/gravity-ui/dashkit/compare/v8.19.1...v8.20.0) (2024-11-21)
+
+
+### Features
+
+* pass gridLayout setting for each group ([#220](https://github.com/gravity-ui/dashkit/issues/220)) ([f148978](https://github.com/gravity-ui/dashkit/commit/f148978861c9dc95598d87c24c1110773a7d3fa2))
+
+## [8.19.1](https://github.com/gravity-ui/dashkit/compare/v8.19.0...v8.19.1) (2024-11-14)
+
+
+### Bug Fixes
+
+* getPreparedCopyItemOptions prop usage ([#218](https://github.com/gravity-ui/dashkit/issues/218)) ([083a1bf](https://github.com/gravity-ui/dashkit/commit/083a1bf9592b0f12f8e7b03bc43274db158d2c3f))
+
+## [8.19.0](https://github.com/gravity-ui/dashkit/compare/v8.18.0...v8.19.0) (2024-11-14)
+
+
+### Features
+
+* add support of onCopyFulfill prop & extract getPreparedCopyItemOptions prop from context ([#216](https://github.com/gravity-ui/dashkit/issues/216)) ([ee58616](https://github.com/gravity-ui/dashkit/commit/ee58616649c33797b7849f9b83a701e2cc7f033c))
+
 ## [8.18.0](https://github.com/gravity-ui/dashkit/compare/v8.17.4...v8.18.0) (2024-10-30)
 
 

@@ -6,9 +6,11 @@ import {PLUGIN_ROOT_ATTR_NAME} from '../constants';
 
 import './Title.scss';
 
+export type PluginTitleSize = 'xl' | 'l' | 'm' | 's' | 'xs';
+
 export interface PluginTitleProps extends PluginWidgetProps {
     data: {
-        size: 'l' | 'm' | 's' | 'xs';
+        size: PluginTitleSize;
         text: string;
         showInTOC: boolean;
     } & PluginWidgetProps['data'];

@@ -6,6 +6,8 @@ export interface ItemState {
     [key: string]: any;
 }
 
+export type ItemParams = StringParams | Record<string, StringParams>;
+
 export interface QueueItem {
     id: string;
     tabId?: string;
@@ -22,7 +24,7 @@ export type StateAndParamsMeta = {
 };
 
 export type ItemStateAndParams = {
-    params?: StringParams | Record<string, StringParams>;
+    params?: ItemParams;
     state?: ItemState;
 };
 

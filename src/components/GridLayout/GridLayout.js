@@ -6,7 +6,7 @@ import {
     DRAGGABLE_CANCEL_CLASS_NAME,
     TEMPORARY_ITEM_ID,
 } from '../../constants';
-import {DashKitContext} from '../../context/DashKitContext';
+import {DashKitContext} from '../../context';
 import {resolveLayoutGroup} from '../../utils';
 import GridItem from '../GridItem/GridItem';
 
@@ -204,27 +204,38 @@ export default class GridLayout extends React.PureComponent {
         });
     }
 
-    reloadItems() {
+    reloadItems(options) {
+        const {targetIds, force} = options || {};
+
         const {
             editMode,
             settings: {autoupdateInterval, silentLoading} = {},
             reloadItems,
         } = this.context;
+
         const {isPageHidden} = this.state;
+
         const autoupdateIntervalMs = Number(autoupdateInterval) * 1000;
+
+        const targetPlugins = targetIds
+            ? this.pluginsRefs.filter((plugin) => targetIds.includes(plugin.props.id))
+            : this.pluginsRefs;
+
         if (autoupdateIntervalMs) {
             const timeSinceLastReload = new Date().getTime() - (this._lastReloadAt || 0);
             const reloadIntervalRemains = autoupdateIntervalMs - timeSinceLastReload;
 
-            if (!isPageHidden && !editMode && reloadIntervalRemains <= 0) {
+            if (force || (!isPageHidden && !editMode && reloadIntervalRemains <= 0)) {
                 this._lastReloadAt = new Date().getTime();
-                reloadItems(this.pluginsRefs, {silentLoading, noVeil: true});
+                reloadItems(targetPlugins, {silentLoading, noVeil: true});
             }
 
             this._timeout = setTimeout(
                 () => this.reloadItems(),
                 reloadIntervalRemains <= 0 ? autoupdateIntervalMs : reloadIntervalRemains,
             );
+        } else if (force) {
+            reloadItems(targetPlugins, {silentLoading, noVeil: true});
         }
     }
 
@@ -551,7 +562,7 @@ export default class GridLayout extends React.PureComponent {
         return false;
     };
 
-    renderTemporaryPlaceholder() {
+    renderTemporaryPlaceholder(gridLayout) {
         const {temporaryLayout, noOverlay, draggableHandleClassName} = this.context;
 
         if (!temporaryLayout || !temporaryLayout.dragProps) {
@@ -572,6 +583,7 @@ export default class GridLayout extends React.PureComponent {
                 isPlaceholder={true}
                 noOverlay={noOverlay}
                 withCustomHandle={Boolean(draggableHandleClassName)}
+                gridLayout={gridLayout}
             />
         );
     }
@@ -662,10 +674,11 @@ export default class GridLayout extends React.PureComponent {
                             withCustomHandle={Boolean(draggableHandleClassName)}
                             onItemMountChange={onItemMountChange}
                             onItemRender={onItemRender}
+                            gridLayout={properties}
                         />
                     );
                 })}
-                {this.renderTemporaryPlaceholder()}
+                {this.renderTemporaryPlaceholder(properties)}
             </Layout>
         );
     }
@@ -729,6 +742,7 @@ export default class GridLayout extends React.PureComponent {
 
                 if (group.render) {
                     const groupContext = {
+                        isMobile: false,
                         config,
                         editMode,
                         items,
