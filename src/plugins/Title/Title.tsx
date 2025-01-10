@@ -11,7 +11,7 @@ import './Title.scss';
 export interface PluginTitleProps extends PluginWidgetProps {
     data: {
         text: string;
-        showInTOC: boolean;
+        showInTOC?: boolean;
     } & TitleFontDataProps &
         PluginWidgetProps['data'];
 }

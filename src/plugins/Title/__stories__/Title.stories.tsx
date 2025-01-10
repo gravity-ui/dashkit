@@ -20,10 +20,7 @@ export const Size: Story = {
         <Flex direction="column" gap={2}>
             {sizes.map((size) => (
                 <Card key={size}>
-                    <PluginTitle
-                        data={{size, text: `Title size=${size}`, showInTOC: true}}
-                        {...args}
-                    />
+                    <PluginTitle data={{size, text: `Title size=${size}`}} {...args} />
                 </Card>
             ))}
             <Card>
@@ -32,7 +29,6 @@ export const Size: Story = {
                         fontSize: 40,
                         lineHeight: 100,
                         text: `Title fontSize=40, lineHeight=100`,
-                        showInTOC: true,
                     }}
                     {...args}
                 />
@@ -43,7 +39,6 @@ export const Size: Story = {
                         size: 'l',
                         fontSize: 40,
                         text: `Title size=l, fontSize=40`,
-                        showInTOC: true,
                     }}
                     {...args}
                 />
@@ -55,7 +50,6 @@ export const Size: Story = {
                         fontSize: 40,
                         lineHeight: 20,
                         text: `Title size=l, fontSize=40, lineHeight=20 🤷`,
-                        showInTOC: true,
                     }}
                     {...args}
                 />
@@ -67,7 +61,6 @@ export const Size: Story = {
                         fontSize: 40,
                         lineHeight: 70,
                         text: `Title size=l, fontSize=40, lineHeight=70`,
-                        showInTOC: true,
                     }}
                     {...args}
                 />
@@ -78,7 +71,6 @@ export const Size: Story = {
                         size: 'l',
                         lineHeight: 70,
                         text: `Title size=l, lineHeight=70`,
-                        showInTOC: true,
                     }}
                     {...args}
                 />
@@ -88,7 +80,6 @@ export const Size: Story = {
                     data={{
                         fontSize: 40,
                         text: `Title fontSize=40`,
-                        showInTOC: true,
                     }}
                     {...args}
                 />
@@ -107,7 +98,6 @@ export const Default: Story = {
         data: {
             size: 'm',
             text: `Title`,
-            showInTOC: true,
         },
     },
 };
