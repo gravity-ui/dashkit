@@ -96,3 +96,18 @@ export const Size: Story = {
         </Flex>
     ),
 };
+
+export const Default: Story = {
+    render: ({data, ...args}) => (
+        <Card>
+            <PluginTitle data={data} {...args} />
+        </Card>
+    ),
+    args: {
+        data: {
+            size: 'm',
+            text: `Title`,
+            showInTOC: true,
+        },
+    },
+};
