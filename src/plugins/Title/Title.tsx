@@ -52,8 +52,8 @@ function getFontStyles(props: TitleFontDataProps) {
     if (fontSize) {
         styles.fontSize = `${fontSize}px`;
 
-        const shouldSetCustomLineHeight = !lineHeight && !size;
-        if (shouldSetCustomLineHeight) {
+        const shouldSetRecommendedLineHeight = !lineHeight && !size;
+        if (shouldSetRecommendedLineHeight) {
             const recommendedLineHeight = Math.round(fontSize * 1.25);
             styles.lineHeight = `${recommendedLineHeight}px`;
         }
