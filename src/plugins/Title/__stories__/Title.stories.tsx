@@ -15,9 +15,11 @@ type Story = StoryObj<typeof PluginTitle>;
 
 const sizes: PluginTitleSize[] = ['xs', 's', 'm', 'l', 'xl'];
 
-export const Size: Story = {
+const defaultDataParams = {showInTOC: true};
+
+export const PresetSizes: Story = {
     render: ({data: _, ...args}) => (
-        <Flex direction="column" gap={2}>
+        <Flex direction="column" gap={6}>
             {sizes.map((size) => (
                 <Card key={size}>
                     <PluginTitle
@@ -26,13 +28,19 @@ export const Size: Story = {
                     />
                 </Card>
             ))}
+        </Flex>
+    ),
+};
+
+export const CustomSize: Story = {
+    render: ({data: _, ...args}) => (
+        <Flex direction="column" gap={6}>
             <Card>
                 <PluginTitle
                     data={{
-                        fontSize: 40,
-                        lineHeight: 100,
-                        text: `Title fontSize=40, lineHeight=100`,
-                        showInTOC: true,
+                        ...defaultDataParams,
+                        size: {fontSize: '40px', lineHeight: '100px'},
+                        text: `Title fontSize=40px, lineHeight=100px`,
                     }}
                     {...args}
                 />
@@ -40,10 +48,9 @@ export const Size: Story = {
             <Card>
                 <PluginTitle
                     data={{
-                        size: 'l',
-                        fontSize: 40,
-                        text: `Title size=l, fontSize=40`,
-                        showInTOC: true,
+                        ...defaultDataParams,
+                        size: {fontSize: '40px', lineHeight: '20px'},
+                        text: `Title fontSize=40px, lineHeight=20px 🤷`,
                     }}
                     {...args}
                 />
@@ -51,11 +58,9 @@ export const Size: Story = {
             <Card>
                 <PluginTitle
                     data={{
-                        size: 'l',
-                        fontSize: 40,
-                        lineHeight: 20,
-                        text: `Title size=l, fontSize=40, lineHeight=20 🤷`,
-                        showInTOC: true,
+                        ...defaultDataParams,
+                        size: {fontSize: '3em', lineHeight: '2'},
+                        text: `Title fontSize=2em, lineHeight=2`,
                     }}
                     {...args}
                 />
@@ -63,11 +68,9 @@ export const Size: Story = {
             <Card>
                 <PluginTitle
                     data={{
-                        size: 'l',
-                        fontSize: 40,
-                        lineHeight: 70,
-                        text: `Title size=l, fontSize=40, lineHeight=70`,
-                        showInTOC: true,
+                        ...defaultDataParams,
+                        size: {fontSize: '3em', lineHeight: '.7em'},
+                        text: `Title fontSize=3em, lineHeight=.7em`,
                     }}
                     {...args}
                 />
@@ -75,10 +78,9 @@ export const Size: Story = {
             <Card>
                 <PluginTitle
                     data={{
-                        size: 'l',
-                        lineHeight: 70,
-                        text: `Title size=l, lineHeight=70`,
-                        showInTOC: true,
+                        ...defaultDataParams,
+                        size: {fontSize: '40px'},
+                        text: `Title fontSize=40px`,
                     }}
                     {...args}
                 />
@@ -86,9 +88,39 @@ export const Size: Story = {
             <Card>
                 <PluginTitle
                     data={{
-                        fontSize: 40,
-                        text: `Title fontSize=40`,
-                        showInTOC: true,
+                        ...defaultDataParams,
+                        size: {fontSize: '300%'},
+                        text: `Title fontSize=300%`,
+                    }}
+                    {...args}
+                />
+            </Card>
+            <Card>
+                <PluginTitle
+                    data={{
+                        ...defaultDataParams,
+                        size: {fontSize: '2.5rem'},
+                        text: `Title fontSize=2.5rem`,
+                    }}
+                    {...args}
+                />
+            </Card>
+            <Card>
+                <PluginTitle
+                    data={{
+                        ...defaultDataParams,
+                        size: {fontSize: '3em'},
+                        text: `Title fontSize=3em`,
+                    }}
+                    {...args}
+                />
+            </Card>
+            <Card>
+                <PluginTitle
+                    data={{
+                        ...defaultDataParams,
+                        size: {fontSize: '30pt'},
+                        text: `Title fontSize=30pt`,
                     }}
                     {...args}
                 />
@@ -105,9 +137,9 @@ export const Default: Story = {
     ),
     args: {
         data: {
+            ...defaultDataParams,
             size: 'm',
             text: `Title`,
-            showInTOC: true,
         },
     },
 };
