@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.24.2](https://github.com/gravity-ui/dashkit/compare/v8.24.1...v8.24.2) (2025-01-13)
+
+
+### Bug Fixes
+
+* **Title:** change default lineHeight multiplier ([#244](https://github.com/gravity-ui/dashkit/issues/244)) ([f9df9e3](https://github.com/gravity-ui/dashkit/commit/f9df9e3e98d3919dad740b4741f413336e459486))
+
 ## [8.24.1](https://github.com/gravity-ui/dashkit/compare/v8.24.0...v8.24.1) (2025-01-13)
 
 
