@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.24.0](https://github.com/gravity-ui/dashkit/compare/v8.23.0...v8.24.0) (2025-01-13)
+
+
+### Features
+
+* **Title:** add title font customization ([#241](https://github.com/gravity-ui/dashkit/issues/241)) ([51fbb91](https://github.com/gravity-ui/dashkit/commit/51fbb91888c8e64750ecf6aa3431709797839a5d))
+
 ## [8.23.0](https://github.com/gravity-ui/dashkit/compare/v8.22.1...v8.23.0) (2024-12-18)
 
 
