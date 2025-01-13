@@ -20,9 +20,9 @@ export interface PluginTitleProps extends PluginWidgetProps {
 
 const b = cn('dashkit-plugin-title');
 
-export const PluginTitle = React.forwardRef<HTMLDivElement, PluginTitleProps>(
-    function PluginTitleForwardRef(props, ref) {
-        const {data} = props;
+export class PluginTitle extends React.Component<PluginTitleProps> {
+    render() {
+        const {data} = this.props;
         const text = data.text ? data.text : '';
 
         const size = isCustomSize(data.size) ? false : data.size;
@@ -38,7 +38,6 @@ export const PluginTitle = React.forwardRef<HTMLDivElement, PluginTitleProps>(
 
         return (
             <div
-                ref={ref}
                 id={id}
                 style={styles}
                 className={b({size})}
@@ -47,8 +46,8 @@ export const PluginTitle = React.forwardRef<HTMLDivElement, PluginTitleProps>(
                 {text}
             </div>
         );
-    },
-);
+    }
+}
 
 const plugin: Plugin<PluginTitleProps> = {
     type: 'title',
