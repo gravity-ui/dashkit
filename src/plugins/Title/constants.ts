@@ -22,3 +22,5 @@ export const TITLE_DEFAULT_SIZES: Record<PluginTitleSize, TitleFontParams> = {
         lineHeight: '20px',
     },
 };
+
+export const RECCOMMENDED_LINE_HEIGHT_MULTIPLIER = 1.25;
