@@ -23,4 +23,4 @@ export const TITLE_DEFAULT_SIZES: Record<PluginTitleSize, TitleFontParams> = {
     },
 };
 
-export const RECCOMMENDED_LINE_HEIGHT_MULTIPLIER = 1.25;
+export const RECCOMMENDED_LINE_HEIGHT_MULTIPLIER = 1.2;
