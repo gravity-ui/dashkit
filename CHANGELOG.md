@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.24.1](https://github.com/gravity-ui/dashkit/compare/v8.24.0...v8.24.1) (2025-01-13)
+
+
+### Bug Fixes
+
+* **Title:** return class component ([#243](https://github.com/gravity-ui/dashkit/issues/243)) ([091a4f6](https://github.com/gravity-ui/dashkit/commit/091a4f633928121d692609daaff8455957fd1bcf))
+
 ## [8.24.0](https://github.com/gravity-ui/dashkit/compare/v8.23.0...v8.24.0) (2025-01-13)
 
 
