@@ -4,13 +4,15 @@ import {Plugin, PluginWidgetProps} from '../../typings';
 import {cn} from '../../utils/cn';
 import {PLUGIN_ROOT_ATTR_NAME} from '../constants';
 
-import './Title.scss';
+import {RECCOMMENDED_LINE_HEIGHT_MULTIPLIER} from './constants';
+import type {PluginTitleSize, TitleFontParams} from './types';
+import {isCustomSize} from './utils';
 
-export type PluginTitleSize = 'xl' | 'l' | 'm' | 's' | 'xs';
+import './Title.scss';
 
 export interface PluginTitleProps extends PluginWidgetProps {
     data: {
-        size: PluginTitleSize;
+        size: PluginTitleSize | TitleFontParams;
         text: string;
         showInTOC: boolean;
     } & PluginWidgetProps['data'];
@@ -18,19 +20,35 @@ export interface PluginTitleProps extends PluginWidgetProps {
 
 const b = cn('dashkit-plugin-title');
 
-export class PluginTitle extends React.Component<PluginTitleProps> {
-    render() {
-        const {data} = this.props;
+export const PluginTitle = React.forwardRef<HTMLDivElement, PluginTitleProps>(
+    function PluginTitleForwardRef(props, ref) {
+        const {data} = props;
         const text = data.text ? data.text : '';
-        const size = data.size ? data.size : false;
+
+        const size = isCustomSize(data.size) ? false : data.size;
+        const styles =
+            isCustomSize(data.size) && data.size?.fontSize
+                ? {
+                      fontSize: data.size.fontSize,
+                      lineHeight: data.size.lineHeight ?? RECCOMMENDED_LINE_HEIGHT_MULTIPLIER,
+                  }
+                : undefined;
+
         const id = data.showInTOC && text ? encodeURIComponent(text) : undefined;
+
         return (
-            <div id={id} className={b({size})} {...{[PLUGIN_ROOT_ATTR_NAME]: 'title'}}>
+            <div
+                ref={ref}
+                id={id}
+                style={styles}
+                className={b({size})}
+                {...{[PLUGIN_ROOT_ATTR_NAME]: 'title'}}
+            >
                 {text}
             </div>
         );
-    }
-}
+    },
+);
 
 const plugin: Plugin<PluginTitleProps> = {
     type: 'title',
