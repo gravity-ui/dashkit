@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.24.3](https://github.com/gravity-ui/dashkit/compare/v8.24.2...v8.24.3) (2025-01-14)
+
+
+### Bug Fixes
+
+* **Title:** export all constants from Title ([#247](https://github.com/gravity-ui/dashkit/issues/247)) ([9ce38b0](https://github.com/gravity-ui/dashkit/commit/9ce38b0949c4049938e612fcd577c0e0c4dfaee1))
+
 ## [8.24.2](https://github.com/gravity-ui/dashkit/compare/v8.24.1...v8.24.2) (2025-01-13)
 
 
