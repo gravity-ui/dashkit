@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.25.0](https://github.com/gravity-ui/dashkit/compare/v8.24.3...v8.25.0) (2025-01-28)
+
+
+### Features
+
+* add onItemFocus and onItemBlur handlers ([#249](https://github.com/gravity-ui/dashkit/issues/249)) ([95d4578](https://github.com/gravity-ui/dashkit/commit/95d45782399c96f9ff2c892d3e9063289e03712b))
+
 ## [8.24.3](https://github.com/gravity-ui/dashkit/compare/v8.24.2...v8.24.3) (2025-01-14)
 
 
