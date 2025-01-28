@@ -466,6 +466,9 @@ function useMemoStateContext(props) {
             outerDnDEnable,
             dragOverPlugin,
 
+            onItemFocus: props.onItemFocus,
+            onItemBlur: props.onItemBlur,
+
             /* default handlers bypass */
             onDragStart: props.onDragStart,
             onDrag: props.onDrag,
@@ -502,6 +505,9 @@ function useMemoStateContext(props) {
             props.draggableHandleClassName,
             outerDnDEnable,
             dragOverPlugin,
+
+            props.onItemFocus,
+            props.onItemBlur,
 
             props.onDragStart,
             props.onDrag,

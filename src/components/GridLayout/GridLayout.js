@@ -598,6 +598,8 @@ export default class GridLayout extends React.PureComponent {
             outerDnDEnable,
             onItemMountChange,
             onItemRender,
+            onItemFocus,
+            onItemBlur,
         } = this.context;
 
         const {currentDraggingElement, draggedOverGroup} = this.state;
@@ -675,6 +677,8 @@ export default class GridLayout extends React.PureComponent {
                             onItemMountChange={onItemMountChange}
                             onItemRender={onItemRender}
                             gridLayout={properties}
+                            onItemFocus={onItemFocus}
+                            onItemBlur={onItemBlur}
                         />
                     );
                 })}

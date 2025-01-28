@@ -57,7 +57,11 @@ interface DashKitProps {
   overlayControls?: Record<string, OverlayControlItem[]> | null;
   overlayMenuItems?: MenuItems[] | null;
   noOverlay?: boolean;
+
   focusable?: boolean;
+  onItemFocus: (item: ConfigItem) => void;
+  onItemBlur: (item: ConfigItem) => void;
+
   draggableHandleClassName?: string;
   getPreparedCopyItemOptions?: (options: PreparedCopyItemOptions) => PreparedCopyItemOptions;
   onCopyFulfill?: (error: null | Error, data?: PreparedCopyItemOptions) => void;
@@ -79,6 +83,8 @@ interface DashKitProps {
 - `overlayMenuItems`: пользовательские элементы выпадающего меню, отображаемое в режиме редактирования.
 - `noOverlay`: если установлено значение `true`, оверлей и контролы не отображаются при редактировании.
 - `focusable`: если установлено значение `true`, элементы сетки будут доступны для фокуса.
+- `onItemFocus`: Вызывается когда значение `focusable` true при фокусе элемента.
+- `onItemBlur`: Вызывается когда значение `focusable` true при снятии фокуса с элемента.
 - `draggableHandleClassName`: имя CSS-класса элемента, который позволяет перетаскивать виджет.
 - `onDragStart`: вызывается при начале перетаскивания элемента в библиотеке `ReactGridLayout`.
 - `onDrag`: вызывается во время перетаскивания элемента в библиотеке `ReactGridLayout`.
