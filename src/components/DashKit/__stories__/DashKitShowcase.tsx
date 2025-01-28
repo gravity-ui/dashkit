@@ -239,6 +239,8 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
                         onCopyFulfill={(_error, data) =>
                             console.info('Copied: ' + JSON.stringify(data))
                         }
+                        onItemFocus={this.onItemFocus}
+                        onItemBlur={this.onItemBlur}
                     />
                 </DemoRow>
             </Demo>
@@ -262,6 +264,14 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
         this.setState({
             lastAction: `[onItemEdit] Widget (id = '${id}') has been changed: ${new Date().toISOString()}`,
         });
+    };
+
+    private onItemFocus = (item: ConfigItem) => {
+        console.log('focus item', item);
+    };
+
+    private onItemBlur = (item: ConfigItem) => {
+        console.log('blur item', item);
     };
 
     private onChange = ({

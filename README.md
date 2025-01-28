@@ -57,7 +57,11 @@ interface DashKitProps {
   overlayControls?: Record<string, OverlayControlItem[]> | null;
   overlayMenuItems?: MenuItems[] | null;
   noOverlay?: boolean;
+
   focusable?: boolean;
+  onItemFocus: (item: ConfigItem) => void;
+  onItemBlur: (item: ConfigItem) => void;
+
   draggableHandleClassName?: string;
   getPreparedCopyItemOptions?: (options: PreparedCopyItemOptions) => PreparedCopyItemOptions;
   onCopyFulfill?: (error: null | Error, data?: PreparedCopyItemOptions) => void;
@@ -79,6 +83,8 @@ interface DashKitProps {
 - **overlayMenuItems**: Custom dropdown menu items
 - **noOverlay**: If `true`, overlay and controls are not displayed while editing.
 - **focusable**: If `true`, grid items will be focusable.
+- **onItemFocus**: Called when `focusable` is true and item is focused.
+- **onItemBlur**: Called when `focusable` is true and item is focused out.
 - **draggableHandleClassName** : СSS class name of the element that makes the widget draggable.
 - **onDragStart**: ReactGridLayout called when item drag started
 - **onDrag**: ReactGridLayout called while item drag

@@ -66,6 +66,9 @@ interface DashKitDefaultProps {
     getPreparedCopyItemOptions?: (options: PreparedCopyItemOptions) => PreparedCopyItemOptions;
     onCopyFulfill?: (error: null | Error, data?: PreparedCopyItemOptions) => void;
 
+    onItemFocus?: (item: ConfigItem) => void;
+    onItemBlur?: (item: ConfigItem) => void;
+
     onDragStart?: ItemManipulationCallback;
     onDrag?: ItemManipulationCallback;
     onDragStop?: ItemManipulationCallback;

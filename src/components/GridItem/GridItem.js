@@ -34,7 +34,7 @@ class WindowFocusObserver {
     };
 
     // Method to get state after all blur\focus events in document are triggered
-    async getFocuseState() {
+    async getFocusedState() {
         return new Promise((resolve) => {
             requestAnimationFrame(() => {
                 resolve(this.isFocused);
@@ -73,6 +73,8 @@ class GridItem extends React.PureComponent {
         onMouseUp: PropTypes.func,
         onTouchEnd: PropTypes.func,
         onTouchStart: PropTypes.func,
+        onItemFocus: PropTypes.func,
+        onItemBlur: PropTypes.func,
     };
 
     static contextType = DashKitContext;
@@ -134,6 +136,13 @@ class GridItem extends React.PureComponent {
     onFocusHandler = () => {
         this.setState({isFocused: true});
 
+        if (this.props.onItemFocus) {
+            // Sync focus and blur handlers
+            windowFocusObserver.getFocusedState().then(() => {
+                this.props.onItemFocus?.(this.props.item);
+            });
+        }
+
         if (this.controller) {
             this.controller.abort();
         }
@@ -142,9 +151,10 @@ class GridItem extends React.PureComponent {
     onBlurHandler = () => {
         this.controller = new AbortController();
 
-        windowFocusObserver.getFocuseState().then((isWindowFocused) => {
-            if (!this.controller.signal.aborted && isWindowFocused) {
+        windowFocusObserver.getFocusedState().then((isWindowFocused) => {
+            if (!this.controller?.signal.aborted && isWindowFocused) {
                 this.setState({isFocused: false});
+                this.props.onItemBlur?.(this.props.item);
             }
 
             this.controller = null;
