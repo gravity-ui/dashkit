@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.26.0](https://github.com/gravity-ui/dashkit/compare/v8.25.0...v8.26.0) (2025-01-29)
+
+
+### Features
+
+* add item class name export ([#251](https://github.com/gravity-ui/dashkit/issues/251)) ([d6302d4](https://github.com/gravity-ui/dashkit/commit/d6302d4a3158a94c3ac293aee1f2edc16c218337))
+
 ## [8.25.0](https://github.com/gravity-ui/dashkit/compare/v8.24.3...v8.25.0) (2025-01-28)
 
 
