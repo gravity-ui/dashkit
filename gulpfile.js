@@ -1,9 +1,11 @@
 const path = require('path');
+
+const utils = require('@gravity-ui/gulp-utils');
 const {task, src, dest, series, parallel} = require('gulp');
-const rimraf = require('rimraf');
-const ts = require('gulp-typescript');
-const replace = require('gulp-replace');
 const sass = require('gulp-dart-sass');
+const rename = require('gulp-rename');
+const sourcemaps = require('gulp-sourcemaps');
+const rimraf = require('rimraf');
 
 const BUILD_DIR = path.resolve('build');
 
@@ -12,24 +14,51 @@ task('clean', (done) => {
     done();
 });
 
-function compileTs(modules = false) {
-    const tsProject = ts.createProject('tsconfig.json', {
-        declaration: true,
-        module: modules ? 'esnext' : 'commonjs',
+async function compileTs(modules = false) {
+    const tsProject = await utils.createTypescriptProject({
+        compilerOptions: {
+            declaration: true,
+            module: modules ? 'esnext' : 'nodenext',
+            moduleResolution: modules ? 'bundler' : 'nodenext',
+            ...(modules ? undefined : {verbatimModuleSyntax: false}),
+        },
     });
+
+    const transformers = [
+        tsProject.customTransformers.transformScssImports,
+        tsProject.customTransformers.transformLocalModules,
+    ];
+
+    const moduleType = modules ? 'esm' : 'cjs';
 
     return src([
         'src/**/*.{js,jsx,ts,tsx}',
         '!src/**/__stories__/**/*.{js,jsx,ts,tsx}',
         '!src/**/__test__/**/*.*])',
     ])
+        .pipe(sourcemaps.init())
         .pipe(
-            replace(/import '.+\.scss';/g, (match) =>
-                modules ? match.replace('.scss', '.css') : '',
-            ),
+            tsProject({
+                customTransformers: {
+                    before: transformers,
+                    afterDeclarations: transformers,
+                },
+                outDir: path.resolve('out', moduleType),
+            }),
         )
-        .pipe(tsProject())
-        .pipe(dest(path.resolve(BUILD_DIR, modules ? 'esm' : 'cjs')));
+        .pipe(
+            rename((file) => {
+                file.dirname = file.dirname.replace(`out/${moduleType}`, `${moduleType}`);
+            }),
+        )
+        .pipe(sourcemaps.write('.', {includeContent: true, sourceRoot: '../../src'}))
+        .pipe(
+            utils.addVirtualFile({
+                fileName: 'package.json',
+                text: JSON.stringify({type: modules ? 'module' : 'commonjs'}),
+            }),
+        )
+        .pipe(dest(path.resolve(BUILD_DIR, moduleType)));
 }
 
 task('compile-to-esm', () => {
@@ -64,8 +93,7 @@ task(
     series([
         'clean',
         parallel(['compile-to-esm', 'compile-to-cjs']),
-        'copy-js-declarations',
-        'copy-i18n',
+        parallel(['copy-js-declarations', 'copy-i18n']),
         'styles-components',
     ]),
 );
