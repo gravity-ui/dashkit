@@ -5,7 +5,7 @@
     "declaration": true,
     "resolveJsonModule": true,
     "outDir": "build/esm",
-    "jsx": "react-jsx",
+    "jsx": "react",
     "baseUrl": ".",
     "module": "esnext",
     "moduleResolution": "bundler",
