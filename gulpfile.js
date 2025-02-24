@@ -3,7 +3,6 @@ const path = require('path');
 const utils = require('@gravity-ui/gulp-utils');
 const {task, src, dest, series, parallel} = require('gulp');
 const sass = require('gulp-dart-sass');
-const rename = require('gulp-rename');
 const sourcemaps = require('gulp-sourcemaps');
 const rimraf = require('rimraf');
 
@@ -31,34 +30,31 @@ async function compileTs(modules = false) {
 
     const moduleType = modules ? 'esm' : 'cjs';
 
-    return src([
-        'src/**/*.{js,jsx,ts,tsx}',
-        '!src/**/__stories__/**/*.{js,jsx,ts,tsx}',
-        '!src/**/__test__/**/*.*])',
-    ])
-        .pipe(sourcemaps.init())
-        .pipe(
-            tsProject({
-                customTransformers: {
-                    before: transformers,
-                    afterDeclarations: transformers,
-                },
-                outDir: path.resolve('out', moduleType),
-            }),
-        )
-        .pipe(
-            rename((file) => {
-                file.dirname = file.dirname.replace(`out/${moduleType}`, `${moduleType}`);
-            }),
-        )
-        .pipe(sourcemaps.write('.', {includeContent: true, sourceRoot: '../../src'}))
-        .pipe(
-            utils.addVirtualFile({
-                fileName: 'package.json',
-                text: JSON.stringify({type: modules ? 'module' : 'commonjs'}),
-            }),
-        )
-        .pipe(dest(path.resolve(BUILD_DIR, moduleType)));
+    return new Promise((resolve) => {
+        src([
+            'src/**/*.{js,jsx,ts,tsx}',
+            '!src/**/__stories__/**/*.{js,jsx,ts,tsx}',
+            '!src/**/__test__/**/*.*])',
+        ])
+            .pipe(sourcemaps.init())
+            .pipe(
+                tsProject({
+                    customTransformers: {
+                        before: transformers,
+                        afterDeclarations: transformers,
+                    },
+                }),
+            )
+            .pipe(sourcemaps.write('.', {includeContent: true, sourceRoot: '../../src'}))
+            .pipe(
+                utils.addVirtualFile({
+                    fileName: 'package.json',
+                    text: JSON.stringify({type: modules ? 'module' : 'commonjs'}),
+                }),
+            )
+            .pipe(dest(path.resolve(BUILD_DIR, moduleType)))
+            .on('end', resolve);
+    });
 }
 
 task('compile-to-esm', () => {
