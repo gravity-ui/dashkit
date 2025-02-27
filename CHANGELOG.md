@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.26.1](https://github.com/gravity-ui/dashkit/compare/v8.26.0...v8.26.1) (2025-02-27)
+
+
+### Bug Fixes
+
+* firefox groups drag n drop ([#255](https://github.com/gravity-ui/dashkit/issues/255)) ([fd0eeb5](https://github.com/gravity-ui/dashkit/commit/fd0eeb59226dbec5979b151c5cd48eff2e56c28d))
+
 ## [8.26.0](https://github.com/gravity-ui/dashkit/compare/v8.25.0...v8.26.0) (2025-01-29)
 
 
