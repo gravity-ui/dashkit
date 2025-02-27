@@ -261,7 +261,14 @@ export default class GridLayout extends React.PureComponent {
             const item = temporaryLayout
                 ? temporaryLayout.dragProps
                 : this.context.config.items.find(({id}) => id === layoutId);
-            const {offsetX, offsetY} = e.nativeEvent;
+
+            let {offsetX, offsetY} = e.nativeEvent || {};
+            if (offsetX === undefined || offsetY === undefined) {
+                const gridRect = e.currentTarget.getBoundingClientRect();
+
+                offsetX = e.clientX - gridRect.left;
+                offsetY = e.clientY - gridRect.top;
+            }
 
             currentDraggingElement = {
                 group,
