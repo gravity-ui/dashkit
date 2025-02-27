@@ -170,6 +170,17 @@ class DragOverLayout extends ReactGridLayout {
 
     mouseMoveHandler = (e) => {
         if (this.props.hasSharedDragItem) {
+            if (!e.nativeEvent) {
+                // Emulate nativeEvent for firefox
+                const target = this.getInnerElement() || e.target;
+
+                e.nativeEvent = {
+                    clientX: e.clientX,
+                    clientY: e.clientY,
+                    target,
+                };
+            }
+
             this.onDragOver(e);
         }
     };
