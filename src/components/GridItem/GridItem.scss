@@ -25,6 +25,11 @@
         opacity: var(--_-dashkit-overlay-opacity);
     }
 
+    &__overlay-placeholder {
+        position: absolute;
+        inset: 0;
+    }
+
     &__item {
         --_-dashkit-grid-item-border-radius: var(
             --dashkit-grid-item-border-radius,
@@ -45,7 +50,9 @@
 
     // needs for drag n drop between multiple groups
     &_is-dragged-out {
+        user-select: none;
         pointer-events: none;
+        touch-action: none;
     }
 }
 
@@ -53,6 +60,7 @@
     // Disable evety mouse event for dropping element placeholder
     user-select: none;
     pointer-events: none;
+    touch-action: none;
 }
 
 .react-grid-layout {
