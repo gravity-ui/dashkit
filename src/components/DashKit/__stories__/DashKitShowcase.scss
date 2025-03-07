@@ -31,4 +31,32 @@
             flex: 1;
         }
     }
+
+    &__collapse-group {
+        margin-bottom: 8px;
+    }
+
+    &__collapse-group-placeholder {
+        flex: 1;
+        text-align: center;
+    }
+
+    &__collapse-group-header {
+        display: flex;
+    }
+
+    &__collapse-group-header-action {
+        flex-grow: 1;
+    }
+
+    &__collapse-group-grid {
+        min-height: 52px;
+        display: flex;
+        flex-direction: column;
+        margin-top: 8px;
+
+        > .react-grid-layout {
+            flex-grow: 1;
+        }
+    }
 }

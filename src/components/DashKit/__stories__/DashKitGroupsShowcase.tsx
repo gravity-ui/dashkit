@@ -1,7 +1,19 @@
 import React from 'react';
 
-import {ChartColumn, Copy, Heading, Pin, Sliders, TextAlignLeft, TrashBin} from '@gravity-ui/icons';
-import {Button, Icon} from '@gravity-ui/uikit';
+import {
+    ArrowDown,
+    ArrowUp,
+    ChartColumn,
+    ChevronDown,
+    ChevronUp,
+    Copy,
+    Heading,
+    Pin,
+    Sliders,
+    TextAlignLeft,
+    TrashBin,
+} from '@gravity-ui/icons';
+import {Button, Disclosure, Icon} from '@gravity-ui/uikit';
 
 import {
     ActionPanel,
@@ -29,9 +41,19 @@ const b = cn('stories-dashkit-showcase');
 const MAX_ROWS = 2;
 const GRID_COLUMNS = 36;
 
+function arrayMove(arr: string[], oldIndex: number, newIndex: number) {
+    const copy = [...arr];
+    const item = copy[oldIndex];
+    copy[oldIndex] = copy[newIndex];
+    copy[newIndex] = item;
+
+    return copy;
+}
+
 export const DashKitGroupsShowcase: React.FC = () => {
     const [editMode, setEditMode] = React.useState(true);
     const [headerInteractions, setHeaderInteractions] = React.useState(true);
+    const [chartGroups, setChartGroups] = React.useState<string[]>(['1_group', '2_group']);
 
     const onClick = () => {
         console.log('click');
@@ -134,6 +156,91 @@ export const DashKitGroupsShowcase: React.FC = () => {
                     };
                 },
             },
+            ...chartGroups.map((id) => ({
+                id,
+                render: (id: string, children: React.ReactNode, props: DashkitGroupRenderProps) => {
+                    const itemsLength = props.items.length;
+                    const showPlaceholder = itemsLength === 0 && !props.isDragging;
+
+                    const isMultipleGroups = chartGroups.length > 1;
+                    const groupIndex = chartGroups.indexOf(id);
+                    const hasNext = isMultipleGroups && groupIndex < chartGroups.length - 1;
+                    const hasPrev = isMultipleGroups && groupIndex > 0;
+
+                    return (
+                        <Disclosure
+                            className={b('collapse-group')}
+                            key={`key_${id}`}
+                            defaultExpanded={true}
+                            keepMounted={true}
+                        >
+                            <div
+                                key={id}
+                                className={b('collapse-group-grid', {
+                                    ['edit-mode']: props.editMode,
+                                })}
+                            >
+                                {showPlaceholder ? (
+                                    <div className={b('collapse-group-placeholder')}>
+                                        Empty group
+                                    </div>
+                                ) : (
+                                    children
+                                )}
+                            </div>
+
+                            <Disclosure.Summary>
+                                {(props) => (
+                                    <div className={b('collapse-group-header')}>
+                                        <div className={b('collapse-group-header-action')}>
+                                            <Button {...props}>
+                                                <Icon
+                                                    data={props.expanded ? ChevronUp : ChevronDown}
+                                                />
+                                                {`${id}: (${itemsLength})`}
+                                            </Button>
+                                        </div>
+                                        <div className={b('collapse-group-header-controls')}>
+                                            <Button
+                                                onClick={() => {
+                                                    setChartGroups((groupOrder) => {
+                                                        return arrayMove(
+                                                            groupOrder,
+                                                            groupIndex,
+                                                            groupIndex - 1,
+                                                        );
+                                                    });
+                                                }}
+                                                disabled={!hasPrev}
+                                                view="flat"
+                                                size="l"
+                                            >
+                                                <Icon data={ArrowUp}></Icon>
+                                            </Button>
+                                            <Button
+                                                onClick={() => {
+                                                    setChartGroups((groupOrder) => {
+                                                        return arrayMove(
+                                                            groupOrder,
+                                                            groupIndex,
+                                                            groupIndex + 1,
+                                                        );
+                                                    });
+                                                }}
+                                                disabled={!hasNext}
+                                                view="flat"
+                                                size="l"
+                                            >
+                                                <Icon data={ArrowDown}></Icon>
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+                            </Disclosure.Summary>
+                        </Disclosure>
+                    );
+                },
+            })),
             {
                 id: DEFAULT_GROUP,
                 gridProperties: (props: ReactGridLayoutProps) => {
@@ -146,7 +253,7 @@ export const DashKitGroupsShowcase: React.FC = () => {
                 },
             },
         ],
-        [headerInteractions],
+        [headerInteractions, chartGroups],
     );
 
     const overlayMenuItems = React.useMemo(() => {
@@ -320,6 +427,18 @@ export const DashKitGroupsShowcase: React.FC = () => {
                             {headerInteractions
                                 ? 'Disable header interactions'
                                 : 'Enable header interactions'}
+                        </Button>
+                        <Button
+                            size="m"
+                            className={b('btn-contol')}
+                            onClick={() =>
+                                setChartGroups((current) => [
+                                    ...current,
+                                    `${current.length + 1}_group`,
+                                ])
+                            }
+                        >
+                            {'Add group'}
                         </Button>
                     </div>
                 </DemoRow>
