@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {DashKitDnDContext} from '../../context/DashKitContext';
+import {DashKitDnDContext} from '../../context';
 import type {DraggedOverItem, ItemDragProps} from '../../shared';
 
 type DashKitDnDWrapperProps = {

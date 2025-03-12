@@ -3,7 +3,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import {FOCUSED_CLASS_NAME} from '../../constants';
-import {DashKitContext} from '../../context/DashKitContext';
+import {DashKitContext} from '../../context';
 import {cn} from '../../utils/cn';
 import Item from '../Item/Item';
 import OverlayControls from '../OverlayControls/OverlayControls';
@@ -34,7 +34,7 @@ class WindowFocusObserver {
     };
 
     // Method to get state after all blur\focus events in document are triggered
-    async getFocuseState() {
+    async getFocusedState() {
         return new Promise((resolve) => {
             requestAnimationFrame(() => {
                 resolve(this.isFocused);
@@ -73,6 +73,8 @@ class GridItem extends React.PureComponent {
         onMouseUp: PropTypes.func,
         onTouchEnd: PropTypes.func,
         onTouchStart: PropTypes.func,
+        onItemFocus: PropTypes.func,
+        onItemBlur: PropTypes.func,
     };
 
     static contextType = DashKitContext;
@@ -86,6 +88,11 @@ class GridItem extends React.PureComponent {
     renderOverlay() {
         const {isPlaceholder} = this.props;
         const {editMode} = this.context;
+
+        if (editMode && this.props.item.data._editActive) {
+            // needed for correst pointer-events: none work in firefox
+            return <div className={b('overlay-placeholder')} />;
+        }
 
         if (!editMode || this.props.item.data._editActive || isPlaceholder) {
             return null;
@@ -134,6 +141,13 @@ class GridItem extends React.PureComponent {
     onFocusHandler = () => {
         this.setState({isFocused: true});
 
+        if (this.props.onItemFocus) {
+            // Sync focus and blur handlers
+            windowFocusObserver.getFocusedState().then(() => {
+                this.props.onItemFocus?.(this.props.item);
+            });
+        }
+
         if (this.controller) {
             this.controller.abort();
         }
@@ -142,9 +156,10 @@ class GridItem extends React.PureComponent {
     onBlurHandler = () => {
         this.controller = new AbortController();
 
-        windowFocusObserver.getFocuseState().then((isWindowFocused) => {
-            if (!this.controller.signal.aborted && isWindowFocused) {
+        windowFocusObserver.getFocusedState().then((isWindowFocused) => {
+            if (!this.controller?.signal.aborted && isWindowFocused) {
                 this.setState({isFocused: false});
+                this.props.onItemBlur?.(this.props.item);
             }
 
             this.controller = null;
@@ -170,6 +185,8 @@ class GridItem extends React.PureComponent {
             isPlaceholder = false,
         } = this.props;
         const {editMode} = this.context;
+        const {isFocused} = this.state;
+
         const width = Number.parseInt(style.width, 10);
         const height = Number.parseInt(style.height, 10);
         const transform = style.transform;
@@ -180,34 +197,38 @@ class GridItem extends React.PureComponent {
                       .replace('react-resizable', '')
                       .replace('react-draggable', '')
                       .replace(FOCUSED_CLASS_NAME, '')) +
-            (this.state.isFocused ? ` ${FOCUSED_CLASS_NAME}` : '');
+            (isFocused ? ` ${FOCUSED_CLASS_NAME}` : '');
+        const computedClassName = b(
+            {
+                'is-dragging': isDragging,
+                'is-dragged-out': isDraggedOut,
+                'is-focused': isFocused,
+                'with-custom-handle': withCustomHandle,
+            },
+            preparedClassName,
+        );
+
         const preparedChildren = editMode ? children : null;
         const reactGridLayoutProps = editMode
             ? {onMouseDown, onMouseUp, onTouchEnd, onTouchStart}
             : {};
+        const reactFocusProps = focusable
+            ? {
+                  onFocus: this.onFocusHandler,
+                  onBlur: this.onBlurHandler,
+                  tabIndex: -1,
+              }
+            : {};
         const {_editActive} = this.props.item.data;
+
         return (
             <div
-                className={b(
-                    {
-                        'is-dragging': isDragging,
-                        'is-dragged-out': isDraggedOut,
-                        'is-focused': this.state.isFocused,
-                        'with-custom-handle': withCustomHandle,
-                    },
-                    preparedClassName,
-                )}
+                className={computedClassName}
                 data-qa="dashkit-grid-item"
                 style={style}
                 ref={this.props.forwardedRef}
                 {...reactGridLayoutProps}
-                {...(focusable
-                    ? {
-                          onFocus: this.onFocusHandler,
-                          onBlur: this.onBlurHandler,
-                          tabIndex: -1,
-                      }
-                    : {})}
+                {...reactFocusProps}
             >
                 <div className={b('item', {editMode: editMode && !_editActive && !noOverlay})}>
                     <Item

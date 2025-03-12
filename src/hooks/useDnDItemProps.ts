@@ -1,7 +1,7 @@
 import React from 'react';
 
 import {ActionPanelItem} from '../components';
-import {DashKitDnDContext} from '../context/DashKitContext';
+import {DashKitDnDContext} from '../context';
 
 type DndProps = null | {
     draggable: true;

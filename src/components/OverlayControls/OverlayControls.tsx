@@ -20,15 +20,13 @@ import {
     OVERLAY_CONTROLS_CLASS_NAME,
     OVERLAY_ICON_SIZE,
 } from '../../constants';
-import {DashkitOvelayControlsContext} from '../../context/DashKitContext';
+import {DashkitOvelayControlsContext, OverlayControlsCtxShape} from '../../context';
 import {i18n} from '../../i18n';
 import {
     type ConfigItem,
-    type ConfigLayout,
+    type ItemParams,
     type ItemState,
-    type ItemsStateAndParamsBase,
     type PluginBase,
-    type StringParams,
     isItemWithTabs,
     resolveItemInnerId,
 } from '../../shared';
@@ -61,9 +59,9 @@ export interface OverlayControlItem {
 export interface OverlayCustomControlItem {
     id: string;
     title?: string;
-    icon?: MenuItemProps['icon'];
+    icon?: MenuItemProps['iconStart'];
     iconSize?: number | string;
-    handler?: (item: ConfigItem, params: StringParams, state: ItemState) => void;
+    handler?: (item: ConfigItem, params: ItemParams, state: ItemState) => void;
     visible?: (item: ConfigItem) => boolean;
     className?: string;
     qa?: string;
@@ -93,19 +91,6 @@ type PreparedCopyItemOptionsArg = Pick<ConfigItem, 'data' | 'type' | 'defaults' 
 export type PreparedCopyItemOptions<C extends object = {}> = PreparedCopyItemOptionsArg & {
     copyContext?: C;
 };
-
-export interface OverlayControlsCtxShape {
-    overlayControls?: Record<string, OverlayControlItem[]>;
-    context: Record<string, any>;
-    menu: MenuItem[];
-    itemsStateAndParams: ItemsStateAndParamsBase;
-    itemsParams: Record<string, StringParams>;
-    editItem: (item: ConfigItem) => void;
-    removeItem: (id: string) => void;
-    getLayoutItem: (id: string) => ConfigLayout | void;
-    getPreparedCopyItemOptions?: (options: PreparedCopyItemOptions) => PreparedCopyItemOptions;
-    onCopyFulfill?: (error: null | Error, data?: PreparedCopyItemOptions) => void;
-}
 
 type OverlayControlsCtx = React.Context<OverlayControlsCtxShape>;
 
@@ -266,13 +251,13 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
     }
     private renderDropdownMenu(isOnlyOneItem: boolean) {
         const {view, size, onItemClick} = this.props;
-        const {menu: contextMenu, itemsParams, itemsStateAndParams} = this.context;
+        const {menu: contextMenu, itemsParams, itemsState} = this.context;
 
         const configItem = this.props.configItem;
         const itemParams = itemsParams[configItem.id];
-        const itemState = itemsStateAndParams[configItem.id]?.state || {};
+        const itemState = itemsState?.[configItem.id] || {};
 
-        const menu = contextMenu?.length > 0 ? contextMenu : DEFAULT_DROPDOWN_MENU;
+        const menu = contextMenu && contextMenu.length > 0 ? contextMenu : DEFAULT_DROPDOWN_MENU;
 
         const isDefaultMenu = this.isDefaultMenu(menu);
 
@@ -308,7 +293,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                   memo.push({
                       // @ts-expect-error
                       text: item.title || i18n(item.id),
-                      icon: item.icon,
+                      iconStart: item.icon,
                       action: itemAction,
                       className: item.className,
                       qa: item.qa,
@@ -338,7 +323,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                     </Button>
                 )}
                 popupProps={{
-                    contentClassName: DRAGGABLE_CANCEL_CLASS_NAME,
+                    className: DRAGGABLE_CANCEL_CLASS_NAME,
                 }}
             />
         );
@@ -436,7 +421,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         this.props.onItemClick?.();
     };
     private onEditItem = () => {
-        this.context.editItem(this.props.configItem);
+        this.context.editItem?.(this.props.configItem);
         this.props.onItemClick?.();
     };
     private onRemoveItem = () => {

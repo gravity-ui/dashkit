@@ -1,5 +1,100 @@
 # Changelog
 
+## [9.0.0](https://github.com/gravity-ui/dashkit/compare/v8.26.1...v9.0.0) (2025-03-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* move to uikit v7 ([#253](https://github.com/gravity-ui/dashkit/issues/253))
+
+### Features
+
+* move to uikit v7 ([#253](https://github.com/gravity-ui/dashkit/issues/253)) ([5a1cff0](https://github.com/gravity-ui/dashkit/commit/5a1cff07c3d1d406e24d0dd6c63dc61991335db0))
+
+## [8.26.1](https://github.com/gravity-ui/dashkit/compare/v8.26.0...v8.26.1) (2025-02-27)
+
+
+### Bug Fixes
+
+* firefox groups drag n drop ([#255](https://github.com/gravity-ui/dashkit/issues/255)) ([fd0eeb5](https://github.com/gravity-ui/dashkit/commit/fd0eeb59226dbec5979b151c5cd48eff2e56c28d))
+
+## [8.26.0](https://github.com/gravity-ui/dashkit/compare/v8.25.0...v8.26.0) (2025-01-29)
+
+
+### Features
+
+* add item class name export ([#251](https://github.com/gravity-ui/dashkit/issues/251)) ([d6302d4](https://github.com/gravity-ui/dashkit/commit/d6302d4a3158a94c3ac293aee1f2edc16c218337))
+
+## [8.25.0](https://github.com/gravity-ui/dashkit/compare/v8.24.3...v8.25.0) (2025-01-28)
+
+
+### Features
+
+* add onItemFocus and onItemBlur handlers ([#249](https://github.com/gravity-ui/dashkit/issues/249)) ([95d4578](https://github.com/gravity-ui/dashkit/commit/95d45782399c96f9ff2c892d3e9063289e03712b))
+
+## [8.24.3](https://github.com/gravity-ui/dashkit/compare/v8.24.2...v8.24.3) (2025-01-14)
+
+
+### Bug Fixes
+
+* **Title:** export all constants from Title ([#247](https://github.com/gravity-ui/dashkit/issues/247)) ([9ce38b0](https://github.com/gravity-ui/dashkit/commit/9ce38b0949c4049938e612fcd577c0e0c4dfaee1))
+
+## [8.24.2](https://github.com/gravity-ui/dashkit/compare/v8.24.1...v8.24.2) (2025-01-13)
+
+
+### Bug Fixes
+
+* **Title:** change default lineHeight multiplier ([#244](https://github.com/gravity-ui/dashkit/issues/244)) ([f9df9e3](https://github.com/gravity-ui/dashkit/commit/f9df9e3e98d3919dad740b4741f413336e459486))
+
+## [8.24.1](https://github.com/gravity-ui/dashkit/compare/v8.24.0...v8.24.1) (2025-01-13)
+
+
+### Bug Fixes
+
+* **Title:** return class component ([#243](https://github.com/gravity-ui/dashkit/issues/243)) ([091a4f6](https://github.com/gravity-ui/dashkit/commit/091a4f633928121d692609daaff8455957fd1bcf))
+
+## [8.24.0](https://github.com/gravity-ui/dashkit/compare/v8.23.0...v8.24.0) (2025-01-13)
+
+
+### Features
+
+* **Title:** add title font customization ([#241](https://github.com/gravity-ui/dashkit/issues/241)) ([51fbb91](https://github.com/gravity-ui/dashkit/commit/51fbb91888c8e64750ecf6aa3431709797839a5d))
+
+## [8.23.0](https://github.com/gravity-ui/dashkit/compare/v8.22.1...v8.23.0) (2024-12-18)
+
+
+### Features
+
+* add groups support for mobile layout ([#227](https://github.com/gravity-ui/dashkit/issues/227)) ([c43b6b7](https://github.com/gravity-ui/dashkit/commit/c43b6b712559dab79f75f63e5f96d4fdee3e6362))
+
+## [8.22.1](https://github.com/gravity-ui/dashkit/compare/v8.22.0...v8.22.1) (2024-12-17)
+
+
+### Bug Fixes
+
+* **GridLayout:** fix condition of reload ([#237](https://github.com/gravity-ui/dashkit/issues/237)) ([a3ddaae](https://github.com/gravity-ui/dashkit/commit/a3ddaaeb6f9e19af7e623e5e0c16463ece44a48b))
+
+## [8.22.0](https://github.com/gravity-ui/dashkit/compare/v8.21.1...v8.22.0) (2024-12-17)
+
+
+### Features
+
+* **PluginTitle:** add xl size ([#235](https://github.com/gravity-ui/dashkit/issues/235)) ([7e1ab84](https://github.com/gravity-ui/dashkit/commit/7e1ab84f59d090404d3eae555bd1e61434e2648a))
+
+## [8.21.1](https://github.com/gravity-ui/dashkit/compare/v8.21.0...v8.21.1) (2024-12-17)
+
+
+### Bug Fixes
+
+* markdown error text ([#233](https://github.com/gravity-ui/dashkit/issues/233)) ([24b8d0f](https://github.com/gravity-ui/dashkit/commit/24b8d0f24ffcc8c7a4235ab10b89b390709f6a22))
+
+## [8.21.0](https://github.com/gravity-ui/dashkit/compare/v8.20.2...v8.21.0) (2024-12-16)
+
+
+### Features
+
+* add updated reloadItems method ([#231](https://github.com/gravity-ui/dashkit/issues/231)) ([d86441c](https://github.com/gravity-ui/dashkit/commit/d86441cac8f49ab302a39b2ba2484b1a21dcb6e5))
+
 ## [8.20.2](https://github.com/gravity-ui/dashkit/compare/v8.20.1...v8.20.2) (2024-12-05)
 
 

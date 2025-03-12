@@ -6,7 +6,7 @@ import {
     DRAGGABLE_CANCEL_CLASS_NAME,
     TEMPORARY_ITEM_ID,
 } from '../../constants';
-import {DashKitContext} from '../../context/DashKitContext';
+import {DashKitContext} from '../../context';
 import {resolveLayoutGroup} from '../../utils';
 import GridItem from '../GridItem/GridItem';
 
@@ -204,27 +204,38 @@ export default class GridLayout extends React.PureComponent {
         });
     }
 
-    reloadItems() {
+    reloadItems(options) {
+        const {targetIds, force} = options || {};
+
         const {
             editMode,
             settings: {autoupdateInterval, silentLoading} = {},
             reloadItems,
         } = this.context;
+
         const {isPageHidden} = this.state;
+
         const autoupdateIntervalMs = Number(autoupdateInterval) * 1000;
+
+        const targetPlugins = targetIds
+            ? this.pluginsRefs.filter((plugin) => targetIds.includes(plugin.props.id))
+            : this.pluginsRefs;
+
         if (autoupdateIntervalMs) {
             const timeSinceLastReload = new Date().getTime() - (this._lastReloadAt || 0);
             const reloadIntervalRemains = autoupdateIntervalMs - timeSinceLastReload;
 
-            if (!isPageHidden && !editMode && reloadIntervalRemains <= 0) {
+            if (force || (!isPageHidden && !editMode && reloadIntervalRemains <= 0)) {
                 this._lastReloadAt = new Date().getTime();
-                reloadItems(this.pluginsRefs, {silentLoading, noVeil: true});
+                reloadItems(targetPlugins, {silentLoading, noVeil: true});
             }
 
             this._timeout = setTimeout(
                 () => this.reloadItems(),
                 reloadIntervalRemains <= 0 ? autoupdateIntervalMs : reloadIntervalRemains,
             );
+        } else if (force) {
+            reloadItems(targetPlugins, {silentLoading, noVeil: true});
         }
     }
 
@@ -250,7 +261,14 @@ export default class GridLayout extends React.PureComponent {
             const item = temporaryLayout
                 ? temporaryLayout.dragProps
                 : this.context.config.items.find(({id}) => id === layoutId);
-            const {offsetX, offsetY} = e.nativeEvent;
+
+            let {offsetX, offsetY} = e.nativeEvent || {};
+            if (offsetX === undefined || offsetY === undefined) {
+                const gridRect = e.currentTarget.getBoundingClientRect();
+
+                offsetX = e.clientX - gridRect.left;
+                offsetY = e.clientY - gridRect.top;
+            }
 
             currentDraggingElement = {
                 group,
@@ -587,6 +605,8 @@ export default class GridLayout extends React.PureComponent {
             outerDnDEnable,
             onItemMountChange,
             onItemRender,
+            onItemFocus,
+            onItemBlur,
         } = this.context;
 
         const {currentDraggingElement, draggedOverGroup} = this.state;
@@ -664,6 +684,8 @@ export default class GridLayout extends React.PureComponent {
                             onItemMountChange={onItemMountChange}
                             onItemRender={onItemRender}
                             gridLayout={properties}
+                            onItemFocus={onItemFocus}
+                            onItemBlur={onItemBlur}
                         />
                     );
                 })}
@@ -731,6 +753,7 @@ export default class GridLayout extends React.PureComponent {
 
                 if (group.render) {
                     const groupContext = {
+                        isMobile: false,
                         config,
                         editMode,
                         items,

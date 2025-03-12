@@ -1,6 +1,6 @@
 {
   "button_retry": "Repeat",
-  "label_render-markdown-error": "Ошибка преобразования в markdown",
+  "label_render-markdown-error": "Markdown transformation error",
   "label_settings": "Settings",
   "label_more-options": "Additional options",
   "label_copy": "Copy",

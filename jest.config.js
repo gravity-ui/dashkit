@@ -1,16 +1,10 @@
 module.exports = {
-    globals: {
-        'ts-jest': {
-            tsConfig: '<rootDir>/tsconfig.json',
-        },
-    },
+    verbose: true,
     setupFilesAfterEnv: ['<rootDir>/jest/setup.js'],
     roots: ['<rootDir>/jest', '<rootDir>/src'],
     moduleDirectories: ['node_modules', '<rootDir>/jest'],
     transform: {
-        '^.+\\.(js|jsx)$': 'babel-jest',
-        '^.+\\.(ts|tsx)$': 'ts-jest',
-        '^(?!.*\\.(js|jsx|ts|tsx|json)$)': '<rootDir>/jest/fileTransform.js',
+        '^.+\\.(t|j)sx?$': ['ts-jest', {tsconfig: './tsconfig.json'}],
     },
     transformIgnorePatterns: ['node_modules/(?!(@gravity-ui)/)'],
     snapshotSerializers: ['enzyme-to-json/serializer'],

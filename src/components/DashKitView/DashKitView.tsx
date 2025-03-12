@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {DashKitContext} from '../../context/DashKitContext';
+import {DashKitContext} from '../../context';
 import {withContext} from '../../hocs/withContext';
 import {useCalcPropsLayout} from '../../hooks/useCalcLayout';
 import type {RegisterManager} from '../../utils';
