@@ -59,7 +59,7 @@ export interface OverlayControlItem {
 export interface OverlayCustomControlItem {
     id: string;
     title?: string;
-    icon?: MenuItemProps['icon'];
+    icon?: MenuItemProps['iconStart'];
     iconSize?: number | string;
     handler?: (item: ConfigItem, params: ItemParams, state: ItemState) => void;
     visible?: (item: ConfigItem) => boolean;
@@ -293,7 +293,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                   memo.push({
                       // @ts-expect-error
                       text: item.title || i18n(item.id),
-                      icon: item.icon,
+                      iconStart: item.icon,
                       action: itemAction,
                       className: item.className,
                       qa: item.qa,
@@ -322,7 +322,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                     </Button>
                 )}
                 popupProps={{
-                    contentClassName: DRAGGABLE_CANCEL_CLASS_NAME,
+                    className: DRAGGABLE_CANCEL_CLASS_NAME,
                 }}
             />
         );

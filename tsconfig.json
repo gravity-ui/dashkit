@@ -1,18 +1,15 @@
 {
   "extends": "@gravity-ui/tsconfig",
   "compilerOptions": {
-    "declaration": true,
     "allowJs": true,
+    "declaration": true,
     "resolveJsonModule": true,
-    "rootDirs": ["src", "jest"],
     "outDir": "build/esm",
     "jsx": "react",
     "baseUrl": ".",
     "module": "esnext",
+    "moduleResolution": "bundler",
     "importHelpers": true,
-    "paths": {
-      "*": ["./jest/*", "./node_modules/*"]
-    }
   },
   "include": ["src"]
 }
