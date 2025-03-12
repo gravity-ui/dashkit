@@ -69,7 +69,7 @@
   },
   "peerDependencies": {
     "@gravity-ui/icons": "^2.13.0",
-    "@gravity-ui/uikit": "^7.2.0",
+    "@gravity-ui/uikit": "^7.0.0",
     "react": "^16.8.0  || ^17 || ^18"
   },
   "devDependencies": {
