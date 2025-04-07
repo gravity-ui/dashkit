@@ -28,6 +28,7 @@ export interface PluginTextProps extends PluginWidgetProps {
         text: string;
     } & PluginWidgetProps['data'];
     onBeforeRender: () => () => void;
+    qa?: string;
 }
 
 interface PluginTextState {
@@ -111,6 +112,7 @@ export class PluginText extends React.PureComponent<PluginTextProps, PluginTextS
         return (
             <div
                 className={b({withMarkdown: this.withMarkdown})}
+                data-qa={this.props.qa}
                 {...{[PLUGIN_ROOT_ATTR_NAME]: 'text'}}
             >
                 {this.withMarkdown ? (
