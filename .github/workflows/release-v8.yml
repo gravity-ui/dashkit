@@ -1,8 +1,8 @@
-name: Release V6
+name: Release V8
 
 on:
   push:
-    branches: [v6]
+    branches: [v8]
 
 jobs:
   release:
@@ -13,6 +13,6 @@ jobs:
         github-token: ${{ secrets.GRAVITY_UI_BOT_GITHUB_TOKEN }}
         npm-token: ${{ secrets.GRAVITY_UI_BOT_NPM_TOKEN }}
         node-version: 18
-        default-branch: v6
+        default-branch: v8
         npm-dist-tag: untagged
         skip-github-release: true
