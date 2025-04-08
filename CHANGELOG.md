@@ -1,5 +1,12 @@
 # Changelog
 
+## [9.1.0](https://github.com/gravity-ui/dashkit/compare/v9.0.0...v9.1.0) (2025-04-08)
+
+
+### Features
+
+* add qa to Text plugin ([#258](https://github.com/gravity-ui/dashkit/issues/258)) ([0ebeb13](https://github.com/gravity-ui/dashkit/commit/0ebeb1378ec32d14b84b8419ec436dcf8f53d540))
+
 ## [9.0.0](https://github.com/gravity-ui/dashkit/compare/v8.26.1...v9.0.0) (2025-03-12)
 
 
