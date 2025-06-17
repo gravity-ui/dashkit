@@ -1,5 +1,12 @@
 # Changelog
 
+## [9.1.1](https://github.com/gravity-ui/dashkit/compare/v9.1.0...v9.1.1) (2025-06-17)
+
+
+### Bug Fixes
+
+* add `aria-label` for overlay dropdown ([#228](https://github.com/gravity-ui/dashkit/issues/228)) ([ad261d7](https://github.com/gravity-ui/dashkit/commit/ad261d7e76c4796798aa6a5354e5b80771d3b9cd))
+
 ## [9.1.0](https://github.com/gravity-ui/dashkit/compare/v9.0.0...v9.1.0) (2025-04-08)
 
 
