@@ -12,7 +12,7 @@ jobs:
       with:
         github-token: ${{ secrets.GRAVITY_UI_BOT_GITHUB_TOKEN }}
         npm-token: ${{ secrets.GRAVITY_UI_BOT_NPM_TOKEN }}
-        node-version: 18
+        node-version: 20
         default-branch: v6
         npm-dist-tag: untagged
         skip-github-release: true
