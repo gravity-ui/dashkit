@@ -171,7 +171,10 @@ export function getItemsParams({
     useStateAsInitial,
 }: GetItemsParamsArg): GetItemsParamsReturn {
     const {aliases, connections} = config;
-    const items = prerenderItems({items: config.items, plugins});
+    const items = prerenderItems({
+        items: [...config.items, ...(config.globalItems || [])],
+        plugins,
+    });
     const isFirstVersion = getCurrentVersion(itemsStateAndParams) === 1;
 
     const allItems = items.reduce((paramsItems: (ConfigItem | ConfigItemGroup)[], item) => {
@@ -262,10 +265,13 @@ export function getItemsState({
     config: Config;
     itemsStateAndParams: ItemsStateAndParams;
 }) {
-    return config.items.reduce((acc: Record<string, ItemState>, {id}) => {
-        acc[id] = (itemsStateAndParams as ItemsStateAndParamsBase)?.[id]?.state || {};
-        return acc;
-    }, {});
+    return [...config.items, ...(config.globalItems || [])].reduce(
+        (acc: Record<string, ItemState>, {id}) => {
+            acc[id] = (itemsStateAndParams as ItemsStateAndParamsBase)?.[id]?.state || {};
+            return acc;
+        },
+        {},
+    );
 }
 
 export function getItemsStateAndParams({

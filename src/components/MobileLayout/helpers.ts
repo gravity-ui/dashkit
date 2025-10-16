@@ -29,7 +29,9 @@ const getWidgetsSortComparator = (hasOrderId: boolean) => {
 export const getSortedConfigItems = (config: DashKitProps['config'], hasOrderId: boolean) => {
     const sortComparator = getWidgetsSortComparator(hasOrderId);
 
-    return config.items
+    const items = [...config.items, ...(config.globalItems || [])];
+
+    return items
         .map((item, index) => Object.assign({}, item, config.layout[index]))
         .sort(sortComparator);
 };
