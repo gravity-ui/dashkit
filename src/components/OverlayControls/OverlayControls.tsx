@@ -104,6 +104,19 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         size: 'm',
     };
     context!: React.ContextType<OverlayControlsCtx>;
+
+    state = {
+        dropdownMenuItems: [] as DropdownMenuItem[],
+    };
+
+    componentDidMount() {
+        this.updateDropdownMenuItems();
+    }
+
+    componentDidUpdate() {
+        this.updateDropdownMenuItems();
+    }
+
     render() {
         const {position} = this.props;
         const items = this.getItems();
@@ -114,6 +127,30 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
             : this.renderControls();
 
         return <div className={b({position}, [DRAGGABLE_CANCEL_CLASS_NAME])}>{controls}</div>;
+    }
+
+    private shallowEqualDropdownMenu(menuA: DropdownMenuItem[], menuB: DropdownMenuItem[]) {
+        return (
+            menuA.length === menuB.length &&
+            menuA.every((itemA, index) => {
+                const itemB = menuB[index];
+
+                if (!itemB) return false;
+
+                return Object.entries(itemA).every(
+                    ([key, value]) =>
+                        // @see c9c3d089-fe7f-4ae3-8557-892939db8874 'action' is new every time
+                        key === 'action' || itemB[key as keyof DropdownMenuItem] === value,
+                );
+            })
+        );
+    }
+
+    private updateDropdownMenuItems() {
+        const items = this.getDropdownMenuItems();
+        if (!this.shallowEqualDropdownMenu(items, this.state.dropdownMenuItems)) {
+            this.setState({dropdownMenuItems: items});
+        }
     }
 
     private getItems = () => {
@@ -249,8 +286,8 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
             (Object.values(MenuItems) as Array<string>).includes(String(item)),
         );
     }
-    private renderDropdownMenu(isOnlyOneItem: boolean) {
-        const {view, size, onItemClick} = this.props;
+    private getDropdownMenuItems(): DropdownMenuItem[] {
+        const {onItemClick} = this.props;
         const {menu: contextMenu, itemsParams, itemsState} = this.context;
 
         const configItem = this.props.configItem;
@@ -261,7 +298,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
 
         const isDefaultMenu = this.isDefaultMenu(menu);
 
-        const items: DropdownMenuItem[] = isDefaultMenu
+        return isDefaultMenu
             ? ((menu || []) as string[]).reduce<DropdownMenuItem[]>((memo, name: string) => {
                   const item = this.getDropDownMenuItemConfig(name, true);
                   if (item) {
@@ -294,6 +331,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                       // @ts-expect-error
                       text: item.title || i18n(item.id),
                       iconStart: item.icon,
+                      // c9c3d089-fe7f-4ae3-8557-892939db8874
                       action: itemAction,
                       className: item.className,
                       qa: item.qa,
@@ -301,6 +339,12 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
 
                   return memo;
               }, []);
+    }
+
+    private renderDropdownMenu(isOnlyOneItem: boolean) {
+        const {view, size} = this.props;
+
+        const items = this.getDropdownMenuItems();
 
         if (items.length === 0) {
             return null;
@@ -322,6 +366,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                         <Icon data={Ellipsis} size={OVERLAY_ICON_SIZE} />
                     </Button>
                 )}
+                onOpenToggle={() => this.updateDropdownMenuItems()}
                 popupProps={{
                     className: DRAGGABLE_CANCEL_CLASS_NAME,
                 }}
