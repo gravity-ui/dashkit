@@ -135,11 +135,16 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
             menuA.every((itemA, index) => {
                 const itemB = menuB[index];
 
-                if (!itemB) return false;
+                if (!itemB) {
+                    return false;
+                }
 
                 return Object.entries(itemA).every(
                     ([key, value]) =>
-                        // @see c9c3d089-fe7f-4ae3-8557-892939db8874 'action' is new every time
+                        /**
+                         * field 'action' is new every time
+                         * @see {@link https://github.com/gravity-ui/dashkit/pull/267/commits/c6378b67c5fea07902a49ccce8118760a4ad2df0#diff-aa6a22e5a09a09ccc3f8f937d4ef6aaff97afc57da1b370f0120f0e225f7b061L297}
+                         */
                         key === 'action' || itemB[key as keyof DropdownMenuItem] === value,
                 );
             })
@@ -331,7 +336,10 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                       // @ts-expect-error
                       text: item.title || i18n(item.id),
                       iconStart: item.icon,
-                      // c9c3d089-fe7f-4ae3-8557-892939db8874
+                      /**
+                       * if the logic of creating the 'action' field is changed, it is necessary to update the logic of the method shallowEqualDropdownMenu
+                       * @see {@link https://github.com/gravity-ui/dashkit/pull/267/commits/c6378b67c5fea07902a49ccce8118760a4ad2df0#diff-aa6a22e5a09a09ccc3f8f937d4ef6aaff97afc57da1b370f0120f0e225f7b061R143}
+                       */
                       action: itemAction,
                       className: item.className,
                       qa: item.qa,
@@ -366,7 +374,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                         <Icon data={Ellipsis} size={OVERLAY_ICON_SIZE} />
                     </Button>
                 )}
-                onOpenToggle={() => this.updateDropdownMenuItems()}
+                onOpenToggle={this.updateDropdownMenuItems}
                 popupProps={{
                     className: DRAGGABLE_CANCEL_CLASS_NAME,
                 }}
