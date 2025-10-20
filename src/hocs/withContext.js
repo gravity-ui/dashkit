@@ -104,6 +104,11 @@ function useMemoStateContext(props) {
         [props.config.layout],
     );
 
+    const configItems = React.useMemo(
+        () => props.config.items.concat(props.config.globalItems || []),
+        [props.config.items, props.config.globalItems],
+    );
+
     const onItemRemove = React.useCallback(
         (id) => {
             delete nowrapAdjustedLayouts.current[id];
@@ -130,12 +135,13 @@ function useMemoStateContext(props) {
             }
         },
         [
-            props.config,
-            props.itemsStateAndParams,
+            resetTemporaryLayout,
             temporaryLayout,
             onChange,
+            props.config,
+            props.itemsStateAndParams,
+            configItems,
             setTemporaryLayout,
-            resetTemporaryLayout,
         ],
     );
 
@@ -433,6 +439,7 @@ function useMemoStateContext(props) {
     const dashkitContextValue = React.useMemo(
         () => ({
             config: props.config,
+            configItems,
             groups: props.groups,
             context: props.context,
             noOverlay: props.noOverlay,
@@ -481,6 +488,7 @@ function useMemoStateContext(props) {
             resultLayout,
             temporaryLayout,
             props.config,
+            configItems,
             props.groups,
             props.context,
             props.noOverlay,

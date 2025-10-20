@@ -420,7 +420,8 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
     };
 
     private isTitleInConfig() {
-        return Boolean(this.state.config.items.find((item) => item.id === titleId));
+        const allItems = [...this.state.config.items, ...(this.state.config.globalItems || [])];
+        return Boolean(allItems.find((item) => item.id === titleId));
     }
 
     private toggleOverlayControls = () => {

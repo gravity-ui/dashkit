@@ -26,10 +26,14 @@ const getWidgetsSortComparator = (hasOrderId: boolean) => {
               prev.y === next.y ? prev.x - next.x : prev.y - next.y;
 };
 
-export const getSortedConfigItems = (config: DashKitProps['config'], hasOrderId: boolean) => {
+export const getSortedConfigItems = (
+    config: DashKitProps['config'],
+    configItems: ConfigItem[],
+    hasOrderId: boolean,
+) => {
     const sortComparator = getWidgetsSortComparator(hasOrderId);
 
-    return config.items
+    return configItems
         .map((item, index) => Object.assign({}, item, config.layout[index]))
         .sort(sortComparator);
 };

@@ -83,6 +83,17 @@ export const getConfig = (withGroups?: boolean): DashKitProps['config'] => ({
               ]
             : []),
     ],
+    globalItems: [
+        {
+            id: 'mJ',
+            data: {
+                text: 'Global item',
+            },
+            type: 'custom',
+            namespace: 'default',
+            orderId: 5,
+        },
+    ],
     layout: [
         {
             h: 2,
@@ -110,6 +121,13 @@ export const getConfig = (withGroups?: boolean): DashKitProps['config'] => ({
             i: 'Dk',
             w: 10,
             x: 0,
+            y: 8,
+        },
+        {
+            h: 10,
+            i: 'mJ',
+            w: 10,
+            x: 10,
             y: 8,
         },
         ...(withGroups

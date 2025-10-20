@@ -319,7 +319,9 @@ export function addToQueue({
     if (!meta) {
         return {queue: [queueItem], version: CURRENT_VERSION};
     }
-    const actualIds = getActualItemsIds(config.items);
+
+    const configItems = config.items.concat(config.globalItems || []);
+    const actualIds = getActualItemsIds(configItems);
     const metaQueue = meta.queue || [];
     const notCurrent = (item: QueueItem) => {
         if (item.groupItemId) {
@@ -349,7 +351,8 @@ export function addGroupToQueue({
     if (!meta) {
         return {queue: queueItems, version: CURRENT_VERSION};
     }
-    const actualIds = getActualItemsIds(config.items);
+    const configItems = config.items.concat(config.globalItems || []);
+    const actualIds = getActualItemsIds(configItems);
     const metaQueue = meta.queue || [];
     const notCurrent = (item: QueueItem) => {
         if (item.groupItemId) {
