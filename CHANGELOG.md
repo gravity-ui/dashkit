@@ -1,5 +1,12 @@
 # Changelog
 
+## [9.1.2](https://github.com/gravity-ui/dashkit/compare/v9.1.1...v9.1.2) (2025-10-20)
+
+
+### Bug Fixes
+
+* **OverlayControls:** update dropdown menu ([#267](https://github.com/gravity-ui/dashkit/issues/267)) ([e72787f](https://github.com/gravity-ui/dashkit/commit/e72787f9eed9e33773ce33417e39ea613a3c7a10))
+
 ## [9.1.1](https://github.com/gravity-ui/dashkit/compare/v9.1.0...v9.1.1) (2025-06-17)
 
 
