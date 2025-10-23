@@ -151,12 +151,12 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         );
     }
 
-    private updateDropdownMenuItems() {
+    private updateDropdownMenuItems = () => {
         const items = this.getDropdownMenuItems();
         if (!this.shallowEqualDropdownMenu(items, this.state.dropdownMenuItems)) {
             this.setState({dropdownMenuItems: items});
         }
-    }
+    };
 
     private getItems = () => {
         const {overlayControls} = this.context;
