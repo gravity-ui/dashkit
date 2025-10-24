@@ -1,5 +1,12 @@
 # Changelog
 
+## [9.1.3](https://github.com/gravity-ui/dashkit/compare/v9.1.2...v9.1.3) (2025-10-23)
+
+
+### Bug Fixes
+
+* **OverlayControls:** add static context for updateDropdownMenuItems ([#270](https://github.com/gravity-ui/dashkit/issues/270)) ([554646f](https://github.com/gravity-ui/dashkit/commit/554646f08f44725c0e87ff8c868d816bc09be432))
+
 ## [9.1.2](https://github.com/gravity-ui/dashkit/compare/v9.1.1...v9.1.2) (2025-10-20)
 
 
