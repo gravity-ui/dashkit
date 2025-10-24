@@ -39,6 +39,7 @@ export type DashKitCtxShape = DashkitPropsPassedToCtx & {
     registerManager: RegisterManager;
     forwardedMetaRef: React.ForwardedRef<any>;
 
+    configItems: ConfigItem[];
     layout: ConfigLayout[];
     temporaryLayout: ConfigLayout[] | null;
     memorizeOriginalLayout: (

@@ -6,8 +6,9 @@ import type {Config} from '../shared';
 import {RegisterManager} from '../utils';
 
 function onUpdatePropsConfig(config: Config, registerManager: RegisterManager) {
+    const configItems = [...config.items, ...(config.globalItems || [])];
     return config.layout.map((itemLayout, i) => {
-        const {type} = config.items[i];
+        const {type} = configItems[i];
         return {
             ...registerManager.getItem(type).defaultLayout,
             ...itemLayout,
@@ -17,6 +18,7 @@ function onUpdatePropsConfig(config: Config, registerManager: RegisterManager) {
 
 export const useCalcPropsLayout = (config: Config, registerManager: RegisterManager) => {
     const [prevConfig, setPrevConfig] = React.useState(config);
+
     const [layout, updateLayout] = React.useState(onUpdatePropsConfig(config, registerManager));
 
     if (!isEqual(prevConfig.layout, config.layout)) {

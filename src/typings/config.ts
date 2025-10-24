@@ -13,6 +13,7 @@ export type SetConfigItem = ConfigItem | AddConfigItem;
 
 export type SetItemOptions = {
     excludeIds?: string[];
+    useGlobalItems?: boolean;
 };
 
 export type GridReflowOptions = {

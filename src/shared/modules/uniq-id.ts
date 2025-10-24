@@ -7,7 +7,7 @@ import {isItemWithGroup, isItemWithTabs} from './helpers';
 export function extractIdsFromConfig(config: Config): string[] {
     const ids: string[] = [];
 
-    const items = config.items || [];
+    const items = [...config.items, ...(config.globalItems || [])];
     const connections = config.connections || [];
     const layout = config.layout || [];
 

@@ -2,7 +2,7 @@ import React from 'react';
 
 import {Meta, Story} from '@storybook/react';
 
-import pluginText from '../../../plugins/Text/Text';
+import pluginText, {PluginTextProps} from '../../../plugins/Text/Text';
 import pluginTitle from '../../../plugins/Title/Title';
 import {cn} from '../../../utils/cn';
 import {DashKit, DashKitProps} from '../DashKit';
@@ -54,11 +54,13 @@ if (!getInitialized()) {
             w: 20,
             h: 20,
         },
-        renderer: function CustomPlugin() {
+        renderer: function CustomPlugin(props: PluginTextProps) {
             return (
                 <div className={b('custom-plugin')}>
                     <div className={b('custom-plugin-container')}>
-                        <div className={b('custom-plugin-text')}>Custom widget</div>
+                        <div className={b('custom-plugin-text')}>
+                            {props.data.text ?? 'Custom widget'}
+                        </div>
                     </div>
                 </div>
             );
