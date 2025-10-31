@@ -1,5 +1,12 @@
 # Changelog
 
+## [9.1.4](https://github.com/gravity-ui/dashkit/compare/v9.1.3...v9.1.4) (2025-10-31)
+
+
+### Bug Fixes
+
+* eslint curly rule ([#272](https://github.com/gravity-ui/dashkit/issues/272)) ([dea968f](https://github.com/gravity-ui/dashkit/commit/dea968f7654b5a643c9545c75f9b5a4624546e89))
+
 ## [9.1.3](https://github.com/gravity-ui/dashkit/compare/v9.1.2...v9.1.3) (2025-10-23)
 
 
