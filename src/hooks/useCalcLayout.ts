@@ -2,11 +2,11 @@ import React from 'react';
 
 import isEqual from 'lodash/isEqual';
 
-import type {Config, ConfigItem, ConfigLayout} from '../shared';
+import {type Config, type ConfigItem, type ConfigLayout, getAllConfigItems} from '../shared';
 import {RegisterManager} from '../utils';
 
 function onUpdatePropsConfig(config: Config, registerManager: RegisterManager) {
-    const configItems = [...config.items, ...(config.globalItems || [])];
+    const configItems = getAllConfigItems(config);
 
     return config.layout.reduce<ConfigLayout[]>((acc, itemLayout, i) => {
         const item: ConfigItem | undefined = configItems[i];

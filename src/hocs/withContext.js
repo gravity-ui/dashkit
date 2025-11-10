@@ -12,7 +12,7 @@ import {
 } from '../constants/common';
 import {DashKitContext, DashKitDnDContext, DashkitOvelayControlsContext} from '../context';
 import {useDeepEqualMemo} from '../hooks/useDeepEqualMemo';
-import {getItemsParams, getItemsState} from '../shared';
+import {getAllConfigItems, getItemsParams, getItemsState} from '../shared';
 import {UpdateManager, resolveLayoutGroup} from '../utils';
 
 const ITEM_PROPS = ['i', 'h', 'w', 'x', 'y', 'parent'];
@@ -104,8 +104,9 @@ function useMemoStateContext(props) {
         [props.config.layout],
     );
 
+    // to calculate items, only memorization of items and globalItems is important
     const configItems = React.useMemo(
-        () => props.config.items.concat(props.config.globalItems || []),
+        () => getAllConfigItems(props.config),
         [props.config.items, props.config.globalItems],
     );
 
