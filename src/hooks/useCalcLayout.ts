@@ -2,18 +2,28 @@ import React from 'react';
 
 import isEqual from 'lodash/isEqual';
 
-import type {Config} from '../shared';
+import type {Config, ConfigItem, ConfigLayout} from '../shared';
 import {RegisterManager} from '../utils';
 
 function onUpdatePropsConfig(config: Config, registerManager: RegisterManager) {
     const configItems = [...config.items, ...(config.globalItems || [])];
-    return config.layout.map((itemLayout, i) => {
-        const {type} = configItems[i];
-        return {
-            ...registerManager.getItem(type).defaultLayout,
-            ...itemLayout,
-        };
-    });
+
+    return config.layout.reduce<ConfigLayout[]>((acc, itemLayout, i) => {
+        const item: ConfigItem | undefined = configItems[i];
+        const foundItem =
+            item && item.id === itemLayout.i
+                ? item
+                : configItems.find((configItem) => configItem.id === itemLayout.i);
+
+        if (foundItem) {
+            acc.push({
+                ...registerManager.getItem(foundItem.type).defaultLayout,
+                ...itemLayout,
+            });
+        }
+
+        return acc;
+    }, []);
 }
 
 export const useCalcPropsLayout = (config: Config, registerManager: RegisterManager) => {
