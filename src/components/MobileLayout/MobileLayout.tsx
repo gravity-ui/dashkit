@@ -110,12 +110,11 @@ export default class MobileLayout extends React.PureComponent<
         }
 
         this._memoLayout = this.context.layout;
-        const configItems = this.context.configItems;
 
-        const hasOrderId = Boolean(configItems.find((item) => item.orderId));
+        const hasOrderId = Boolean(this.context.configItems.find((item) => item.orderId));
 
         this.sortedLayoutItems = groupBy(
-            getSortedConfigItems(this.context.config, configItems, hasOrderId),
+            getSortedConfigItems(this.context.config, this.context.configItems, hasOrderId),
             (item) => item.parent || DEFAULT_GROUP,
         );
 

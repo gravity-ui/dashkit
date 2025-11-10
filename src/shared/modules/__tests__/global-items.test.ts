@@ -10,45 +10,33 @@ import {addGroupToQueue, addToQueue, formQueueData} from '../helpers';
 import {getItemsParams, getItemsStateAndParams} from '../state-and-params';
 
 const NAMESPACE = 'default';
+const GROUP_CONTROL_TYPE = 'group-control';
+
 const GLOBAL_ITEM_ID = 'globalItem1';
 const REGULAR_ITEM_ID = 'regularItem1';
 const GROUP_ITEM_ID = 'groupItem1';
+const GROUP_ITEM_ID_2 = 'groupItem2';
 
-const getMockedGlobalItem = (id: string = GLOBAL_ITEM_ID, defaults?: StringParams): ConfigItem => ({
-    id,
-    defaults,
-    data: {},
-    type: 'control',
-    namespace: NAMESPACE,
-});
-
-const getMockedRegularItem = (
-    id: string = REGULAR_ITEM_ID,
-    defaults?: StringParams,
-): ConfigItem => ({
-    id,
-    defaults,
-    data: {},
-    type: 'control',
-    namespace: NAMESPACE,
-});
-
-const getMockedGroupItem = (
-    id: string,
-    groupItemIds: string[] = [GROUP_ITEM_ID],
-    defaults?: StringParams,
-): ConfigItem => ({
-    id,
-    data: {
-        group: groupItemIds.map((groupItemId) => ({
-            id: groupItemId,
-            namespace: NAMESPACE,
-            defaults,
-        })),
-    },
-    type: 'group-control',
-    namespace: NAMESPACE,
-});
+const getMockedControlItem = (props?: {
+    id: string;
+    groupItemIds?: string[];
+    defaults?: StringParams;
+}): ConfigItem => {
+    const {id = REGULAR_ITEM_ID, groupItemIds = [GROUP_ITEM_ID], defaults} = props || {};
+    return {
+        id,
+        defaults,
+        data: {
+            group: groupItemIds.map((groupItemId) => ({
+                id: groupItemId,
+                namespace: NAMESPACE,
+                defaults,
+            })),
+        },
+        type: GROUP_CONTROL_TYPE,
+        namespace: NAMESPACE,
+    };
+};
 
 const getMockedConfig = ({
     items = [],
@@ -69,8 +57,8 @@ const getMockedConfig = ({
 describe('globalItems functionality in config', () => {
     describe('addToQueue with globalItems', () => {
         it('should include globalItems when filtering actual IDs', () => {
-            const globalItem = getMockedGlobalItem();
-            const regularItem = getMockedRegularItem();
+            const globalItem = getMockedControlItem({id: GLOBAL_ITEM_ID});
+            const regularItem = getMockedControlItem();
             const config = getMockedConfig({
                 items: [regularItem],
                 globalItems: [globalItem],
@@ -94,7 +82,7 @@ describe('globalItems functionality in config', () => {
         });
 
         it('should handle empty globalItems array', () => {
-            const regularItem = getMockedRegularItem();
+            const regularItem = getMockedControlItem();
             const config = getMockedConfig({
                 items: [regularItem],
                 globalItems: [],
@@ -122,11 +110,11 @@ describe('globalItems functionality in config', () => {
             const globalGroupItemId = 'globalGroupItem';
             const globalGroupSubItemId = 'globalGroupSubItem';
             const globalGroupSubItemId2 = 'globalGroupSubItem2';
-            const globalGroupItem = getMockedGroupItem(globalGroupItemId, [
-                globalGroupSubItemId,
-                globalGroupSubItemId2,
-            ]);
-            const regularItem = getMockedRegularItem();
+            const globalGroupItem = getMockedControlItem({
+                id: globalGroupItemId,
+                groupItemIds: [globalGroupSubItemId, globalGroupSubItemId2],
+            });
+            const regularItem = getMockedControlItem();
             const config = getMockedConfig({
                 items: [regularItem],
                 globalItems: [globalGroupItem],
@@ -159,10 +147,18 @@ describe('globalItems functionality in config', () => {
 
     describe('formQueueData with globalItems', () => {
         it('should process globalItems in queue data formation', () => {
-            const globalItem = getMockedGroupItem(GLOBAL_ITEM_ID, [GROUP_ITEM_ID], {
-                size: 'l',
+            const globalItem = getMockedControlItem({
+                id: GLOBAL_ITEM_ID,
+                groupItemIds: [GROUP_ITEM_ID],
+                defaults: {
+                    size: 'l',
+                },
             });
-            const regularItem = getMockedRegularItem(REGULAR_ITEM_ID, {view: 'normal'});
+            const regularItem = getMockedControlItem({
+                id: REGULAR_ITEM_ID,
+                groupItemIds: [GROUP_ITEM_ID_2],
+                defaults: {view: 'normal'},
+            });
 
             const itemsStateAndParams: ItemsStateAndParams = {
                 [GLOBAL_ITEM_ID]: {
@@ -175,13 +171,15 @@ describe('globalItems functionality in config', () => {
                 },
                 [REGULAR_ITEM_ID]: {
                     params: {
-                        view: 'contrast',
+                        [GROUP_ITEM_ID_2]: {
+                            view: 'contrast',
+                        },
                     },
                 },
                 [META_KEY]: {
                     queue: [
                         {id: GLOBAL_ITEM_ID, groupItemId: GROUP_ITEM_ID},
-                        {id: REGULAR_ITEM_ID},
+                        {id: REGULAR_ITEM_ID, groupItemId: GROUP_ITEM_ID_2},
                     ],
                     version: 2,
                 },
@@ -199,7 +197,7 @@ describe('globalItems functionality in config', () => {
                     params: {size: 'xl'},
                 },
                 {
-                    id: REGULAR_ITEM_ID,
+                    id: GROUP_ITEM_ID_2,
                     namespace: NAMESPACE,
                     params: {view: 'contrast'},
                 },
@@ -212,9 +210,13 @@ describe('globalItems functionality in config', () => {
             const globalParam = 'globalParam';
             const overriddenParam = 'overriddenValue';
             const regularParam = 'regularValue';
-            const globalItem = getMockedGlobalItem(GLOBAL_ITEM_ID, {globalParam});
-            const regularItem = getMockedRegularItem(REGULAR_ITEM_ID, {
-                regularParam,
+            const globalItem = getMockedControlItem({id: GLOBAL_ITEM_ID, defaults: {globalParam}});
+            const regularItem = getMockedControlItem({
+                id: REGULAR_ITEM_ID,
+                groupItemIds: [GROUP_ITEM_ID_2],
+                defaults: {
+                    regularParam,
+                },
             });
 
             const config = getMockedConfig({
@@ -224,10 +226,14 @@ describe('globalItems functionality in config', () => {
 
             const itemsStateAndParams: ItemsStateAndParams = {
                 [GLOBAL_ITEM_ID]: {
-                    params: {globalParam: overriddenParam},
+                    params: {
+                        [GROUP_ITEM_ID]: {
+                            globalParam: overriddenParam,
+                        },
+                    },
                 },
                 [META_KEY]: {
-                    queue: [{id: GLOBAL_ITEM_ID}],
+                    queue: [{id: GLOBAL_ITEM_ID, groupItemId: GROUP_ITEM_ID}],
                     version: 2,
                 },
             };
@@ -239,18 +245,22 @@ describe('globalItems functionality in config', () => {
                 itemsStateAndParams,
                 plugins: [
                     {
-                        type: 'control',
+                        type: GROUP_CONTROL_TYPE,
                     },
                 ],
             });
 
             expect(result[GLOBAL_ITEM_ID]).toEqual({
-                globalParam: overriddenParam,
-                regularParam,
+                [GROUP_ITEM_ID]: {
+                    globalParam: overriddenParam,
+                    regularParam,
+                },
             });
             expect(result[REGULAR_ITEM_ID]).toEqual({
-                globalParam: overriddenParam,
-                regularParam,
+                [GROUP_ITEM_ID_2]: {
+                    globalParam: overriddenParam,
+                    regularParam,
+                },
             });
         });
     });
@@ -262,9 +272,16 @@ describe('globalItems functionality in config', () => {
             const regularParam = 'regularValue';
             const globalState = 'globalStateValue';
             const regularState = 'regularStateValue';
-            const globalItem = getMockedGlobalItem(GLOBAL_ITEM_ID, {globalDefault: initialValue});
-            const regularItem = getMockedRegularItem(REGULAR_ITEM_ID, {
-                regularDefault: initialValue,
+            const globalItem = getMockedControlItem({
+                id: GLOBAL_ITEM_ID,
+                defaults: {globalDefault: initialValue},
+            });
+            const regularItem = getMockedControlItem({
+                id: REGULAR_ITEM_ID,
+                groupItemIds: [GROUP_ITEM_ID_2],
+                defaults: {
+                    regularDefault: initialValue,
+                },
             });
 
             const config = getMockedConfig({
@@ -295,26 +312,27 @@ describe('globalItems functionality in config', () => {
                 itemsStateAndParams,
                 plugins: [
                     {
-                        type: 'control',
-                    },
-                    {
-                        type: 'group-control',
+                        type: GROUP_CONTROL_TYPE,
                     },
                 ],
             }) as ItemsStateAndParamsBase;
 
             expect(result[GLOBAL_ITEM_ID]).toEqual({
                 params: {
-                    globalDefault: initialValue,
-                    regularDefault: initialValue,
+                    [GROUP_ITEM_ID]: {
+                        globalDefault: initialValue,
+                        regularDefault: initialValue,
+                    },
                 },
                 state: {globalState},
             });
 
             expect(result[REGULAR_ITEM_ID]).toEqual({
                 params: {
-                    globalDefault: initialValue,
-                    regularDefault: initialValue,
+                    [GROUP_ITEM_ID_2]: {
+                        globalDefault: initialValue,
+                        regularDefault: initialValue,
+                    },
                 },
                 state: {regularState},
             });
@@ -330,8 +348,8 @@ describe('globalItems functionality in config', () => {
         it('should handle config with only globalItems and no regular items', () => {
             const globalItemId1 = 'global1';
             const globalItemId2 = 'global2';
-            const globalItem1 = getMockedGlobalItem(globalItemId1);
-            const globalItem2 = getMockedGlobalItem(globalItemId2);
+            const globalItem1 = getMockedControlItem({id: globalItemId1});
+            const globalItem2 = getMockedControlItem({id: globalItemId2});
 
             const config = getMockedConfig({
                 items: [],

@@ -140,7 +140,6 @@ function useMemoStateContext(props) {
             onChange,
             props.config,
             props.itemsStateAndParams,
-            configItems,
             setTemporaryLayout,
         ],
     );

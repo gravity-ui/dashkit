@@ -697,9 +697,7 @@ export default class GridLayout extends React.PureComponent {
     render() {
         const {config, groups, editMode, context} = this.context;
 
-        const configItems = this.context.configItems;
-
-        this.pluginsRefs.length = configItems.length;
+        this.pluginsRefs.length = this.context.configItems.length;
 
         const defaultRenderLayout = [];
         const defaultRenderItems = [];
@@ -720,7 +718,7 @@ export default class GridLayout extends React.PureComponent {
             return memo;
         }, []);
 
-        const itemsByGroup = configItems.reduce((memo, item) => {
+        const itemsByGroup = this.context.configItems.reduce((memo, item) => {
             const group = layoutMap[item.id];
             if (group) {
                 if (!memo[group]) {

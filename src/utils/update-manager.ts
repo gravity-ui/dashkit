@@ -9,6 +9,7 @@ import {
     addGroupToQueue,
     addToQueue,
     deleteFromQueue,
+    getAllConfigItems,
     getCurrentVersion,
     getInitialItemsStateAndParamsMeta,
     getItemsStateAndParamsMeta,
@@ -54,7 +55,7 @@ interface RemoveItemArg {
 }
 
 function removeItemVersion1({id, config, itemsStateAndParams}: RemoveItemArg) {
-    const configItems = config.items.concat(config.globalItems || []);
+    const configItems = getAllConfigItems(config);
     const itemIndex = configItems.findIndex((item) => item.id === id);
     const removeItem = configItems[itemIndex];
     const {defaults = {}} = removeItem;
@@ -194,7 +195,7 @@ function changeStateAndParamsVersion1({
     stateAndParams,
     itemsStateAndParams,
 }: ChangeStateAndParamsArg) {
-    const allConfigItems = config.items.concat(config.globalItems || []);
+    const allConfigItems = getAllConfigItems(config);
     const hasState = 'state' in stateAndParams;
     const {aliases} = config;
     if ('params' in stateAndParams) {
@@ -562,11 +563,13 @@ export class UpdateManager {
         config: Config;
         options?: SetItemOptions;
     }) {
-        const globalItemIndex = config.globalItems?.findIndex(({id}) => item.id === id);
+        const globalItemIndex = config.globalItems
+            ? config.globalItems.findIndex(({id}) => item.id === id)
+            : -1;
         const itemIndex = config.items.findIndex(({id}) => item.id === id);
 
-        const isGlobalItem = options.useGlobalItems;
-        const isCurrentlyInGlobalItems = globalItemIndex !== undefined && globalItemIndex !== -1;
+        const shouldBeGlobalItem = options.useGlobalItems;
+        const isCurrentlyInGlobalItems = globalItemIndex !== -1;
         const isCurrentlyInItems = itemIndex !== -1;
 
         const {counter, data} = getNewItemData({
@@ -580,14 +583,14 @@ export class UpdateManager {
         const updatedItem = {...item, data, namespace};
 
         // Determine if we need to move the item between arrays
-        if (isGlobalItem && isCurrentlyInItems) {
+        if (shouldBeGlobalItem && isCurrentlyInItems) {
             // Move from items to globalItems
             return update(config, {
                 items: {$splice: [[itemIndex, 1]]},
                 globalItems: config.globalItems ? {$push: [updatedItem]} : {$set: [updatedItem]},
                 counter: {$set: counter},
             });
-        } else if (!isGlobalItem && isCurrentlyInGlobalItems) {
+        } else if (!shouldBeGlobalItem && isCurrentlyInGlobalItems) {
             // Move from globalItems to items
             return update(config, {
                 globalItems: {$splice: [[globalItemIndex, 1]]},
@@ -614,7 +617,9 @@ export class UpdateManager {
         if (getCurrentVersion(itemsStateAndParams) === 1) {
             return removeItemVersion1({id, config, itemsStateAndParams});
         }
-        const globalItemIndex = config.globalItems?.findIndex((item) => item.id === id) ?? -1;
+        const globalItemIndex = config.globalItems
+            ? config.globalItems.findIndex((item) => item.id === id)
+            : -1;
         const itemIndex = config.items.findIndex((item) => item.id === id);
         const layoutIndex = config.layout.findIndex((item) => item.i === id);
         const item = config.items[itemIndex] || config.globalItems?.[globalItemIndex];
@@ -631,13 +636,13 @@ export class UpdateManager {
         );
 
         const updateAction: {[key: string]: Spec<ConfigItem[], never>} =
-            globalItemIndex !== undefined && globalItemIndex !== -1
-                ? {globalItems: {$splice: [[globalItemIndex, 1]]}}
-                : {
+            globalItemIndex === -1
+                ? {
                       items: {
                           $splice: [[itemIndex, 1]],
                       },
-                  };
+                  }
+                : {globalItems: {$splice: [[globalItemIndex, 1]]}};
 
         return {
             config: update(config, {
@@ -677,8 +682,6 @@ export class UpdateManager {
         itemsStateAndParams,
         options,
     }: ChangeStateAndParamsArg): ItemsStateAndParams {
-        const allConfigItems = config.items.concat(config.globalItems || []);
-
         if (getCurrentVersion(itemsStateAndParams) === 1) {
             return changeStateAndParamsVersion1({
                 id: initiatorId,
@@ -690,7 +693,7 @@ export class UpdateManager {
 
         const action = options?.action;
         const hasState = 'state' in stateAndParams;
-        const items = allConfigItems;
+        const items = getAllConfigItems(config);
         const itemsIds = items.map(({id: itemId}) => itemId);
         const itemsStateAndParamsIds = Object.keys(omit(itemsStateAndParams, [META_KEY]));
         const unusedIds = itemsStateAndParamsIds.filter((id) => !itemsIds.includes(id));
