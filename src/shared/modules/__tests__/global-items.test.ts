@@ -342,6 +342,61 @@ describe('globalItems functionality in config', () => {
                 version: 2,
             });
         });
+
+        it('should correctly handle config without globalItems', () => {
+            const initialValue = 'value';
+            const regularParam = 'regularValue';
+            const regularState = 'regularStateValue';
+
+            const regularItem = getMockedControlItem({
+                id: REGULAR_ITEM_ID,
+                defaults: {
+                    regularParam: initialValue,
+                },
+            });
+
+            const config = getMockedConfig({
+                items: [regularItem],
+                globalItems: undefined,
+            });
+
+            const itemsStateAndParams: ItemsStateAndParams = {
+                [REGULAR_ITEM_ID]: {
+                    params: {regularParam: initialValue},
+                    state: {regularState},
+                },
+                [META_KEY]: {
+                    queue: [{id: REGULAR_ITEM_ID, groupItemId: GROUP_ITEM_ID}],
+                    version: 2,
+                },
+            };
+
+            const result = getItemsStateAndParams({
+                defaultGlobalParams: {},
+                globalParams: {regularParam},
+                config,
+                itemsStateAndParams,
+                plugins: [
+                    {
+                        type: GROUP_CONTROL_TYPE,
+                    },
+                ],
+            }) as ItemsStateAndParamsBase;
+
+            expect(result[REGULAR_ITEM_ID]).toEqual({
+                params: {
+                    [GROUP_ITEM_ID]: {
+                        regularParam,
+                    },
+                },
+                state: {regularState},
+            });
+
+            expect(result[META_KEY]).toEqual({
+                queue: [{id: REGULAR_ITEM_ID, groupItemId: GROUP_ITEM_ID}],
+                version: 2,
+            });
+        });
     });
 
     describe('edge cases with globalItems', () => {
