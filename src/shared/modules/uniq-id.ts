@@ -2,12 +2,12 @@ import Hashids from 'hashids';
 
 import type {Config} from '../types';
 
-import {isItemWithGroup, isItemWithTabs} from './helpers';
+import {getAllConfigItems, isItemWithGroup, isItemWithTabs} from './helpers';
 
 export function extractIdsFromConfig(config: Config): string[] {
     const ids: string[] = [];
 
-    const items = config.items || [];
+    const items = getAllConfigItems(config);
     const connections = config.connections || [];
     const layout = config.layout || [];
 

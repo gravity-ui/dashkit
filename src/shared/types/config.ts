@@ -71,6 +71,7 @@ export interface Config {
     salt: string;
     counter: number;
     items: ConfigItem[];
+    globalItems?: ConfigItem[];
     layout: ConfigLayout[];
     aliases: ConfigAliases;
     connections: ConfigConnection[];

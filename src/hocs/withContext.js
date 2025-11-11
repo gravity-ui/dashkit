@@ -12,7 +12,7 @@ import {
 } from '../constants/common';
 import {DashKitContext, DashKitDnDContext, DashkitOvelayControlsContext} from '../context';
 import {useDeepEqualMemo} from '../hooks/useDeepEqualMemo';
-import {getItemsParams, getItemsState} from '../shared';
+import {getAllConfigItems, getItemsParams, getItemsState} from '../shared';
 import {UpdateManager, resolveLayoutGroup} from '../utils';
 
 const ITEM_PROPS = ['i', 'h', 'w', 'x', 'y', 'parent'];
@@ -104,6 +104,12 @@ function useMemoStateContext(props) {
         [props.config.layout],
     );
 
+    // to calculate items, only memorization of items and globalItems is important
+    const configItems = React.useMemo(
+        () => getAllConfigItems(props.config),
+        [props.config.items, props.config.globalItems],
+    );
+
     const onItemRemove = React.useCallback(
         (id) => {
             delete nowrapAdjustedLayouts.current[id];
@@ -130,12 +136,12 @@ function useMemoStateContext(props) {
             }
         },
         [
-            props.config,
-            props.itemsStateAndParams,
+            resetTemporaryLayout,
             temporaryLayout,
             onChange,
+            props.config,
+            props.itemsStateAndParams,
             setTemporaryLayout,
-            resetTemporaryLayout,
         ],
     );
 
@@ -433,6 +439,7 @@ function useMemoStateContext(props) {
     const dashkitContextValue = React.useMemo(
         () => ({
             config: props.config,
+            configItems,
             groups: props.groups,
             context: props.context,
             noOverlay: props.noOverlay,
@@ -481,6 +488,7 @@ function useMemoStateContext(props) {
             resultLayout,
             temporaryLayout,
             props.config,
+            configItems,
             props.groups,
             props.context,
             props.noOverlay,

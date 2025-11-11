@@ -2,21 +2,33 @@ import React from 'react';
 
 import isEqual from 'lodash/isEqual';
 
-import type {Config} from '../shared';
+import {type Config, type ConfigItem, type ConfigLayout, getAllConfigItems} from '../shared';
 import {RegisterManager} from '../utils';
 
 function onUpdatePropsConfig(config: Config, registerManager: RegisterManager) {
-    return config.layout.map((itemLayout, i) => {
-        const {type} = config.items[i];
-        return {
-            ...registerManager.getItem(type).defaultLayout,
-            ...itemLayout,
-        };
-    });
+    const configItems = getAllConfigItems(config);
+
+    return config.layout.reduce<ConfigLayout[]>((acc, itemLayout, i) => {
+        const item: ConfigItem | undefined = configItems[i];
+        const foundItem =
+            item && item.id === itemLayout.i
+                ? item
+                : configItems.find((configItem) => configItem.id === itemLayout.i);
+
+        if (foundItem) {
+            acc.push({
+                ...registerManager.getItem(foundItem.type).defaultLayout,
+                ...itemLayout,
+            });
+        }
+
+        return acc;
+    }, []);
 }
 
 export const useCalcPropsLayout = (config: Config, registerManager: RegisterManager) => {
     const [prevConfig, setPrevConfig] = React.useState(config);
+
     const [layout, updateLayout] = React.useState(onUpdatePropsConfig(config, registerManager));
 
     if (!isEqual(prevConfig.layout, config.layout)) {

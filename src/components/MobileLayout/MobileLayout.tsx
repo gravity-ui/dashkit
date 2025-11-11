@@ -40,9 +40,16 @@ export default class MobileLayout extends React.PureComponent<
     };
 
     render() {
-        const {config, layout, groups = [{id: DEFAULT_GROUP}], context, editMode} = this.context;
+        const {
+            config,
+            layout,
+            groups = [{id: DEFAULT_GROUP}],
+            context,
+            editMode,
+            configItems,
+        } = this.context;
 
-        this.pluginsRefs.length = config.items.length;
+        this.pluginsRefs.length = configItems.length;
 
         const sortedItems = this.getSortedLayoutItems();
         let indexOffset = 0;
@@ -104,10 +111,10 @@ export default class MobileLayout extends React.PureComponent<
 
         this._memoLayout = this.context.layout;
 
-        const hasOrderId = Boolean(this.context.config.items.find((item) => item.orderId));
+        const hasOrderId = Boolean(this.context.configItems.find((item) => item.orderId));
 
         this.sortedLayoutItems = groupBy(
-            getSortedConfigItems(this.context.config, hasOrderId),
+            getSortedConfigItems(this.context.config, this.context.configItems, hasOrderId),
             (item) => item.parent || DEFAULT_GROUP,
         );
 

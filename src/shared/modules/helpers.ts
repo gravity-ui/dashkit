@@ -319,7 +319,9 @@ export function addToQueue({
     if (!meta) {
         return {queue: [queueItem], version: CURRENT_VERSION};
     }
-    const actualIds = getActualItemsIds(config.items);
+
+    const configItems = getAllConfigItems(config);
+    const actualIds = getActualItemsIds(configItems);
     const metaQueue = meta.queue || [];
     const notCurrent = (item: QueueItem) => {
         if (item.groupItemId) {
@@ -349,7 +351,8 @@ export function addGroupToQueue({
     if (!meta) {
         return {queue: queueItems, version: CURRENT_VERSION};
     }
-    const actualIds = getActualItemsIds(config.items);
+    const configItems = getAllConfigItems(config);
+    const actualIds = getActualItemsIds(configItems);
     const metaQueue = meta.queue || [];
     const notCurrent = (item: QueueItem) => {
         if (item.groupItemId) {
@@ -457,4 +460,10 @@ export function hasActionParams(stateAndParams: ItemStateAndParams) {
     }
 
     return hasActionParam(stateAndParams.params);
+}
+
+// Combines regular items and global items from config into a single array
+// For global usage across the project
+export function getAllConfigItems(config: Config): ConfigItem[] {
+    return [...config.items, ...(config.globalItems || [])];
 }

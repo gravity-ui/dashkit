@@ -260,7 +260,7 @@ export default class GridLayout extends React.PureComponent {
 
             const item = temporaryLayout
                 ? temporaryLayout.dragProps
-                : this.context.config.items.find(({id}) => id === layoutId);
+                : this.context.configItems.find(({id}) => id === layoutId);
 
             let {offsetX, offsetY} = e.nativeEvent || {};
             if (offsetX === undefined || offsetY === undefined) {
@@ -697,7 +697,7 @@ export default class GridLayout extends React.PureComponent {
     render() {
         const {config, groups, editMode, context} = this.context;
 
-        this.pluginsRefs.length = config.items.length;
+        this.pluginsRefs.length = this.context.configItems.length;
 
         const defaultRenderLayout = [];
         const defaultRenderItems = [];
@@ -718,7 +718,7 @@ export default class GridLayout extends React.PureComponent {
             return memo;
         }, []);
 
-        const itemsByGroup = config.items.reduce((memo, item) => {
+        const itemsByGroup = this.context.configItems.reduce((memo, item) => {
             const group = layoutMap[item.id];
             if (group) {
                 if (!memo[group]) {

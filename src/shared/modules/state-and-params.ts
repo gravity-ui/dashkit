@@ -19,6 +19,7 @@ import {
 import {
     FormedQueueData,
     formQueueData,
+    getAllConfigItems,
     getCurrentVersion,
     getMapItemsIgnores,
     hasActionParam,
@@ -170,8 +171,12 @@ export function getItemsParams({
     plugins,
     useStateAsInitial,
 }: GetItemsParamsArg): GetItemsParamsReturn {
+    const configItems = getAllConfigItems(config);
     const {aliases, connections} = config;
-    const items = prerenderItems({items: config.items, plugins});
+    const items = prerenderItems({
+        items: configItems,
+        plugins,
+    });
     const isFirstVersion = getCurrentVersion(itemsStateAndParams) === 1;
 
     const allItems = items.reduce((paramsItems: (ConfigItem | ConfigItemGroup)[], item) => {
@@ -262,7 +267,8 @@ export function getItemsState({
     config: Config;
     itemsStateAndParams: ItemsStateAndParams;
 }) {
-    return config.items.reduce((acc: Record<string, ItemState>, {id}) => {
+    const configItems = getAllConfigItems(config);
+    return configItems.reduce((acc: Record<string, ItemState>, {id}) => {
         acc[id] = (itemsStateAndParams as ItemsStateAndParamsBase)?.[id]?.state || {};
         return acc;
     }, {});

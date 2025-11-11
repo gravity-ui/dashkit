@@ -9,6 +9,7 @@ import {
     addGroupToQueue,
     addToQueue,
     deleteFromQueue,
+    getAllConfigItems,
     getCurrentVersion,
     getInitialItemsStateAndParamsMeta,
     getItemsStateAndParamsMeta,
@@ -54,8 +55,9 @@ interface RemoveItemArg {
 }
 
 function removeItemVersion1({id, config, itemsStateAndParams}: RemoveItemArg) {
-    const itemIndex = config.items.findIndex((item) => item.id === id);
-    const removeItem = config.items[itemIndex];
+    const configItems = getAllConfigItems(config);
+    const itemIndex = configItems.findIndex((item) => item.id === id);
+    const removeItem = configItems[itemIndex];
     const {defaults = {}} = removeItem;
     const itemParamsKeys = Object.keys(defaults);
     const getParams = (excludeId: string, items: ConfigItem[]) => {
@@ -68,10 +70,10 @@ function removeItemVersion1({id, config, itemsStateAndParams}: RemoveItemArg) {
             }, {}),
         );
     };
-    const allParamsKeys = getParams(id, config.items);
+    const allParamsKeys = getParams(id, configItems);
     const allNamespaceParamsKeys = getParams(
         id,
-        config.items.filter((item) => item.namespace === removeItem.namespace),
+        configItems.filter((item) => item.namespace === removeItem.namespace),
     );
     const uniqParamsKeys = itemParamsKeys.filter((key) => !allParamsKeys.includes(key));
     const uniqNamespaceParamsKeys = itemParamsKeys.filter(
@@ -83,7 +85,7 @@ function removeItemVersion1({id, config, itemsStateAndParams}: RemoveItemArg) {
             (acc, key) => {
                 const {params} = (itemsStateAndParams as ItemsStateAndParamsBase)[key];
                 // в state из урла могут быть элементы, которых нет в config.items
-                const item = config.items.find((configItem) => configItem.id === key);
+                const item = configItems.find((configItem) => configItem.id === key);
                 if (params && item) {
                     const {namespace} = item;
                     const currentUniqParamsKeys =
@@ -193,10 +195,11 @@ function changeStateAndParamsVersion1({
     stateAndParams,
     itemsStateAndParams,
 }: ChangeStateAndParamsArg) {
+    const allConfigItems = getAllConfigItems(config);
     const hasState = 'state' in stateAndParams;
     const {aliases} = config;
     if ('params' in stateAndParams) {
-        const initiatorItem = config.items.find(({id}) => id === initiatorId) as ConfigItem;
+        const initiatorItem = allConfigItems.find(({id}) => id === initiatorId) as ConfigItem;
         const allowableParams = getAllowableChangedParams(
             initiatorItem,
             stateAndParams,
@@ -211,7 +214,7 @@ function changeStateAndParamsVersion1({
             .filter(({to}) => to === initiatorId)
             .map(({from}) => from);
 
-        const updateIds = config.items
+        const updateIds = allConfigItems
             .filter(
                 (item) =>
                     item.namespace === initiatorItem.namespace &&
@@ -488,6 +491,13 @@ export class UpdateManager {
         const newItem = {...item, id: newIdData.id, data: newItemData.data, namespace};
         const saveDefaultLayout = pick(layout, ['h', 'w', 'x', 'y', 'parent']);
 
+        const updateActions = {
+            counter: {$set: counter},
+            ...(options.useGlobalItems
+                ? {globalItems: config.globalItems ? {$push: [newItem]} : {$set: [newItem]}}
+                : {items: {$push: [newItem]}}),
+        };
+
         if (options.updateLayout) {
             const byId = options.updateLayout.reduce<Record<string, ConfigLayout>>((memo, t) => {
                 memo[t.i] = t;
@@ -510,9 +520,8 @@ export class UpdateManager {
             }
 
             return update(config, {
-                items: {$push: [newItem]},
+                ...updateActions,
                 layout: {$set: newLayout},
-                counter: {$set: counter},
             });
         } else if (isFinite(layout.y)) {
             let newLayout;
@@ -529,18 +538,16 @@ export class UpdateManager {
             }
 
             return update(config, {
-                items: {$push: [newItem]},
+                ...updateActions,
                 layout: {$set: newLayout},
-                counter: {$set: counter},
             });
         } else {
             const layoutY = bottom(config.layout);
             const newLayoutItem = {...saveDefaultLayout, y: layoutY, i: newItem.id};
 
             return update(config, {
-                items: {$push: [newItem]},
+                ...updateActions,
                 layout: {$push: [newLayoutItem]},
-                counter: {$set: counter},
             });
         }
     }
@@ -556,7 +563,14 @@ export class UpdateManager {
         config: Config;
         options?: SetItemOptions;
     }) {
+        const globalItemIndex = config.globalItems
+            ? config.globalItems.findIndex(({id}) => item.id === id)
+            : -1;
         const itemIndex = config.items.findIndex(({id}) => item.id === id);
+
+        const shouldBeGlobalItem = options.useGlobalItems;
+        const isCurrentlyInGlobalItems = globalItemIndex !== -1;
+        const isCurrentlyInItems = itemIndex !== -1;
 
         const {counter, data} = getNewItemData({
             item,
@@ -566,10 +580,34 @@ export class UpdateManager {
             options,
         });
 
-        return update(config, {
-            items: {[itemIndex]: {$set: {...item, data, namespace}}},
-            counter: {$set: counter},
-        });
+        const updatedItem = {...item, data, namespace};
+
+        // Determine if we need to move the item between arrays
+        if (shouldBeGlobalItem && isCurrentlyInItems) {
+            // Move from items to globalItems
+            return update(config, {
+                items: {$splice: [[itemIndex, 1]]},
+                globalItems: config.globalItems ? {$push: [updatedItem]} : {$set: [updatedItem]},
+                counter: {$set: counter},
+            });
+        } else if (!shouldBeGlobalItem && isCurrentlyInGlobalItems) {
+            // Move from globalItems to items
+            return update(config, {
+                globalItems: {$splice: [[globalItemIndex, 1]]},
+                items: {$push: [updatedItem]},
+                counter: {$set: counter},
+            });
+        } else {
+            // Update in current location
+            const updateAction = isCurrentlyInGlobalItems
+                ? {globalItems: {[globalItemIndex]: {$set: updatedItem}}}
+                : {items: {[itemIndex]: {$set: updatedItem}}};
+
+            return update(config, {
+                ...updateAction,
+                counter: {$set: counter},
+            });
+        }
     }
 
     static removeItem({id, config, itemsStateAndParams = {}}: RemoveItemArg): {
@@ -579,9 +617,13 @@ export class UpdateManager {
         if (getCurrentVersion(itemsStateAndParams) === 1) {
             return removeItemVersion1({id, config, itemsStateAndParams});
         }
+        const globalItemIndex = config.globalItems
+            ? config.globalItems.findIndex((item) => item.id === id)
+            : -1;
         const itemIndex = config.items.findIndex((item) => item.id === id);
         const layoutIndex = config.layout.findIndex((item) => item.i === id);
-        const item = config.items[itemIndex];
+        const item = config.items[itemIndex] || config.globalItems?.[globalItemIndex];
+
         let itemIds = [id];
         if (isItemWithTabs(item)) {
             itemIds = [id].concat(item.data.tabs.map((tab) => tab.id));
@@ -592,17 +634,25 @@ export class UpdateManager {
         const connections = config.connections.filter(
             ({from, to}) => !itemIds.includes(from) && !itemIds.includes(to),
         );
+
+        const updateAction: {[key: string]: Spec<ConfigItem[], never>} =
+            globalItemIndex === -1
+                ? {
+                      items: {
+                          $splice: [[itemIndex, 1]],
+                      },
+                  }
+                : {globalItems: {$splice: [[globalItemIndex, 1]]}};
+
         return {
             config: update(config, {
-                items: {
-                    $splice: [[itemIndex, 1]],
-                },
                 layout: {
                     $splice: [[layoutIndex, 1]],
                 },
                 connections: {
                     $set: connections,
                 },
+                ...updateAction,
             }),
             itemsStateAndParams: update(itemsStateAndParams, {
                 $unset: [id],
@@ -643,7 +693,7 @@ export class UpdateManager {
 
         const action = options?.action;
         const hasState = 'state' in stateAndParams;
-        const {items} = config;
+        const items = getAllConfigItems(config);
         const itemsIds = items.map(({id: itemId}) => itemId);
         const itemsStateAndParamsIds = Object.keys(omit(itemsStateAndParams, [META_KEY]));
         const unusedIds = itemsStateAndParamsIds.filter((id) => !itemsIds.includes(id));
@@ -690,7 +740,12 @@ export class UpdateManager {
             const tabId: string | undefined = isItemWithTabs(initiatorItem)
                 ? newTabId || resolveItemInnerId({item: initiatorItem, itemsStateAndParams})
                 : undefined;
-            const meta = addToQueue({id: initiatorId, tabId, config, itemsStateAndParams});
+            const meta = addToQueue({
+                id: initiatorId,
+                tabId,
+                config,
+                itemsStateAndParams,
+            });
             let commandUpdateParams: string = (itemsStateAndParams as ItemsStateAndParamsBase)[
                 initiatorId
             ]?.params
