@@ -14,8 +14,15 @@ export interface QueueItem {
     groupItemId?: string;
 }
 
+export interface QueueGlobalItem {
+    id: string;
+    groupItemId?: string;
+    params: StringParams;
+}
+
 export type StateAndParamsMetaData = {
     queue: QueueItem[];
+    globalQueue?: QueueGlobalItem[];
     version: number;
 };
 

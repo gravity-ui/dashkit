@@ -6,6 +6,7 @@ import {DEFAULT_GROUP, DEFAULT_NAMESPACE} from '../constants';
 import {
     ConfigLayout,
     META_KEY,
+    addGroupToGlobalQueue,
     addGroupToQueue,
     addToQueue,
     deleteFromQueue,
@@ -359,7 +360,7 @@ function changeGroupParams({
         config,
         itemsStateAndParams,
     });
-    const updatedItems: Record<string, StringParams> = {};
+    const updatedParams: Record<string, StringParams> = {};
     const currentItemParams = (itemsStateAndParams as ItemsStateAndParamsBase)[initiatorId]
         ?.params as Record<string, StringParams> | undefined;
 
@@ -371,26 +372,34 @@ function changeGroupParams({
                 itemsStateAndParams,
             });
 
-            updatedItems[groupItem.id] = changedParams;
+            updatedParams[groupItem.id] = changedParams;
 
             continue;
         }
 
         if (currentItemParams && currentItemParams[groupItem.id]) {
-            updatedItems[groupItem.id] = currentItemParams[groupItem.id];
+            updatedParams[groupItem.id] = currentItemParams[groupItem.id];
         }
     }
+
+    const metaWithGlobal = addGroupToGlobalQueue({
+        id: initiatorId,
+        groupItemIds,
+        config,
+        meta,
+        currentParams: updatedParams,
+    });
 
     const obj = {
         $unset: unusedIds,
         [initiatorId]: {
             $auto: {
                 params: {
-                    $set: updatedItems,
+                    $set: updatedParams,
                 },
             },
         },
-        [META_KEY]: {$set: meta},
+        [META_KEY]: {$set: metaWithGlobal},
     };
     return update(itemsStateAndParams, obj);
 }
@@ -740,12 +749,7 @@ export class UpdateManager {
             const tabId: string | undefined = isItemWithTabs(initiatorItem)
                 ? newTabId || resolveItemInnerId({item: initiatorItem, itemsStateAndParams})
                 : undefined;
-            const meta = addToQueue({
-                id: initiatorId,
-                tabId,
-                config,
-                itemsStateAndParams,
-            });
+            const meta = addToQueue({id: initiatorId, tabId, config, itemsStateAndParams});
             let commandUpdateParams: string = (itemsStateAndParams as ItemsStateAndParamsBase)[
                 initiatorId
             ]?.params

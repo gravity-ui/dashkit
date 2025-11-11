@@ -292,6 +292,14 @@ interface ChangeQueueGroupArg {
     itemsStateAndParams: ItemsStateAndParams;
 }
 
+interface ChnageGlobalQueueGroupArg {
+    id: string;
+    groupItemIds: string[];
+    config: Config;
+    meta: StateAndParamsMetaData;
+    currentParams: Record<string, StringParams>;
+}
+
 function getActualItemsIds(items: ConfigItem[]) {
     return items.reduce((ids: string[], item) => {
         if (isItemWithGroup(item)) {
@@ -360,20 +368,73 @@ export function addGroupToQueue({
         }
         return true;
     };
-    return {
+
+    const updatedMeta: StateAndParamsMetaData = {
         queue: metaQueue
             .filter((item) => actualIds.includes(item.id) && notCurrent(item))
             .concat(queueItems),
         version: meta.version || CURRENT_VERSION,
     };
+
+    if (meta.globalQueue) {
+        updatedMeta.globalQueue = meta.globalQueue;
+    }
+    return updatedMeta;
+}
+
+export function addGroupToGlobalQueue({
+    id,
+    groupItemIds,
+    config,
+    meta,
+    currentParams,
+}: ChnageGlobalQueueGroupArg): StateAndParamsMetaData {
+    const isGlobalItem = config.globalItems?.some((item) => item.id === id);
+
+    if (!isGlobalItem || !currentParams) {
+        return meta;
+    }
+
+    const globalQueue = meta.globalQueue
+        ? meta.globalQueue.filter((item) =>
+              item.groupItemId ? !groupItemIds.includes(item.groupItemId) : true,
+          )
+        : [];
+
+    for (const groupItemId of groupItemIds) {
+        const groupItemParams = currentParams[groupItemId];
+
+        if (!groupItemParams) {
+            continue;
+        }
+
+        globalQueue.push({
+            id,
+            groupItemId,
+            params: groupItemParams,
+        });
+    }
+
+    return globalQueue.length ? {...meta, globalQueue} : meta;
 }
 
 export function deleteFromQueue(data: ChangeQueueArg): StateAndParamsMetaData {
     const meta = addToQueue(data);
-    return {
+
+    const result = {
         ...meta,
         queue: meta.queue.slice(0, -1),
     };
+
+    if (meta.globalQueue) {
+        const globalItemIndex = meta.globalQueue.findIndex((item) => item.id === data.id);
+
+        if (globalItemIndex !== -1) {
+            result.globalQueue = meta.globalQueue.slice(globalItemIndex, globalItemIndex + 1);
+        }
+    }
+
+    return result;
 }
 
 /**
