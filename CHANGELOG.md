@@ -1,5 +1,12 @@
 # Changelog
 
+## [9.2.0](https://github.com/gravity-ui/dashkit/compare/v9.1.4...v9.2.0) (2025-11-11)
+
+
+### Features
+
+* support globalItems in config ([#268](https://github.com/gravity-ui/dashkit/issues/268)) ([efaddf1](https://github.com/gravity-ui/dashkit/commit/efaddf1d812698938d9d268a98517029e5654121))
+
 ## [9.1.4](https://github.com/gravity-ui/dashkit/compare/v9.1.3...v9.1.4) (2025-10-31)
 
 
