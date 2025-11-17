@@ -3,6 +3,10 @@ import React from 'react';
 import isEqual from 'lodash/isEqual';
 import pick from 'lodash/pick';
 
+import type {
+    OverlayControlItem,
+    PreparedCopyItemOptions,
+} from '../components/OverlayControls/OverlayControls';
 import {
     COMPACT_TYPE_HORIZONTAL_NOWRAP,
     DEFAULT_GROUP,
@@ -11,24 +15,111 @@ import {
     TEMPORARY_ITEM_ID,
 } from '../constants/common';
 import {DashKitContext, DashKitDnDContext, DashkitOvelayControlsContext} from '../context';
+import type {DashKitCtxShape, OverlayControlsCtxShape, TemporaryLayout} from '../context';
 import {useDeepEqualMemo} from '../hooks/useDeepEqualMemo';
+import type {
+    Config,
+    ConfigItem,
+    ConfigLayout,
+    GlobalParams,
+    ItemDropProps,
+    ItemsStateAndParams,
+} from '../shared';
 import {getAllConfigItems, getItemsParams, getItemsState} from '../shared';
+import type {
+    ContextProps,
+    DashKitGroup,
+    ItemManipulationCallback,
+    MenuItem,
+    PluginRef,
+    SettingsProps,
+} from '../typings';
+import type {RegisterManager, RegisterManagerPlugin} from '../utils';
 import {UpdateManager, resolveLayoutGroup} from '../utils';
 
-const ITEM_PROPS = ['i', 'h', 'w', 'x', 'y', 'parent'];
+const ITEM_PROPS = ['i', 'h', 'w', 'x', 'y', 'parent'] as const;
 
-function useMemoStateContext(props) {
+export type DashKitWithContextProps = {
+    config: Config;
+    itemsStateAndParams: ItemsStateAndParams;
+    groups?: DashKitGroup[];
+    onChange: (data: {
+        config: Config;
+        itemsStateAndParams: ItemsStateAndParams;
+        groups?: DashKitGroup[];
+    }) => void;
+    layout: ConfigLayout[];
+    registerManager: RegisterManager;
+    defaultGlobalParams: GlobalParams;
+    globalParams: GlobalParams;
+    onItemEdit: (item: ConfigItem) => void;
+    context: ContextProps;
+    noOverlay: boolean;
+    focusable?: boolean;
+    settings: SettingsProps;
+    onItemMountChange?: (item: ConfigItem, state: {isAsync: boolean; isMounted: boolean}) => void;
+    onItemRender?: (item: ConfigItem) => void;
+    forwardedMetaRef: React.ForwardedRef<any>;
+    draggableHandleClassName?: string;
+    onDrop?: (dropProps: ItemDropProps) => void;
+    overlayControls?: Record<string, OverlayControlItem[]> | null;
+    overlayMenuItems?: MenuItem[] | null;
+    getPreparedCopyItemOptions?: (options: PreparedCopyItemOptions) => PreparedCopyItemOptions;
+    onCopyFulfill?: (error: null | Error, data?: PreparedCopyItemOptions) => void;
+    editMode: boolean;
+    onItemFocus?: (item: ConfigItem) => void;
+    onItemBlur?: (item: ConfigItem) => void;
+    onDragStart?: ItemManipulationCallback;
+    onDrag?: ItemManipulationCallback;
+    onDragStop?: ItemManipulationCallback;
+    onResizeStart?: ItemManipulationCallback;
+    onResize?: ItemManipulationCallback;
+    onResizeStop?: ItemManipulationCallback;
+};
+
+type OriginalLayouts = Record<string, ConfigLayout>;
+
+type AdjustedLayouts = Record<string, ConfigLayout>;
+
+type NowrapAdjustedLayouts = Record<string, number>;
+
+type UseMemoStateContextResult = {
+    dashkitContextValue: DashKitCtxShape;
+    controlsContextValue: OverlayControlsCtxShape;
+};
+
+const hasGetMeta = (value: PluginRef): value is {getMeta: () => Promise<any>} => {
+    return (
+        typeof value === 'object' &&
+        value !== null &&
+        'getMeta' in value &&
+        typeof value.getMeta === 'function'
+    );
+};
+
+const hasReload = (
+    value: PluginRef,
+): value is {reload: (data: {silentLoading: boolean; noVeil: boolean}) => void} => {
+    return (
+        typeof value === 'object' &&
+        value !== null &&
+        'reload' in value &&
+        typeof value.reload === 'function'
+    );
+};
+
+function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContextResult {
     // так как мы не хотим хранить параметры виджета с активированной автовысотой в сторе и на сервере, актуальный
     // (видимый юзером в конкретный момент времени) лэйаут (массив объектов с данными о ширине, высоте,
     // расположении конкретного виджета на сетке) будет храниться в стейте, но, для того, чтобы в стор попадал
     // лэйаут без учета вижетов с активированной автовысотой, в момент "подстройки" высоты виджета значение h
     // (высота) из конфига будет запоминаться в originalLayouts, новое значение высоты в adjustedLayouts
 
-    const originalLayouts = React.useRef({});
-    const adjustedLayouts = React.useRef({});
-    const nowrapAdjustedLayouts = React.useRef({});
+    const originalLayouts = React.useRef<OriginalLayouts>({});
+    const adjustedLayouts = React.useRef<AdjustedLayouts>({});
+    const nowrapAdjustedLayouts = React.useRef<NowrapAdjustedLayouts>({});
 
-    const [temporaryLayout, setTemporaryLayout] = React.useState(null);
+    const [temporaryLayout, setTemporaryLayout] = React.useState<TemporaryLayout | null>(null);
     const resetTemporaryLayout = React.useCallback(
         () => setTemporaryLayout(null),
         [setTemporaryLayout],
@@ -64,22 +155,22 @@ function useMemoStateContext(props) {
     // "подстроенный"; чтобы, для сохранения в сторе "ушли" значения без учёта подстройки (как если бы у этих
     // виджетов автовысота была деактивирована) корректируем их используя this.originalLayouts
     const onLayoutChange = React.useCallback(
-        (layout) => {
+        (layout: ConfigLayout[]) => {
             const currentInnerLayout = layout.map((item) => {
                 if (item.i in originalLayouts.current) {
                     // eslint-disable-next-line no-unused-vars
-                    const {parent, ...originalCopy} = originalLayouts.current[item.i];
+                    const {parent: _parent, ...originalCopy} = originalLayouts.current[item.i];
 
                     // Updating original if parent has changed and saving copy as original
                     // or leaving default
                     if (item.parent) {
-                        originalCopy.parent = item.parent;
+                        (originalCopy as ConfigLayout).parent = item.parent;
                     }
                     originalCopy.w = item.w;
                     originalCopy.x = item.x;
                     originalCopy.y = item.y;
 
-                    return originalCopy;
+                    return originalCopy satisfies ConfigLayout;
                 } else {
                     return {...item};
                 }
@@ -98,7 +189,7 @@ function useMemoStateContext(props) {
     );
 
     const getLayoutItem = React.useCallback(
-        (id) => {
+        (id: string) => {
             return props.config.layout.find(({i}) => i === id);
         },
         [props.config.layout],
@@ -111,7 +202,7 @@ function useMemoStateContext(props) {
     );
 
     const onItemRemove = React.useCallback(
-        (id) => {
+        (id: string) => {
             delete nowrapAdjustedLayouts.current[id];
             delete adjustedLayouts.current[id];
             delete originalLayouts.current[id];
@@ -145,7 +236,9 @@ function useMemoStateContext(props) {
         ],
     );
 
-    const onItemStateAndParamsChange = React.useCallback(
+    const onItemStateAndParamsChange = React.useCallback<
+        DashKitCtxShape['onItemStateAndParamsChange']
+    >(
         (id, stateAndParams, options) => {
             onChange({
                 itemsStateAndParams: UpdateManager.changeStateAndParams({
@@ -160,7 +253,7 @@ function useMemoStateContext(props) {
         [props.config, props.itemsStateAndParams, onChange],
     );
 
-    const memorizeOriginalLayout = React.useCallback(
+    const memorizeOriginalLayout = React.useCallback<DashKitCtxShape['memorizeOriginalLayout']>(
         (widgetId, preAutoHeightLayout, postAutoHeightLayout) => {
             let needUpdateLayout = false;
             if (!(widgetId in originalLayouts.current)) {
@@ -179,7 +272,7 @@ function useMemoStateContext(props) {
         [],
     );
 
-    const revertToOriginalLayout = React.useCallback((widgetId) => {
+    const revertToOriginalLayout = React.useCallback((widgetId: string) => {
         const needUpdateLayout =
             widgetId in adjustedLayouts.current || widgetId in originalLayouts.current;
         delete adjustedLayouts.current[widgetId];
@@ -193,10 +286,13 @@ function useMemoStateContext(props) {
         const groups = props.groups;
         const layout = props.layout;
         const defaultProps = props.registerManager.gridLayout || {};
-        const nowrapGroups = {};
+        const nowrapGroups: Record<string, {items: ConfigLayout[]; leftSpace: number}> = {};
         let hasNowrapGroups = false;
 
-        if (defaultProps.compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP) {
+        if (
+            defaultProps.compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP &&
+            defaultProps.cols !== undefined
+        ) {
             nowrapGroups[DEFAULT_GROUP] = {
                 items: [],
                 leftSpace: defaultProps.cols,
@@ -208,7 +304,11 @@ function useMemoStateContext(props) {
             groups.forEach((group) => {
                 const resultProps = group.gridProperties?.(defaultProps) || {};
 
-                if (resultProps.compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP) {
+                if (
+                    resultProps.compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP &&
+                    resultProps.cols !== undefined &&
+                    group.id
+                ) {
                     nowrapGroups[group.id] = {
                         items: [],
                         leftSpace: resultProps.cols,
@@ -269,15 +369,15 @@ function useMemoStateContext(props) {
         [props.config, props.itemsStateAndParams],
     );
 
-    const getItemsMeta = React.useCallback((pluginsRefs) => {
+    const getItemsMeta = React.useCallback<DashKitCtxShape['getItemsMeta']>((pluginsRefs) => {
         return pluginsRefs
             .map((ref) => {
-                if (!(ref && typeof ref.getMeta === 'function')) {
+                if (!(ref && hasGetMeta(ref))) {
                     return undefined;
                 }
                 return ref.getMeta();
             })
-            .filter(Boolean);
+            .filter((item): item is Promise<any> => item !== undefined);
     }, []);
 
     const resultLayout = React.useMemo(() => {
@@ -291,21 +391,21 @@ function useMemoStateContext(props) {
             if (widgetId in adjusted || widgetId in nowrapAdjust) {
                 original[widgetId] = item;
                 // eslint-disable-next-line no-unused-vars
-                const {parent, ...adjustedItem} = adjusted[widgetId] || item;
+                const {parent: _parent2, ...adjustedItem} = adjusted[widgetId] || item;
 
                 adjustedItem.w = item.w;
                 adjustedItem.x = item.x;
                 adjustedItem.y = item.y;
 
                 if (item.parent) {
-                    adjustedItem.parent = item.parent;
+                    (adjustedItem as ConfigLayout).parent = item.parent;
                 }
 
                 if (widgetId in nowrapAdjust) {
-                    adjustedItem.maxW = nowrapAdjust[widgetId];
+                    (adjustedItem as ConfigLayout & {maxW?: number}).maxW = nowrapAdjust[widgetId];
                 }
 
-                return adjustedItem;
+                return adjustedItem satisfies ConfigLayout;
             } else {
                 if (widgetId in original) {
                     delete original[widgetId];
@@ -315,8 +415,8 @@ function useMemoStateContext(props) {
         });
     }, [props.layout, layoutUpdateCounter]);
 
-    const reloadItems = React.useCallback((pluginsRefs, data) => {
-        pluginsRefs.forEach((ref) => ref && ref.reload && ref.reload(data));
+    const reloadItems = React.useCallback<DashKitCtxShape['reloadItems']>((pluginsRefs, data) => {
+        pluginsRefs.forEach((ref) => ref && hasReload(ref) && ref.reload(data));
     }, []);
 
     const dragPropsContext = dndContext?.dragProps;
@@ -338,36 +438,45 @@ function useMemoStateContext(props) {
         }
     }, [dragPropsContext, props.registerManager]);
 
-    const onDropDragOver = React.useCallback(
+    const onDropDragOver = React.useCallback<DashKitCtxShape['onDropDragOver']>(
         (_e, group, gridProps, groupLayout, sharedItem) => {
             if (temporaryLayout) {
                 resetTemporaryLayout();
                 return false;
             }
 
-            let defaultLayout;
+            let dragItemType: string;
+            let defaultLayout: RegisterManagerPlugin['defaultLayout'] | {h: number; w: number};
             if (sharedItem) {
                 const {type, h, w} = sharedItem;
+                dragItemType = type;
                 const _defaults = props.registerManager.getItem(type);
                 defaultLayout = _defaults ? {..._defaults.defaultLayout, h, w} : {h, w};
             } else if (dragOverPlugin) {
+                dragItemType = dragOverPlugin.type;
                 defaultLayout = dragOverPlugin.defaultLayout;
             } else {
                 return false;
             }
 
             let maxW = gridProps.cols;
-            const maxH = Math.min(gridProps.maxRows || Infinity, defaultLayout.maxH || Infinity);
+            const maxH = Math.min(
+                gridProps.maxRows || Infinity,
+                'maxH' in defaultLayout && defaultLayout.maxH ? defaultLayout.maxH : Infinity,
+            );
 
-            if (gridProps.compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP) {
+            if (gridProps.compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP && gridProps.cols) {
                 maxW = groupLayout.reduce((memo, item) => memo - item.w, gridProps.cols);
             }
 
             if (
                 maxW === 0 ||
                 maxH === 0 ||
-                maxW < defaultLayout.minW ||
-                maxH < defaultLayout.minH
+                ('minW' in defaultLayout &&
+                    defaultLayout.minW &&
+                    maxW &&
+                    maxW < defaultLayout.minW) ||
+                ('minH' in defaultLayout && defaultLayout.minH && maxH < defaultLayout.minH)
             ) {
                 return false;
             }
@@ -388,7 +497,7 @@ function useMemoStateContext(props) {
                         ...sharedItem,
                         ...itemLayout,
                         parent: group,
-                        type: sharedItem?.type || dragOverPlugin?.type,
+                        type: dragItemType,
                     },
                     sharedItem ?? null,
                 ) === false
@@ -409,7 +518,7 @@ function useMemoStateContext(props) {
     );
 
     const onDropProp = props.onDrop;
-    const onDrop = React.useCallback(
+    const onDrop = React.useCallback<DashKitCtxShape['onDrop']>(
         (newLayout, item) => {
             if (!dragPropsContext) {
                 return;
@@ -420,8 +529,8 @@ function useMemoStateContext(props) {
                 dragProps: dragPropsContext,
             });
 
-            onDropProp({
-                newLayout: newLayout.reduce((memo, l) => {
+            onDropProp?.({
+                newLayout: newLayout.reduce<ConfigLayout[]>((memo, l) => {
                     if (l.i !== item.i) {
                         memo.push(pick(l, ITEM_PROPS));
                     }
@@ -563,8 +672,8 @@ function useMemoStateContext(props) {
     return {controlsContextValue, dashkitContextValue};
 }
 
-export function withContext(Component) {
-    const WithContext = (props) => {
+export function withContext(Component: React.ComponentType) {
+    const WithContext = (props: DashKitWithContextProps) => {
         const {dashkitContextValue, controlsContextValue} = useMemoStateContext(props);
 
         return (
@@ -578,7 +687,7 @@ export function withContext(Component) {
 
     WithContext.displayName = `withContext(${
         Component.displayName || Component.name || 'Component'
-    }`;
+    })`;
 
     return WithContext;
 }

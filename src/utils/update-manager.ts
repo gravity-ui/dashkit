@@ -37,7 +37,6 @@ import type {
     AddNewItemOptions,
     ReflowLayoutOptions,
     SetItemOptions,
-    WidgetLayout,
 } from '../typings';
 
 import {getNewId} from './get-new-id';
@@ -667,7 +666,7 @@ export class UpdateManager {
         };
     }
 
-    static updateLayout({layout, config}: {layout: WidgetLayout[]; config: Config}) {
+    static updateLayout({layout, config}: {layout: ConfigLayout[]; config: Config}) {
         return update(config, {
             layout: {
                 $set: layout.map((item) => pick(item, ['i', 'h', 'w', 'x', 'y', 'parent'])),

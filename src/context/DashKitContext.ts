@@ -1,10 +1,13 @@
 import React from 'react';
 
-import type {RegisterManager} from '..//utils';
+import type {DragOverEvent} from 'react-grid-layout';
+
+import type {RegisterManager, RegisterManagerPlugin} from '..//utils';
 import type {DashKitProps} from '../components/DashKit';
 import type {
     ConfigItem,
     ConfigLayout,
+    DraggedOverItem,
     ItemDragProps,
     ItemParams,
     ItemState,
@@ -35,9 +38,7 @@ type DashkitPropsPassedToCtx = Pick<
     | 'onResizeStop'
 >;
 
-type PluginType = string;
-
-type TemporaryLayout = {
+export type TemporaryLayout = {
     data: ConfigLayout[];
     dragProps: ItemDragProps;
 };
@@ -76,16 +77,16 @@ export type DashKitCtxShape = Omit<DashkitPropsPassedToCtx, 'context' | 'setting
 
     onDrop: (newLayout: ConfigLayout[], item: ConfigLayout, e?: MouseEvent) => void;
     onDropDragOver: (
-        e: DragEvent | MouseEvent,
-        group: string | void,
+        e: DragOverEvent,
+        group: string | undefined,
         gridProps: ReactGridLayoutProps,
         groupLayout: ConfigLayout[],
-        sharedItem: (Partial<ConfigLayout> & {type: PluginType}) | void,
+        sharedItem?: DraggedOverItem,
     ) => {w?: number; h?: number} | false | undefined;
-    onItemBlur: (item: ConfigItem) => void;
-    onItemFocus: (item: ConfigItem) => void;
+    onItemBlur?: (item: ConfigItem) => void;
+    onItemFocus?: (item: ConfigItem) => void;
     outerDnDEnable: boolean;
-    dragOverPlugin: null | PluginType;
+    dragOverPlugin: null | RegisterManagerPlugin;
 };
 
 const DashKitContext = React.createContext<DashKitCtxShape>({} as DashKitCtxShape);
