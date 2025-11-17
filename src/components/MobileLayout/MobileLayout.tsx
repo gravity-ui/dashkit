@@ -33,7 +33,7 @@ export default class MobileLayout extends React.PureComponent<
 
     _memoLayout = this.context.layout;
     _memoForwardedPluginRef: Array<(refObject: PluginRef) => void> = [];
-    _memoAdjustWidgetLayout: Record<string, (props: {needSetDefault: boolean}) => void> = {};
+    _memoAdjustWidgetLayout: Record<string, (props: {needSetDefault?: boolean}) => void> = {};
 
     state: MobileLayoutState = {
         itemsWithActiveAutoheight: {},
@@ -131,7 +131,7 @@ export default class MobileLayout extends React.PureComponent<
         return this._memoForwardedPluginRef[refIndex];
     }
 
-    adjustWidgetLayout(id: string, {needSetDefault}: {needSetDefault: boolean}) {
+    adjustWidgetLayout(id: string, {needSetDefault}: {needSetDefault?: boolean}) {
         if (needSetDefault) {
             const indexesOfItemsWithActiveAutoheight = {
                 ...this.state.itemsWithActiveAutoheight,
