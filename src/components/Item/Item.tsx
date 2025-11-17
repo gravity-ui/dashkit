@@ -1,16 +1,28 @@
 import React from 'react';
 
-import PropTypes from 'prop-types';
-
 import {prepareItem} from '../../hocs/prepareItem';
+import type {ConfigItem} from '../../shared/types';
+import type {PluginRef, PluginWidgetProps} from '../../typings';
 import {cn} from '../../utils/cn';
+import type {RegisterManager} from '../../utils/register-manager';
 
 import './Item.scss';
 
 const b = cn('dashkit-item');
 
+type ItemProps = {
+    registerManager: RegisterManager;
+    rendererProps: Omit<PluginWidgetProps, 'onBeforeLoad'>;
+    type: string;
+    isPlaceholder?: boolean;
+    forwardedPluginRef?: (pluginRef: PluginRef) => void;
+    onItemRender?: (item: ConfigItem) => void;
+    onItemMountChange?: (item: ConfigItem, meta: {isAsync: boolean; isMounted: boolean}) => void;
+    item: ConfigItem;
+};
+
 // TODO: getDerivedStateFromError и заглушка с ошибкой
-const Item = ({
+const Item: React.FC<ItemProps> = ({
     registerManager,
     rendererProps,
     type,
@@ -50,6 +62,8 @@ const Item = ({
                 });
             };
         }
+
+        return undefined;
     }, []);
 
     const onLoad = React.useCallback(() => {
@@ -86,17 +100,6 @@ const Item = ({
             {registerManager.getItem(type).renderer(itemRendererProps, forwardedPluginRef)}
         </div>
     );
-};
-
-Item.propTypes = {
-    forwardedPluginRef: PropTypes.any,
-    rendererProps: PropTypes.object,
-    registerManager: PropTypes.object,
-    type: PropTypes.string,
-    isPlaceholder: PropTypes.bool,
-    onItemRender: PropTypes.func,
-    onItemMountChange: PropTypes.func,
-    item: PropTypes.object,
 };
 
 export default prepareItem(Item);
