@@ -5,11 +5,13 @@ import type {DashKitProps} from '../components/DashKit';
 import type {
     ConfigItem,
     ConfigLayout,
+    ItemDragProps,
     ItemParams,
     ItemState,
     ItemStateAndParams,
     ItemStateAndParamsChangeOptions,
 } from '../shared';
+import type {PluginRef, ReactGridLayoutProps} from '../typings';
 
 type DashkitPropsPassedToCtx = Pick<
     DashKitProps,
@@ -35,13 +37,19 @@ type DashkitPropsPassedToCtx = Pick<
 
 type PluginType = string;
 
+type TemporaryLayout = {
+    data: ConfigLayout[];
+    dragProps: ItemDragProps;
+};
+
 export type DashKitCtxShape = DashkitPropsPassedToCtx & {
     registerManager: RegisterManager;
     forwardedMetaRef: React.ForwardedRef<any>;
 
     configItems: ConfigItem[];
     layout: ConfigLayout[];
-    temporaryLayout: ConfigLayout[] | null;
+    layoutChange: (layout: ConfigLayout[]) => void;
+    temporaryLayout: TemporaryLayout | null;
     memorizeOriginalLayout: (
         widgetId: string,
         preAutoHeightLayout: ConfigLayout,
@@ -57,20 +65,22 @@ export type DashKitCtxShape = DashkitPropsPassedToCtx & {
         options: ItemStateAndParamsChangeOptions,
     ) => void;
 
-    getItemsMeta: (pluginsRefs: Array<React.RefObject<any>>) => Array<Promise<any>>;
+    getItemsMeta: (pluginsRefs: Array<PluginRef>) => Array<Promise<any>>;
     reloadItems: (
-        pluginsRefs: Array<React.RefObject<any>>,
+        pluginsRefs: Array<PluginRef>,
         data: {silentLoading: boolean; noVeil: boolean},
     ) => void;
 
-    onDrop: (newLayout: ConfigLayout, item: ConfigItem) => void;
+    onDrop: (newLayout: ConfigLayout[], item: ConfigLayout, e?: MouseEvent) => void;
     onDropDragOver: (
         e: DragEvent | MouseEvent,
         group: string | void,
-        gridProps: Partial<ReactGridLayout.ReactGridLayoutProps>,
+        gridProps: ReactGridLayoutProps,
         groupLayout: ConfigLayout[],
         sharedItem: (Partial<ConfigLayout> & {type: PluginType}) | void,
     ) => void | boolean;
+    onItemBlur: (item: ConfigItem) => void;
+    onItemFocus: (item: ConfigItem) => void;
     outerDnDEnable: boolean;
     dragOverPlugin: null | PluginType;
 };

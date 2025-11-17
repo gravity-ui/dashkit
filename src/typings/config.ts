@@ -1,4 +1,4 @@
-import type {Layout, Layouts} from 'react-grid-layout';
+import type {Layout} from 'react-grid-layout';
 
 import type {Config, ConfigItem, ConfigLayout} from '../shared';
 
@@ -74,7 +74,7 @@ export interface DashKitGroup {
 }
 
 export type ItemManipulationCallback = (eventData: {
-    layout: Layouts;
+    layout: Layout[];
     oldItem: Layout;
     newItem: Layout;
     placeholder: Layout;
