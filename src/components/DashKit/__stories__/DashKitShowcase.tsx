@@ -413,7 +413,7 @@ export class DashKitShowcase extends React.Component<{}, DashKitDemoState> {
         // Get meta from plugins if they have a public method  getMeta(),
         // which will return a Promise, so you can get information from the plugin instance
         if (this.dashKitRef.current) {
-            const itemsMetas = await Promise.all(this.dashKitRef.current.getItemsMeta());
+            const itemsMetas = await Promise.all(this.dashKitRef.current.getItemsMeta() || []);
             // There is no such method in the Title and Text plugin
             console.log(itemsMetas);
         }
