@@ -1,9 +1,9 @@
 import React from 'react';
 
-import PropTypes from 'prop-types';
-
 import {FOCUSED_CLASS_NAME} from '../../constants';
 import {DashKitContext} from '../../context';
+import type {ConfigItem, ConfigLayout} from '../../shared';
+import type {PluginRef, ReactGridLayoutProps} from '../../typings';
 import {cn} from '../../utils/cn';
 import Item from '../Item/Item';
 import OverlayControls from '../OverlayControls/OverlayControls';
@@ -13,28 +13,28 @@ import './GridItem.scss';
 const b = cn('dashkit-grid-item');
 
 class WindowFocusObserver {
-    constructor() {
-        this.subscribers = 0;
-        this.isFocused = !document.hidden;
+    subscribers = 0;
+    isFocused = !document.hidden;
 
+    constructor() {
         window.addEventListener('blur', this.blurHandler, true);
         window.addEventListener('focus', this.focusHandler, true);
     }
 
-    blurHandler = (e) => {
+    blurHandler = (e: FocusEvent) => {
         if (e.target === window) {
             this.isFocused = false;
         }
     };
 
-    focusHandler = (e) => {
+    focusHandler = (e: FocusEvent) => {
         if (e.target === window) {
             this.isFocused = true;
         }
     };
 
     // Method to get state after all blur\focus events in document are triggered
-    async getFocusedState() {
+    async getFocusedState(): Promise<boolean> {
         return new Promise((resolve) => {
             requestAnimationFrame(() => {
                 resolve(this.isFocused);
@@ -45,43 +45,53 @@ class WindowFocusObserver {
 
 const windowFocusObserver = new WindowFocusObserver();
 
-class GridItem extends React.PureComponent {
-    static propTypes = {
-        adjustWidgetLayout: PropTypes.func.isRequired,
-        gridLayout: PropTypes.object,
-        id: PropTypes.string,
-        item: PropTypes.object,
-        isDragging: PropTypes.bool,
-        isDraggedOut: PropTypes.bool,
-        layout: PropTypes.array,
+type GridItemProps = {
+    adjustWidgetLayout: (data: {
+        widgetId: string;
+        needSetDefault?: boolean;
+        adjustedWidgetLayout?: ConfigLayout;
+    }) => void;
+    gridLayout?: ReactGridLayoutProps;
+    id?: string;
+    item: ConfigItem;
+    isDragging?: boolean;
+    isDraggedOut?: boolean;
+    layout?: ConfigLayout[];
 
-        forwardedRef: PropTypes.any,
-        forwardedPluginRef: PropTypes.any,
-        isPlaceholder: PropTypes.bool,
+    forwardedRef?: React.Ref<HTMLDivElement>;
+    forwardedPluginRef?: (pluginRef: PluginRef) => void;
+    isPlaceholder?: boolean;
 
-        onItemMountChange: PropTypes.func,
-        onItemRender: PropTypes.func,
+    onItemMountChange?: (item: ConfigItem, meta: {isAsync: boolean; isMounted: boolean}) => void;
+    onItemRender?: (item: ConfigItem) => void;
 
-        // from react-grid-layout:
-        children: PropTypes.node,
-        className: PropTypes.string,
-        style: PropTypes.object,
-        noOverlay: PropTypes.bool,
-        focusable: PropTypes.bool,
-        withCustomHandle: PropTypes.bool,
-        onMouseDown: PropTypes.func,
-        onMouseUp: PropTypes.func,
-        onTouchEnd: PropTypes.func,
-        onTouchStart: PropTypes.func,
-        onItemFocus: PropTypes.func,
-        onItemBlur: PropTypes.func,
-    };
+    // from react-grid-layout:
+    children?: React.ReactNode;
+    className?: string;
+    style?: React.CSSProperties;
+    noOverlay?: boolean;
+    focusable?: boolean;
+    withCustomHandle?: boolean;
+    onMouseDown?: (e: React.MouseEvent<HTMLDivElement>) => void;
+    onMouseUp?: (e: React.MouseEvent<HTMLDivElement>) => void;
+    onTouchEnd?: (e: React.TouchEvent<HTMLDivElement>) => void;
+    onTouchStart?: (e: React.TouchEvent<HTMLDivElement>) => void;
+    onItemFocus?: (item: ConfigItem) => void;
+    onItemBlur?: (item: ConfigItem) => void;
+};
 
+type GridItemState = {
+    isFocused: boolean;
+};
+
+class GridItem extends React.PureComponent<GridItemProps, GridItemState> {
     static contextType = DashKitContext;
+    context!: React.ContextType<typeof DashKitContext>;
 
     _isAsyncItem = false;
+    controller: AbortController | null = null;
 
-    state = {
+    state: GridItemState = {
         isFocused: false,
     };
 
@@ -105,7 +115,7 @@ class GridItem extends React.PureComponent {
                 <div className={b('overlay')} />
                 <OverlayControls
                     configItem={item}
-                    onItemClick={focusable ? this.onOverlayItemClick : null}
+                    onItemClick={focusable ? this.onOverlayItemClick : undefined}
                 />
             </React.Fragment>
         );
@@ -114,17 +124,13 @@ class GridItem extends React.PureComponent {
     onOverlayItemClick = () => {
         // Creating button element to trigger focus out
         const focusDummy = document.createElement('button');
-        const styles = {
+        Object.assign(focusDummy.style, {
             width: '0',
             height: '0',
             opacity: '0',
             position: 'fixed',
             top: '0',
             left: '0',
-        };
-
-        Object.entries(styles).forEach(([key, value]) => {
-            focusDummy.style[key] = value;
         });
 
         // requestAnimationFrame to make call after alert() or confirm()
@@ -187,14 +193,20 @@ class GridItem extends React.PureComponent {
         const {editMode} = this.context;
         const {isFocused} = this.state;
 
-        const width = Number.parseInt(style.width, 10);
-        const height = Number.parseInt(style.height, 10);
-        const transform = style.transform;
+        const width =
+            style && style.width !== undefined
+                ? Number.parseInt(String(style.width), 10)
+                : undefined;
+        const height =
+            style && style.height !== undefined
+                ? Number.parseInt(String(style.height), 10)
+                : undefined;
+        const transform = style?.transform;
         const preparedClassName =
             (editMode
                 ? className
                 : className
-                      .replace('react-resizable', '')
+                      ?.replace('react-resizable', '')
                       .replace('react-draggable', '')
                       .replace(FOCUSED_CLASS_NAME, '')) +
             (isFocused ? ` ${FOCUSED_CLASS_NAME}` : '');
@@ -254,9 +266,11 @@ class GridItem extends React.PureComponent {
     }
 }
 
-const GridItemForwarderRef = React.forwardRef((props, ref) => {
-    return <GridItem {...props} forwardedRef={ref} />;
-});
+const GridItemForwarderRef = React.forwardRef<HTMLDivElement, Omit<GridItemProps, 'forwardedRef'>>(
+    (props, ref) => {
+        return <GridItem {...props} forwardedRef={ref} />;
+    },
+);
 
 GridItemForwarderRef.displayName = 'forwardRef(GridItem)';
 
