@@ -37,6 +37,7 @@ export type AddNewItemOptions = SetItemOptions & {
 export interface DashkitGroupRenderProps {
     config: Config;
     editMode: boolean;
+    isDragging: boolean;
     isMobile: boolean;
     items: ConfigItem[];
     layout: ConfigLayout[];
