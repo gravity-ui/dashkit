@@ -78,7 +78,7 @@ export type DashKitCtxShape = DashkitPropsPassedToCtx & {
         gridProps: ReactGridLayoutProps,
         groupLayout: ConfigLayout[],
         sharedItem: (Partial<ConfigLayout> & {type: PluginType}) | void,
-    ) => void | boolean;
+    ) => {w?: number; h?: number} | false | undefined;
     onItemBlur: (item: ConfigItem) => void;
     onItemFocus: (item: ConfigItem) => void;
     outerDnDEnable: boolean;
