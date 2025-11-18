@@ -707,17 +707,17 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
         return (
             <GridItem
                 key={id}
-                {...{
-                    id,
-                    item: {id, type, data: {}},
-                    layout: temporaryLayout.data,
-                    adjustWidgetLayout: this.adjustWidgetLayout,
-                    isDragging: this.state.isDragging,
-                    isPlaceholder: true,
-                    noOverlay,
-                    withCustomHandle: Boolean(draggableHandleClassName),
-                    gridLayout,
-                }}
+                // TODO remove the expected error after translating GridItem to TS
+                // @ts-expect-error
+                id={id}
+                item={{id, type, data: {}}}
+                layout={temporaryLayout.data}
+                adjustWidgetLayout={this.adjustWidgetLayout}
+                isDragging={this.state.isDragging}
+                isPlaceholder={true}
+                noOverlay={noOverlay}
+                withCustomHandle={Boolean(draggableHandleClassName)}
+                gridLayout={gridLayout}
             />
         );
     }
@@ -777,7 +777,7 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
                     draggableCancel: `.${DRAGGABLE_CANCEL_CLASS_NAME}`,
                     draggableHandle: draggableHandleClassName
                         ? `.${draggableHandleClassName}`
-                        : undefined,
+                        : null,
                     // Default callbacks
                     onDragStart: callbacks.onDragStart,
                     onDrag: callbacks.onDrag,
@@ -793,7 +793,7 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
                     sharedDragPosition: currentDraggingElement?.cursorPosition,
                     isDragCaptured,
                     isDroppable: Boolean(outerDnDEnable) && editMode,
-                } as any)}
+                } as any)} // TODO remove any after translating Layout to TS
             >
                 {renderItems.map((item, i) => {
                     const keyId = item.id;
@@ -827,7 +827,7 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
                                 gridLayout: properties,
                                 onItemFocus,
                                 onItemBlur,
-                            } as any)}
+                            } as any)} // TODO remove any after translating GridItem to TS
                         />
                     );
                 })}
