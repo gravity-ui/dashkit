@@ -770,10 +770,6 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
 
         return (
             <Layout
-                isDraggable={editMode}
-                isResizable={editMode}
-                // Group properties
-                {...properties}
                 key={`group_${group}`}
                 // Layout props
                 compactType={compactType}
