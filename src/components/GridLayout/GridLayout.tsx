@@ -712,10 +712,8 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
         return (
             <GridItem
                 key={id}
-                // TODO remove the expected error after translating GridItem to TS
-                // @ts-expect-error
                 id={id}
-                item={{id, type, data: {}}}
+                item={{id, type, data: {}} as ConfigItem}
                 layout={temporaryLayout.data}
                 adjustWidgetLayout={this.adjustWidgetLayout}
                 isDragging={this.state.isDragging}
@@ -809,24 +807,22 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
 
                     return (
                         <GridItem
+                            forwardedPluginRef={this.getMemoForwardRefCallback(offset + i)} // forwarded ref to plugin
                             key={keyId}
-                            {...({
-                                forwardedPluginRef: this.getMemoForwardRefCallback(offset + i),
-                                id: keyId,
-                                item,
-                                layout,
-                                adjustWidgetLayout: this.adjustWidgetLayout,
-                                isDragging,
-                                isDraggedOut,
-                                noOverlay: itemNoOverlay,
-                                focusable,
-                                withCustomHandle: Boolean(draggableHandleClassName),
-                                onItemMountChange,
-                                onItemRender,
-                                gridLayout: properties,
-                                onItemFocus,
-                                onItemBlur,
-                            } as any)} // TODO remove any after translating GridItem to TS
+                            id={keyId}
+                            item={item}
+                            layout={layout}
+                            adjustWidgetLayout={this.adjustWidgetLayout}
+                            isDragging={isDragging}
+                            isDraggedOut={isDraggedOut || undefined}
+                            noOverlay={itemNoOverlay}
+                            focusable={focusable}
+                            withCustomHandle={Boolean(draggableHandleClassName)}
+                            onItemMountChange={onItemMountChange}
+                            onItemRender={onItemRender}
+                            gridLayout={properties}
+                            onItemFocus={onItemFocus}
+                            onItemBlur={onItemBlur}
                         />
                     );
                 })}
