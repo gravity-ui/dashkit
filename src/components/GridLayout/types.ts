@@ -44,55 +44,22 @@ export type MemoGroupLayout = {
     layout: ConfigLayout[];
 };
 
+type GroupCallback = (
+    layout: ConfigLayout[],
+    layoutItem: ConfigLayout,
+    newItem: ConfigLayout,
+    placeholder: ConfigLayout,
+    event: MouseEvent,
+    element: HTMLElement,
+) => void;
+
 export type GroupCallbacks = {
-    onDragStart: (
-        layout: ConfigLayout[],
-        layoutItem: ConfigLayout,
-        newItem: ConfigLayout,
-        placeholder: ConfigLayout,
-        e: MouseEvent,
-        element: HTMLElement,
-    ) => void;
-    onDrag: (
-        layout: ConfigLayout[],
-        oldItem: ConfigLayout,
-        newItem: ConfigLayout,
-        placeholder: ConfigLayout,
-        e: MouseEvent,
-        element: HTMLElement,
-    ) => void;
-    onDragStop: (
-        layout: ConfigLayout[],
-        oldItem: ConfigLayout,
-        newItem: ConfigLayout,
-        placeholder: ConfigLayout,
-        e: MouseEvent,
-        element: HTMLElement,
-    ) => void;
-    onResizeStart: (
-        layout: ConfigLayout[],
-        oldItem: ConfigLayout,
-        newItem: ConfigLayout,
-        placeholder: ConfigLayout,
-        e: MouseEvent,
-        element: HTMLElement,
-    ) => void;
-    onResize: (
-        layout: ConfigLayout[],
-        oldItem: ConfigLayout,
-        newItem: ConfigLayout,
-        placeholder: ConfigLayout,
-        e: MouseEvent,
-        element: HTMLElement,
-    ) => void;
-    onResizeStop: (
-        layout: ConfigLayout[],
-        oldItem: ConfigLayout,
-        newItem: ConfigLayout,
-        placeholder: ConfigLayout,
-        e: MouseEvent,
-        element: HTMLElement,
-    ) => void;
+    onDragStart: GroupCallback;
+    onDrag: GroupCallback;
+    onDragStop: GroupCallback;
+    onResizeStart: GroupCallback;
+    onResize: GroupCallback;
+    onResizeStop: GroupCallback;
     onDrop: (layout: ConfigLayout[], item: ConfigLayout | undefined, e: MouseEvent) => void | false;
     onDropDragOver: (e: DragEvent | MouseEvent) => void | boolean;
     onDragTargetRestore: (group?: string) => void;
