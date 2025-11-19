@@ -10,16 +10,16 @@ import './Item.scss';
 
 const b = cn('dashkit-item');
 
-interface ItemProps {
+type ItemProps = {
     registerManager: RegisterManager;
-    rendererProps: PluginWidgetProps;
+    rendererProps: Omit<PluginWidgetProps, 'onBeforeLoad'>;
     type: string;
     isPlaceholder?: boolean;
     forwardedPluginRef?: PluginRef;
     onItemRender?: (item: ConfigItem) => void;
     onItemMountChange?: (item: ConfigItem, meta: {isAsync: boolean; isMounted: boolean}) => void;
     item: ConfigItem;
-}
+};
 
 // TODO: getDerivedStateFromError и заглушка с ошибкой
 const Item: React.FC<ItemProps> = ({
