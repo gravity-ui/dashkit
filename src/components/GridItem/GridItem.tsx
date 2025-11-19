@@ -52,11 +52,11 @@ type GridItemProps = {
         adjustedWidgetLayout?: ConfigLayout;
     }) => void;
     gridLayout?: ReactGridLayoutProps;
-    id?: string;
+    id: string;
     item: ConfigItem;
     isDragging?: boolean;
     isDraggedOut?: boolean;
-    layout?: ConfigLayout[];
+    layout: ConfigLayout[];
 
     forwardedRef?: React.Ref<HTMLDivElement>;
     forwardedPluginRef?: (pluginRef: PluginRef) => void;
