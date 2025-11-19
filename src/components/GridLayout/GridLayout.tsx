@@ -31,6 +31,7 @@ import type {
 
 const hasPluginId = (value: PluginRef): value is {props: {id: string}} => {
     return (
+        value !== null &&
         'props' in value &&
         typeof value.props === 'object' &&
         value.props !== null &&

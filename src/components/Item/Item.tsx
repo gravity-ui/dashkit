@@ -15,7 +15,7 @@ type ItemProps = {
     rendererProps: Omit<PluginWidgetProps, 'onBeforeLoad'>;
     type: string;
     isPlaceholder?: boolean;
-    forwardedPluginRef?: PluginRef;
+    forwardedPluginRef?: (pluginRef: PluginRef) => void;
     onItemRender?: (item: ConfigItem) => void;
     onItemMountChange?: (item: ConfigItem, meta: {isAsync: boolean; isMounted: boolean}) => void;
     item: ConfigItem;
