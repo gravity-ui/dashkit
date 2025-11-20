@@ -1,3 +1,5 @@
+import type {DragOverEvent} from 'react-grid-layout';
+
 import type {ReactGridLayoutProps} from 'src/typings';
 
 import type {ConfigItem, ConfigLayout, ItemDragProps} from '../../shared';
@@ -61,7 +63,7 @@ export type GroupCallbacks = {
     onResize: GroupCallback;
     onResizeStop: GroupCallback;
     onDrop: (layout: ConfigLayout[], item: ConfigLayout | undefined, e: MouseEvent) => void | false;
-    onDropDragOver: (e: DragEvent | MouseEvent) => void | boolean;
+    onDropDragOver: (event: DragOverEvent) => {w?: number; h?: number} | false | undefined;
     onDragTargetRestore: (group?: string) => void;
 };
 

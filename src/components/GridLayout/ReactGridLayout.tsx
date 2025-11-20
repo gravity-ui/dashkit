@@ -1,23 +1,74 @@
 import React from 'react';
 
+import type {Layout as RGLLayout} from 'react-grid-layout';
+// @ts-expect-error - utils is not exported in type definitions
 import ReactGridLayout, {WidthProvider, utils} from 'react-grid-layout';
 
 import {DROPPING_ELEMENT_CLASS_NAME, OVERLAY_CLASS_NAME} from '../../constants';
 
-class DragOverLayout extends ReactGridLayout {
-    constructor(...args) {
-        super(...args);
+const isRefObject = (
+    value: React.Ref<HTMLDivElement>,
+): value is React.RefObject<HTMLDivElement> => {
+    return (
+        typeof value === 'object' &&
+        value !== null &&
+        'current' in value &&
+        typeof value.current === 'object'
+    );
+};
 
+type SharedDragPosition = {
+    offsetX: number;
+    offsetY: number;
+};
+
+type DragOverLayoutProps = ReactGridLayout.ReactGridLayoutProps & {
+    innerRef?: React.Ref<HTMLDivElement>;
+    isDragCaptured?: boolean;
+    hasSharedDragItem?: boolean;
+    sharedDragPosition?: SharedDragPosition;
+    onDragTargetRestore?: () => void;
+};
+
+type DragOverLayoutState = {
+    layout: RGLLayout[];
+    activeDrag: RGLLayout | null;
+};
+
+type RGLLayoutWithPlaceholder = RGLLayout & {placeholder?: boolean};
+
+type OnDragMethod = (
+    i: string,
+    x: number,
+    y: number,
+    sintEv: {e: Event; node: HTMLElement},
+) => void;
+
+class DragOverLayout extends ReactGridLayout {
+    // @ts-expect-error - TypeScript doesn't allow direct property redeclaration in extending classes. We need to narrow the props type from ReactGridLayoutProps to DragOverLayoutProps for type safety in our custom methods
+    props: DragOverLayoutProps;
+    // @ts-expect-error - TypeScript doesn't allow direct property redeclaration in extending classes. State is initialized by parent constructor
+    state: DragOverLayoutState;
+
+    parentOnDrag: OnDragMethod;
+    parentOnDragStop: OnDragMethod;
+    _savedDraggedOutLayout: RGLLayout[] | null = null;
+
+    constructor(props: DragOverLayoutProps, context?: unknown) {
+        super(props, context);
+
+        // @ts-expect-error - onDrag is a protected method in parent class
         this.parentOnDrag = this.onDrag;
+        // @ts-expect-error - assigning custom method to parent's onDrag
         this.onDrag = this.extendedOnDrag;
 
+        // @ts-expect-error - onDragStop is a protected method in parent class
         this.parentOnDragStop = this.onDragStop;
+        // @ts-expect-error - assigning custom method to parent's onDragStop
         this.onDragStop = this.extendedOnDragStop;
     }
 
-    _savedDraggedOutLayout = null;
-
-    componentDidMount() {
+    componentDidMount(): void {
         super.componentDidMount?.();
 
         // If cursor is moved out of the window there is a bug
@@ -33,7 +84,7 @@ class DragOverLayout extends ReactGridLayout {
         }
     }
 
-    componentWillUnmount() {
+    componentWillUnmount(): void {
         window.removeEventListener('dragend', this.resetExternalPlaceholder);
         const innerElement = this.getInnerElement();
 
@@ -48,12 +99,13 @@ class DragOverLayout extends ReactGridLayout {
     // react-grid-layout doens't calculate it's height when last element is removed
     // and just keeps the previous value
     // so for autosize to work in that case we are resetting it's height value
-    containerHeight() {
+    containerHeight(): string | undefined {
         if (this.props.autoSize && this.state.layout.length === 0) {
             return;
         }
 
         // eslint-disable-next-line consistent-return
+        // @ts-expect-error - containerHeight is a protected method in parent class
         return super.containerHeight();
     }
 
@@ -62,25 +114,30 @@ class DragOverLayout extends ReactGridLayout {
     // * rewrite whole ReactGridLayout.render method
     // so in that case don't try to use this class on it's own
     // or pass innerRef: React.MutableRef as it's not optional prop
-    getInnerElement() {
-        return this.props.innerRef?.current || null;
+    getInnerElement(): HTMLDivElement | null {
+        const {innerRef} = this.props;
+
+        return innerRef && isRefObject(innerRef) && innerRef.current ? innerRef.current : null;
     }
 
     // Reset placeholder when item dragged from outside
-    resetExternalPlaceholder = () => {
+    resetExternalPlaceholder = (): void => {
+        // @ts-expect-error - dragEnterCounter is an internal property of parent class
         if (this.dragEnterCounter) {
+            // @ts-expect-error - dragEnterCounter is an internal property of parent class
             this.dragEnterCounter = 0;
+            // @ts-expect-error - removeDroppingPlaceholder is a protected method in parent class
             this.removeDroppingPlaceholder();
         }
     };
 
     // Hide placeholder when element is dragged out
-    hideLocalPlaceholder = (i) => {
+    hideLocalPlaceholder = (i: string): RGLLayout[] => {
         const {layout} = this.state;
         const {cols} = this.props;
         const savedLayout = layout.map((item) => ({...item}));
 
-        let hiddenElement;
+        let hiddenElement: RGLLayout | undefined;
         const newLayout = utils.compact(
             layout.filter((item) => {
                 if (item.i === i) {
@@ -106,7 +163,12 @@ class DragOverLayout extends ReactGridLayout {
         return savedLayout;
     };
 
-    extendedOnDrag = (i, x, y, sintEv) => {
+    extendedOnDrag = (
+        i: string,
+        x: number,
+        y: number,
+        sintEv: {e: Event; node: HTMLElement},
+    ): void => {
         if (this.props.isDragCaptured) {
             if (!this._savedDraggedOutLayout) {
                 this._savedDraggedOutLayout = this.hideLocalPlaceholder(i);
@@ -120,14 +182,19 @@ class DragOverLayout extends ReactGridLayout {
         this.parentOnDrag(i, x, y, sintEv);
     };
 
-    extendedOnDragStop = (i, x, y, sintEv) => {
+    extendedOnDragStop = (
+        i: string,
+        x: number,
+        y: number,
+        sintEv: {e: Event; node: HTMLElement},
+    ): void => {
         // Restoring layout if item was dropped outside of the grid
         if (this._savedDraggedOutLayout) {
             const savedLayout = this._savedDraggedOutLayout;
             const l = utils.getLayoutItem(savedLayout, i);
 
             // Create placeholder (display only)
-            const placeholder = {
+            const placeholder: RGLLayoutWithPlaceholder = {
                 w: l.w,
                 h: l.h,
                 x: l.x,
@@ -153,58 +220,72 @@ class DragOverLayout extends ReactGridLayout {
     };
 
     // Proxy mouse events -> drag methods for dnd between groups
-    mouseEnterHandler = (e) => {
+    mouseEnterHandler = (e: MouseEvent): void => {
         if (this.props.hasSharedDragItem) {
+            // @ts-expect-error - onDragEnter is a protected method in parent class
             this.onDragEnter(e);
         } else if (this.props.isDragCaptured) {
             this.props.onDragTargetRestore?.();
         }
     };
 
-    mouseLeaveHandler = (e) => {
+    mouseLeaveHandler = (e: MouseEvent): void => {
         if (this.props.hasSharedDragItem) {
+            // @ts-expect-error - onDragLeave is a protected method in parent class
             this.onDragLeave(e);
             this.props.onDragTargetRestore?.();
         }
     };
 
-    mouseMoveHandler = (e) => {
+    mouseMoveHandler = (e: MouseEvent): void => {
         if (this.props.hasSharedDragItem) {
-            if (!e.nativeEvent) {
+            if (!(e as MouseEvent & {nativeEvent?: MouseEvent}).nativeEvent) {
                 // Emulate nativeEvent for firefox
-                const target = this.getInnerElement() || e.target;
+                const target = this.getInnerElement() || (e.target as HTMLElement);
 
-                e.nativeEvent = {
+                (e as MouseEvent & {nativeEvent: Partial<MouseEvent>}).nativeEvent = {
                     clientX: e.clientX,
                     clientY: e.clientY,
                     target,
                 };
             }
 
+            // @ts-expect-error - onDragOver is a protected method in parent class
             this.onDragOver(e);
         }
     };
 
-    mouseUpHandler = (e) => {
+    mouseUpHandler = (e: MouseEvent): void => {
         if (this.props.hasSharedDragItem) {
             e.preventDefault();
             const {droppingItem} = this.props;
             const {layout} = this.state;
-            const item = layout.find((l) => l.i === droppingItem.i);
+            const item = layout.find((l) => l.i === droppingItem?.i);
 
             // reset dragEnter counter on drop
             this.resetExternalPlaceholder();
 
-            this.props.onDrop?.(layout, item, e);
+            if (item) {
+                this.props.onDrop?.(layout, item, e);
+            }
         }
     };
 
-    calculateDroppingPosition(itemProps) {
+    calculateDroppingPosition(itemProps: {
+        containerWidth: number;
+        cols: number;
+        w: number;
+        h: number;
+        rowHeight: number;
+        margin: [number, number];
+        transformScale: number;
+        droppingPosition: {left: number; top: number};
+    }): {left: number; top: number} {
         const {containerWidth, cols, w, h, rowHeight, margin, transformScale, droppingPosition} =
             itemProps;
         const {sharedDragPosition} = this.props;
 
-        let offsetX, offsetY;
+        let offsetX: number, offsetY: number;
 
         if (sharedDragPosition) {
             offsetX = sharedDragPosition.offsetX;
@@ -225,7 +306,11 @@ class DragOverLayout extends ReactGridLayout {
     // centering cursor on newly creted grid item
     // And cause grid-layout using it's own GridItem to make it look
     // like overlay adding className
-    processGridItem(child, isDroppingItem) {
+    processGridItem(
+        child: React.ReactElement,
+        isDroppingItem?: boolean,
+    ): React.ReactElement | undefined {
+        // @ts-expect-error - processGridItem is a protected method in parent class
         const gridItem = super.processGridItem?.(child, isDroppingItem);
 
         if (!gridItem) {
@@ -249,4 +334,4 @@ class DragOverLayout extends ReactGridLayout {
 }
 
 // eslint-disable-next-line new-cap
-export const Layout = WidthProvider(DragOverLayout);
+export const Layout = WidthProvider<DragOverLayoutProps>(DragOverLayout);

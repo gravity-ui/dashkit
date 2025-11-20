@@ -1,5 +1,7 @@
 import React from 'react';
 
+import type {DragOverEvent} from 'react-grid-layout';
+
 import type {PluginRef, ReactGridLayoutProps} from 'src/typings';
 
 import {
@@ -319,7 +321,7 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
             }
 
             let {offsetX, offsetY} =
-                (e as MouseEvent & {nativeEvent: MouseEvent}).nativeEvent || {};
+                (e as MouseEvent & {nativeEvent?: MouseEvent}).nativeEvent || {};
             if (offsetX === undefined || offsetY === undefined) {
                 const target = e.currentTarget as HTMLElement;
                 const gridRect = target?.getBoundingClientRect();
@@ -658,7 +660,10 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
         }
     };
 
-    _onDropDragOver = (group: string, e: DragEvent | MouseEvent): void | boolean => {
+    _onDropDragOver = (
+        group: string,
+        e: DragOverEvent,
+    ): {w?: number; h?: number} | false | undefined => {
         const {editMode, dragOverPlugin, onDropDragOver, temporaryLayout} = this.context;
         const {currentDraggingElement} = this.state;
 
@@ -757,43 +762,42 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
         const hasSharedDragItem = Boolean(
             currentDraggingElement && currentDraggingElement.group !== group,
         );
-        const isDragCaptured =
+        const isDragCaptured = Boolean(
             currentDraggingElement &&
-            group === currentDraggingElement.group &&
-            draggedOverGroup !== null &&
-            draggedOverGroup !== group;
+                group === currentDraggingElement.group &&
+                draggedOverGroup !== null &&
+                draggedOverGroup !== group,
+        );
 
         return (
             <Layout
                 key={`group_${group}`}
-                {...({
-                    isDraggable: editMode,
-                    isResizable: editMode,
-                    // Group properties
-                    ...properties,
-                    // Layout props
-                    compactType,
-                    layout,
-                    draggableCancel: `.${DRAGGABLE_CANCEL_CLASS_NAME}`,
-                    draggableHandle: draggableHandleClassName
-                        ? `.${draggableHandleClassName}`
-                        : null,
-                    // Default callbacks
-                    onDragStart: callbacks.onDragStart,
-                    onDrag: callbacks.onDrag,
-                    onDragStop: callbacks.onDragStop,
-                    onResizeStart: callbacks.onResizeStart,
-                    onResize: callbacks.onResize,
-                    onResizeStop: callbacks.onResizeStop,
-                    // External Drag N Drop options
-                    onDragTargetRestore: callbacks.onDragTargetRestore,
-                    onDropDragOver: callbacks.onDropDragOver,
-                    onDrop: callbacks.onDrop,
-                    hasSharedDragItem,
-                    sharedDragPosition: currentDraggingElement?.cursorPosition,
-                    isDragCaptured,
-                    isDroppable: Boolean(outerDnDEnable) && editMode,
-                } as any)} // TODO remove any after translating Layout to TS
+                isDraggable={editMode}
+                isResizable={editMode}
+                // Group properties
+                {...properties}
+                // Layout props
+                compactType={compactType}
+                layout={layout}
+                draggableCancel={`.${DRAGGABLE_CANCEL_CLASS_NAME}`}
+                draggableHandle={
+                    draggableHandleClassName ? `.${draggableHandleClassName}` : undefined
+                }
+                // Default callbacks
+                onDragStart={callbacks.onDragStart}
+                onDrag={callbacks.onDrag}
+                onDragStop={callbacks.onDragStop}
+                onResizeStart={callbacks.onResizeStart}
+                onResize={callbacks.onResize}
+                onResizeStop={callbacks.onResizeStop}
+                // External Drag N Drop options
+                onDragTargetRestore={callbacks.onDragTargetRestore}
+                onDropDragOver={callbacks.onDropDragOver}
+                onDrop={callbacks.onDrop}
+                hasSharedDragItem={hasSharedDragItem}
+                sharedDragPosition={currentDraggingElement?.cursorPosition}
+                isDragCaptured={isDragCaptured}
+                isDroppable={Boolean(outerDnDEnable) && editMode}
             >
                 {renderItems.map((item, i) => {
                     const keyId = item.id;
