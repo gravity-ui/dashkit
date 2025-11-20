@@ -1,5 +1,7 @@
 import React from 'react';
 
+import type {PluginRef, ReactGridLayoutProps} from 'src/typings';
+
 import {
     COMPACT_TYPE_HORIZONTAL_NOWRAP,
     DEFAULT_GROUP,
@@ -7,13 +9,50 @@ import {
     TEMPORARY_ITEM_ID,
 } from '../../constants';
 import {DashKitContext} from '../../context';
+import type {DashKitCtxShape} from '../../context';
+import type {ConfigItem, ConfigLayout} from '../../shared';
 import {resolveLayoutGroup} from '../../utils';
 import GridItem from '../GridItem/GridItem';
 
 import {Layout} from './ReactGridLayout';
+import type {
+    AdjustWidgetLayoutParams,
+    CurrentDraggingElement,
+    GridLayoutProps,
+    GridLayoutState,
+    GroupCallbacks,
+    LayoutAndPropsByGroup,
+    ManipulationCallbackArgs,
+    MemoGroupLayout,
+    ReloadItemsOptions,
+} from './types';
 
-export default class GridLayout extends React.PureComponent {
-    constructor(props, context) {
+const hasPluginId = (value: PluginRef): value is {props: {id: string}} => {
+    return (
+        'props' in value &&
+        typeof value.props === 'object' &&
+        value.props !== null &&
+        'id' in value.props &&
+        typeof value.props.id === 'string'
+    );
+};
+
+export default class GridLayout extends React.PureComponent<GridLayoutProps, GridLayoutState> {
+    static contextType = DashKitContext;
+    context!: DashKitCtxShape;
+
+    pluginsRefs: Array<PluginRef>;
+
+    private _memoForwardedPluginRef: Array<(pluginRef: PluginRef) => void> = [];
+    private _memoGroupsProps: Record<string, Partial<ReactGridLayoutProps>> = {};
+    private _memoGroupsLayouts: Record<string, MemoGroupLayout> = {};
+    private _memoCallbacksForGroups: Record<string, GroupCallbacks> = {};
+
+    private _timeout?: NodeJS.Timeout;
+    private _lastReloadAt?: number;
+    private _parendDragNode: HTMLElement | null = null;
+
+    constructor(props: GridLayoutProps, context: DashKitCtxShape) {
         super(props, context);
         this.pluginsRefs = [];
         this.state = {
@@ -45,23 +84,17 @@ export default class GridLayout extends React.PureComponent {
         this._memoForwardedPluginRef = [];
     }
 
-    static contextType = DashKitContext;
-
-    _memoForwardedPluginRef = [];
-    _memoGroupsProps = {};
-    _memoGroupsLayouts = {};
-    _memoCallbacksForGroups = {};
-
-    _timeout;
-    _lastReloadAt;
-
     onVisibilityChange = () => {
         this.setState({
             isPageHidden: document.hidden,
         });
     };
 
-    adjustWidgetLayout = ({widgetId, needSetDefault, adjustedWidgetLayout}) => {
+    adjustWidgetLayout = ({
+        widgetId,
+        needSetDefault,
+        adjustedWidgetLayout,
+    }: AdjustWidgetLayoutParams) => {
         const {layout, memorizeOriginalLayout, revertToOriginalLayout} = this.context;
 
         if (needSetDefault) {
@@ -89,13 +122,13 @@ export default class GridLayout extends React.PureComponent {
         return getItemsMeta(this.pluginsRefs);
     };
 
-    getActiveLayout() {
+    getActiveLayout(): ConfigLayout[] {
         const {layout, temporaryLayout} = this.context;
 
         return temporaryLayout?.data || layout;
     }
 
-    getMemoGroupLayout(group, layout) {
+    getMemoGroupLayout(group: string, layout: ConfigLayout[]): MemoGroupLayout {
         // fastest possible way to match json
         const key = JSON.stringify(layout);
 
@@ -116,7 +149,7 @@ export default class GridLayout extends React.PureComponent {
         return this._memoGroupsLayouts[group];
     }
 
-    getMemoGroupCallbacks(group) {
+    getMemoGroupCallbacks(group: string): GroupCallbacks {
         if (!this._memoCallbacksForGroups[group]) {
             const onDragStart = this._onDragStart.bind(this, group);
             const onDrag = this._onDrag.bind(this, group);
@@ -128,7 +161,7 @@ export default class GridLayout extends React.PureComponent {
 
             const onDrop = this._onDrop.bind(this, group);
             const onDropDragOver = this._onDropDragOver.bind(this, group);
-            const onDragTargetRestore = this._onTargetRestore.bind(this, group);
+            const onDragTargetRestore = this._onTargetRestore.bind(this);
 
             this._memoCallbacksForGroups[group] = {
                 onDragStart,
@@ -146,7 +179,11 @@ export default class GridLayout extends React.PureComponent {
         return this._memoCallbacksForGroups[group];
     }
 
-    getMemoGroupProps = (group, renderLayout, properties) => {
+    getMemoGroupProps = (
+        group: string,
+        renderLayout: ConfigLayout[],
+        properties: Partial<ReactGridLayoutProps>,
+    ) => {
         // Needed for _onDropDragOver
         this._memoGroupsProps[group] = properties;
 
@@ -156,16 +193,16 @@ export default class GridLayout extends React.PureComponent {
         };
     };
 
-    getLayoutAndPropsByGroup = (group) => {
+    getLayoutAndPropsByGroup = (group: string): LayoutAndPropsByGroup => {
         return {
             properties: this._memoGroupsProps[group],
             layout: this._memoGroupsLayouts[group].layout,
         };
     };
 
-    getMemoForwardRefCallback = (refIndex) => {
+    getMemoForwardRefCallback = (refIndex: number) => {
         if (!this._memoForwardedPluginRef[refIndex]) {
-            this._memoForwardedPluginRef[refIndex] = (pluginRef) => {
+            this._memoForwardedPluginRef[refIndex] = (pluginRef: PluginRef) => {
                 this.pluginsRefs[refIndex] = pluginRef;
             };
         }
@@ -173,9 +210,13 @@ export default class GridLayout extends React.PureComponent {
         return this._memoForwardedPluginRef[refIndex];
     };
 
-    mergeGroupsLayout(group, newLayout, temporaryItem) {
+    mergeGroupsLayout(
+        group: string,
+        newLayout: ConfigLayout[],
+        temporaryItem?: ConfigLayout,
+    ): ConfigLayout[] {
         const renderLayout = this.getActiveLayout();
-        const itemsByGroup = renderLayout.reduce(
+        const itemsByGroup = renderLayout.reduce<Record<string, ConfigLayout>>(
             (memo, item) => {
                 memo[item.i] = item;
                 return memo;
@@ -183,8 +224,8 @@ export default class GridLayout extends React.PureComponent {
             temporaryItem ? {[temporaryItem.i]: temporaryItem} : {},
         );
 
-        const newItemsLayoutById = newLayout.reduce((memo, item) => {
-            const parent = itemsByGroup[item.i].parent;
+        const newItemsLayoutById = newLayout.reduce<Record<string, ConfigLayout>>((memo, item) => {
+            const parent = itemsByGroup[item.i]?.parent;
             memo[item.i] = {...item};
 
             if (parent) {
@@ -204,7 +245,7 @@ export default class GridLayout extends React.PureComponent {
         });
     }
 
-    reloadItems(options) {
+    reloadItems(options?: ReloadItemsOptions) {
         const {targetIds, force} = options || {};
 
         const {
@@ -218,7 +259,9 @@ export default class GridLayout extends React.PureComponent {
         const autoupdateIntervalMs = Number(autoupdateInterval) * 1000;
 
         const targetPlugins = targetIds
-            ? this.pluginsRefs.filter((plugin) => targetIds.includes(plugin.props.id))
+            ? this.pluginsRefs.filter(
+                  (plugin) => hasPluginId(plugin) && targetIds.includes(plugin.props.id),
+              )
             : this.pluginsRefs;
 
         if (autoupdateIntervalMs) {
@@ -227,7 +270,7 @@ export default class GridLayout extends React.PureComponent {
 
             if (force || (!isPageHidden && !editMode && reloadIntervalRemains <= 0)) {
                 this._lastReloadAt = new Date().getTime();
-                reloadItems(targetPlugins, {silentLoading, noVeil: true});
+                reloadItems(targetPlugins, {silentLoading: Boolean(silentLoading), noVeil: true});
             }
 
             this._timeout = setTimeout(
@@ -235,11 +278,19 @@ export default class GridLayout extends React.PureComponent {
                 reloadIntervalRemains <= 0 ? autoupdateIntervalMs : reloadIntervalRemains,
             );
         } else if (force) {
-            reloadItems(targetPlugins, {silentLoading, noVeil: true});
+            reloadItems(targetPlugins, {silentLoading: Boolean(silentLoading), noVeil: true});
         }
     }
 
-    prepareDefaultArguments(group, layout, oldItem, newItem, placeholder, e, element) {
+    prepareDefaultArguments(
+        group: string,
+        layout: ConfigLayout[],
+        oldItem: ConfigLayout,
+        newItem: ConfigLayout,
+        placeholder: ConfigLayout,
+        e: MouseEvent,
+        element: HTMLElement,
+    ): ManipulationCallbackArgs {
         return {
             group,
             layout,
@@ -251,8 +302,9 @@ export default class GridLayout extends React.PureComponent {
         };
     }
 
-    updateDraggingElementState(group, layoutItem, e) {
-        let currentDraggingElement = this.state.currentDraggingElement;
+    updateDraggingElementState(group: string, layoutItem: ConfigLayout, e: MouseEvent) {
+        let currentDraggingElement: CurrentDraggingElement | null =
+            this.state.currentDraggingElement;
 
         if (!currentDraggingElement) {
             const {temporaryLayout} = this.context;
@@ -262,12 +314,18 @@ export default class GridLayout extends React.PureComponent {
                 ? temporaryLayout.dragProps
                 : this.context.configItems.find(({id}) => id === layoutId);
 
-            let {offsetX, offsetY} = e.nativeEvent || {};
-            if (offsetX === undefined || offsetY === undefined) {
-                const gridRect = e.currentTarget.getBoundingClientRect();
+            if (!item) {
+                return;
+            }
 
-                offsetX = e.clientX - gridRect.left;
-                offsetY = e.clientY - gridRect.top;
+            let {offsetX, offsetY} =
+                (e as MouseEvent & {nativeEvent: MouseEvent}).nativeEvent || {};
+            if (offsetX === undefined || offsetY === undefined) {
+                const target = e.currentTarget as HTMLElement;
+                const gridRect = target?.getBoundingClientRect();
+
+                offsetX = e.clientX - (gridRect?.left || 0);
+                offsetY = e.clientY - (gridRect?.top || 0);
             }
 
             currentDraggingElement = {
@@ -281,7 +339,7 @@ export default class GridLayout extends React.PureComponent {
         this.setState({currentDraggingElement, draggedOverGroup: group});
     }
 
-    _initDragCoordinatesWatcher(element) {
+    _initDragCoordinatesWatcher(element: HTMLElement) {
         if (!this._parendDragNode) {
             this._parendDragNode = element.parentElement;
             this.setState({isDraggedOut: false});
@@ -290,7 +348,11 @@ export default class GridLayout extends React.PureComponent {
 
     // When element is going back and prointer-event: none is removed mouse enter event is not fired
     // So to trigger it we are forcing this event by adding transparent block under the mouse
-    _forceCursorCapture(parentElement, position, parentRect) {
+    _forceCursorCapture(
+        parentElement: HTMLElement,
+        position: {top: number; left: number},
+        parentRect: DOMRect,
+    ) {
         const block = document.createElement('div');
         block.classList.add('react-grid-focus-capture');
 
@@ -313,8 +375,13 @@ export default class GridLayout extends React.PureComponent {
         }, 100);
     }
 
-    _updateDragCoordinates(e) {
+    _updateDragCoordinates(e: MouseEvent) {
         const parent = this._parendDragNode;
+
+        if (!parent) {
+            return;
+        }
+
         const parentRect = parent.getBoundingClientRect();
         const {clientX, clientY} = e;
 
@@ -351,7 +418,15 @@ export default class GridLayout extends React.PureComponent {
         this.setState({isDraggedOut: false});
     }
 
-    _onDragStart(group, _newLayout, layoutItem, _newItem, _placeholder, e, element) {
+    _onDragStart(
+        group: string,
+        _newLayout: ConfigLayout[],
+        layoutItem: ConfigLayout,
+        _newItem: ConfigLayout,
+        _placeholder: ConfigLayout,
+        e: MouseEvent,
+        element: HTMLElement,
+    ) {
         this.context.onDragStart?.call(
             this,
             this.prepareDefaultArguments(
@@ -374,7 +449,15 @@ export default class GridLayout extends React.PureComponent {
         }
     }
 
-    _onDrag(group, layout, oldItem, newItem, placeholder, e, element) {
+    _onDrag(
+        group: string,
+        layout: ConfigLayout[],
+        oldItem: ConfigLayout,
+        newItem: ConfigLayout,
+        placeholder: ConfigLayout,
+        e: MouseEvent,
+        element: HTMLElement,
+    ) {
         if (!this.context.dragOverPlugin) {
             this._updateDragCoordinates(e);
         }
@@ -385,7 +468,15 @@ export default class GridLayout extends React.PureComponent {
         );
     }
 
-    _onDragStop(group, layout, oldItem, newItem, placeholder, e, element) {
+    _onDragStop(
+        group: string,
+        layout: ConfigLayout[],
+        oldItem: ConfigLayout,
+        newItem: ConfigLayout,
+        placeholder: ConfigLayout,
+        e: MouseEvent,
+        element: HTMLElement,
+    ) {
         this._resetDragWatcher();
 
         this._onStop(group, layout);
@@ -396,7 +487,15 @@ export default class GridLayout extends React.PureComponent {
         );
     }
 
-    _onResizeStart(group, layout, oldItem, newItem, placeholder, e, element) {
+    _onResizeStart(
+        group: string,
+        layout: ConfigLayout[],
+        oldItem: ConfigLayout,
+        newItem: ConfigLayout,
+        placeholder: ConfigLayout,
+        e: MouseEvent,
+        element: HTMLElement,
+    ) {
         this.setState({
             isDragging: true,
         });
@@ -407,14 +506,30 @@ export default class GridLayout extends React.PureComponent {
         );
     }
 
-    _onResize(group, layout, oldItem, newItem, placeholder, e, element) {
+    _onResize(
+        group: string,
+        layout: ConfigLayout[],
+        oldItem: ConfigLayout,
+        newItem: ConfigLayout,
+        placeholder: ConfigLayout,
+        e: MouseEvent,
+        element: HTMLElement,
+    ) {
         this.context.onResize?.call(
             this,
             this.prepareDefaultArguments(group, layout, oldItem, newItem, placeholder, e, element),
         );
     }
 
-    _onResizeStop(group, layout, oldItem, newItem, placeholder, e, element) {
+    _onResizeStop(
+        group: string,
+        layout: ConfigLayout[],
+        oldItem: ConfigLayout,
+        newItem: ConfigLayout,
+        placeholder: ConfigLayout,
+        e: MouseEvent,
+        element: HTMLElement,
+    ) {
         this._onStop(group, layout);
 
         this.context.onResizeStop?.call(
@@ -437,7 +552,7 @@ export default class GridLayout extends React.PureComponent {
         }
     }
 
-    _onStop = (group, newLayout) => {
+    _onStop = (group: string, newLayout: ConfigLayout[]) => {
         const {layoutChange, onDrop, temporaryLayout} = this.context;
         const {draggedOverGroup, currentDraggingElement} = this.state;
 
@@ -460,16 +575,16 @@ export default class GridLayout extends React.PureComponent {
         });
 
         if (temporaryLayout) {
-            onDrop?.(
-                groupedLayout,
-                groupedLayout.find(({i}) => i === TEMPORARY_ITEM_ID),
-            );
+            const temporaryItem = groupedLayout.find(({i}) => i === TEMPORARY_ITEM_ID);
+            if (onDrop && temporaryItem) {
+                onDrop(groupedLayout, temporaryItem);
+            }
         } else {
             layoutChange(groupedLayout);
         }
     };
 
-    _onSharedDrop = (targetGroup, newLayout, tempItem) => {
+    _onSharedDrop = (targetGroup: string, newLayout: ConfigLayout[], tempItem: ConfigLayout) => {
         const {currentDraggingElement} = this.state;
         const {layoutChange} = this.context;
 
@@ -507,7 +622,12 @@ export default class GridLayout extends React.PureComponent {
         layoutChange(groupedLayout);
     };
 
-    _onExternalDrop = (group, newLayout, item, e) => {
+    _onExternalDrop = (
+        group: string,
+        newLayout: ConfigLayout[],
+        item: ConfigLayout,
+        e: MouseEvent,
+    ) => {
         const {onDrop} = this.context;
 
         if (group !== DEFAULT_GROUP) {
@@ -520,7 +640,12 @@ export default class GridLayout extends React.PureComponent {
         onDrop?.(groupedLayout, item, e);
     };
 
-    _onDrop = (group, newLayout, item, e) => {
+    _onDrop = (
+        group: string,
+        newLayout: ConfigLayout[],
+        item: ConfigLayout | undefined,
+        e: MouseEvent,
+    ): void | false => {
         if (!item || !this.context.editMode) {
             return false;
         }
@@ -533,7 +658,7 @@ export default class GridLayout extends React.PureComponent {
         }
     };
 
-    _onDropDragOver = (group, e) => {
+    _onDropDragOver = (group: string, e: DragEvent | MouseEvent): void | boolean => {
         const {editMode, dragOverPlugin, onDropDragOver, temporaryLayout} = this.context;
         const {currentDraggingElement} = this.state;
 
@@ -569,7 +694,7 @@ export default class GridLayout extends React.PureComponent {
         return false;
     };
 
-    renderTemporaryPlaceholder(gridLayout) {
+    renderTemporaryPlaceholder(gridLayout: Partial<ReactGridLayoutProps>) {
         const {temporaryLayout, noOverlay, draggableHandleClassName} = this.context;
 
         if (!temporaryLayout || !temporaryLayout.dragProps) {
@@ -582,6 +707,8 @@ export default class GridLayout extends React.PureComponent {
         return (
             <GridItem
                 key={id}
+                // TODO remove the expected error after translating GridItem to TS
+                // @ts-expect-error
                 id={id}
                 item={{id, type, data: {}}}
                 layout={temporaryLayout.data}
@@ -595,7 +722,13 @@ export default class GridLayout extends React.PureComponent {
         );
     }
 
-    renderGroup(group, renderLayout, renderItems, offset = 0, groupGridProperties) {
+    renderGroup(
+        group: string,
+        renderLayout: ConfigLayout[],
+        renderItems: ConfigItem[],
+        offset = 0,
+        groupGridProperties?: (props: ReactGridLayoutProps) => ReactGridLayoutProps,
+    ) {
         const {
             registerManager,
             editMode,
@@ -632,36 +765,43 @@ export default class GridLayout extends React.PureComponent {
 
         return (
             <Layout
-                isDraggable={editMode}
-                isResizable={editMode}
-                // Group properties
-                {...properties}
                 key={`group_${group}`}
-                // Layout props
-                compactType={compactType}
-                layout={layout}
-                draggableCancel={`.${DRAGGABLE_CANCEL_CLASS_NAME}`}
-                draggableHandle={draggableHandleClassName ? `.${draggableHandleClassName}` : null}
-                // Default callbacks
-                onDragStart={callbacks.onDragStart}
-                onDrag={callbacks.onDrag}
-                onDragStop={callbacks.onDragStop}
-                onResizeStart={callbacks.onResizeStart}
-                onResize={callbacks.onResize}
-                onResizeStop={callbacks.onResizeStop}
-                // External Drag N Drop options
-                onDragTargetRestore={callbacks.onDragTargetRestore}
-                onDropDragOver={callbacks.onDropDragOver}
-                onDrop={callbacks.onDrop}
-                hasSharedDragItem={hasSharedDragItem}
-                sharedDragPosition={currentDraggingElement?.cursorPosition}
-                isDragCaptured={isDragCaptured}
-                isDroppable={Boolean(outerDnDEnable) && editMode}
+                {...({
+                    isDraggable: editMode,
+                    isResizable: editMode,
+                    // Group properties
+                    ...properties,
+                    // Layout props
+                    compactType,
+                    layout,
+                    draggableCancel: `.${DRAGGABLE_CANCEL_CLASS_NAME}`,
+                    draggableHandle: draggableHandleClassName
+                        ? `.${draggableHandleClassName}`
+                        : null,
+                    // Default callbacks
+                    onDragStart: callbacks.onDragStart,
+                    onDrag: callbacks.onDrag,
+                    onDragStop: callbacks.onDragStop,
+                    onResizeStart: callbacks.onResizeStart,
+                    onResize: callbacks.onResize,
+                    onResizeStop: callbacks.onResizeStop,
+                    // External Drag N Drop options
+                    onDragTargetRestore: callbacks.onDragTargetRestore,
+                    onDropDragOver: callbacks.onDropDragOver,
+                    onDrop: callbacks.onDrop,
+                    hasSharedDragItem,
+                    sharedDragPosition: currentDraggingElement?.cursorPosition,
+                    isDragCaptured,
+                    isDroppable: Boolean(outerDnDEnable) && editMode,
+                } as any)} // TODO remove any after translating Layout to TS
             >
                 {renderItems.map((item, i) => {
                     const keyId = item.id;
                     const isDragging = this.state.isDragging;
-                    const isCurrentDraggedItem = currentDraggingElement?.item.id === keyId;
+                    const isCurrentDraggedItem =
+                        currentDraggingElement &&
+                        'id' in currentDraggingElement.item &&
+                        currentDraggingElement.item.id === keyId;
                     const isDraggedOut = isCurrentDraggedItem && this.state.isDraggedOut;
                     const itemNoOverlay =
                         hasOwnGroupProperties && 'noOverlay' in properties
@@ -670,22 +810,24 @@ export default class GridLayout extends React.PureComponent {
 
                     return (
                         <GridItem
-                            forwardedPluginRef={this.getMemoForwardRefCallback(offset + i)} // forwarded ref to plugin
                             key={keyId}
-                            id={keyId}
-                            item={item}
-                            layout={layout}
-                            adjustWidgetLayout={this.adjustWidgetLayout}
-                            isDragging={isDragging}
-                            isDraggedOut={isDraggedOut}
-                            noOverlay={itemNoOverlay}
-                            focusable={focusable}
-                            withCustomHandle={Boolean(draggableHandleClassName)}
-                            onItemMountChange={onItemMountChange}
-                            onItemRender={onItemRender}
-                            gridLayout={properties}
-                            onItemFocus={onItemFocus}
-                            onItemBlur={onItemBlur}
+                            {...({
+                                forwardedPluginRef: this.getMemoForwardRefCallback(offset + i),
+                                id: keyId,
+                                item,
+                                layout,
+                                adjustWidgetLayout: this.adjustWidgetLayout,
+                                isDragging,
+                                isDraggedOut,
+                                noOverlay: itemNoOverlay,
+                                focusable,
+                                withCustomHandle: Boolean(draggableHandleClassName),
+                                onItemMountChange,
+                                onItemRender,
+                                gridLayout: properties,
+                                onItemFocus,
+                                onItemBlur,
+                            } as any)} // TODO remove any after translating GridItem to TS
                         />
                     );
                 })}
@@ -699,38 +841,44 @@ export default class GridLayout extends React.PureComponent {
 
         this.pluginsRefs.length = this.context.configItems.length;
 
-        const defaultRenderLayout = [];
-        const defaultRenderItems = [];
-        const layoutMap = {};
+        const defaultRenderLayout: ConfigLayout[] = [];
+        const defaultRenderItems: ConfigItem[] = [];
+        const layoutMap: Record<string, string> = {};
 
-        const groupedLayout = this.getActiveLayout().reduce((memo, item) => {
-            if (item.parent) {
-                if (!memo[item.parent]) {
-                    memo[item.parent] = [];
+        const groupedLayout = this.getActiveLayout().reduce<Record<string, ConfigLayout[]>>(
+            (memo, item) => {
+                if (item.parent) {
+                    if (!memo[item.parent]) {
+                        memo[item.parent] = [];
+                    }
+
+                    memo[item.parent].push(item);
+                    layoutMap[item.i] = item.parent;
+                } else {
+                    defaultRenderLayout.push(item);
                 }
 
-                memo[item.parent].push(item);
-                layoutMap[item.i] = item.parent;
-            } else {
-                defaultRenderLayout.push(item);
-            }
+                return memo;
+            },
+            {},
+        );
 
-            return memo;
-        }, []);
-
-        const itemsByGroup = this.context.configItems.reduce((memo, item) => {
-            const group = layoutMap[item.id];
-            if (group) {
-                if (!memo[group]) {
-                    memo[group] = [];
+        const itemsByGroup = this.context.configItems.reduce<Record<string, ConfigItem[]>>(
+            (memo, item) => {
+                const group = layoutMap[item.id];
+                if (group) {
+                    if (!memo[group]) {
+                        memo[group] = [];
+                    }
+                    memo[group].push(item);
+                } else {
+                    defaultRenderItems.push(item);
                 }
-                memo[group].push(item);
-            } else {
-                defaultRenderItems.push(item);
-            }
 
-            return memo;
-        }, {});
+                return memo;
+            },
+            {},
+        );
 
         let offset = 0;
 
