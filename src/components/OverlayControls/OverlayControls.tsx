@@ -75,7 +75,7 @@ interface OverlayControlsDefaultProps {
 
 interface OverlayControlsProps extends OverlayControlsDefaultProps {
     configItem: ConfigItem;
-    onItemClick?: () => void | null;
+    onItemClick?: () => void;
 }
 
 type PreparedCopyItemOptionsArg = Pick<ConfigItem, 'data' | 'type' | 'defaults' | 'namespace'> & {
