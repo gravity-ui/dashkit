@@ -194,13 +194,9 @@ class GridItem extends React.PureComponent<GridItemProps, GridItemState> {
         const {isFocused} = this.state;
 
         const width =
-            style && style.width !== undefined
-                ? Number.parseInt(String(style.width), 10)
-                : undefined;
+            style?.width === undefined ? undefined : Number.parseInt(String(style.width), 10);
         const height =
-            style && style.height !== undefined
-                ? Number.parseInt(String(style.height), 10)
-                : undefined;
+            style?.height === undefined ? undefined : Number.parseInt(String(style.height), 10);
         const transform = style?.transform;
         const preparedClassName =
             (editMode
