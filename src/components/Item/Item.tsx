@@ -12,7 +12,10 @@ const b = cn('dashkit-item');
 
 type ItemProps = {
     registerManager: RegisterManager;
-    rendererProps: Omit<PluginWidgetProps, 'onBeforeLoad'>;
+    rendererProps: Omit<PluginWidgetProps, 'onBeforeLoad' | 'width' | 'height'> & {
+        width?: number;
+        height?: number;
+    };
     type: string;
     isPlaceholder?: boolean;
     forwardedPluginRef?: (pluginRef: PluginRef) => void;
