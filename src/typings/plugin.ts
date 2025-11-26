@@ -41,10 +41,16 @@ export interface PluginWidgetProps<T = StringParams> {
 
 export type PluginDefaultLayout = Partial<Omit<WidgetLayout, 'i'>>;
 
-export type PluginRef = React.RefObject<any> | Record<string, unknown>;
+export type PluginRef = object | null;
 
 export interface Plugin<P extends PluginWidgetProps<T> = any, T = StringParams> extends PluginBase {
     defaultLayout?: PluginDefaultLayout;
-    renderer: (props: P, forwardedRef: React.RefObject<any>) => React.ReactNode;
-    placeholderRenderer?: (props: P, forwardedRef: React.RefObject<any>) => React.ReactNode;
+    renderer: (
+        props: P,
+        forwardedRef: ((instance: PluginRef) => void) | undefined,
+    ) => React.ReactNode;
+    placeholderRenderer?: (
+        props: P,
+        forwardedRef: ((instance: PluginRef) => void) | undefined,
+    ) => React.ReactNode;
 }
