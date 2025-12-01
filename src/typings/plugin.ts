@@ -12,6 +12,7 @@ import type {
 } from '../shared';
 
 import type {ContextProps, SettingsProps, WidgetLayout} from './common';
+import type {CompactType} from './config';
 
 export interface PluginWidgetProps<T = StringParams> {
     id: string;
@@ -31,7 +32,9 @@ export interface PluginWidgetProps<T = StringParams> {
     settings: SettingsProps;
     context: ContextProps;
     layout: WidgetLayout[];
-    gridLayout: ReactGridLayout.ReactGridLayoutProps;
+    gridLayout: Omit<ReactGridLayout.ReactGridLayoutProps, 'compactType'> & {
+        compactType?: CompactType;
+    };
     adjustWidgetLayout: (data: {
         widgetId: string;
         needSetDefault?: boolean;
