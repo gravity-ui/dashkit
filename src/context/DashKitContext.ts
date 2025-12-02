@@ -11,7 +11,7 @@ import type {
     ItemStateAndParams,
     ItemStateAndParamsChangeOptions,
 } from '../shared';
-import type {PluginRef, ReactGridLayoutProps} from '../typings';
+import type {ContextProps, PluginRef, ReactGridLayoutProps, SettingsProps} from '../typings';
 
 type DashkitPropsPassedToCtx = Pick<
     DashKitProps,
@@ -42,7 +42,10 @@ type TemporaryLayout = {
     dragProps: ItemDragProps;
 };
 
-export type DashKitCtxShape = DashkitPropsPassedToCtx & {
+export type DashKitCtxShape = Omit<DashkitPropsPassedToCtx, 'context' | 'settings'> & {
+    context: ContextProps;
+    settings: SettingsProps;
+
     registerManager: RegisterManager;
     forwardedMetaRef: React.ForwardedRef<any>;
 
@@ -57,12 +60,12 @@ export type DashKitCtxShape = DashkitPropsPassedToCtx & {
     ) => void;
     revertToOriginalLayout: (widgetId: string) => void;
 
-    itemsState?: Record<string, ItemState>;
+    itemsState: Record<string, ItemState>;
     itemsParams: Record<string, ItemParams>;
     onItemStateAndParamsChange: (
         id: string,
         stateAndParams: ItemStateAndParams,
-        options: ItemStateAndParamsChangeOptions,
+        options?: ItemStateAndParamsChangeOptions,
     ) => void;
 
     getItemsMeta: (pluginsRefs: Array<PluginRef>) => Array<Promise<any>>;
