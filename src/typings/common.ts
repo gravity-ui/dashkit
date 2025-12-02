@@ -33,8 +33,8 @@ export interface WidgetLayout extends AdditionalWidgetLayout {
     h: number;
     x: number;
     y: number;
-    minW: number;
-    minH: number;
+    minW?: number;
+    minH?: number;
     maxW?: number;
     maxH?: number;
 }

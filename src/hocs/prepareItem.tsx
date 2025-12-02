@@ -1,59 +1,69 @@
 import React from 'react';
 
 import isEqual from 'lodash/isEqual';
-import PropTypes from 'prop-types';
 
+import type {ItemProps, RendererProps} from '../components/Item/types';
 import {DashKitContext} from '../context';
+import type {ConfigItem, ConfigLayout} from '../shared';
+import type {
+    ItemStateAndParams,
+    ItemStateAndParamsChangeOptions,
+} from '../shared/types/state-and-params';
+import type {PluginRef, PluginWidgetProps, ReactGridLayoutProps} from '../typings';
 
-export function prepareItem(Component) {
-    return class PrepareItem extends React.Component {
-        static propTypes = {
-            gridLayout: PropTypes.object,
-            adjustWidgetLayout: PropTypes.func.isRequired,
-            layout: PropTypes.array,
-            id: PropTypes.string,
-            item: PropTypes.object,
-            shouldItemUpdate: PropTypes.bool,
-            width: PropTypes.number,
-            height: PropTypes.number,
-            transform: PropTypes.string,
-            isPlaceholder: PropTypes.bool,
+type PrepareItemProps = {
+    gridLayout?: ReactGridLayoutProps;
+    adjustWidgetLayout: PluginWidgetProps['adjustWidgetLayout'];
+    layout: ConfigLayout[];
+    id: string;
+    item: ConfigItem;
+    shouldItemUpdate?: boolean;
+    width?: number;
+    height?: number;
+    transform?: string;
+    isPlaceholder?: boolean;
 
-            onItemRender: PropTypes.func,
-            onItemMountChange: PropTypes.func,
+    onItemRender?: (item: ConfigItem) => void;
+    onItemMountChange?: (item: ConfigItem, meta: {isAsync: boolean; isMounted: boolean}) => void;
 
-            forwardedPluginRef: PropTypes.any,
-        };
+    forwardedPluginRef?: (ref: PluginRef) => void;
+};
 
-        shouldComponentUpdate(nextProps) {
+export function prepareItem(
+    WrappedComponent: React.ComponentType<ItemProps>,
+): React.ComponentClass<PrepareItemProps> {
+    return class PrepareItem extends React.Component<PrepareItemProps> {
+        static contextType = DashKitContext;
+        context!: React.ContextType<typeof DashKitContext>;
+
+        _currentRenderProps: RendererProps = {} as RendererProps;
+
+        shouldComponentUpdate(nextProps: PrepareItemProps) {
             const {width, height, transform} = this.props;
             const {width: widthNext, height: heightNext, transform: transformNext} = nextProps;
-            if (
-                !nextProps.shouldItemUpdate &&
-                width === widthNext &&
-                height === heightNext &&
-                transform === transformNext
-            ) {
-                return false;
-            }
-            return true;
+
+            return (
+                nextProps.shouldItemUpdate ||
+                width !== widthNext ||
+                height !== heightNext ||
+                transform !== transformNext
+            );
         }
 
-        static contextType = DashKitContext;
-
-        _onStateAndParamsChange = (stateAndParams, options) => {
+        _onStateAndParamsChange = (
+            stateAndParams: ItemStateAndParams,
+            options?: ItemStateAndParamsChangeOptions,
+        ) => {
             this.context.onItemStateAndParamsChange(this.props.id, stateAndParams, options);
         };
 
-        _currentRenderProps = {};
-        getRenderProps = () => {
-            const {id, width, height, item, adjustWidgetLayout, layout, isPlaceholder, gridLayout} =
-                this.props;
+        getRenderProps = (): RendererProps => {
+            const {id, width, height, item, adjustWidgetLayout, layout, gridLayout} = this.props;
             const {itemsState, itemsParams, registerManager, settings, context, editMode} =
                 this.context;
             const {data, defaults, namespace} = item;
 
-            const rendererProps = {
+            const rendererProps: RendererProps = {
                 data,
                 editMode,
                 params: itemsParams[id],
@@ -69,16 +79,15 @@ export function prepareItem(Component) {
                 layout,
                 gridLayout: gridLayout || registerManager.gridLayout,
                 adjustWidgetLayout,
-                isPlaceholder,
             };
 
             const changedProp = Object.entries(rendererProps).find(([key, value]) => {
                 // Checking gridLayoout deep as groups gridProperties method has tendancy to creat new objects
                 if (key === 'gridLayout') {
-                    return !isEqual(this._currentRenderProps[key], value);
+                    return !isEqual(this._currentRenderProps[key as keyof RendererProps], value);
                 }
 
-                return this._currentRenderProps[key] !== value;
+                return this._currentRenderProps[key as keyof RendererProps] !== value;
             });
 
             if (changedProp) {
@@ -95,7 +104,7 @@ export function prepareItem(Component) {
             const {type} = item;
 
             return (
-                <Component
+                <WrappedComponent
                     forwardedPluginRef={forwardedPluginRef}
                     rendererProps={this.getRenderProps()}
                     registerManager={registerManager}
