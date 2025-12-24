@@ -47,6 +47,7 @@ export enum OverlayControlsPosition {
 export interface OverlayControlItem {
     title?: string;
     icon?: IconProps['data'];
+    renderIcon?: (item: ConfigItem) => IconProps['data'];
     iconSize?: number | string;
     handler?: (item: ConfigItem) => void;
     visible?: (item: ConfigItem) => boolean;
@@ -54,6 +55,7 @@ export interface OverlayControlItem {
     excludeWidgetsTypes?: Array<PluginBase['type']>; // массив с типами виджетов (плагинов), которые исключаем из отображения контрола по настройке allWidgetsControls
     id?: string; // id дефолтного пункта меню для возможноти использования дефолтного action в кастомных контролах
     qa?: string;
+    className?: string;
 }
 
 export interface OverlayCustomControlItem {
@@ -167,7 +169,9 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
 
     private renderControlsItem = (item: OverlayControlItem, index: number, length: number) => {
         const {view, size, onItemClick} = this.props;
-        const {title, handler, icon, iconSize, qa} = item;
+        const {title, handler, icon, renderIcon, iconSize, qa, className} = item;
+
+        const iconData = renderIcon ? renderIcon(this.props.configItem) : icon;
 
         const onItemClickHandler = typeof handler === 'function' ? handler : noop;
         return (
@@ -181,9 +185,10 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                     onItemClickHandler(this.props.configItem);
                     onItemClick?.();
                 }}
+                className={className}
                 qa={qa}
             >
-                <Icon data={icon || Gear} size={icon ? iconSize : OVERLAY_ICON_SIZE} />
+                <Icon data={iconData || Gear} size={icon ? iconSize : OVERLAY_ICON_SIZE} />
             </Button>
         );
     };
