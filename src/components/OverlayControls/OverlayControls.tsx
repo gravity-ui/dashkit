@@ -188,7 +188,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                 className={className}
                 qa={qa}
             >
-                <Icon data={iconData || Gear} size={icon ? iconSize : OVERLAY_ICON_SIZE} />
+                <Icon data={iconData || Gear} size={iconSize ?? OVERLAY_ICON_SIZE} />
             </Button>
         );
     };
