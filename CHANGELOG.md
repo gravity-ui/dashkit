@@ -1,5 +1,12 @@
 # Changelog
 
+## [9.3.0](https://github.com/gravity-ui/dashkit/compare/v9.2.0...v9.3.0) (2025-12-25)
+
+
+### Features
+
+* **OverlayControls:** support className and rendIcon props ([#286](https://github.com/gravity-ui/dashkit/issues/286)) ([f68b174](https://github.com/gravity-ui/dashkit/commit/f68b174d8f5f513b992b7304b2fded70b7948e3a))
+
 ## [9.2.0](https://github.com/gravity-ui/dashkit/compare/v9.1.4...v9.2.0) (2025-11-11)
 
 
