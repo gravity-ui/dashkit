@@ -1,5 +1,12 @@
 # Changelog
 
+## [9.3.1](https://github.com/gravity-ui/dashkit/compare/v9.3.0...v9.3.1) (2025-12-25)
+
+
+### Bug Fixes
+
+* **OverlayControls:** support iconSize prop usage with renderIcon ([#289](https://github.com/gravity-ui/dashkit/issues/289)) ([3afa93c](https://github.com/gravity-ui/dashkit/commit/3afa93cb72c6751e18fb4a404e2268c1e8677185))
+
 ## [9.3.0](https://github.com/gravity-ui/dashkit/compare/v9.2.0...v9.3.0) (2025-12-25)
 
 
