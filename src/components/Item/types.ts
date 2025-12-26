@@ -1,6 +1,7 @@
 import type {ConfigItem, ItemParams} from '../../shared/types';
 import type {PluginRef, PluginWidgetProps} from '../../typings';
 import type {RegisterManager} from '../../utils/register-manager';
+import type {DashKitProps} from '../DashKit';
 
 export type RendererProps = Omit<
     PluginWidgetProps<ItemParams>,
@@ -17,6 +18,6 @@ export type ItemProps = {
     registerManager: RegisterManager;
     rendererProps: RendererProps;
     type: string;
-    onItemRender?: (item: ConfigItem) => void;
-    onItemMountChange?: (item: ConfigItem, meta: {isAsync: boolean; isMounted: boolean}) => void;
+    onItemRender?: DashKitProps['onItemRender'];
+    onItemMountChange?: DashKitProps['onItemMountChange'];
 };
