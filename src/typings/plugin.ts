@@ -24,8 +24,8 @@ export interface PluginWidgetProps<T = StringParams> {
         options?: ItemStateAndParamsChangeOptions,
     ) => void;
     onBeforeLoad: () => () => void;
-    width: number;
-    height: number;
+    width?: number;
+    height?: number;
     data: ConfigItem['data'];
     defaults: ConfigItem['defaults'];
     namespace: ConfigItem['namespace'];
