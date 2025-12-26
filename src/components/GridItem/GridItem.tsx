@@ -3,7 +3,7 @@ import React from 'react';
 import {FOCUSED_CLASS_NAME} from '../../constants';
 import {DashKitContext} from '../../context';
 import type {ConfigItem, ConfigLayout} from '../../shared';
-import type {PluginRef, ReactGridLayoutProps} from '../../typings';
+import type {PluginRef, PluginWidgetProps, ReactGridLayoutProps} from '../../typings';
 import {cn} from '../../utils/cn';
 import Item from '../Item/Item';
 import OverlayControls from '../OverlayControls/OverlayControls';
@@ -46,11 +46,7 @@ class WindowFocusObserver {
 const windowFocusObserver = new WindowFocusObserver();
 
 type GridItemProps = {
-    adjustWidgetLayout: (data: {
-        widgetId: string;
-        needSetDefault?: boolean;
-        adjustedWidgetLayout?: ConfigLayout;
-    }) => void;
+    adjustWidgetLayout: PluginWidgetProps['adjustWidgetLayout'];
     gridLayout?: ReactGridLayoutProps;
     id: string;
     item: ConfigItem;

@@ -2,7 +2,7 @@ import React from 'react';
 
 import type {DragOverEvent} from 'react-grid-layout';
 
-import type {PluginRef, ReactGridLayoutProps} from 'src/typings';
+import type {PluginRef, PluginWidgetProps, ReactGridLayoutProps} from 'src/typings';
 
 import {
     COMPACT_TYPE_HORIZONTAL_NOWRAP,
@@ -18,7 +18,6 @@ import GridItem from '../GridItem/GridItem';
 
 import {Layout} from './ReactGridLayout';
 import type {
-    AdjustWidgetLayoutParams,
     CurrentDraggingElement,
     GridLayoutProps,
     GridLayoutState,
@@ -93,11 +92,11 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
         });
     };
 
-    adjustWidgetLayout = ({
+    adjustWidgetLayout: PluginWidgetProps['adjustWidgetLayout'] = ({
         widgetId,
         needSetDefault,
         adjustedWidgetLayout,
-    }: AdjustWidgetLayoutParams) => {
+    }) => {
         const {layout, memorizeOriginalLayout, revertToOriginalLayout} = this.context;
 
         if (needSetDefault) {
