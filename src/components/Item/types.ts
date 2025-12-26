@@ -17,7 +17,6 @@ export type ItemProps = {
     item: ConfigItem;
     registerManager: RegisterManager;
     rendererProps: RendererProps;
-    type: string;
     onItemRender?: DashKitProps['onItemRender'];
     onItemMountChange?: DashKitProps['onItemMountChange'];
 };

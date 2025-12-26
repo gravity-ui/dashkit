@@ -98,14 +98,12 @@ export function prepareItem(
             const {item, isPlaceholder, forwardedPluginRef, onItemMountChange, onItemRender} =
                 this.props;
             const {registerManager} = this.context;
-            const {type} = item;
 
             return (
                 <WrappedComponent
                     forwardedPluginRef={forwardedPluginRef}
                     rendererProps={this.getRenderProps()}
                     registerManager={registerManager}
-                    type={type}
                     isPlaceholder={isPlaceholder}
                     onItemMountChange={onItemMountChange}
                     onItemRender={onItemRender}
