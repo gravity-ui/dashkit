@@ -8,6 +8,7 @@ import type {
     ConfigItem,
     ConfigLayout,
     DraggedOverItem,
+    GlobalParams,
     ItemDragProps,
     ItemParams,
     ItemState,
@@ -16,18 +17,17 @@ import type {
 } from '../shared';
 import type {ContextProps, PluginRef, ReactGridLayoutProps, SettingsProps} from '../typings';
 
-type DashkitPropsPassedToCtx = Pick<
+export type DashkitPropsPassedToCtx = Pick<
     DashKitProps,
     | 'config'
     | 'groups'
-    | 'context'
     | 'noOverlay'
     | 'focusable'
-    | 'globalParams'
     | 'editMode'
-    | 'settings'
     | 'onItemMountChange'
     | 'onItemRender'
+    | 'onItemFocus'
+    | 'onItemBlur'
     | 'draggableHandleClassName'
     // default handlers bypass
     | 'onDragStart'
@@ -43,9 +43,10 @@ export type TemporaryLayout = {
     dragProps: ItemDragProps;
 };
 
-export type DashKitCtxShape = Omit<DashkitPropsPassedToCtx, 'context' | 'settings'> & {
+export type DashKitCtxShape = DashkitPropsPassedToCtx & {
     context: ContextProps;
     settings: SettingsProps;
+    globalParams: GlobalParams;
 
     registerManager: RegisterManager;
     forwardedMetaRef: React.ForwardedRef<any>;
@@ -83,8 +84,6 @@ export type DashKitCtxShape = Omit<DashkitPropsPassedToCtx, 'context' | 'setting
         groupLayout: ConfigLayout[],
         sharedItem?: DraggedOverItem,
     ) => {w?: number; h?: number} | false | undefined;
-    onItemBlur?: (item: ConfigItem) => void;
-    onItemFocus?: (item: ConfigItem) => void;
     outerDnDEnable: boolean;
     dragOverPlugin: null | RegisterManagerPlugin;
 };

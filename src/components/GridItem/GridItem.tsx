@@ -3,8 +3,9 @@ import React from 'react';
 import {FOCUSED_CLASS_NAME} from '../../constants';
 import {DashKitContext} from '../../context';
 import type {ConfigItem, ConfigLayout} from '../../shared';
-import type {PluginRef, ReactGridLayoutProps} from '../../typings';
+import type {PluginRef, PluginWidgetProps, ReactGridLayoutProps} from '../../typings';
 import {cn} from '../../utils/cn';
+import type {DashKitProps} from '../DashKit';
 import Item from '../Item/Item';
 import OverlayControls from '../OverlayControls/OverlayControls';
 
@@ -46,11 +47,7 @@ class WindowFocusObserver {
 const windowFocusObserver = new WindowFocusObserver();
 
 type GridItemProps = {
-    adjustWidgetLayout: (data: {
-        widgetId: string;
-        needSetDefault?: boolean;
-        adjustedWidgetLayout?: ConfigLayout;
-    }) => void;
+    adjustWidgetLayout: PluginWidgetProps['adjustWidgetLayout'];
     gridLayout?: ReactGridLayoutProps;
     id: string;
     item: ConfigItem;
@@ -62,8 +59,8 @@ type GridItemProps = {
     forwardedPluginRef?: (pluginRef: PluginRef) => void;
     isPlaceholder?: boolean;
 
-    onItemMountChange?: (item: ConfigItem, meta: {isAsync: boolean; isMounted: boolean}) => void;
-    onItemRender?: (item: ConfigItem) => void;
+    onItemMountChange?: DashKitProps['onItemMountChange'];
+    onItemRender?: DashKitProps['onItemRender'];
 
     // from react-grid-layout:
     children?: React.ReactNode;
@@ -76,8 +73,8 @@ type GridItemProps = {
     onMouseUp?: (e: React.MouseEvent<HTMLDivElement>) => void;
     onTouchEnd?: (e: React.TouchEvent<HTMLDivElement>) => void;
     onTouchStart?: (e: React.TouchEvent<HTMLDivElement>) => void;
-    onItemFocus?: (item: ConfigItem) => void;
-    onItemBlur?: (item: ConfigItem) => void;
+    onItemFocus?: DashKitProps['onItemFocus'];
+    onItemBlur?: DashKitProps['onItemBlur'];
 };
 
 type GridItemState = {

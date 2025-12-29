@@ -13,7 +13,6 @@ const b = cn('dashkit-item');
 const Item: React.FC<ItemProps> = ({
     registerManager,
     rendererProps,
-    type,
     isPlaceholder,
     forwardedPluginRef,
     onItemRender,
@@ -27,6 +26,7 @@ const Item: React.FC<ItemProps> = ({
     const onItemMountChangeRef = React.useRef(onItemMountChange);
 
     itemRef.current = item;
+    const {type} = item;
     onItemRenderRef.current = onItemRender;
     onItemMountChangeRef.current = onItemMountChange;
 

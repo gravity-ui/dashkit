@@ -4,12 +4,31 @@ import type {OverlayCustomControlItem} from '../components/OverlayControls/Overl
 import {MenuItems} from '../constants';
 import {AdditionalWidgetLayout} from '../shared';
 
-export type GridLayoutSettings = ReactGridLayout.ReactGridLayoutProps & {
+export type CompactType = ReactGridLayout.ReactGridLayoutProps['compactType'] | 'horizontal-nowrap';
+
+export type ReactGridLayoutProps = Omit<
+    ReactGridLayout.ReactGridLayoutProps,
+    | 'children'
+    | 'compactType'
+    | 'innerRef'
+    | 'key'
+    | 'layout'
+    | 'onDragStart'
+    | 'onDragStop'
+    | 'onResizeStart'
+    | 'onResizeStop'
+    | 'draggableHandle'
+    | 'isDroppable'
+    | 'onDropDragOver'
+    | 'onDrop'
+    | 'draggableCancel'
+> & {
+    compactType?: CompactType;
     noOverlay?: boolean;
 };
 
 export interface Settings {
-    gridLayout?: GridLayoutSettings;
+    gridLayout?: ReactGridLayoutProps;
     theme?: string;
     isMobile?: boolean;
     // @deprecated as it's possibly mutable property use Dashkit overlayMenuItems property instead
