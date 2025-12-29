@@ -2,10 +2,9 @@ import React from 'react';
 
 import {DashKitContext} from '../../context';
 import {withContext} from '../../hocs/withContext';
+import type {DashKitWithContextProps} from '../../hocs/withContext';
 import {useCalcPropsLayout} from '../../hooks/useCalcLayout';
-import type {RegisterManager} from '../../utils';
 import {cn} from '../../utils/cn';
-import type {DashKitProps} from '../DashKit';
 import GridLayout from '../GridLayout/GridLayout';
 import MobileLayout from '../MobileLayout/MobileLayout';
 
@@ -13,9 +12,7 @@ import './DashKitView.scss';
 
 const b = cn('dashkit');
 
-type DashKitViewProps = DashKitProps & {
-    registerManager: RegisterManager;
-};
+type DashKitViewProps = Omit<DashKitWithContextProps, 'layout' | 'forwardedMetaRef'>;
 
 function DashKitView() {
     const context = React.useContext(DashKitContext);
