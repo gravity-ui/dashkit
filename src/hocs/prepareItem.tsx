@@ -2,13 +2,10 @@ import React from 'react';
 
 import isEqual from 'lodash/isEqual';
 
+import type {DashKitProps} from '../components/DashKit';
 import type {ItemProps, RendererProps} from '../components/Item/types';
 import {DashKitContext} from '../context';
 import type {ConfigItem, ConfigLayout} from '../shared';
-import type {
-    ItemStateAndParams,
-    ItemStateAndParamsChangeOptions,
-} from '../shared/types/state-and-params';
 import type {PluginRef, PluginWidgetProps, ReactGridLayoutProps} from '../typings';
 
 type PrepareItemProps = {
@@ -23,8 +20,8 @@ type PrepareItemProps = {
     transform?: string;
     isPlaceholder?: boolean;
 
-    onItemRender?: (item: ConfigItem) => void;
-    onItemMountChange?: (item: ConfigItem, meta: {isAsync: boolean; isMounted: boolean}) => void;
+    onItemRender?: DashKitProps['onItemRender'];
+    onItemMountChange?: DashKitProps['onItemMountChange'];
 
     forwardedPluginRef?: (ref: PluginRef) => void;
 };
@@ -50,9 +47,9 @@ export function prepareItem(
             );
         }
 
-        _onStateAndParamsChange = (
-            stateAndParams: ItemStateAndParams,
-            options?: ItemStateAndParamsChangeOptions,
+        _onStateAndParamsChange: PluginWidgetProps['onStateAndParamsChange'] = (
+            stateAndParams,
+            options,
         ) => {
             this.context.onItemStateAndParamsChange(this.props.id, stateAndParams, options);
         };
@@ -101,14 +98,12 @@ export function prepareItem(
             const {item, isPlaceholder, forwardedPluginRef, onItemMountChange, onItemRender} =
                 this.props;
             const {registerManager} = this.context;
-            const {type} = item;
 
             return (
                 <WrappedComponent
                     forwardedPluginRef={forwardedPluginRef}
                     rendererProps={this.getRenderProps()}
                     registerManager={registerManager}
-                    type={type}
                     isPlaceholder={isPlaceholder}
                     onItemMountChange={onItemMountChange}
                     onItemRender={onItemRender}

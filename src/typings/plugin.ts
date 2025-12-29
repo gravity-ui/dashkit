@@ -1,7 +1,5 @@
 import React from 'react';
 
-import ReactGridLayout from 'react-grid-layout';
-
 import type {
     ConfigItem,
     ItemState,
@@ -11,8 +9,7 @@ import type {
     StringParams,
 } from '../shared';
 
-import type {ContextProps, SettingsProps, WidgetLayout} from './common';
-import type {CompactType} from './config';
+import type {ContextProps, ReactGridLayoutProps, SettingsProps, WidgetLayout} from './common';
 
 export interface PluginWidgetProps<T = StringParams> {
     id: string;
@@ -24,17 +21,15 @@ export interface PluginWidgetProps<T = StringParams> {
         options?: ItemStateAndParamsChangeOptions,
     ) => void;
     onBeforeLoad: () => () => void;
-    width: number;
-    height: number;
+    width?: number;
+    height?: number;
     data: ConfigItem['data'];
     defaults: ConfigItem['defaults'];
     namespace: ConfigItem['namespace'];
     settings: SettingsProps;
     context: ContextProps;
     layout: WidgetLayout[];
-    gridLayout: Omit<ReactGridLayout.ReactGridLayoutProps, 'compactType'> & {
-        compactType?: CompactType;
-    };
+    gridLayout: ReactGridLayoutProps;
     adjustWidgetLayout: (data: {
         widgetId: string;
         needSetDefault?: boolean;

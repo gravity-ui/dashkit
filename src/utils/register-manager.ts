@@ -1,6 +1,4 @@
-import ReactGridLayout from 'react-grid-layout';
-
-import type {CompactType, Plugin, PluginDefaultLayout, Settings} from '../typings';
+import type {Plugin, PluginDefaultLayout, ReactGridLayoutProps, Settings} from '../typings';
 
 interface RegisterManagerDefaultLayout {
     x: number;
@@ -29,9 +27,7 @@ export class RegisterManager {
         minW: 4,
         minH: 2,
     };
-    private _gridLayout: Omit<ReactGridLayout.ReactGridLayoutProps, 'compactType'> & {
-        compactType?: CompactType;
-    } = {
+    private _gridLayout: ReactGridLayoutProps = {
         rowHeight: 18,
         cols: 36,
         margin: [2, 2],

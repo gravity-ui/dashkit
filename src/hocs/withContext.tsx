@@ -3,10 +3,7 @@ import React from 'react';
 import isEqual from 'lodash/isEqual';
 import pick from 'lodash/pick';
 
-import type {
-    OverlayControlItem,
-    PreparedCopyItemOptions,
-} from '../components/OverlayControls/OverlayControls';
+import type {DashKitProps} from '../components/DashKit';
 import {
     COMPACT_TYPE_HORIZONTAL_NOWRAP,
     DEFAULT_GROUP,
@@ -15,67 +12,43 @@ import {
     TEMPORARY_ITEM_ID,
 } from '../constants/common';
 import {DashKitContext, DashKitDnDContext, DashkitOvelayControlsContext} from '../context';
-import type {DashKitCtxShape, OverlayControlsCtxShape, TemporaryLayout} from '../context';
+import type {
+    DashKitCtxShape,
+    DashkitPropsPassedToCtx,
+    OverlayControlsCtxShape,
+    TemporaryLayout,
+} from '../context';
 import {useDeepEqualMemo} from '../hooks/useDeepEqualMemo';
-import type {
-    Config,
-    ConfigItem,
-    ConfigLayout,
-    GlobalParams,
-    ItemDropProps,
-    ItemsStateAndParams,
-} from '../shared';
+import type {ConfigLayout} from '../shared';
 import {getAllConfigItems, getItemsParams, getItemsState} from '../shared';
-import type {
-    ContextProps,
-    DashKitGroup,
-    ItemManipulationCallback,
-    MenuItem,
-    PluginRef,
-    SettingsProps,
-} from '../typings';
+import type {PluginRef} from '../typings';
 import type {RegisterManager, RegisterManagerPlugin} from '../utils';
 import {UpdateManager, resolveLayoutGroup} from '../utils';
 
 const ITEM_PROPS = ['i', 'h', 'w', 'x', 'y', 'parent'] as const;
 
-export type DashKitWithContextProps = {
-    config: Config;
-    itemsStateAndParams: ItemsStateAndParams;
-    groups?: DashKitGroup[];
-    onChange: (data: {
-        config: Config;
-        itemsStateAndParams: ItemsStateAndParams;
-        groups?: DashKitGroup[];
-    }) => void;
-    layout: ConfigLayout[];
-    registerManager: RegisterManager;
-    defaultGlobalParams: GlobalParams;
-    globalParams: GlobalParams;
-    onItemEdit: (item: ConfigItem) => void;
-    context: ContextProps;
-    noOverlay: boolean;
-    focusable?: boolean;
-    settings: SettingsProps;
-    onItemMountChange?: (item: ConfigItem, state: {isAsync: boolean; isMounted: boolean}) => void;
-    onItemRender?: (item: ConfigItem) => void;
-    forwardedMetaRef: React.ForwardedRef<any>;
-    draggableHandleClassName?: string;
-    onDrop?: (dropProps: ItemDropProps) => void;
-    overlayControls?: Record<string, OverlayControlItem[]> | null;
-    overlayMenuItems?: MenuItem[] | null;
-    getPreparedCopyItemOptions?: (options: PreparedCopyItemOptions) => PreparedCopyItemOptions;
-    onCopyFulfill?: (error: null | Error, data?: PreparedCopyItemOptions) => void;
-    editMode: boolean;
-    onItemFocus?: (item: ConfigItem) => void;
-    onItemBlur?: (item: ConfigItem) => void;
-    onDragStart?: ItemManipulationCallback;
-    onDrag?: ItemManipulationCallback;
-    onDragStop?: ItemManipulationCallback;
-    onResizeStart?: ItemManipulationCallback;
-    onResize?: ItemManipulationCallback;
-    onResizeStop?: ItemManipulationCallback;
-};
+export type DashKitWithContextProps = DashkitPropsPassedToCtx &
+    Pick<
+        DashKitProps,
+        'overlayControls' | 'overlayMenuItems' | 'getPreparedCopyItemOptions' | 'onCopyFulfill'
+    > &
+    Required<
+        Pick<
+            DashKitProps,
+            | 'itemsStateAndParams'
+            | 'defaultGlobalParams'
+            | 'globalParams'
+            | 'context'
+            | 'settings'
+            | 'onItemEdit'
+            | 'onChange'
+            | 'onDrop'
+        >
+    > & {
+        layout: ConfigLayout[];
+        registerManager: RegisterManager;
+        forwardedMetaRef: React.ForwardedRef<any>;
+    };
 
 type OriginalLayouts = Record<string, ConfigLayout>;
 

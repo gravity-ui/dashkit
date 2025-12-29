@@ -67,12 +67,6 @@ export type GroupCallbacks = {
     onDragTargetRestore: (group?: string) => void;
 };
 
-export type AdjustWidgetLayoutParams = {
-    widgetId: string;
-    needSetDefault?: boolean;
-    adjustedWidgetLayout?: ConfigLayout;
-};
-
 export type LayoutAndPropsByGroup = {
     properties: Partial<ReactGridLayoutProps>;
     layout: ConfigLayout[];
