@@ -12,7 +12,7 @@ import {
 } from '../../constants';
 import {DashKitContext} from '../../context';
 import type {DashKitCtxShape} from '../../context';
-import type {ConfigItem, ConfigLayout} from '../../shared';
+import type {ConfigItem, ConfigLayout, DraggedOverItem} from '../../shared';
 import {resolveLayoutGroup} from '../../utils';
 import GridItem from '../GridItem/GridItem';
 
@@ -682,7 +682,7 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
         if (currentDraggingElement) {
             const {h, w, i} = currentDraggingElement.layoutItem;
             const {type} = currentDraggingElement.item;
-            const sharedItem = {
+            const sharedItem: DraggedOverItem = {
                 h,
                 w,
                 i,
