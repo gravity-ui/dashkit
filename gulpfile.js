@@ -8,6 +8,8 @@ const rimraf = require('rimraf');
 
 const BUILD_DIR = path.resolve('build');
 
+const {version, sideEffects} = require('./package.json');
+
 task('clean', (done) => {
     rimraf.sync(BUILD_DIR);
     done();
@@ -49,7 +51,11 @@ async function compileTs(modules = false) {
             .pipe(
                 utils.addVirtualFile({
                     fileName: 'package.json',
-                    text: JSON.stringify({type: modules ? 'module' : 'commonjs'}),
+                    text: JSON.stringify({
+                        version,
+                        type: modules ? 'module' : 'commonjs',
+                        sideEffects,
+                    }),
                 }),
             )
             .pipe(dest(path.resolve(BUILD_DIR, moduleType)))
