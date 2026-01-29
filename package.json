@@ -9,14 +9,24 @@
   },
   "exports": {
     ".": {
-      "types": "./build/esm/index.d.ts",
-      "require": "./build/cjs/index.js",
-      "import": "./build/esm/index.js"
+      "import": {
+        "types": "./build/esm/index.d.ts",
+        "default": "./build/esm/index.js"
+      },
+      "require": {
+        "types": "./build/cjs/index.d.ts",
+        "default": "./build/cjs/index.js"
+      }
     },
     "./helpers": {
-      "types": "./build/esm/helpers.d.ts",
-      "require": "./build/cjs/helpers.js",
-      "import": "./build/esm/helpers.js"
+      "import": {
+        "types": "./build/esm/helpers.d.ts",
+        "default": "./build/esm/helpers.js"
+      },
+      "require": {
+        "types": "./build/cjs/helpers.d.ts",
+        "default": "./build/cjs/helpers.js"
+      }
     }
   },
   "files": [
