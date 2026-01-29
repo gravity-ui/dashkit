@@ -1,5 +1,12 @@
 # Changelog
 
+## [9.3.2](https://github.com/gravity-ui/dashkit/compare/v9.3.1...v9.3.2) (2026-01-29)
+
+
+### Bug Fixes
+
+* **build:** treeshakability and correct types for commonjs ([#294](https://github.com/gravity-ui/dashkit/issues/294)) ([55df800](https://github.com/gravity-ui/dashkit/commit/55df8008936ffeeb2bb499bbf64643163316a791))
+
 ## [9.3.1](https://github.com/gravity-ui/dashkit/compare/v9.3.0...v9.3.1) (2025-12-25)
 
 
