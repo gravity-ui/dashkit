@@ -1,8 +1,8 @@
-import type {Layout, Layouts} from 'react-grid-layout';
+import type {Layout} from 'react-grid-layout';
 
 import type {Config, ConfigItem, ConfigLayout} from '../shared';
 
-import {GridLayoutSettings} from './common';
+import type {CompactType, ReactGridLayoutProps} from './common';
 
 export interface AddConfigItem extends Omit<ConfigItem, 'id' | 'namespace'> {
     id?: null;
@@ -21,8 +21,6 @@ export type GridReflowOptions = {
     maxRows?: number;
     compactType?: CompactType;
 };
-
-export type CompactType = ReactGridLayout.ReactGridLayoutProps['compactType'] | 'horizontal-nowrap';
 
 export type ReflowLayoutOptions = {
     defaultProps: GridReflowOptions;
@@ -43,26 +41,6 @@ export interface DashkitGroupRenderProps {
     context: any;
 }
 
-export type ReactGridLayoutProps = Omit<
-    GridLayoutSettings,
-    | 'children'
-    | 'compactType'
-    | 'innerRef'
-    | 'key'
-    | 'layout'
-    | 'onDragStart'
-    | 'onDragStop'
-    | 'onResizeStart'
-    | 'onResizeStop'
-    | 'draggableHandle'
-    | 'isDroppable'
-    | 'onDropDragOver'
-    | 'onDrop'
-    | 'draggableCancel'
-> & {
-    compactType?: CompactType;
-};
-
 export interface DashKitGroup {
     id?: string;
     render?: (
@@ -74,7 +52,7 @@ export interface DashKitGroup {
 }
 
 export type ItemManipulationCallback = (eventData: {
-    layout: Layouts;
+    layout: Layout[];
     oldItem: Layout;
     newItem: Layout;
     placeholder: Layout;

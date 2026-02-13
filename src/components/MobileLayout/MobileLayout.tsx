@@ -2,6 +2,8 @@ import React from 'react';
 
 import groupBy from 'lodash/groupBy';
 
+import type {PluginRef} from 'src/typings';
+
 import {DEFAULT_GROUP} from '../../constants';
 import {DashKitContext} from '../../context';
 import {cn} from '../../utils/cn';
@@ -19,8 +21,6 @@ type MobileLayoutState = {
     itemsWithActiveAutoheight: Record<string, boolean>;
 };
 
-type PlugibRefObject = React.RefObject<any>;
-
 export default class MobileLayout extends React.PureComponent<
     MobileLayoutProps,
     MobileLayoutState
@@ -28,12 +28,12 @@ export default class MobileLayout extends React.PureComponent<
     static contextType = DashKitContext;
     context!: React.ContextType<typeof DashKitContext>;
 
-    pluginsRefs: PlugibRefObject[] = [];
+    pluginsRefs: PluginRef[] = [];
     sortedLayoutItems: Record<string, ReturnType<typeof getSortedConfigItems>> | null = null;
 
     _memoLayout = this.context.layout;
-    _memoForwardedPluginRef: Array<(refObject: PlugibRefObject) => void> = [];
-    _memoAdjustWidgetLayout: Record<string, (props: {needSetDefault: boolean}) => void> = {};
+    _memoForwardedPluginRef: Array<(refObject: PluginRef) => void> = [];
+    _memoAdjustWidgetLayout: Record<string, (props: {needSetDefault?: boolean}) => void> = {};
 
     state: MobileLayoutState = {
         itemsWithActiveAutoheight: {},
@@ -123,7 +123,7 @@ export default class MobileLayout extends React.PureComponent<
 
     getMemoForwardRefCallback(refIndex: number) {
         if (!this._memoForwardedPluginRef[refIndex]) {
-            this._memoForwardedPluginRef[refIndex] = (pluginRef: PlugibRefObject) => {
+            this._memoForwardedPluginRef[refIndex] = (pluginRef: PluginRef) => {
                 this.pluginsRefs[refIndex] = pluginRef;
             };
         }
@@ -131,7 +131,7 @@ export default class MobileLayout extends React.PureComponent<
         return this._memoForwardedPluginRef[refIndex];
     }
 
-    adjustWidgetLayout(id: string, {needSetDefault}: {needSetDefault: boolean}) {
+    adjustWidgetLayout(id: string, {needSetDefault}: {needSetDefault?: boolean}) {
         if (needSetDefault) {
             const indexesOfItemsWithActiveAutoheight = {
                 ...this.state.itemsWithActiveAutoheight,

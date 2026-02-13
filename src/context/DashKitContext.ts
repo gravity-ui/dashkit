@@ -1,28 +1,33 @@
 import React from 'react';
 
-import type {RegisterManager} from '..//utils';
+import type {DragOverEvent} from 'react-grid-layout';
+
+import type {RegisterManager, RegisterManagerPlugin} from '..//utils';
 import type {DashKitProps} from '../components/DashKit';
 import type {
     ConfigItem,
     ConfigLayout,
+    DraggedOverItem,
+    GlobalParams,
+    ItemDragProps,
     ItemParams,
     ItemState,
     ItemStateAndParams,
     ItemStateAndParamsChangeOptions,
 } from '../shared';
+import type {ContextProps, PluginRef, ReactGridLayoutProps, SettingsProps} from '../typings';
 
-type DashkitPropsPassedToCtx = Pick<
+export type DashkitPropsPassedToCtx = Pick<
     DashKitProps,
     | 'config'
     | 'groups'
-    | 'context'
     | 'noOverlay'
     | 'focusable'
-    | 'globalParams'
     | 'editMode'
-    | 'settings'
     | 'onItemMountChange'
     | 'onItemRender'
+    | 'onItemFocus'
+    | 'onItemBlur'
     | 'draggableHandleClassName'
     // default handlers bypass
     | 'onDragStart'
@@ -33,15 +38,23 @@ type DashkitPropsPassedToCtx = Pick<
     | 'onResizeStop'
 >;
 
-type PluginType = string;
+export type TemporaryLayout = {
+    data: ConfigLayout[];
+    dragProps: ItemDragProps;
+};
 
 export type DashKitCtxShape = DashkitPropsPassedToCtx & {
+    context: ContextProps;
+    settings: SettingsProps;
+    globalParams: GlobalParams;
+
     registerManager: RegisterManager;
     forwardedMetaRef: React.ForwardedRef<any>;
 
     configItems: ConfigItem[];
     layout: ConfigLayout[];
-    temporaryLayout: ConfigLayout[] | null;
+    layoutChange: (layout: ConfigLayout[]) => void;
+    temporaryLayout: TemporaryLayout | null;
     memorizeOriginalLayout: (
         widgetId: string,
         preAutoHeightLayout: ConfigLayout,
@@ -49,30 +62,30 @@ export type DashKitCtxShape = DashkitPropsPassedToCtx & {
     ) => void;
     revertToOriginalLayout: (widgetId: string) => void;
 
-    itemsState?: Record<string, ItemState>;
+    itemsState: Record<string, ItemState>;
     itemsParams: Record<string, ItemParams>;
     onItemStateAndParamsChange: (
         id: string,
         stateAndParams: ItemStateAndParams,
-        options: ItemStateAndParamsChangeOptions,
+        options?: ItemStateAndParamsChangeOptions,
     ) => void;
 
-    getItemsMeta: (pluginsRefs: Array<React.RefObject<any>>) => Array<Promise<any>>;
+    getItemsMeta: (pluginsRefs: Array<PluginRef>) => Array<Promise<any>>;
     reloadItems: (
-        pluginsRefs: Array<React.RefObject<any>>,
+        pluginsRefs: Array<PluginRef>,
         data: {silentLoading: boolean; noVeil: boolean},
     ) => void;
 
-    onDrop: (newLayout: ConfigLayout, item: ConfigItem) => void;
+    onDrop: (newLayout: ConfigLayout[], item: ConfigLayout, e?: MouseEvent) => void;
     onDropDragOver: (
-        e: DragEvent | MouseEvent,
-        group: string | void,
-        gridProps: Partial<ReactGridLayout.ReactGridLayoutProps>,
+        e: DragOverEvent,
+        group: string | undefined,
+        gridProps: ReactGridLayoutProps,
         groupLayout: ConfigLayout[],
-        sharedItem: (Partial<ConfigLayout> & {type: PluginType}) | void,
-    ) => void | boolean;
+        sharedItem?: DraggedOverItem,
+    ) => {w?: number; h?: number} | false | undefined;
     outerDnDEnable: boolean;
-    dragOverPlugin: null | PluginType;
+    dragOverPlugin: null | RegisterManagerPlugin;
 };
 
 const DashKitContext = React.createContext<DashKitCtxShape>({} as DashKitCtxShape);

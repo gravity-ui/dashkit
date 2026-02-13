@@ -1,19 +1,18 @@
 import React from 'react';
 
-import PropTypes from 'prop-types';
-
 import {prepareItem} from '../../hocs/prepareItem';
 import {cn} from '../../utils/cn';
+
+import type {ItemProps} from './types';
 
 import './Item.scss';
 
 const b = cn('dashkit-item');
 
 // TODO: getDerivedStateFromError и заглушка с ошибкой
-const Item = ({
+const Item: React.FC<ItemProps> = ({
     registerManager,
     rendererProps,
-    type,
     isPlaceholder,
     forwardedPluginRef,
     onItemRender,
@@ -27,6 +26,7 @@ const Item = ({
     const onItemMountChangeRef = React.useRef(onItemMountChange);
 
     itemRef.current = item;
+    const {type} = item;
     onItemRenderRef.current = onItemRender;
     onItemMountChangeRef.current = onItemMountChange;
 
@@ -50,6 +50,8 @@ const Item = ({
                 });
             };
         }
+
+        return undefined;
     }, []);
 
     const onLoad = React.useCallback(() => {
@@ -86,17 +88,6 @@ const Item = ({
             {registerManager.getItem(type).renderer(itemRendererProps, forwardedPluginRef)}
         </div>
     );
-};
-
-Item.propTypes = {
-    forwardedPluginRef: PropTypes.any,
-    rendererProps: PropTypes.object,
-    registerManager: PropTypes.object,
-    type: PropTypes.string,
-    isPlaceholder: PropTypes.bool,
-    onItemRender: PropTypes.func,
-    onItemMountChange: PropTypes.func,
-    item: PropTypes.object,
 };
 
 export default prepareItem(Item);

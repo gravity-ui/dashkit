@@ -58,7 +58,7 @@ interface DashKitDefaultProps {
         groups?: DashKitGroup[];
     }) => void;
 
-    onDrop?: (dropProps: ItemDropProps) => void;
+    onDrop: (dropProps: ItemDropProps) => void;
 
     onItemMountChange?: (item: ConfigItem, state: {isAsync: boolean; isMounted: boolean}) => void;
     onItemRender?: (item: ConfigItem) => void;
@@ -226,7 +226,7 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
     }
 
     getItemsMeta() {
-        return this.metaRef.current?.getItemsMeta();
+        return this.metaRef.current?.getItemsMeta() ?? [];
     }
 
     reloadItems(options?: {targetIds?: string[]; force?: boolean}) {
