@@ -1,5 +1,16 @@
 # Changelog
 
+## [10.0.0](https://github.com/gravity-ui/dashkit/compare/v9.3.2...v10.0.0) (2026-02-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* global type refactoring ([#296](https://github.com/gravity-ui/dashkit/issues/296))
+
+### Bug Fixes
+
+* global type refactoring ([#296](https://github.com/gravity-ui/dashkit/issues/296)) ([b5f7409](https://github.com/gravity-ui/dashkit/commit/b5f74099b53f8ada2b6456a3dafad4f24acc9755))
+
 ## [9.3.2](https://github.com/gravity-ui/dashkit/compare/v9.3.1...v9.3.2) (2026-01-29)
 
 
