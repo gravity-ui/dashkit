@@ -5,11 +5,16 @@
 
 ### ⚠ BREAKING CHANGES
 
-* global type refactoring ([#296](https://github.com/gravity-ui/dashkit/issues/296))
-
-### Bug Fixes
-
 * global type refactoring ([#296](https://github.com/gravity-ui/dashkit/issues/296)) ([b5f7409](https://github.com/gravity-ui/dashkit/commit/b5f74099b53f8ada2b6456a3dafad4f24acc9755))
+
+* `getItemsMeta` **return type**: the `getItemsMeta` method of the `Dashkit` component now always returns an array (previously could return `undefined`) ([#277](https://github.com/gravity-ui/dashkit/issues/277)) ([8036d77](https://github.com/gravity-ui/dashkit/pull/277/changes/8036d777faeee6351f2cb8de00854da06bcb0024))
+
+* **grid layout calculation**: updated the algorithm for calculating height and width of grid items ([#279](https://github.com/gravity-ui/dashkit/issues/279)) ([31feaa9](https://github.com/gravity-ui/dashkit/pull/279/changes/31feaa96b880a94956c97a2444cda7c82aafbae1))
+
+* **ref type change**: changed the ref type in `renderer` and `placeholderRenderer` plugin functions. Now requires `React.RefCallback` instead of `React.RefObject` ([#280](https://github.com/gravity-ui/dashkit/issues/280)) ([7627301](https://github.com/gravity-ui/dashkit/pull/280/changes/7627301a3cb0e2077d39e54d1b0795d4f6cbc587))
+
+* **renderer functions signature**: removed `isPlaceholder` flag from the arguments of `renderer` and `placeholderRenderer` plugin functions ([#284](https://github.com/gravity-ui/dashkit/issues/284)) ([675c3d4](https://github.com/gravity-ui/dashkit/commit/675c3d412cd61f8706ef67a9063107b369dcde99))
+
 
 ## [9.3.2](https://github.com/gravity-ui/dashkit/compare/v9.3.1...v9.3.2) (2026-01-29)
 
