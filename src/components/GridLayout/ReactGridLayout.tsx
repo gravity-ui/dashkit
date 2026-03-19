@@ -25,9 +25,11 @@ type SharedDragPosition = {
 type DragOverLayoutProps = ReactGridLayout.ReactGridLayoutProps & {
     innerRef?: React.Ref<HTMLDivElement>;
     isDragCaptured?: boolean;
-    hasSharedDragItem?: boolean;
-    sharedDragPosition?: SharedDragPosition;
+    dragStateRef?: React.MutableRefObject<{isDragging: boolean; sourceGroup: string | null}>;
+    sharedDragPositionRef?: React.MutableRefObject<SharedDragPosition | null>;
+    group?: string;
     onDragTargetRestore?: () => void;
+    transformScaleRef?: React.MutableRefObject<number>;
 };
 
 type DragOverLayoutState = {
@@ -219,9 +221,16 @@ class DragOverLayout extends ReactGridLayout {
         }
     };
 
+    // Returns true when another group's item is being dragged over this grid.
+    // Reads from the ref directly — no re-render required to stay current.
+    isSharedDragTarget = (): boolean => {
+        const drag = this.props.dragStateRef?.current;
+        return Boolean(drag?.isDragging && drag?.sourceGroup !== this.props.group);
+    };
+
     // Proxy mouse events -> drag methods for dnd between groups
     mouseEnterHandler = (e: MouseEvent): void => {
-        if (this.props.hasSharedDragItem) {
+        if (this.isSharedDragTarget()) {
             // @ts-expect-error - onDragEnter is a protected method in parent class
             this.onDragEnter(e);
         } else if (this.props.isDragCaptured) {
@@ -230,7 +239,7 @@ class DragOverLayout extends ReactGridLayout {
     };
 
     mouseLeaveHandler = (e: MouseEvent): void => {
-        if (this.props.hasSharedDragItem) {
+        if (this.isSharedDragTarget()) {
             // @ts-expect-error - onDragLeave is a protected method in parent class
             this.onDragLeave(e);
             this.props.onDragTargetRestore?.();
@@ -238,7 +247,7 @@ class DragOverLayout extends ReactGridLayout {
     };
 
     mouseMoveHandler = (e: MouseEvent): void => {
-        if (this.props.hasSharedDragItem) {
+        if (this.isSharedDragTarget()) {
             if (!(e as MouseEvent & {nativeEvent?: MouseEvent}).nativeEvent) {
                 // Emulate nativeEvent for firefox
                 const target = this.getInnerElement() || (e.target as HTMLElement);
@@ -256,7 +265,7 @@ class DragOverLayout extends ReactGridLayout {
     };
 
     mouseUpHandler = (e: MouseEvent): void => {
-        if (this.props.hasSharedDragItem) {
+        if (this.isSharedDragTarget()) {
             e.preventDefault();
             const {droppingItem} = this.props;
             const {layout} = this.state;
@@ -283,7 +292,7 @@ class DragOverLayout extends ReactGridLayout {
     }): {left: number; top: number} {
         const {containerWidth, cols, w, h, rowHeight, margin, transformScale, droppingPosition} =
             itemProps;
-        const {sharedDragPosition} = this.props;
+        const sharedDragPosition = this.props.sharedDragPositionRef?.current;
 
         let offsetX: number, offsetY: number;
 
@@ -317,16 +326,31 @@ class DragOverLayout extends ReactGridLayout {
             return gridItem;
         }
 
+        // When a transformScaleRef is provided, inject a lazy proxy so that
+        // react-draggable reads the fresh scale via valueOf() at drag time
+        // instead of the stale number baked into the last rendered props.
+        // This avoids a re-render requirement when the canvas scale changes
+        // (e.g. after d3-zoom auto-fit) before the user starts dragging.
+        const {transformScaleRef} = this.props;
+        const lazyScale = transformScaleRef
+            ? ({valueOf: () => transformScaleRef.current} as unknown as number)
+            : undefined;
+
         if (isDroppingItem) {
             // React.cloneElement is just cleaner then copy-paste whole processGridItem method
             return React.cloneElement(gridItem, {
+                ...(lazyScale !== undefined && {transformScale: lazyScale}),
                 // hiding preview if dragging shared item
-                style: this.props.hasSharedDragItem
+                style: this.isSharedDragTarget()
                     ? {...gridItem.props.style, opacity: 0}
                     : gridItem.props.style,
                 className: `${OVERLAY_CLASS_NAME} ${DROPPING_ELEMENT_CLASS_NAME}`,
                 droppingPosition: this.calculateDroppingPosition(gridItem.props),
             });
+        }
+
+        if (lazyScale !== undefined) {
+            return React.cloneElement(gridItem, {transformScale: lazyScale});
         }
 
         return gridItem;

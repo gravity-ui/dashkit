@@ -4,19 +4,14 @@ import type {DragOverEvent} from 'react-grid-layout';
 
 import type {PluginRef, PluginWidgetProps, ReactGridLayoutProps} from 'src/typings';
 
-import {
-    COMPACT_TYPE_HORIZONTAL_NOWRAP,
-    DEFAULT_GROUP,
-    DRAGGABLE_CANCEL_CLASS_NAME,
-    TEMPORARY_ITEM_ID,
-} from '../../constants';
+import {COMPACT_TYPE_HORIZONTAL_NOWRAP, DEFAULT_GROUP, TEMPORARY_ITEM_ID} from '../../constants';
 import {DashKitContext} from '../../context';
 import type {DashKitCtxShape} from '../../context';
 import type {ConfigItem, ConfigLayout, DraggedOverItem} from '../../shared';
 import {resolveLayoutGroup} from '../../utils';
 import GridItem from '../GridItem/GridItem';
 
-import {Layout} from './ReactGridLayout';
+import {GroupLayout} from './GroupLayout';
 import type {
     CurrentDraggingElement,
     GridLayoutProps,
@@ -49,6 +44,16 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
     private _memoGroupsProps: Record<string, Partial<ReactGridLayoutProps>> = {};
     private _memoGroupsLayouts: Record<string, MemoGroupLayout> = {};
     private _memoCallbacksForGroups: Record<string, GroupCallbacks> = {};
+    private _memoGroupsItems: Record<string, ConfigItem[]> = {};
+
+    private _sharedDragRef: React.MutableRefObject<{
+        isDragging: boolean;
+        sourceGroup: string | null;
+    }> = {current: {isDragging: false, sourceGroup: null}};
+    private _sharedDragPositionRef: React.MutableRefObject<{
+        offsetX: number;
+        offsetY: number;
+    } | null> = {current: null};
 
     private _timeout?: NodeJS.Timeout;
     private _lastReloadAt?: number;
@@ -83,6 +88,7 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
         this._memoCallbacksForGroups = {};
         this._memoGroupsProps = {};
         this._memoGroupsLayouts = {};
+        this._memoGroupsItems = {};
         this._memoForwardedPluginRef = [];
     }
 
@@ -181,17 +187,43 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
         return this._memoCallbacksForGroups[group];
     }
 
+    getMemoGroupItems(group: string, nextItems: ConfigItem[]): ConfigItem[] {
+        const prev = this._memoGroupsItems[group];
+        if (
+            prev &&
+            prev.length === nextItems.length &&
+            prev.every((item, i) => item === nextItems[i])
+        ) {
+            return prev;
+        }
+        this._memoGroupsItems[group] = nextItems;
+        return nextItems;
+    }
+
     getMemoGroupProps = (
         group: string,
         renderLayout: ConfigLayout[],
-        properties: Partial<ReactGridLayoutProps>,
+        nextProperties: Partial<ReactGridLayoutProps>,
     ) => {
+        // Return a stable properties reference when values are shallowly equal.
+        // This prevents useMemo inside GroupLayout from invalidating on every render
+        // when groupGridProperties() returns a structurally identical but new object.
+        const prevProperties = this._memoGroupsProps[group];
+        const keysNext = Object.keys(nextProperties) as Array<keyof ReactGridLayoutProps>;
+        const stableProperties =
+            prevProperties &&
+            Object.keys(prevProperties).length === keysNext.length &&
+            keysNext.every((k) => prevProperties[k] === nextProperties[k])
+                ? prevProperties
+                : nextProperties;
+
         // Needed for _onDropDragOver
-        this._memoGroupsProps[group] = properties;
+        this._memoGroupsProps[group] = stableProperties;
 
         return {
             layout: this.getMemoGroupLayout(group, renderLayout).layout,
             callbacks: this.getMemoGroupCallbacks(group),
+            stableProperties,
         };
     };
 
@@ -336,6 +368,10 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
                 item,
                 cursorPosition: {offsetX, offsetY},
             };
+
+            // Update imperatively so DragOverLayout can read cursor offset without
+            // a React prop change (and thus without re-rendering non-source groups).
+            this._sharedDragPositionRef.current = {offsetX, offsetY};
         }
 
         this.setState({currentDraggingElement, draggedOverGroup: group});
@@ -445,6 +481,7 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
         if (this.context.dragOverPlugin) {
             this.setState({isDragging: true});
         } else {
+            this._sharedDragRef.current = {isDragging: true, sourceGroup: group};
             this._initDragCoordinatesWatcher(element);
             this.updateDraggingElementState(group, layoutItem, e);
             this.setState({isDragging: true});
@@ -570,6 +607,8 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
 
         const groupedLayout = this.mergeGroupsLayout(group, newLayout);
 
+        this._sharedDragRef.current = {isDragging: false, sourceGroup: null};
+        this._sharedDragPositionRef.current = null;
         this.setState({
             isDragging: false,
             currentDraggingElement: null,
@@ -614,6 +653,8 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
             },
         );
 
+        this._sharedDragRef.current = {isDragging: false, sourceGroup: null};
+        this._sharedDragPositionRef.current = null;
         this.setState({
             isDragging: false,
             currentDraggingElement: null,
@@ -637,6 +678,7 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
         }
 
         const groupedLayout = this.mergeGroupsLayout(group, newLayout, item);
+        this._sharedDragRef.current = {isDragging: false, sourceGroup: null};
         this.setState({isDragging: false});
 
         onDrop?.(groupedLayout, item, e);
@@ -732,107 +774,65 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
         offset = 0,
         groupGridProperties?: (props: ReactGridLayoutProps) => ReactGridLayoutProps,
     ) {
-        const {
-            registerManager,
-            editMode,
-            noOverlay,
-            focusable,
-            draggableHandleClassName,
-            outerDnDEnable,
-            onItemMountChange,
-            onItemRender,
-            onItemFocus,
-            onItemBlur,
-        } = this.context;
+        const {registerManager} = this.context;
+        const {currentDraggingElement, draggedOverGroup, isDragging, isDraggedOut} = this.state;
 
-        const {currentDraggingElement, draggedOverGroup} = this.state;
         const hasOwnGroupProperties = typeof groupGridProperties === 'function';
         const properties = hasOwnGroupProperties
             ? groupGridProperties({...registerManager.gridLayout})
             : registerManager.gridLayout;
-        let {compactType} = properties;
 
-        if (compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP) {
-            compactType = 'horizontal';
-        }
-
-        const {callbacks, layout} = this.getMemoGroupProps(group, renderLayout, properties);
-        const hasSharedDragItem = Boolean(
-            currentDraggingElement && currentDraggingElement.group !== group,
+        const {callbacks, layout, stableProperties} = this.getMemoGroupProps(
+            group,
+            renderLayout,
+            properties,
         );
+
+        const compactType: 'vertical' | 'horizontal' | null | undefined =
+            stableProperties.compactType === COMPACT_TYPE_HORIZONTAL_NOWRAP
+                ? 'horizontal'
+                : stableProperties.compactType;
+
         const isDragCaptured = Boolean(
             currentDraggingElement &&
                 group === currentDraggingElement.group &&
                 draggedOverGroup !== null &&
                 draggedOverGroup !== group,
         );
+        const currentDraggingItemId =
+            currentDraggingElement && 'id' in currentDraggingElement.item
+                ? currentDraggingElement.item.id
+                : null;
+
+        // Scope drag props to the source group only.
+        // Non-source groups receive stable false/null values so their React.memo
+        // comparator does not see a change on these three props — only hasSharedDragItem
+        // can still trigger their re-render (required for cross-group drop readiness).
+        const isSourceGroup = Boolean(currentDraggingElement?.group === group);
+        const groupIsAnyDragging = isDragging && isSourceGroup;
+        const groupCurrentDraggingItemId = isSourceGroup ? currentDraggingItemId : null;
+        const groupIsAnyDraggedOut = isSourceGroup ? isDraggedOut : false;
 
         return (
-            <Layout
+            <GroupLayout
                 key={`group_${group}`}
-                isDraggable={editMode}
-                isResizable={editMode}
-                // Group properties
-                {...properties}
-                // Layout props
+                group={group}
+                renderItems={renderItems}
+                offset={offset}
+                properties={stableProperties}
                 compactType={compactType}
+                callbacks={callbacks}
                 layout={layout}
-                draggableCancel={`.${DRAGGABLE_CANCEL_CLASS_NAME}`}
-                draggableHandle={
-                    draggableHandleClassName ? `.${draggableHandleClassName}` : undefined
-                }
-                // Default callbacks
-                onDragStart={callbacks.onDragStart}
-                onDrag={callbacks.onDrag}
-                onDragStop={callbacks.onDragStop}
-                onResizeStart={callbacks.onResizeStart}
-                onResize={callbacks.onResize}
-                onResizeStop={callbacks.onResizeStop}
-                // External Drag N Drop options
-                onDragTargetRestore={callbacks.onDragTargetRestore}
-                onDropDragOver={callbacks.onDropDragOver}
-                onDrop={callbacks.onDrop}
-                hasSharedDragItem={hasSharedDragItem}
-                sharedDragPosition={currentDraggingElement?.cursorPosition}
+                temporaryPlaceholder={this.renderTemporaryPlaceholder(stableProperties)}
+                dragStateRef={this._sharedDragRef}
+                sharedDragPositionRef={this._sharedDragPositionRef}
                 isDragCaptured={isDragCaptured}
-                isDroppable={Boolean(outerDnDEnable) && editMode}
-            >
-                {renderItems.map((item, i) => {
-                    const keyId = item.id;
-                    const isDragging = this.state.isDragging;
-                    const isCurrentDraggedItem =
-                        currentDraggingElement &&
-                        'id' in currentDraggingElement.item &&
-                        currentDraggingElement.item.id === keyId;
-                    const isDraggedOut = isCurrentDraggedItem && this.state.isDraggedOut;
-                    const itemNoOverlay =
-                        hasOwnGroupProperties && 'noOverlay' in properties
-                            ? properties.noOverlay
-                            : noOverlay;
-
-                    return (
-                        <GridItem
-                            key={keyId}
-                            forwardedPluginRef={this.getMemoForwardRefCallback(offset + i)} // forwarded ref to plugin
-                            id={keyId}
-                            item={item}
-                            layout={layout}
-                            adjustWidgetLayout={this.adjustWidgetLayout}
-                            isDragging={isDragging}
-                            isDraggedOut={isDraggedOut || undefined}
-                            noOverlay={itemNoOverlay}
-                            focusable={focusable}
-                            withCustomHandle={Boolean(draggableHandleClassName)}
-                            onItemMountChange={onItemMountChange}
-                            onItemRender={onItemRender}
-                            gridLayout={properties}
-                            onItemFocus={onItemFocus}
-                            onItemBlur={onItemBlur}
-                        />
-                    );
-                })}
-                {this.renderTemporaryPlaceholder(properties)}
-            </Layout>
+                isAnyDragging={groupIsAnyDragging}
+                currentDraggingItemId={groupCurrentDraggingItemId}
+                isAnyDraggedOut={groupIsAnyDraggedOut}
+                adjustWidgetLayout={this.adjustWidgetLayout}
+                getMemoForwardRefCallback={this.getMemoForwardRefCallback}
+            />
         );
     }
 
@@ -896,8 +896,15 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
                     items = itemsByGroup[id] || [];
                 }
 
-                const element = this.renderGroup(id, layout, items, offset, group.gridProperties);
-                offset += items.length;
+                const stableItems = this.getMemoGroupItems(id, items);
+                const element = this.renderGroup(
+                    id,
+                    layout,
+                    stableItems,
+                    offset,
+                    group.gridProperties,
+                );
+                offset += stableItems.length;
 
                 if (group.render) {
                     const groupContext = {
@@ -914,7 +921,8 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
                 return element;
             });
         } else {
-            return this.renderGroup(DEFAULT_GROUP, defaultRenderLayout, defaultRenderItems, offset);
+            const stableDefaultItems = this.getMemoGroupItems(DEFAULT_GROUP, defaultRenderItems);
+            return this.renderGroup(DEFAULT_GROUP, defaultRenderLayout, stableDefaultItems, offset);
         }
     }
 }
