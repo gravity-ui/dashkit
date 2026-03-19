@@ -5,8 +5,8 @@ import type {DragOverEvent} from 'react-grid-layout';
 import type {PluginRef, PluginWidgetProps, ReactGridLayoutProps} from 'src/typings';
 
 import {COMPACT_TYPE_HORIZONTAL_NOWRAP, DEFAULT_GROUP, TEMPORARY_ITEM_ID} from '../../constants';
-import {DashKitContext} from '../../context';
 import type {DashKitCtxShape} from '../../context';
+import {DashKitContext} from '../../context';
 import type {ConfigItem, ConfigLayout, DraggedOverItem} from '../../shared';
 import {resolveLayoutGroup} from '../../utils';
 import GridItem from '../GridItem/GridItem';
@@ -205,9 +205,7 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
         renderLayout: ConfigLayout[],
         nextProperties: Partial<ReactGridLayoutProps>,
     ) => {
-        // Return a stable properties reference when values are shallowly equal.
-        // This prevents useMemo inside GroupLayout from invalidating on every render
-        // when groupGridProperties() returns a structurally identical but new object.
+        // Return stable ref to prevent useMemo invalidation when properties are shallowly equal.
         const prevProperties = this._memoGroupsProps[group];
         const keysNext = Object.keys(nextProperties) as Array<keyof ReactGridLayoutProps>;
         const stableProperties =
@@ -369,8 +367,7 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
                 cursorPosition: {offsetX, offsetY},
             };
 
-            // Update imperatively so DragOverLayout can read cursor offset without
-            // a React prop change (and thus without re-rendering non-source groups).
+            // Update imperatively so DragOverLayout reads fresh cursor offset without re-render.
             this._sharedDragPositionRef.current = {offsetX, offsetY};
         }
 
@@ -804,10 +801,7 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
                 ? currentDraggingElement.item.id
                 : null;
 
-        // Scope drag props to the source group only.
-        // Non-source groups receive stable false/null values so their React.memo
-        // comparator does not see a change on these three props — only hasSharedDragItem
-        // can still trigger their re-render (required for cross-group drop readiness).
+        // Non-source groups get stable false/null — memo skips re-render on drag move.
         const isSourceGroup = Boolean(currentDraggingElement?.group === group);
         const groupIsAnyDragging = isDragging && isSourceGroup;
         const groupCurrentDraggingItemId = isSourceGroup ? currentDraggingItemId : null;

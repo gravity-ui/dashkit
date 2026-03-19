@@ -21,9 +21,7 @@ export interface GroupLayoutProps {
     layout: ConfigLayout[];
     temporaryPlaceholder: React.ReactNode;
 
-    // Drag state specific to this group (computed in GridLayout.renderGroup)
-    // hasSharedDragItem and sharedDragPosition replaced by stable refs read
-    // imperatively by DragOverLayout — no React prop change on drag start.
+    // Refs read imperatively by DragOverLayout — no re-render on drag start.
     isDragCaptured: boolean;
     dragStateRef: React.MutableRefObject<{isDragging: boolean; sourceGroup: string | null}>;
     sharedDragPositionRef: React.MutableRefObject<{offsetX: number; offsetY: number} | null>;
@@ -75,9 +73,7 @@ function groupLayoutPropsAreEqual(prev: GroupLayoutProps, next: GroupLayoutProps
         return false;
     }
 
-    // Re-render if drag state scoped to this group changed.
-    // hasSharedDragItem and sharedDragPosition are now refs — same object reference
-    // forever — so they never trigger a re-render here.
+    // Re-render only on group-scoped props; drag refs are stable, never trigger this.
     if (
         prev.isDragCaptured !== next.isDragCaptured ||
         prev.isAnyDragging !== next.isAnyDragging ||
@@ -128,12 +124,7 @@ export const GroupLayout = React.memo(function GroupLayout({
     // otherwise fall back to the dashboard-level noOverlay from context.
     const resolvedNoOverlay = 'noOverlay' in properties ? properties.noOverlay : noOverlay;
 
-    // Memoize the items element array so that when GroupLayout re-renders due to
-    // hasSharedDragItem changing (all non-source groups become drop-ready on drag start),
-    // the items subtree is not recreated if the drag-relevant props are unchanged.
-    // For non-source groups isAnyDragging/currentDraggingItemId/isAnyDraggedOut are
-    // scoped to stable false/null by GridLayout.renderGroup, so the cached array is
-    // returned and React skips all GridItem subtrees entirely.
+    // Memoize items array; non-source groups have stable false/null drag props so React skips their subtrees.
     const itemElements = React.useMemo(() => {
         return renderItems.map((item, i) => {
             const keyId = item.id;

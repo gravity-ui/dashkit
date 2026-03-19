@@ -326,11 +326,7 @@ class DragOverLayout extends ReactGridLayout {
             return gridItem;
         }
 
-        // When a transformScaleRef is provided, inject a lazy proxy so that
-        // react-draggable reads the fresh scale via valueOf() at drag time
-        // instead of the stale number baked into the last rendered props.
-        // This avoids a re-render requirement when the canvas scale changes
-        // (e.g. after d3-zoom auto-fit) before the user starts dragging.
+        // Lazy proxy for transformScaleRef so react-draggable reads fresh scale without re-render.
         const {transformScaleRef} = this.props;
         const lazyScale = transformScaleRef
             ? ({valueOf: () => transformScaleRef.current} as unknown as number)
