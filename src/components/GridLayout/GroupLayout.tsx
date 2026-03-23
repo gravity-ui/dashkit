@@ -8,6 +8,7 @@ import GridItem from '../GridItem/GridItem';
 
 import {Layout} from './ReactGridLayout';
 import type {GroupCallbacks} from './types';
+import {shallowArrayEqual, shallowObjectEqual} from './utils';
 
 export interface GroupLayoutProps {
     group: string;
@@ -36,58 +37,24 @@ export interface GroupLayoutProps {
     getMemoForwardRefCallback: (index: number) => (ref: PluginRef) => void;
 }
 
-function renderItemsAreEqual(a: ConfigItem[], b: ConfigItem[]): boolean {
-    if (a === b) {
-        return true;
-    }
-    if (a.length !== b.length) {
-        return false;
-    }
-    return a.every((item, i) => item === b[i]);
-}
-
-function propertiesAreEqual(
-    a: Partial<ReactGridLayoutProps>,
-    b: Partial<ReactGridLayoutProps>,
-): boolean {
-    if (a === b) {
-        return true;
-    }
-    const keysA = Object.keys(a) as Array<keyof ReactGridLayoutProps>;
-    const keysB = Object.keys(b) as Array<keyof ReactGridLayoutProps>;
-    if (keysA.length !== keysB.length) {
-        return false;
-    }
-    return keysA.every((key) => a[key] === b[key]);
-}
-
 function groupLayoutPropsAreEqual(prev: GroupLayoutProps, next: GroupLayoutProps): boolean {
-    // Re-render if group identity, items, or computed layout/properties changed
-    if (
+    const needRerenderIfChanged =
         prev.group !== next.group ||
         prev.layout !== next.layout ||
         prev.offset !== next.offset ||
-        !renderItemsAreEqual(prev.renderItems, next.renderItems) ||
-        !propertiesAreEqual(prev.properties, next.properties)
-    ) {
-        return false;
-    }
+        !shallowArrayEqual(prev.renderItems, next.renderItems) ||
+        !shallowObjectEqual(prev.properties, next.properties);
 
-    // Re-render only on group-scoped props; drag refs are stable, never trigger this.
-    if (
+    // Drag refs are stable and never trigger re-renders; only group-scoped state matters.
+    const needRerenderGroupScoped =
         prev.isDragCaptured !== next.isDragCaptured ||
         prev.isAnyDragging !== next.isAnyDragging ||
         prev.currentDraggingItemId !== next.currentDraggingItemId ||
-        prev.isAnyDraggedOut !== next.isAnyDraggedOut
-    ) {
-        return false;
-    }
+        prev.isAnyDraggedOut !== next.isAnyDraggedOut;
 
-    if (prev.temporaryPlaceholder !== next.temporaryPlaceholder) {
-        return false;
-    }
+    const hasTmpPlaceholderChanged = prev.temporaryPlaceholder !== next.temporaryPlaceholder;
 
-    return true;
+    return !needRerenderIfChanged && !needRerenderGroupScoped && !hasTmpPlaceholderChanged;
 }
 
 export const GroupLayout = React.memo(function GroupLayout({
@@ -121,7 +88,7 @@ export const GroupLayout = React.memo(function GroupLayout({
     } = React.useContext(DashKitContext);
 
     // Use group-specific noOverlay if it was explicitly set via groupGridProperties,
-    // otherwise fall back to the dashboard-level noOverlay from context.
+    // otherwise fallback to the dashboard-level noOverlay from context.
     const resolvedNoOverlay = 'noOverlay' in properties ? properties.noOverlay : noOverlay;
 
     // Memoize items array; non-source groups have stable false/null drag props so React skips their subtrees.
