@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.1.0](https://github.com/gravity-ui/dashkit/compare/v10.0.0...v10.1.0) (2026-03-24)
+
+
+### Features
+
+* add memoized group layout to reduce re-renders during dnd ([#298](https://github.com/gravity-ui/dashkit/issues/298)) ([49a14e1](https://github.com/gravity-ui/dashkit/commit/49a14e1ee320cf4e3ce7854156979f2aa908361c))
+
 ## [10.0.0](https://github.com/gravity-ui/dashkit/compare/v9.3.2...v10.0.0) (2026-02-13)
 
 
