@@ -5,6 +5,7 @@ import isEqual from 'lodash/isEqual';
 import type {DashKitProps} from '../components/DashKit';
 import type {ItemProps, RendererProps} from '../components/Item/types';
 import {DashKitContext} from '../context';
+import type {DashKitCtxShape} from '../context';
 import type {ConfigItem, ConfigLayout} from '../shared';
 import type {PluginRef, PluginWidgetProps, ReactGridLayoutProps} from '../typings';
 
@@ -35,15 +36,54 @@ export function prepareItem(
 
         _currentRenderProps: RendererProps = {} as RendererProps;
 
-        shouldComponentUpdate(nextProps: PrepareItemProps) {
+        shouldComponentUpdate(
+            nextProps: PrepareItemProps,
+            _nextState: never,
+            nextContext: DashKitCtxShape,
+        ) {
             const {width, height, transform} = this.props;
             const {width: widthNext, height: heightNext, transform: transformNext} = nextProps;
 
+            // Layout changes (position/size) always trigger re-render
+            if (width !== widthNext || height !== heightNext || transform !== transformNext) {
+                return true;
+            }
+
+            // While dragging — skip content updates
+            if (!nextProps.shouldItemUpdate) {
+                return false;
+            }
+
+            const id = this.props.id;
+            const ctx = this.context;
+
+            // Re-render only if data relevant to this specific item changed
             return (
-                nextProps.shouldItemUpdate ||
-                width !== widthNext ||
-                height !== heightNext ||
-                transform !== transformNext
+                this.props.item !== nextProps.item ||
+                this.props.layout !== nextProps.layout ||
+                ctx.itemsParams[id] !== nextContext.itemsParams[id] ||
+                ctx.itemsState[id] !== nextContext.itemsState[id] ||
+                ctx.editMode !== nextContext.editMode ||
+                ctx.settings !== nextContext.settings ||
+                ctx.context !== nextContext.context
+            );
+        }
+
+        render() {
+            const {item, isPlaceholder, forwardedPluginRef, onItemMountChange, onItemRender} =
+                this.props;
+            const {registerManager} = this.context;
+
+            return (
+                <WrappedComponent
+                    forwardedPluginRef={forwardedPluginRef}
+                    rendererProps={this.getRenderProps()}
+                    registerManager={registerManager}
+                    isPlaceholder={isPlaceholder}
+                    onItemMountChange={onItemMountChange}
+                    onItemRender={onItemRender}
+                    item={item}
+                />
             );
         }
 
@@ -93,23 +133,5 @@ export function prepareItem(
 
             return this._currentRenderProps;
         };
-
-        render() {
-            const {item, isPlaceholder, forwardedPluginRef, onItemMountChange, onItemRender} =
-                this.props;
-            const {registerManager} = this.context;
-
-            return (
-                <WrappedComponent
-                    forwardedPluginRef={forwardedPluginRef}
-                    rendererProps={this.getRenderProps()}
-                    registerManager={registerManager}
-                    isPlaceholder={isPlaceholder}
-                    onItemMountChange={onItemMountChange}
-                    onItemRender={onItemRender}
-                    item={item}
-                />
-            );
-        }
     };
 }

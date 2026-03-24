@@ -1,3 +1,5 @@
+import React from 'react';
+
 import type ReactGridLayout from 'react-grid-layout';
 
 import type {OverlayCustomControlItem} from '../components/OverlayControls/OverlayControls';
@@ -25,6 +27,12 @@ export type ReactGridLayoutProps = Omit<
 > & {
     compactType?: CompactType;
     noOverlay?: boolean;
+    /**
+     * When the grid is inside a scaled container, pass a ref to the scale factor.
+     * DragOverLayout will inject a lazy proxy so react-draggable reads the fresh
+     * value via valueOf() at drag time — no re-render required.
+     */
+    transformScaleRef?: React.MutableRefObject<number>;
 };
 
 export interface Settings {

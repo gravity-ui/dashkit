@@ -86,11 +86,23 @@ class GridItem extends React.PureComponent<GridItemProps, GridItemState> {
     context!: React.ContextType<typeof DashKitContext>;
 
     _isAsyncItem = false;
+    _isMounted = false;
     controller: AbortController | null = null;
 
     state: GridItemState = {
         isFocused: false,
     };
+
+    componentDidMount() {
+        this._isMounted = true;
+    }
+
+    componentWillUnmount() {
+        this._isMounted = false;
+        if (this.controller) {
+            this.controller.abort();
+        }
+    }
 
     renderOverlay() {
         const {isPlaceholder} = this.props;
@@ -132,6 +144,10 @@ class GridItem extends React.PureComponent<GridItemProps, GridItemState> {
 
         // requestAnimationFrame to make call after alert() or confirm()
         requestAnimationFrame(() => {
+            if (!this._isMounted) {
+                return;
+            }
+
             // Adding elment an changing focus
             document.body.appendChild(focusDummy);
             focusDummy.focus();
