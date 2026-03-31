@@ -96,7 +96,7 @@ export const GroupLayout = React.memo(function GroupLayout({
         return renderItems.map((item, i) => {
             const keyId = item.id;
 
-            const isDragging = isAnyDragging && keyId === currentDraggingItemId;
+            const isDragging = editMode && isAnyDragging && keyId === currentDraggingItemId;
             const isDraggedOut = isDragging && isAnyDraggedOut;
 
             return (
@@ -137,6 +137,7 @@ export const GroupLayout = React.memo(function GroupLayout({
         onItemFocus,
         onItemBlur,
         getMemoForwardRefCallback,
+        editMode,
     ]);
 
     return (
