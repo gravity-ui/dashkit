@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.1.1](https://github.com/gravity-ui/dashkit/compare/v10.1.0...v10.1.1) (2026-03-31)
+
+
+### Bug Fixes
+
+* allow drag & resize GridItems after change edit mode ([#301](https://github.com/gravity-ui/dashkit/issues/301)) ([fe0a3ac](https://github.com/gravity-ui/dashkit/commit/fe0a3ac0112c48eda47e9ad63e8fb1d708e8b297))
+
 ## [10.1.0](https://github.com/gravity-ui/dashkit/compare/v10.0.0...v10.1.0) (2026-03-24)
 
 
