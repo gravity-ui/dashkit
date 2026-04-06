@@ -54,6 +54,9 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
         offsetX: number;
         offsetY: number;
     } | null> = {current: null};
+    private _groupResetRegistryRef: React.MutableRefObject<Map<string, () => void>> = {
+        current: new Map(),
+    };
 
     private _timeout?: NodeJS.Timeout;
     private _lastReloadAt?: number;
@@ -478,7 +481,9 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
         if (this.context.dragOverPlugin) {
             this.setState({isDragging: true});
         } else {
-            this._sharedDragRef.current = {isDragging: true, sourceGroup: group};
+            if (!this._sharedDragRef.current.isDragging) {
+                this._sharedDragRef.current = {isDragging: true, sourceGroup: group};
+            }
             this._initDragCoordinatesWatcher(element);
             this.updateDraggingElementState(group, layoutItem, e);
             this.setState({isDragging: true});
@@ -604,8 +609,7 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
 
         const groupedLayout = this.mergeGroupsLayout(group, newLayout);
 
-        this._sharedDragRef.current = {isDragging: false, sourceGroup: null};
-        this._sharedDragPositionRef.current = null;
+        this._clearSharedDragState();
         this.setState({
             isDragging: false,
             currentDraggingElement: null,
@@ -650,8 +654,7 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
             },
         );
 
-        this._sharedDragRef.current = {isDragging: false, sourceGroup: null};
-        this._sharedDragPositionRef.current = null;
+        this._clearSharedDragState();
         this.setState({
             isDragging: false,
             currentDraggingElement: null,
@@ -738,6 +741,15 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
         return false;
     };
 
+    _clearSharedDragState() {
+        this._sharedDragRef.current = {isDragging: false, sourceGroup: null};
+        this._sharedDragPositionRef.current = null;
+
+        // Reset all group placeholders — covers the case where mouseup happens
+        // in a gap between groups and no individual group's mouseUpHandler fires.
+        this._groupResetRegistryRef.current.forEach((reset) => reset());
+    }
+
     renderTemporaryPlaceholder(gridLayout: Partial<ReactGridLayoutProps>) {
         const {temporaryLayout, noOverlay, draggableHandleClassName} = this.context;
 
@@ -820,6 +832,7 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
                 temporaryPlaceholder={this.renderTemporaryPlaceholder(stableProperties)}
                 dragStateRef={this._sharedDragRef}
                 sharedDragPositionRef={this._sharedDragPositionRef}
+                groupResetRegistryRef={this._groupResetRegistryRef}
                 isDragCaptured={isDragCaptured}
                 isAnyDragging={groupIsAnyDragging}
                 currentDraggingItemId={groupCurrentDraggingItemId}

@@ -26,6 +26,7 @@ export interface GroupLayoutProps {
     isDragCaptured: boolean;
     dragStateRef: React.MutableRefObject<{isDragging: boolean; sourceGroup: string | null}>;
     sharedDragPositionRef: React.MutableRefObject<{offsetX: number; offsetY: number} | null>;
+    groupResetRegistryRef: React.MutableRefObject<Map<string, () => void>>;
 
     // Drag state scoped to this group only (always false/null for non-source groups)
     isAnyDragging: boolean;
@@ -68,6 +69,7 @@ export const GroupLayout = React.memo(function GroupLayout({
     temporaryPlaceholder,
     dragStateRef,
     sharedDragPositionRef,
+    groupResetRegistryRef,
     isDragCaptured,
     isAnyDragging,
     currentDraggingItemId,
@@ -161,6 +163,7 @@ export const GroupLayout = React.memo(function GroupLayout({
             onDrop={callbacks.onDrop}
             dragStateRef={dragStateRef}
             sharedDragPositionRef={sharedDragPositionRef}
+            groupResetRegistryRef={groupResetRegistryRef}
             group={group}
             isDragCaptured={isDragCaptured}
             isDroppable={Boolean(outerDnDEnable) && editMode}
