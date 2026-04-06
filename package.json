@@ -63,6 +63,7 @@
     "test": "jest",
     "clean": "gulp clean",
     "build": "gulp",
+    "build:watch": "gulp watch",
     "start": "storybook dev -p 7120",
     "typecheck": "tsc --noEmit",
     "build-storybook": "sb build -c .storybook -o storybook-static",

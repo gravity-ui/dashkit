@@ -30,6 +30,7 @@ type DragOverLayoutProps = ReactGridLayout.ReactGridLayoutProps & {
     group?: string;
     onDragTargetRestore?: () => void;
     transformScaleRef?: React.MutableRefObject<number>;
+    groupResetRegistryRef?: React.MutableRefObject<Map<string, () => void>>;
 };
 
 type DragOverLayoutState = {
@@ -73,6 +74,13 @@ class DragOverLayout extends ReactGridLayout {
     componentDidMount(): void {
         super.componentDidMount?.();
 
+        if (this.props.group !== undefined) {
+            this.props.groupResetRegistryRef?.current.set(
+                this.props.group,
+                this.resetExternalPlaceholder,
+            );
+        }
+
         // If cursor is moved out of the window there is a bug
         // which leaves placeholder element in grid, this action needed to reset this state
         window.addEventListener('dragend', this.resetExternalPlaceholder);
@@ -87,6 +95,10 @@ class DragOverLayout extends ReactGridLayout {
     }
 
     componentWillUnmount(): void {
+        if (this.props.group !== undefined) {
+            this.props.groupResetRegistryRef?.current.delete(this.props.group);
+        }
+
         window.removeEventListener('dragend', this.resetExternalPlaceholder);
         const innerElement = this.getInnerElement();
 
@@ -221,11 +233,9 @@ class DragOverLayout extends ReactGridLayout {
         }
     };
 
-    // Returns true when another group's item is being dragged over this grid.
-    // Reads from the ref directly — no re-render required to stay current.
     isSharedDragTarget = (): boolean => {
         const drag = this.props.dragStateRef?.current;
-        return Boolean(drag?.isDragging && drag?.sourceGroup !== this.props.group);
+        return Boolean(drag?.isDragging);
     };
 
     // Proxy mouse events -> drag methods for dnd between groups
@@ -247,7 +257,10 @@ class DragOverLayout extends ReactGridLayout {
     };
 
     mouseMoveHandler = (e: MouseEvent): void => {
-        if (this.isSharedDragTarget()) {
+        if (
+            this.isSharedDragTarget() &&
+            this.props.group !== this.props.dragStateRef?.current.sourceGroup
+        ) {
             if (!(e as MouseEvent & {nativeEvent?: MouseEvent}).nativeEvent) {
                 // Emulate nativeEvent for firefox
                 const target = this.getInnerElement() || (e.target as HTMLElement);
@@ -271,8 +284,8 @@ class DragOverLayout extends ReactGridLayout {
             const {layout} = this.state;
             const item = layout.find((l) => l.i === droppingItem?.i);
 
-            // reset dragEnter counter on drop
-            this.resetExternalPlaceholder();
+            // reset dragEnter counter on drop for all registered groups
+            this.props.groupResetRegistryRef?.current.forEach((reset) => reset());
 
             if (item) {
                 this.props.onDrop?.(layout, item, e);

@@ -1,7 +1,7 @@
 const path = require('path');
 
 const utils = require('@gravity-ui/gulp-utils');
-const {task, src, dest, series, parallel} = require('gulp');
+const {task, src, dest, series, parallel, watch} = require('gulp');
 const sass = require('gulp-dart-sass');
 const sourcemaps = require('gulp-sourcemaps');
 const rimraf = require('rimraf');
@@ -101,3 +101,21 @@ task(
 );
 
 task('default', series(['build']));
+
+task(
+    'rebuild',
+    parallel([
+        'compile-to-esm',
+        'compile-to-cjs',
+        'copy-js-declarations',
+        'copy-i18n',
+        'styles-components',
+    ]),
+);
+
+task(
+    'watch',
+    series(['build'], () => {
+        return watch(['src/**/*.{js,jsx,ts,tsx,scss}'], series(['rebuild']));
+    }),
+);
