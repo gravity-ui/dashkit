@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.1.2](https://github.com/gravity-ui/dashkit/compare/v10.1.1...v10.1.2) (2026-04-06)
+
+
+### Bug Fixes
+
+* drag items between groups ([#303](https://github.com/gravity-ui/dashkit/issues/303)) ([4721e0e](https://github.com/gravity-ui/dashkit/commit/4721e0ef1cc097c5be5d9e4940c14d1852fd412d))
+
 ## [10.1.1](https://github.com/gravity-ui/dashkit/compare/v10.1.0...v10.1.1) (2026-03-31)
 
 
