@@ -467,3 +467,39 @@ export function hasActionParams(stateAndParams: ItemStateAndParams) {
 export function getAllConfigItems(config: Config): ConfigItem[] {
     return [...config.items, ...(config.globalItems || [])];
 }
+
+export function isGlobalGroupItemVisible(
+    groupItem: ConfigItemGroup,
+    parentItem: ConfigItem,
+    currentTabId?: string,
+): boolean {
+    if (!currentTabId) {
+        return true;
+    }
+
+    const {impactType, impactTabsIds} = groupItem;
+
+    if (impactType === 'allTabs') {
+        return true;
+    }
+
+    if (impactType === 'asGroup' || !impactType) {
+        const {impactType: parentImpactType, impactTabsIds: parentImpactTabsIds} = parentItem.data;
+
+        if ((!parentImpactType && !parentImpactTabsIds) || parentImpactType === 'allTabs') {
+            return true;
+        }
+
+        if (parentImpactTabsIds) {
+            return parentImpactTabsIds.includes(currentTabId);
+        }
+
+        return false;
+    }
+
+    if (impactTabsIds) {
+        return impactTabsIds.includes(currentTabId);
+    }
+
+    return false;
+}

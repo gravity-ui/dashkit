@@ -23,6 +23,7 @@ import {
     getCurrentVersion,
     getMapItemsIgnores,
     hasActionParam,
+    isGlobalGroupItemVisible,
     isItemWithGroup,
     isItemWithTabs,
     mergeParamsWithAliases,
@@ -179,10 +180,23 @@ export function getItemsParams({
     });
     const isFirstVersion = getCurrentVersion(itemsStateAndParams) === 1;
 
+    const globalItemIds = new Set((config.globalItems || []).map((item) => item.id));
+    const visibleGlobalGroupSubItemIds = new Set<string>();
+
     const allItems = items.reduce((paramsItems: (ConfigItem | ConfigItemGroup)[], item) => {
         if (isItemWithGroup(item)) {
+            const isGlobal = globalItemIds.has(item.id);
+
             item.data.group.forEach((groupItem) => {
+                if (isGlobal && !isGlobalGroupItemVisible(groupItem, item, config.id)) {
+                    return;
+                }
+
                 paramsItems.push(groupItem);
+
+                if (isGlobal) {
+                    visibleGlobalGroupSubItemIds.add(groupItem.id);
+                }
             });
 
             return paramsItems;
@@ -235,17 +249,17 @@ export function getItemsParams({
         };
 
         if (isItemWithGroup(item)) {
-            const groupParams = item.data.group.reduce(
-                (groupItemParams: Record<string, StringParams>, groupItem) => {
+            const isGlobal = globalItemIds.has(item.id);
+            const groupParams = item.data.group
+                .filter((groupItem) => !isGlobal || visibleGlobalGroupSubItemIds.has(groupItem.id))
+                .reduce((groupItemParams: Record<string, StringParams>, groupItem) => {
                     groupItemParams[groupItem.id] = getItemParams({
                         item: groupItem,
                         parentItemId: item.id,
                         ...paramsOptions,
                     });
                     return groupItemParams;
-                },
-                {},
-            );
+                }, {});
 
             return {...itemsParams, [id]: groupParams};
         }
