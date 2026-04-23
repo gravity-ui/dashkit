@@ -12,10 +12,15 @@ export interface ConfigLayout extends AdditionalWidgetLayout {
     y: number;
 }
 
+type ImpactType = 'allTabs' | 'asGroup' | 'selectedTabs' | 'currentTab';
+type ImpactTabsIds = string[] | null;
+
 export type ConfigItemGroup = {
     id: string;
     defaults?: StringParams;
     namespace: string;
+    impactType?: ImpactType;
+    impactTabsIds?: ImpactTabsIds;
     [key: string]: unknown;
 };
 
@@ -28,6 +33,8 @@ export interface ConfigItemData {
         [key: string]: unknown;
     }[];
     group?: ConfigItemGroup[];
+    impactType?: Exclude<ImpactType, 'asGroup'>;
+    impactTabsIds?: ImpactTabsIds;
     [key: string]: unknown;
 }
 
@@ -68,6 +75,7 @@ export interface ConfigConnection {
 }
 
 export interface Config {
+    id?: string;
     salt: string;
     counter: number;
     items: ConfigItem[];
