@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.1.3](https://github.com/gravity-ui/dashkit/compare/v10.1.2...v10.1.3) (2026-04-23)
+
+
+### Bug Fixes
+
+* remove invisible global items params from calculations ([#306](https://github.com/gravity-ui/dashkit/issues/306)) ([a8782fd](https://github.com/gravity-ui/dashkit/commit/a8782fdadb2ad7176a778a5556d01b80c605ef6d))
+
 ## [10.1.2](https://github.com/gravity-ui/dashkit/compare/v10.1.1...v10.1.2) (2026-04-06)
 
 
