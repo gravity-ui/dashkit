@@ -4,6 +4,7 @@ import pick from 'lodash/pick';
 
 import {DEFAULT_GROUP, DEFAULT_NAMESPACE} from '../constants';
 import {
+    CONFIG_LAYOUT_FIELDS,
     ConfigLayout,
     META_KEY,
     addGroupToQueue,
@@ -451,7 +452,7 @@ export function reflowLayout({
                 reflowOptions.compactType,
                 reflowOptions.cols,
             ).map((item) => {
-                const cleanCopy = pick(item, ['i', 'h', 'w', 'x', 'y', 'parent']) as ConfigLayout;
+                const cleanCopy = pick(item, CONFIG_LAYOUT_FIELDS) as ConfigLayout;
 
                 if (groupId === DEFAULT_GROUP) {
                     return cleanCopy;
@@ -669,7 +670,7 @@ export class UpdateManager {
     static updateLayout({layout, config}: {layout: ConfigLayout[]; config: Config}) {
         return update(config, {
             layout: {
-                $set: layout.map((item) => pick(item, ['i', 'h', 'w', 'x', 'y', 'parent'])),
+                $set: layout.map((item) => pick(item, CONFIG_LAYOUT_FIELDS)),
             },
         });
     }

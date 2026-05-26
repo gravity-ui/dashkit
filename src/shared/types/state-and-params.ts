@@ -35,4 +35,7 @@ export type ItemStateAndParamsChangeOptions = {
 
 export type ItemsStateAndParamsBase = Record<string, ItemStateAndParams>;
 
+/**
+ * @deprecated This type will be removed in a future major version.
+ */
 export type ItemsStateAndParams = ItemsStateAndParamsBase | StateAndParamsMeta;

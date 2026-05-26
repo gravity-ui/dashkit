@@ -12,6 +12,16 @@ export interface ConfigLayout extends AdditionalWidgetLayout {
     y: number;
 }
 
+export const CONFIG_LAYOUT_FIELDS = [
+    'i',
+    'h',
+    'w',
+    'x',
+    'y',
+    'parent',
+] as const satisfies ReadonlyArray<keyof ConfigLayout>;
+export type ConfigLayoutField = (typeof CONFIG_LAYOUT_FIELDS)[number];
+
 type ImpactType = 'allTabs' | 'asGroup' | 'selectedTabs' | 'currentTab';
 type ImpactTabsIds = string[] | null;
 
