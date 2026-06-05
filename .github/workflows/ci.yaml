@@ -17,7 +17,7 @@ jobs:
     - name: Setup Node
       uses: actions/setup-node@v4
       with:
-        node-version: 20
+        node-version-file: '.nvmrc'
         cache: 'npm'
     - name: Install Packages
       run: npm ci
@@ -27,7 +27,7 @@ jobs:
       run: npm run typecheck
 
   tests:
-    name: Tests
+    name: Tests (React 19)
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
@@ -37,9 +37,39 @@ jobs:
     - name: Setup Node
       uses: actions/setup-node@v4
       with:
-        node-version: 20
+        node-version-file: '.nvmrc'
         cache: 'npm'
     - name: Install Packages
       run: npm ci
     - name: Unit Tests
       run: npm run test
+
+  # Validate the lower edge of the React peer range. Runs only on
+  # release-please PRs so regular PR CI stays fast; failure here blocks
+  # the release before it can be tagged and published.
+  tests_react_18:
+    name: Tests (React 18)
+    if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'release-please')
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version-file: '.nvmrc'
+        cache: 'npm'
+    - name: Install Packages
+      run: npm ci
+    - name: Downgrade React to 18
+      run: npm install --no-save react@^18 react-dom@^18 @types/react@^18 @types/react-dom@^18
+    - name: Show installed React versions
+      run: npm ls react react-dom @types/react @types/react-dom || true
+    - name: Typecheck
+      run: npm run typecheck
+    - name: Unit Tests
+      run: npm run test
+    - name: Build
+      run: npm run build
