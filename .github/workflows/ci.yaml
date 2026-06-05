@@ -65,7 +65,11 @@ jobs:
       run: npm ci
     - name: Downgrade React to 18
       run: npm install --no-save react@^18 react-dom@^18 @types/react@^18 @types/react-dom@^18
+    - name: Show installed React versions
+      run: npm ls react react-dom @types/react @types/react-dom || true
     - name: Typecheck
       run: npm run typecheck
     - name: Unit Tests
       run: npm run test
+    - name: Build
+      run: npm run build
