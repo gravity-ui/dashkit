@@ -3,7 +3,7 @@ import type {StorybookConfig} from '@storybook/react-webpack5';
 const config: StorybookConfig = {
     framework: {
         name: '@storybook/react-webpack5',
-        options: {fastRefresh: true},
+        options: {fastRefresh: true, legacyRootApi: false},
     },
     stories: ['../src/**/*.stories.@(ts|tsx)'],
     docs: {
