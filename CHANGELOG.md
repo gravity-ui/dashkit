@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.2.0](https://github.com/gravity-ui/dashkit/compare/v10.1.3...v10.2.0) (2026-06-05)
+
+
+### Features
+
+* support React 19 in peerDependencies ([#308](https://github.com/gravity-ui/dashkit/issues/308)) ([5c7c807](https://github.com/gravity-ui/dashkit/commit/5c7c807c2a7e7b17d8b3e793e98e2a8cee62989b))
+
 ## [10.1.3](https://github.com/gravity-ui/dashkit/compare/v10.1.2...v10.1.3) (2026-04-23)
 
 
