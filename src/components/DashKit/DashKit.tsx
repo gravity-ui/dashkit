@@ -86,6 +86,13 @@ type DashKitInnerProps = DashKitGeneralProps & DashKitDefaultProps;
 
 const registerManager = new RegisterManager();
 
+/**
+ * @internal Not part of the public API. Do not use in production code.
+ * Module-scoped symbol — not accessible to external consumers holding a ref,
+ * preventing synthetic event injection via instance._emit.
+ */
+export const _emitSymbol = Symbol('DashKit._emit');
+
 const getReflowProps = (props: ReactGridLayoutProps): GridReflowOptions =>
     Object.assign(
         {compactType: 'vertical', cols: 36},
@@ -218,7 +225,7 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
 
     metaRef = React.createRef<GridLayout>();
 
-    private _handlers = new Map<string, Set<Function>>();
+    private _handlers = new Map<string, Set<(...args: any[]) => void>>();
 
     render() {
         const content = (
@@ -226,7 +233,7 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
                 registerManager={registerManager}
                 ref={this.metaRef}
                 {...this.props}
-                emitDashKitEvent={this._emit}
+                emitDashKitEvent={this[_emitSymbol]}
             />
         );
 
@@ -259,7 +266,7 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
         return () => this._off(eventName, handler);
     }
 
-    _emit = <T extends DashKitEventName>(eventName: T, event: DashKitEventMap[T]): void => {
+    [_emitSymbol] = <T extends DashKitEventName>(eventName: T, event: DashKitEventMap[T]): void => {
         const handlers = this._handlers.get(eventName);
         if (!handlers) {
             return;

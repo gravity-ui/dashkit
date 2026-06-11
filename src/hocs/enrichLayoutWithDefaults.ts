@@ -23,13 +23,6 @@ export function enrichLayoutWithDefaults(config: Config, registerManager: Regist
                 ...registerManager.getItem(foundItem.type).defaultLayout,
                 ...itemLayout,
             });
-        } else {
-            // Layout item exists but config.items doesn't have matching entry.
-            // This indicates a data inconsistency (e.g., item was deleted from config but layout reference remains).
-            console.warn(
-                `[enrichLayoutWithDefaults] Layout item "${itemLayout.i}" not found in config.items. Skipping.`,
-                {itemLayout, availableIds: configItems.map((it) => it.id)},
-            );
         }
 
         return acc;

@@ -24,7 +24,7 @@ jest.mock('../../GridLayout/GridLayout', () => {
 import {emitDashKitChangeEvent} from '../../../hocs/withContext';
 import type {Config} from '../../../shared';
 import type {DashKitEventMap, DashKitLayoutPatch} from '../../../typings';
-import {DashKit} from '../../DashKit';
+import {DashKit, _emitSymbol} from '../../DashKit';
 
 const TEST_CONFIG: Config = {
     salt: 'test',
@@ -66,7 +66,7 @@ describe('DashKit change event — onChange gate', () => {
             config: TEST_CONFIG,
             newConfig: NEXT_CONFIG,
             onChange,
-            emitDashKitEvent: instance._emit,
+            emitDashKitEvent: instance[_emitSymbol],
         });
 
         expect(handler).toHaveBeenCalledTimes(1);
@@ -91,7 +91,7 @@ describe('DashKit change event — onChange gate', () => {
             config: TEST_CONFIG,
             newConfig: NEXT_CONFIG,
             onChange,
-            emitDashKitEvent: instance._emit,
+            emitDashKitEvent: instance[_emitSymbol],
         });
 
         expect(onChange).not.toHaveBeenCalled();
@@ -136,7 +136,7 @@ describe('DashKit event emitter', () => {
             defaultPrevented: false,
         } as unknown as DashKitEventMap['change'];
 
-        instance._emit('change', event);
+        instance[_emitSymbol]('change', event);
 
         expect(handler).not.toHaveBeenCalled();
     });
@@ -157,7 +157,7 @@ describe('DashKit event emitter', () => {
             config: TEST_CONFIG,
             newConfig: NEXT_CONFIG,
             onChange,
-            emitDashKitEvent: instance._emit,
+            emitDashKitEvent: instance[_emitSymbol],
         });
 
         consoleErrorSpy.mockRestore();
@@ -211,7 +211,7 @@ describe('DashKit change event — internal baseline (preventDefault flow)', () 
             config: config1,
             newConfig: config2,
             onChange,
-            emitDashKitEvent: instance._emit,
+            emitDashKitEvent: instance[_emitSymbol],
         });
 
         // Second change: In withContext, the internal baseline is updated automatically
@@ -220,7 +220,7 @@ describe('DashKit change event — internal baseline (preventDefault flow)', () 
             config: config2, // internal baseline updated to config2.layout
             newConfig: config3,
             onChange,
-            emitDashKitEvent: instance._emit,
+            emitDashKitEvent: instance[_emitSymbol],
         });
 
         expect(onChange).not.toHaveBeenCalled(); // preventDefault works
@@ -271,7 +271,7 @@ describe('DashKit change event — internal baseline (preventDefault flow)', () 
             config: currentConfig,
             newConfig: config2,
             onChange,
-            emitDashKitEvent: instance._emit,
+            emitDashKitEvent: instance[_emitSymbol],
         });
 
         expect(onChange).toHaveBeenCalledTimes(1);
@@ -290,7 +290,7 @@ describe('DashKit change event — internal baseline (preventDefault flow)', () 
             config: currentConfig, // ← updated after first onChange
             newConfig: config3,
             onChange,
-            emitDashKitEvent: instance._emit,
+            emitDashKitEvent: instance[_emitSymbol],
         });
 
         expect(onChange).toHaveBeenCalledTimes(2);

@@ -104,11 +104,10 @@ class DragOverLayout extends ReactGridLayout {
             prevProps.externalLayoutRevision !== this.props.externalLayoutRevision;
 
         if (revisionChanged && this.props.layout) {
-            // ! вот это слоп кусок нужно провалидировать
             const newLayout = utils.synchronizeLayoutWithChildren(
                 this.props.layout,
                 this.props.children,
-                this.props.cols ?? 12,
+                this.props.cols,
                 utils.compactType(this.props),
                 this.props.allowOverlap,
             );

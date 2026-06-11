@@ -372,12 +372,9 @@ type ItemsStateAndParams = StateAndParamsMeta & ItemsStateAndParamsBase;
 
 > Experimental: this API can change in minor releases.
 
-`DashKit` exposes an experimental instance event API. Use a component ref and subscribe with
-`dashkitRef.current?.on(eventName, handler)`. The method returns an unsubscribe callback.
+`DashKit` exposes an experimental instance event API. Use a component ref and subscribe with `dashkitRef.current?.on(eventName, handler)`. The method returns an unsubscribe callback.
 
-The first supported event is `change`. It is emitted when the layout changes, before `onChange` is
-called. The handler can read the full next and previous layouts, read layout patches, or call
-`preventDefault()` to stop the default `onChange` call.
+The first supported event is `change`. It is emitted when the layout changes, before `onChange` is called. The handler can read the full next and previous layouts, read layout patches, or call `preventDefault()` to stop the default `onChange` call.
 
 ```tsx
 import React from 'react';
@@ -418,11 +415,7 @@ type DashKitChangeEvent = {
 
 #### Event-driven layout updates
 
-> New in v5.x
-
-If you use `preventDefault()` in the `change` event handler, you can now handle layout updates
-without re-initializing the config prop. DashKit maintains an internal baseline and computes
-patches incrementally:
+If you use `preventDefault()` in the `change` event handler, you can now handle layout updates without re-initializing the config prop. DashKit maintains an internal baseline and computes patches incrementally:
 
 ```tsx
 function Dashboard() {
@@ -447,9 +440,7 @@ function Dashboard() {
 }
 ```
 
-**Important:** If you later update `config.layout` from props (e.g., from server sync), DashKit will
-reset its internal baseline to match the new prop. This ensures compatibility with both event-driven
-and controlled workflows.
+**Important:** If you later update `config.layout` from props (e.g., from server sync), DashKit will reset its internal baseline to match the new prop. This ensures compatibility with both event-driven and controlled workflows.
 
 ### Menu
 

@@ -33,7 +33,7 @@ import {DashKitContext, type DashKitCtxShape} from '../../../context';
 import {type DashKitWithContextProps, withContext} from '../../../hocs/withContext';
 import type {Config} from '../../../shared';
 import {RegisterManager} from '../../../utils';
-import {DashKit} from '../DashKit';
+import {DashKit, _emitSymbol} from '../DashKit';
 
 const PLUGIN_TYPE = 'controlled-layout-test';
 
@@ -115,7 +115,7 @@ describe('DashKit controlled layout strategy', () => {
             <TestComponent
                 {...createProps({
                     config: initialConfig,
-                    emitDashKitEvent: dashkit._emit,
+                    emitDashKitEvent: dashkit[_emitSymbol],
                     onChange,
                 })}
             />,
@@ -141,7 +141,7 @@ describe('DashKit controlled layout strategy', () => {
                 <TestComponent
                     {...createProps({
                         config: externalConfig,
-                        emitDashKitEvent: dashkit._emit,
+                        emitDashKitEvent: dashkit[_emitSymbol],
                         onChange,
                     })}
                 />,
@@ -172,7 +172,7 @@ describe('DashKit controlled layout strategy', () => {
             <TestComponent
                 {...createProps({
                     config: initialConfig,
-                    emitDashKitEvent: dashkit._emit,
+                    emitDashKitEvent: dashkit[_emitSymbol],
                     onChange,
                 })}
             />,
@@ -199,7 +199,7 @@ describe('DashKit controlled layout strategy', () => {
                 <TestComponent
                     {...createProps({
                         config: initialConfig,
-                        emitDashKitEvent: dashkit._emit,
+                        emitDashKitEvent: dashkit[_emitSymbol],
                         onChange,
                     })}
                 />,
@@ -230,7 +230,7 @@ describe('DashKit controlled layout strategy', () => {
             <TestComponent
                 {...createProps({
                     config: config1,
-                    emitDashKitEvent: dashkit._emit,
+                    emitDashKitEvent: dashkit[_emitSymbol],
                     onChange,
                 })}
             />,
@@ -245,7 +245,7 @@ describe('DashKit controlled layout strategy', () => {
                 <TestComponent
                     {...createProps({
                         config: config2,
-                        emitDashKitEvent: dashkit._emit,
+                        emitDashKitEvent: dashkit[_emitSymbol],
                         onChange,
                     })}
                 />,
@@ -266,7 +266,7 @@ describe('DashKit controlled layout strategy', () => {
                 <TestComponent
                     {...createProps({
                         config: config3,
-                        emitDashKitEvent: dashkit._emit,
+                        emitDashKitEvent: dashkit[_emitSymbol],
                         onChange,
                     })}
                 />,

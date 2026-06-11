@@ -73,6 +73,7 @@ type UseMemoStateContextResult = {
     controlsContextValue: OverlayControlsCtxShape;
 };
 
+// Only fires when layout changes; other config mutations (item ordering, counter) do not trigger this event.
 export function emitDashKitChangeEvent({
     config,
     newConfig,
@@ -215,29 +216,19 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
                 layout: internalBaselineLayoutRef.current,
             };
 
-            //* эту и следующую строку можно объединить чтобы уменьшить количество O(n) forEach
             const newConfig = UpdateManager.updateLayout({
                 layout: currentInnerLayout,
                 config: baselineConfig,
             });
 
             emitDashKitChangeEvent({
-                config: baselineConfig, // baseline for patches is now internal
+                config: baselineConfig,
                 newConfig,
                 onChange,
                 emitDashKitEvent: props.emitDashKitEvent,
             });
 
-            // Update the internal baseline AFTER emit, regardless of preventDefault()
             internalBaselineLayoutRef.current = newConfig.layout;
-
-            // eslint-disable-next-line no-console
-            console.log('[withContext] onLayoutChange fired', {
-                // If this logs during undo/redo, it means onLayoutMaybeChanged was NOT suppressed
-                // and a spurious on('change') event was fired back to the consumer.
-                layout: newConfig.layout,
-                internalBaseline: internalBaselineLayoutRef.current,
-            });
         },
         [props.config, props.emitDashKitEvent, onChange],
     );
@@ -298,7 +289,7 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
             const currentConfig = {...props.config, layout: getOuterLayout()};
             onChange({
                 config: currentConfig,
-                // тут провайд config не обязательный, скорее должно быть без него и убрать default props
+                // config is not strictly required here; ideally it should be removed along with the default props
                 itemsStateAndParams: UpdateManager.changeStateAndParams({
                     id,
                     config: currentConfig,
@@ -401,42 +392,18 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
         }
     }, [props.registerManager, props.groups, visualLayout]);
 
-    // Synchronize internal baseline and visual layout when external props.layout changes (undo/redo).
-    // When props.config.layout reference changes, external update occurred (undo/redo/SET_ITEM_DATA).
-    // Move render-time logic into useEffect to comply with React rules (state updates must be in effects).
+    // Synchronize internal baseline and visual layout when external props.layout changes re-init.
+    // When props.config.layout reference changes, external update occurred re-init.
     React.useEffect(() => {
         const internalNotEqualProps = !isEqual(
             internalBaselineLayoutRef.current,
             enrichedPropsLayout,
         );
 
-        // eslint-disable-next-line no-console
-        console.log('[withContext] enrichedPropsLayout changed', {
-            // This effect only fires when enrichedPropsLayout reference changes (from useMemo).
-            // KEY INSIGHT: if consumer never updated props.config.layout after a drag
-            // (i.e. always used preventDefault), this effect NEVER fires on undo to the
-            // "same" L0, because enrichedPropsLayout never got a new reference.
-            internalNotEqualProps,
-            internalBaseline: internalBaselineLayoutRef.current,
-            enrichedPropsLayout,
-        });
-
         if (internalNotEqualProps) {
             internalBaselineLayoutRef.current = enrichedPropsLayout;
             setVisualLayout(enrichedPropsLayout);
             setExternalLayoutRevision((r) => r + 1);
-
-            // eslint-disable-next-line no-console
-            console.log(
-                '[withContext] externalLayoutRevision incremented → RGL will be forced to restore layout',
-            );
-        } else {
-            // eslint-disable-next-line no-console
-            console.log(
-                '[withContext] WARN: internalBaseline already matches enrichedPropsLayout — externalLayoutRevision NOT incremented.',
-                'If this is undo/redo: consumer may have never forwarded the dragged layout via onChange,',
-                'so props.config.layout never changed and enrichedPropsLayout reference stayed the same.',
-            );
         }
     }, [enrichedPropsLayout]);
 
@@ -483,8 +450,6 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
         const original = originalLayouts.current;
         const nowrapAdjust = nowrapAdjustedLayouts.current;
 
-        console.log('resultLayout', visualLayout);
-
         return visualLayout.map((item) => {
             const widgetId = item.i;
 
@@ -514,13 +479,6 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
             }
         });
     }, [visualLayout, layoutUpdateCounter]);
-
-    const prevResultLayout = React.useRef(resultLayout);
-
-    React.useEffect(() => {
-        console.log('resultLayout ref changed', resultLayout);
-        prevResultLayout.current = resultLayout;
-    }, [resultLayout]);
 
     const reloadItems = React.useCallback<DashKitCtxShape['reloadItems']>((pluginsRefs, data) => {
         pluginsRefs.forEach((ref) => ref && hasReload(ref) && ref.reload(data));
