@@ -3,7 +3,6 @@ import React from 'react';
 import {DashKitContext} from '../../context';
 import {withContext} from '../../hocs/withContext';
 import type {DashKitWithContextProps} from '../../hocs/withContext';
-import {useCalcPropsLayout} from '../../hooks/useCalcLayout';
 import {cn} from '../../utils/cn';
 import GridLayout from '../GridLayout/GridLayout';
 import MobileLayout from '../MobileLayout/MobileLayout';
@@ -12,7 +11,7 @@ import './DashKitView.scss';
 
 const b = cn('dashkit');
 
-type DashKitViewProps = Omit<DashKitWithContextProps, 'layout' | 'forwardedMetaRef'>;
+type DashKitViewProps = Omit<DashKitWithContextProps, 'forwardedMetaRef'>;
 
 function DashKitView() {
     const context = React.useContext(DashKitContext);
@@ -32,10 +31,7 @@ function DashKitView() {
 const DashKitViewWithContext = withContext(DashKitView);
 
 const DashKitViewForwardedMeta = React.forwardRef((props: DashKitViewProps, ref) => {
-    const layout = useCalcPropsLayout(props.config, props.registerManager);
-    console.log('DashKitViewForwardedMeta', props, layout);
-
-    return <DashKitViewWithContext {...props} layout={layout} forwardedMetaRef={ref} />;
+    return <DashKitViewWithContext {...props} forwardedMetaRef={ref} />;
 });
 
 DashKitViewForwardedMeta.displayName = 'DashKitViewForwardedMeta';

@@ -87,6 +87,7 @@ export const GroupLayout = React.memo(function GroupLayout({
         onItemRender,
         onItemFocus,
         onItemBlur,
+        externalLayoutRevision,
     } = React.useContext(DashKitContext);
 
     // Use group-specific noOverlay if it was explicitly set via groupGridProperties,
@@ -146,6 +147,7 @@ export const GroupLayout = React.memo(function GroupLayout({
         <Layout
             key={`group_${group}`}
             isDraggable={editMode}
+            externalLayoutRevision={externalLayoutRevision}
             isResizable={editMode}
             {...properties}
             compactType={compactType}

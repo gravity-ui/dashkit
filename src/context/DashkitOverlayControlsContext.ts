@@ -21,6 +21,6 @@ export type OverlayControlsCtxShape = Pick<
     getLayoutItem: (id: string) => ConfigLayout | void;
 };
 
-export const DashkitOvelayControlsContext = React.createContext<OverlayControlsCtxShape | void>(
+export const DashkitOverlayControlsContext = React.createContext<OverlayControlsCtxShape | void>(
     undefined,
 );
