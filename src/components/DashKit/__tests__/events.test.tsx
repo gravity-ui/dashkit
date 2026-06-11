@@ -21,9 +21,9 @@ jest.mock('../../GridLayout/GridLayout', () => {
     return ReactMock.forwardRef(() => null);
 });
 
-import {emitDashKitChangeEvent} from '../../../hocs/withContext';
 import type {Config} from '../../../shared';
 import type {DashKitEventMap, DashKitLayoutPatch} from '../../../typings';
+import {emitDashKitChangeEvent} from '../../../utils';
 import {DashKit, _emitSymbol} from '../../DashKit';
 
 const TEST_CONFIG: Config = {

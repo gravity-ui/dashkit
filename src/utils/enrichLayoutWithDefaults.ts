@@ -1,13 +1,9 @@
 import type {WidgetLayout} from 'src/typings/common';
 
 import {type Config, type ConfigLayout, getAllConfigItems} from '../shared';
-import {RegisterManager} from '../utils';
 
-/**
- * Enriches layout items with default values from plugin definitions.
- * This merges config.layout with registerManager's defaultLayout for each item type.
- * Used to ensure layout items have all required fields even if not explicitly set in config.
- */
+import type {RegisterManager} from './register-manager';
+
 export function enrichLayoutWithDefaults(config: Config, registerManager: RegisterManager) {
     const configItems = getAllConfigItems(config);
 

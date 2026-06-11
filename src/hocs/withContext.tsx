@@ -19,22 +19,17 @@ import type {
     TemporaryLayout,
 } from '../context';
 import {useDeepEqualMemo} from '../hooks/useDeepEqualMemo';
-import type {Config, ConfigLayout} from '../shared';
+import type {ConfigLayout} from '../shared';
 import {CONFIG_LAYOUT_FIELDS, getAllConfigItems, getItemsParams, getItemsState} from '../shared';
-import type {
-    DashKitChangeEvent,
-    DashKitEventMap,
-    DashKitEventName,
-    DashKitLayoutPatch,
-    PluginRef,
-} from '../typings';
+import type {DashKitEventMap, DashKitEventName, PluginRef} from '../typings';
 import type {RegisterManager, RegisterManagerPlugin} from '../utils';
-import {UpdateManager, getLayoutPatches, resolveLayoutGroup} from '../utils';
-
 import {
+    UpdateManager,
     convertEnrichedLayoutToConfigLayout,
+    emitDashKitChangeEvent,
     enrichLayoutWithDefaults,
-} from './enrichLayoutWithDefaults';
+    resolveLayoutGroup,
+} from '../utils';
 
 export type DashKitWithContextProps = DashkitPropsPassedToCtx &
     Pick<
@@ -72,45 +67,6 @@ type UseMemoStateContextResult = {
     dashkitContextValue: DashKitCtxShape;
     controlsContextValue: OverlayControlsCtxShape;
 };
-
-// Only fires when layout changes; other config mutations (item ordering, counter) do not trigger this event.
-export function emitDashKitChangeEvent({
-    config,
-    newConfig,
-    onChange,
-    emitDashKitEvent,
-}: {
-    config: Config;
-    newConfig: Config;
-    onChange: (data: {config: Config}) => void;
-    emitDashKitEvent: DashKitWithContextProps['emitDashKitEvent'];
-}) {
-    if (!isEqual(newConfig.layout, config.layout)) {
-        let defaultPrevented = false;
-        let cachedPatches: DashKitLayoutPatch[] | undefined;
-        const event: DashKitChangeEvent = {
-            get patches() {
-                if (!cachedPatches) {
-                    cachedPatches = getLayoutPatches(config.layout, newConfig.layout);
-                }
-                return cachedPatches;
-            },
-            layout: newConfig.layout,
-            previousLayout: config.layout,
-            preventDefault() {
-                defaultPrevented = true;
-            },
-            get defaultPrevented() {
-                return defaultPrevented;
-            },
-        };
-        emitDashKitEvent('change', event);
-
-        if (!defaultPrevented) {
-            onChange({config: newConfig});
-        }
-    }
-}
 
 const hasGetMeta = (value: PluginRef): value is {getMeta: () => Promise<any>} => {
     return (
