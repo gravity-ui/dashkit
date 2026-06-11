@@ -339,8 +339,6 @@ Generation order:
 
 ### itemsStateAndParams
 
-> Deprecated: `ItemsStateAndParams` is deprecated and will be removed in a future major version.
-
 Object that stores widget parameters and states as well as a parameter change queue.
 It has a `__meta__` field for storing queue and meta information.
 
