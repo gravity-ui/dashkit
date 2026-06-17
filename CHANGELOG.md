@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.3.0](https://github.com/gravity-ui/dashkit/compare/v10.2.0...v10.3.0) (2026-06-17)
+
+
+### Features
+
+* add event callback ([#310](https://github.com/gravity-ui/dashkit/issues/310)) ([cfae380](https://github.com/gravity-ui/dashkit/commit/cfae3808209124225d81e7e317e4446bedfb67cd))
+
 ## [10.2.0](https://github.com/gravity-ui/dashkit/compare/v10.1.3...v10.2.0) (2026-06-05)
 
 
