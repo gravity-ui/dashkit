@@ -6,4 +6,7 @@ module.exports = {
         '^.+\\.(t|j)sx?$': ['ts-jest', {tsconfig: './tsconfig.json'}],
     },
     transformIgnorePatterns: ['node_modules/(?!(@gravity-ui)/)'],
+    moduleNameMapper: {
+        '\\.(css|scss)$': '<rootDir>/jest/styleMock.js',
+    },
 };

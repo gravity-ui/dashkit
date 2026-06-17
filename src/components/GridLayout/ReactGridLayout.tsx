@@ -31,6 +31,7 @@ type DragOverLayoutProps = ReactGridLayout.ReactGridLayoutProps & {
     onDragTargetRestore?: () => void;
     transformScaleRef?: React.MutableRefObject<number>;
     groupResetRegistryRef?: React.MutableRefObject<Map<string, () => void>>;
+    externalLayoutRevision?: number;
 };
 
 type DragOverLayoutState = {
@@ -56,6 +57,10 @@ class DragOverLayout extends ReactGridLayout {
     parentOnDrag: OnDragMethod;
     parentOnDragStop: OnDragMethod;
     _savedDraggedOutLayout: RGLLayout[] | null = null;
+    // Suppresses onLayoutMaybeChanged during imperative layout restore actions.
+    // Without this flag, our setState would trigger onLayoutChange back to the consumer
+    // that just initiated the action, causing a spurious 'change' event.
+    _isRestoringExternalLayout = false;
 
     constructor(props: DragOverLayoutProps, context?: unknown) {
         super(props, context);
@@ -92,6 +97,53 @@ class DragOverLayout extends ReactGridLayout {
             innerElement.addEventListener('mouseleave', this.mouseLeaveHandler);
             innerElement.addEventListener('mousemove', this.mouseMoveHandler);
         }
+    }
+
+    componentDidUpdate(prevProps: DragOverLayoutProps, prevState: DragOverLayoutState): void {
+        const revisionChanged =
+            prevProps.externalLayoutRevision !== this.props.externalLayoutRevision;
+
+        if (revisionChanged && this.props.layout) {
+            const newLayout = utils.synchronizeLayoutWithChildren(
+                this.props.layout,
+                this.props.children,
+                this.props.cols,
+                utils.compactType(this.props),
+                this.props.allowOverlap,
+            );
+
+            this._isRestoringExternalLayout = true;
+            // Override both layout and propsLayout so getDerivedStateFromProps
+            // doesn't revert our update on the next render cycle.
+            this.setState(
+                {
+                    layout: newLayout,
+                    propsLayout: this.props.layout,
+                } as unknown as DragOverLayoutState,
+                () => {
+                    this._isRestoringExternalLayout = false;
+                },
+            );
+            // RGL's shouldComponentUpdate only tracks activeDrag/mounted/droppingPosition — not
+            // state.layout. So setState({layout}) alone is silently ignored (no re-render).
+            // forceUpdate bypasses SCU and is batched with the setState above, producing a
+            // single render cycle with the merged state that includes the restored layout.
+            this.forceUpdate();
+            // Don't call super here: restoring is an external action, not a user drag/resize.
+            // onLayoutMaybeChanged is suppressed via _isRestoringExternalLayout.
+            return;
+        }
+
+        // Maintain parent behavior for all non-restore cycles (drag, resize, etc.).
+        super.componentDidUpdate?.(prevProps, prevState);
+    }
+
+    onLayoutMaybeChanged(newLayout: RGLLayout[], oldLayout: RGLLayout[]): void {
+        if (this._isRestoringExternalLayout) {
+            return;
+        }
+        // @ts-expect-error — onLayoutMaybeChanged is not in ReactGridLayout's public types
+        super.onLayoutMaybeChanged(newLayout, oldLayout);
     }
 
     componentWillUnmount(): void {

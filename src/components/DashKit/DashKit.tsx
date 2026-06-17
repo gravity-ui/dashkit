@@ -17,6 +17,9 @@ import type {
     AddConfigItem,
     AddNewItemOptions,
     ContextProps,
+    DashKitEventHandler,
+    DashKitEventMap,
+    DashKitEventName,
     DashKitGroup,
     GridReflowOptions,
     ItemManipulationCallback,
@@ -82,6 +85,13 @@ export interface DashKitProps extends DashKitGeneralProps, Partial<DashKitDefaul
 type DashKitInnerProps = DashKitGeneralProps & DashKitDefaultProps;
 
 const registerManager = new RegisterManager();
+
+/**
+ * @internal Not part of the public API. Do not use in production code.
+ * Module-scoped symbol — not accessible to external consumers holding a ref,
+ * preventing synthetic event injection via instance._emit.
+ */
+export const _emitSymbol = Symbol('DashKit._emit');
 
 const getReflowProps = (props: ReactGridLayoutProps): GridReflowOptions =>
     Object.assign(
@@ -162,7 +172,9 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
             });
         } else {
             const item = setItem as AddConfigItem;
-            const layout = {...registerManager.getItem(item.type).defaultLayout};
+            const registerManagerItem = registerManager.getItem(item.type);
+
+            const layout = {...registerManagerItem.defaultLayout};
 
             const reflowLayoutOptions = getReflowGroupsConfig(groups);
 
@@ -213,9 +225,16 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
 
     metaRef = React.createRef<GridLayout>();
 
+    private _handlers = new Map<string, Set<(...args: any[]) => void>>();
+
     render() {
         const content = (
-            <DashKitView registerManager={registerManager} ref={this.metaRef} {...this.props} />
+            <DashKitView
+                registerManager={registerManager}
+                ref={this.metaRef}
+                {...this.props}
+                emitDashKitEvent={this[_emitSymbol]}
+            />
         );
 
         if (!this.context && this.props.groups) {
@@ -231,5 +250,44 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
 
     reloadItems(options?: {targetIds?: string[]; force?: boolean}) {
         this.metaRef.current?.reloadItems(options);
+    }
+
+    /**
+     * @experimental This API can change in minor releases.
+     * @param eventName Event name.
+     * @param handler Event handler.
+     * @returns Unsubscribe callback.
+     */
+    on<T extends DashKitEventName>(eventName: T, handler: DashKitEventHandler<T>): () => void {
+        if (!this._handlers.has(eventName)) {
+            this._handlers.set(eventName, new Set());
+        }
+        this._handlers.get(eventName)?.add(handler);
+        return () => this._off(eventName, handler);
+    }
+
+    [_emitSymbol] = <T extends DashKitEventName>(eventName: T, event: DashKitEventMap[T]): void => {
+        const handlers = this._handlers.get(eventName);
+        if (!handlers) {
+            return;
+        }
+        for (const handler of handlers) {
+            try {
+                (handler as DashKitEventHandler<T>)(event);
+            } catch (e) {
+                // eslint-disable-next-line no-console
+                console.error('DashKit: event handler error', e);
+            }
+        }
+    };
+
+    private _off<T extends DashKitEventName>(eventName: T, handler: DashKitEventHandler<T>): void {
+        const handlers = this._handlers.get(eventName);
+        if (handlers) {
+            handlers.delete(handler);
+            if (handlers.size === 0) {
+                this._handlers.delete(eventName);
+            }
+        }
     }
 }

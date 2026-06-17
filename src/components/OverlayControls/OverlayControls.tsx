@@ -20,7 +20,7 @@ import {
     OVERLAY_CONTROLS_CLASS_NAME,
     OVERLAY_ICON_SIZE,
 } from '../../constants';
-import {DashkitOvelayControlsContext, OverlayControlsCtxShape} from '../../context';
+import {DashkitOverlayControlsContext, OverlayControlsCtxShape} from '../../context';
 import {i18n} from '../../i18n';
 import {
     type ConfigItem,
@@ -99,7 +99,7 @@ type OverlayControlsCtx = React.Context<OverlayControlsCtxShape>;
 const DEFAULT_DROPDOWN_MENU = [MenuItems.Copy, MenuItems.Delete];
 
 class OverlayControls extends React.Component<OverlayControlsProps> {
-    static contextType = DashkitOvelayControlsContext;
+    static contextType = DashkitOverlayControlsContext;
     static defaultProps: OverlayControlsDefaultProps = {
         position: OverlayControlsPosition.TopRight,
         view: 'flat',

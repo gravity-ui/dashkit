@@ -148,7 +148,7 @@ export class PluginText extends React.PureComponent<PluginTextProps, PluginTextS
                 htmlText,
                 status: LoadStatus.Success,
             });
-        } catch (e) {
+        } catch {
             if (this._isUnmounted) {
                 return;
             }
