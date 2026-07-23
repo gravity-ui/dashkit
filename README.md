@@ -658,3 +658,7 @@ A dashboard grid composer that arranges resizable, draggable widgets in a respon
 - **Forgetting `DashKit.setSettings` / `DashKit.registerPlugins`** — the component must be configured (language, grid settings, plugin registration) before it is rendered, or widgets show nothing.
 - **Confusing the two param props** — `defaultGlobalParams` (dashboard-level defaults) vs `globalParams` (URL-overridable globals); both flow into the params generation queue consumed by ChartKit.
 - **Calling `onChange` manually with the `change` event** — when you `event.preventDefault()` in the experimental `change` handler, DashKit keeps the visual state internally; re-setting `config.layout` from props resets that baseline.
+
+## Documentation for AI agents
+
+Agent-readable documentation for the installed version is located in `node_modules/@gravity-ui/dashkit/build/docs/INDEX.md`.
