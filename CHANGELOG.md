@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.4.0](https://github.com/gravity-ui/dashkit/compare/v10.3.0...v10.4.0) (2026-07-27)
+
+
+### Features
+
+* LLM-ready README validation + docs in npm tarball ([#312](https://github.com/gravity-ui/dashkit/issues/312)) ([0224e9b](https://github.com/gravity-ui/dashkit/commit/0224e9b67e46647c1e38bd71162e79ffee48bc9c))
+
 ## [10.3.0](https://github.com/gravity-ui/dashkit/compare/v10.2.0...v10.3.0) (2026-06-17)
 
 
