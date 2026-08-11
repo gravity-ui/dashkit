@@ -230,7 +230,8 @@ export function getItemsParams({
         {} as Record<string, (ConfigItem | ConfigItemGroup)[]>,
     );
 
-    return items.reduce((itemsParams: GetItemsParamsReturn, item: ConfigItem) => {
+    const itemsParams: GetItemsParamsReturn = {};
+    for (const item of items) {
         const {id, namespace} = item;
 
         const getMergedParams = (params: StringParams, actionParams?: StringParams) =>
@@ -261,17 +262,16 @@ export function getItemsParams({
                     return groupItemParams;
                 }, {});
 
-            return {...itemsParams, [id]: groupParams};
+            itemsParams[id] = groupParams;
+            continue;
         }
 
-        return {
-            ...itemsParams,
-            [id]: getItemParams({
-                item,
-                ...paramsOptions,
-            }),
-        };
-    }, {});
+        itemsParams[id] = getItemParams({
+            item,
+            ...paramsOptions,
+        });
+    }
+    return itemsParams;
 }
 
 export function getItemsState({
@@ -305,22 +305,17 @@ export function getItemsStateAndParams({
     const state = getItemsState({config, itemsStateAndParams});
     const uniqIds = new Set([...Object.keys(params), ...Object.keys(state)]);
 
-    const result: ItemsStateAndParams = Array.from(uniqIds).reduce(
-        (acc: ItemsStateAndParams, id) => {
-            const data = {} as ItemStateAndParams;
-            if (id in params) {
-                data.params = params[id];
-            }
-            if (id in state) {
-                data.state = state[id];
-            }
-            return {
-                ...acc,
-                [id]: data,
-            };
-        },
-        {},
-    );
+    const result: ItemsStateAndParamsBase = {};
+    for (const id of uniqIds) {
+        const data = {} as ItemStateAndParams;
+        if (id in params) {
+            data.params = params[id];
+        }
+        if (id in state) {
+            data.state = state[id];
+        }
+        result[id] = data;
+    }
     const version = getCurrentVersion(itemsStateAndParams);
     if (version === 1) {
         return result;

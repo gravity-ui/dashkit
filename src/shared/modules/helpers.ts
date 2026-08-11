@@ -207,34 +207,32 @@ export function getMapItemsIgnores({
     isFirstVersion: boolean;
 }): Record<string, string[]> {
     // Record<itemId, innerId (tabId | itemId)>
-    const mapIds = items.reduce((acc: Record<string, string>, item) => {
-        return {
-            ...acc,
-            [item.id]: isItemWithTabs(item)
-                ? resolveItemInnerId({item, itemsStateAndParams})
-                : item.id,
-        };
-    }, {});
+    const mapIds: Record<string, string> = {};
+    for (const item of items) {
+        mapIds[item.id] = isItemWithTabs(item)
+            ? resolveItemInnerId({item, itemsStateAndParams})
+            : item.id;
+    }
     // Record<innerId (tabId | itemId), itemId>
     const invertedMapIds = invert(mapIds);
-    return items.reduce((acc: Record<string, string[]>, item) => {
-        return {
-            ...acc,
-            [item.id]: ignores
-                .filter(({from, to}) => {
-                    if (isFirstVersion) {
-                        // В первой версии был баг - если есть игнор на один таб, то весь виджет игнорит селектор.
-                        // Повторяем это неправильное поведение,
-                        // иначе будут прилетать дефолты селекта в табы, которые не игнорят.
-                        const fromInTabs =
-                            isItemWithTabs(item) && item.data.tabs.some(({id}) => id === from);
-                        return (from === item.id || fromInTabs) && invertedMapIds[to];
-                    }
-                    return from === mapIds[item.id] && invertedMapIds[to];
-                })
-                .map(({to}) => invertedMapIds[to]),
-        };
-    }, {});
+
+    const itemsIgnores: Record<string, string[]> = {};
+    for (const item of items) {
+        itemsIgnores[item.id] = ignores
+            .filter(({from, to}) => {
+                if (isFirstVersion) {
+                    // В первой версии был баг - если есть игнор на один таб, то весь виджет игнорит селектор.
+                    // Повторяем это неправильное поведение,
+                    // иначе будут прилетать дефолты селекта в табы, которые не игнорят.
+                    const fromInTabs =
+                        isItemWithTabs(item) && item.data.tabs.some(({id}) => id === from);
+                    return (from === item.id || fromInTabs) && invertedMapIds[to];
+                }
+                return from === mapIds[item.id] && invertedMapIds[to];
+            })
+            .map(({to}) => invertedMapIds[to]);
+    }
+    return itemsIgnores;
 }
 
 export function mergeParamsWithAliases({
