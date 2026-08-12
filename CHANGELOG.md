@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.4.1](https://github.com/gravity-ui/dashkit/compare/v10.4.0...v10.4.1) (2026-08-12)
+
+
+### Performance Improvements
+
+* avoid quadratic accumulator rebuilds in item params ([#314](https://github.com/gravity-ui/dashkit/issues/314)) ([39305d6](https://github.com/gravity-ui/dashkit/commit/39305d68c8da69d0896c413dab4d08e428ca5b04))
+
 ## [10.4.0](https://github.com/gravity-ui/dashkit/compare/v10.3.0...v10.4.0) (2026-07-27)
 
 
