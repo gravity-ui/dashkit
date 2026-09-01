@@ -411,6 +411,56 @@ describe('Layout passive resize', () => {
         renderSpy.mockRestore();
     });
 
+    test('syncs RGL width before native and shared drag-over after passive resize', () => {
+        const renderSpy = jest.spyOn(ReactGridLayout.prototype, 'render');
+        const dragStateRef = {current: {isDragging: true, sourceGroup: 'source'}};
+        const widths = [900, 1000];
+        const onDropDragOver = jest.fn(() => {
+            const instance = renderSpy.mock.instances.at(-1) as unknown as ReactGridLayout;
+
+            expect(instance.props.width).toBe(widths[onDropDragOver.mock.calls.length - 1]);
+            return {};
+        });
+        const {container} = render(
+            <Layout
+                cols={12}
+                dragStateRef={dragStateRef}
+                group="target"
+                isDroppable={true}
+                layout={[{h: 1, i: 'item', w: 1, x: 0, y: 0}]}
+                onDropDragOver={onDropDragOver}
+                rowHeight={100}
+            >
+                <div key="item" />
+            </Layout>,
+        );
+        const layout = container.querySelector<HTMLElement>('.react-grid-layout');
+        const rendersBeforeResize = renderSpy.mock.calls.length;
+
+        act(() => {
+            emitResizeFor(layout as HTMLElement, 900);
+        });
+        expect(renderSpy).toHaveBeenCalledTimes(rendersBeforeResize);
+
+        act(() => {
+            fireEvent.dragOver(layout as HTMLElement, {clientX: 100, clientY: 100});
+        });
+
+        act(() => {
+            emitResizeFor(layout as HTMLElement, 1000);
+        });
+        const rendersBeforeSharedDragOver = renderSpy.mock.calls.length;
+
+        act(() => {
+            fireEvent.mouseEnter(layout as HTMLElement);
+            fireEvent.mouseMove(layout as HTMLElement, {clientX: 100, clientY: 100});
+        });
+
+        expect(renderSpy.mock.calls.length).toBeGreaterThan(rendersBeforeSharedDragOver);
+        expect(onDropDragOver).toHaveBeenCalledTimes(2);
+        renderSpy.mockRestore();
+    });
+
     test('refreshes the outer-item cache when the layout children change', () => {
         const {container, rerender} = render(
             <Layout

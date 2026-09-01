@@ -36,6 +36,7 @@ type DragOverLayoutProps = ReactGridLayout.ReactGridLayoutProps & {
     transformScaleRef?: React.MutableRefObject<number>;
     groupResetRegistryRef?: React.MutableRefObject<Map<string, () => void>>;
     externalLayoutRevision?: number;
+    onBeforeDragOver?: () => void;
 };
 
 type DragOverLayoutState = {
@@ -109,6 +110,7 @@ class DragOverLayout extends ReactGridLayout {
 
     parentOnDrag: OnDragMethod;
     parentOnDragStop: OnDragMethod;
+    parentOnDragOver: (e: MouseEvent) => false | void;
     _savedDraggedOutLayout: RGLLayout[] | null = null;
     // Suppresses onLayoutMaybeChanged during imperative layout restore actions.
     // Without this flag, our setState would trigger onLayoutChange back to the consumer
@@ -131,6 +133,10 @@ class DragOverLayout extends ReactGridLayout {
         this.parentOnDragStop = this.onDragStop;
         // @ts-expect-error - assigning custom method to parent's onDragStop
         this.onDragStop = this.extendedOnDragStop;
+        // @ts-expect-error - onDragOver is a protected method in parent class
+        this.parentOnDragOver = this.onDragOver;
+        // @ts-expect-error - assigning custom method to parent's onDragOver
+        this.onDragOver = this.extendedOnDragOver;
     }
 
     componentDidMount(): void {
@@ -340,6 +346,11 @@ class DragOverLayout extends ReactGridLayout {
         } else {
             this.parentOnDragStop(i, x, y, sintEv);
         }
+    };
+
+    extendedOnDragOver = (e: MouseEvent): false | void => {
+        this.props.onBeforeDragOver?.();
+        return this.parentOnDragOver(e);
     };
 
     isSharedDragTarget = (): boolean => {
@@ -565,7 +576,12 @@ class PassiveWidthProvider extends React.Component<
         }
 
         return (
-            <DragOverLayout {...props} innerRef={this.elementRef} width={this.state.settledWidth} />
+            <DragOverLayout
+                {...props}
+                innerRef={this.elementRef}
+                onBeforeDragOver={this.syncSettledWidth}
+                width={this.state.settledWidth}
+            />
         );
     }
 
@@ -644,6 +660,16 @@ class PassiveWidthProvider extends React.Component<
                 interactionRevision: state.interactionRevision + 1,
                 settledWidth: this.widthRef.current,
             }));
+        });
+    };
+
+    private syncSettledWidth = () => {
+        if (this.state.settledWidth === this.widthRef.current) {
+            return;
+        }
+
+        flushSync(() => {
+            this.setState({settledWidth: this.widthRef.current});
         });
     };
 
