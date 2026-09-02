@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.4.2](https://github.com/gravity-ui/dashkit/compare/v10.4.1...v10.4.2) (2026-09-02)
+
+
+### Bug Fixes
+
+* Avoid React renders during passive grid resize ([#316](https://github.com/gravity-ui/dashkit/issues/316)) ([9dfe5ba](https://github.com/gravity-ui/dashkit/commit/9dfe5ba48fe684bdcbd1da93690ed28970c0b3e7))
+
 ## [10.4.1](https://github.com/gravity-ui/dashkit/compare/v10.4.0...v10.4.1) (2026-08-12)
 
 
