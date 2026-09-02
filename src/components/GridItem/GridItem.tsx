@@ -46,6 +46,19 @@ class WindowFocusObserver {
 
 const windowFocusObserver = new WindowFocusObserver();
 
+type DashkitGridDataAttribute =
+    | 'data-dashkit-grid-cols'
+    | 'data-dashkit-grid-h'
+    | 'data-dashkit-grid-margin-x'
+    | 'data-dashkit-grid-margin-y'
+    | 'data-dashkit-grid-padding-x'
+    | 'data-dashkit-grid-padding-y'
+    | 'data-dashkit-grid-row-height'
+    | 'data-dashkit-grid-use-css-transforms'
+    | 'data-dashkit-grid-w'
+    | 'data-dashkit-grid-x'
+    | 'data-dashkit-grid-y';
+
 type GridItemProps = {
     adjustWidgetLayout: PluginWidgetProps['adjustWidgetLayout'];
     gridLayout?: ReactGridLayoutProps;
@@ -75,13 +88,13 @@ type GridItemProps = {
     onTouchStart?: (e: React.TouchEvent<HTMLDivElement>) => void;
     onItemFocus?: DashKitProps['onItemFocus'];
     onItemBlur?: DashKitProps['onItemBlur'];
-};
+} & Partial<Record<DashkitGridDataAttribute, string>>;
 
 type GridItemState = {
     isFocused: boolean;
 };
 
-class GridItem extends React.PureComponent<GridItemProps, GridItemState> {
+export class GridItem extends React.PureComponent<GridItemProps, GridItemState> {
     static contextType = DashKitContext;
     context!: React.ContextType<typeof DashKitContext>;
 
@@ -246,6 +259,19 @@ class GridItem extends React.PureComponent<GridItemProps, GridItemState> {
             <div
                 className={computedClassName}
                 data-qa="dashkit-grid-item"
+                data-dashkit-grid-cols={this.props['data-dashkit-grid-cols']}
+                data-dashkit-grid-h={this.props['data-dashkit-grid-h']}
+                data-dashkit-grid-margin-x={this.props['data-dashkit-grid-margin-x']}
+                data-dashkit-grid-margin-y={this.props['data-dashkit-grid-margin-y']}
+                data-dashkit-grid-padding-x={this.props['data-dashkit-grid-padding-x']}
+                data-dashkit-grid-padding-y={this.props['data-dashkit-grid-padding-y']}
+                data-dashkit-grid-row-height={this.props['data-dashkit-grid-row-height']}
+                data-dashkit-grid-use-css-transforms={
+                    this.props['data-dashkit-grid-use-css-transforms']
+                }
+                data-dashkit-grid-w={this.props['data-dashkit-grid-w']}
+                data-dashkit-grid-x={this.props['data-dashkit-grid-x']}
+                data-dashkit-grid-y={this.props['data-dashkit-grid-y']}
                 style={style}
                 ref={this.props.forwardedRef}
                 {...reactGridLayoutProps}

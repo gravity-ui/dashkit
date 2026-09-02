@@ -1,10 +1,14 @@
 import React from 'react';
 
+import {flushSync} from 'react-dom';
 import type {Layout as RGLLayout} from 'react-grid-layout';
 // @ts-expect-error - utils is not exported in type definitions
-import ReactGridLayout, {WidthProvider, utils} from 'react-grid-layout';
+import ReactGridLayout, {utils} from 'react-grid-layout';
+import ResizeObserverPolyfill from 'resize-observer-polyfill';
 
 import {DROPPING_ELEMENT_CLASS_NAME, OVERLAY_CLASS_NAME} from '../../constants';
+
+const GRID_LAYOUT_CLASS_NAME = 'react-grid-layout';
 
 const isRefObject = (
     value: React.Ref<HTMLDivElement>,
@@ -32,6 +36,7 @@ type DragOverLayoutProps = ReactGridLayout.ReactGridLayoutProps & {
     transformScaleRef?: React.MutableRefObject<number>;
     groupResetRegistryRef?: React.MutableRefObject<Map<string, () => void>>;
     externalLayoutRevision?: number;
+    onBeforeDragOver?: () => void;
 };
 
 type DragOverLayoutState = {
@@ -41,12 +46,61 @@ type DragOverLayoutState = {
 
 type RGLLayoutWithPlaceholder = RGLLayout & {placeholder?: boolean};
 
+type PassiveWidthProviderProps = DragOverLayoutProps & {
+    measureBeforeMount?: boolean;
+};
+
 type OnDragMethod = (
     i: string,
     x: number,
     y: number,
     sintEv: {e: Event; node: HTMLElement},
 ) => void;
+
+const getGridItemStyle = ({
+    cols,
+    containerPadding,
+    margin,
+    width,
+    x,
+    y,
+    w,
+    h,
+    rowHeight,
+    useCSSTransforms,
+}: {
+    cols: number;
+    containerPadding: [number, number];
+    h: number;
+    margin: [number, number];
+    rowHeight: number;
+    useCSSTransforms: boolean;
+    w: number;
+    width: number;
+    x: number;
+    y: number;
+}) => {
+    const [marginX, marginY] = margin;
+    const [paddingX, paddingY] = containerPadding;
+    const columnWidth = (width - marginX * (cols - 1) - paddingX * 2) / cols;
+    const position = {
+        height: Math.round(rowHeight * h + marginY * (h - 1)),
+        left: Math.round((columnWidth + marginX) * x + paddingX),
+        top: Math.round(paddingY + (rowHeight + marginY) * y),
+        width: Math.round(columnWidth * w + marginX * (w - 1)),
+    };
+
+    return useCSSTransforms
+        ? {...utils.setTransform(position), left: '', top: ''}
+        : {
+              ...utils.setTopLeft(position),
+              MozTransform: '',
+              OTransform: '',
+              WebkitTransform: '',
+              msTransform: '',
+              transform: '',
+          };
+};
 
 class DragOverLayout extends ReactGridLayout {
     // @ts-expect-error - TypeScript doesn't allow direct property redeclaration in extending classes. We need to narrow the props type from ReactGridLayoutProps to DragOverLayoutProps for type safety in our custom methods
@@ -56,11 +110,16 @@ class DragOverLayout extends ReactGridLayout {
 
     parentOnDrag: OnDragMethod;
     parentOnDragStop: OnDragMethod;
+    parentOnDragOver: (e: MouseEvent) => false | void;
     _savedDraggedOutLayout: RGLLayout[] | null = null;
     // Suppresses onLayoutMaybeChanged during imperative layout restore actions.
     // Without this flag, our setState would trigger onLayoutChange back to the consumer
     // that just initiated the action, causing a spurious 'change' event.
     _isRestoringExternalLayout = false;
+    private readonly gridItemChildren = new WeakMap<
+        React.ReactElement,
+        {child: React.ReactElement; metadata: Record<string, string>}
+    >();
 
     constructor(props: DragOverLayoutProps, context?: unknown) {
         super(props, context);
@@ -74,6 +133,10 @@ class DragOverLayout extends ReactGridLayout {
         this.parentOnDragStop = this.onDragStop;
         // @ts-expect-error - assigning custom method to parent's onDragStop
         this.onDragStop = this.extendedOnDragStop;
+        // @ts-expect-error - onDragOver is a protected method in parent class
+        this.parentOnDragOver = this.onDragOver;
+        // @ts-expect-error - assigning custom method to parent's onDragOver
+        this.onDragOver = this.extendedOnDragOver;
     }
 
     componentDidMount(): void {
@@ -285,6 +348,11 @@ class DragOverLayout extends ReactGridLayout {
         }
     };
 
+    extendedOnDragOver = (e: MouseEvent): false | void => {
+        this.props.onBeforeDragOver?.();
+        return this.parentOnDragOver(e);
+    };
+
     isSharedDragTarget = (): boolean => {
         const drag = this.props.dragStateRef?.current;
         return Boolean(drag?.isDragging);
@@ -391,6 +459,23 @@ class DragOverLayout extends ReactGridLayout {
             return gridItem;
         }
 
+        const {cols, containerPadding, h, margin, rowHeight, useCSSTransforms, w, x, y} =
+            gridItem.props;
+        const [marginX, marginY] = margin;
+        const [paddingX, paddingY] = containerPadding;
+        const gridItemMetadata: Record<string, string> = {
+            'data-dashkit-grid-cols': String(cols),
+            'data-dashkit-grid-h': String(h),
+            'data-dashkit-grid-margin-x': String(marginX),
+            'data-dashkit-grid-margin-y': String(marginY),
+            'data-dashkit-grid-padding-x': String(paddingX),
+            'data-dashkit-grid-padding-y': String(paddingY),
+            'data-dashkit-grid-row-height': String(rowHeight),
+            'data-dashkit-grid-use-css-transforms': String(useCSSTransforms),
+            'data-dashkit-grid-w': String(w),
+            'data-dashkit-grid-x': String(x),
+            'data-dashkit-grid-y': String(y),
+        };
         // Lazy proxy for transformScaleRef so react-draggable reads fresh scale without re-render.
         const {transformScaleRef} = this.props;
         const lazyScale = transformScaleRef
@@ -410,13 +495,234 @@ class DragOverLayout extends ReactGridLayout {
             });
         }
 
-        if (lazyScale !== undefined) {
-            return React.cloneElement(gridItem, {transformScale: lazyScale});
+        const gridChild = gridItem.props.children as React.ReactElement<Record<string, string>>;
+        const cachedGridItemChild = this.gridItemChildren.get(gridChild);
+        const gridItemChild =
+            cachedGridItemChild &&
+            Object.keys(gridItemMetadata).every(
+                (key) => cachedGridItemChild.metadata[key] === gridItemMetadata[key],
+            )
+                ? cachedGridItemChild.child
+                : React.cloneElement(gridChild, gridItemMetadata);
+
+        if (gridItemChild !== cachedGridItemChild?.child) {
+            this.gridItemChildren.set(gridChild, {
+                child: gridItemChild,
+                metadata: gridItemMetadata,
+            });
         }
 
-        return gridItem;
+        if (lazyScale !== undefined) {
+            return React.cloneElement(gridItem, {
+                children: gridItemChild,
+                transformScale: lazyScale,
+            });
+        }
+
+        return React.cloneElement(gridItem, {children: gridItemChild});
     }
 }
 
-// eslint-disable-next-line new-cap
-export const Layout = WidthProvider<DragOverLayoutProps>(DragOverLayout);
+class PassiveWidthProvider extends React.Component<
+    PassiveWidthProviderProps,
+    {interactionRevision: number; isMounted: boolean; settledWidth: number}
+> {
+    state = {interactionRevision: 0, isMounted: false, settledWidth: 1280};
+
+    private element: HTMLDivElement | null = null;
+    private readonly elementRef = React.createRef<HTMLDivElement>();
+    private readonly widthRef = {current: 1280};
+    private gridItems: HTMLElement[] = [];
+    private lastAppliedWidth?: number;
+    private resizeObserver?: ResizeObserver;
+    private settledWidthCommitFrame?: number;
+    private isComponentMounted = false;
+
+    componentDidMount() {
+        this.isComponentMounted = true;
+        this.syncElement();
+        this.setState({isMounted: true, settledWidth: this.widthRef.current});
+    }
+
+    componentDidUpdate() {
+        this.syncElement();
+        this.cacheGridItems();
+        this.updateGridItems(this.widthRef.current);
+    }
+
+    componentWillUnmount() {
+        this.isComponentMounted = false;
+        this.resizeObserver?.disconnect();
+        this.resizeObserver = undefined;
+        if (this.settledWidthCommitFrame !== undefined) {
+            window.cancelAnimationFrame(this.settledWidthCommitFrame);
+            this.settledWidthCommitFrame = undefined;
+        }
+        this.element?.removeEventListener('pointerdown', this.handlePointerDown, true);
+        this.element = null;
+    }
+
+    render() {
+        const {measureBeforeMount, ...props} = this.props;
+
+        if (measureBeforeMount && !this.state.isMounted) {
+            return (
+                <div
+                    className={[props.className, GRID_LAYOUT_CLASS_NAME].filter(Boolean).join(' ')}
+                    ref={this.elementRef}
+                    style={props.style}
+                />
+            );
+        }
+
+        return (
+            <DragOverLayout
+                {...props}
+                innerRef={this.elementRef}
+                onBeforeDragOver={this.syncSettledWidth}
+                width={this.state.settledWidth}
+            />
+        );
+    }
+
+    private cacheGridItems = () => {
+        const node = this.element;
+        this.gridItems = node
+            ? Array.from(node.children).filter(
+                  (child): child is HTMLElement =>
+                      child instanceof HTMLElement &&
+                      child.matches('.react-grid-item[data-dashkit-grid-cols]'),
+              )
+            : [];
+        this.lastAppliedWidth = undefined;
+    };
+
+    private updateGridItems = (width: number) => {
+        if (width === this.lastAppliedWidth) {
+            return;
+        }
+        this.lastAppliedWidth = width;
+
+        this.gridItems.forEach((item) => {
+            if (
+                item.classList.contains('react-draggable-dragging') ||
+                item.classList.contains('resizing')
+            ) {
+                return;
+            }
+
+            const {dataset, style} = item;
+            const cols = Number(dataset.dashkitGridCols);
+            const x = Number(dataset.dashkitGridX);
+            const y = Number(dataset.dashkitGridY);
+            const w = Number(dataset.dashkitGridW);
+            const h = Number(dataset.dashkitGridH);
+            const marginX = Number(dataset.dashkitGridMarginX);
+            const marginY = Number(dataset.dashkitGridMarginY);
+            const paddingX = Number(dataset.dashkitGridPaddingX);
+            const paddingY = Number(dataset.dashkitGridPaddingY);
+            const rowHeight = Number(dataset.dashkitGridRowHeight);
+            const useCSSTransforms = dataset.dashkitGridUseCssTransforms === 'true';
+
+            if (
+                [cols, x, y, w, h, marginX, marginY, paddingX, paddingY, rowHeight].some(
+                    (value) => !Number.isFinite(value),
+                )
+            ) {
+                return;
+            }
+
+            Object.assign(
+                style,
+                getGridItemStyle({
+                    cols,
+                    containerPadding: [paddingX, paddingY],
+                    h,
+                    margin: [marginX, marginY],
+                    rowHeight,
+                    useCSSTransforms,
+                    w,
+                    width,
+                    x,
+                    y,
+                }),
+            );
+        });
+    };
+
+    private handlePointerDown = () => {
+        if (!this.props.isDraggable && !this.props.isResizable) {
+            return;
+        }
+
+        flushSync(() => {
+            this.setState((state) => ({
+                interactionRevision: state.interactionRevision + 1,
+                settledWidth: this.widthRef.current,
+            }));
+        });
+    };
+
+    private syncSettledWidth = () => {
+        if (this.state.settledWidth === this.widthRef.current) {
+            return;
+        }
+
+        flushSync(() => {
+            this.setState({settledWidth: this.widthRef.current});
+        });
+    };
+
+    private scheduleSettledWidthCommit = () => {
+        if (this.settledWidthCommitFrame !== undefined) {
+            window.cancelAnimationFrame(this.settledWidthCommitFrame);
+        }
+        this.settledWidthCommitFrame = window.requestAnimationFrame(() => {
+            this.settledWidthCommitFrame = window.requestAnimationFrame(() => {
+                this.settledWidthCommitFrame = undefined;
+                if (this.state.settledWidth !== this.widthRef.current) {
+                    this.setState({settledWidth: this.widthRef.current});
+                }
+            });
+        });
+    };
+
+    private syncElement = () => {
+        const node = this.elementRef.current;
+        if (node === this.element) {
+            return;
+        }
+
+        if (this.element) {
+            this.resizeObserver?.unobserve(this.element);
+            this.element.removeEventListener('pointerdown', this.handlePointerDown, true);
+        }
+
+        this.element = node;
+        if (node && this.isComponentMounted) {
+            this.observeElement(node);
+        }
+    };
+
+    private observeElement = (node: HTMLDivElement) => {
+        this.widthRef.current = node.clientWidth;
+        this.cacheGridItems();
+        this.updateGridItems(this.widthRef.current);
+        node.addEventListener('pointerdown', this.handlePointerDown, true);
+        this.resizeObserver ??= new (
+            typeof ResizeObserver === 'function' ? ResizeObserver : ResizeObserverPolyfill
+        )((entries: ResizeObserverEntry[]) => {
+            const entry = entries.find((currentEntry) => currentEntry.target === this.element);
+            if (!entry) {
+                return;
+            }
+
+            this.widthRef.current = entry.contentRect.width;
+            this.updateGridItems(this.widthRef.current);
+            this.scheduleSettledWidthCommit();
+        });
+        this.resizeObserver.observe(node);
+    };
+}
+
+export const Layout = PassiveWidthProvider;
