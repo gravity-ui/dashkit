@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.4.3](https://github.com/gravity-ui/dashkit/compare/v10.4.2...v10.4.3) (2026-09-03)
+
+
+### Bug Fixes
+
+* synchronize controlled layout before child render ([#318](https://github.com/gravity-ui/dashkit/issues/318)) ([ef23803](https://github.com/gravity-ui/dashkit/commit/ef238031c53a35499f11323342f45c7cfde22122))
+
 ## [10.4.2](https://github.com/gravity-ui/dashkit/compare/v10.4.1...v10.4.2) (2026-09-02)
 
 
