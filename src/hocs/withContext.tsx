@@ -63,6 +63,11 @@ type AdjustedLayouts = Record<string, ConfigLayout>;
 
 type NowrapAdjustedLayouts = Record<string, number>;
 
+type PendingExternalBaselineLayout = {
+    layout: ConfigLayout[];
+    previousBaselineLayout: ConfigLayout[];
+};
+
 type UseMemoStateContextResult = {
     dashkitContextValue: DashKitCtxShape;
     controlsContextValue: OverlayControlsCtxShape;
@@ -111,6 +116,21 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
 
     const internalBaselineLayoutRef = React.useRef<ConfigLayout[]>(enrichedPropsLayout);
     const [visualLayout, setVisualLayout] = React.useState<ConfigLayout[]>(enrichedPropsLayout);
+    const [previousEnrichedPropsLayout, setPreviousEnrichedPropsLayout] =
+        React.useState(enrichedPropsLayout);
+    const [pendingExternalBaselineLayout, setPendingExternalBaselineLayout] =
+        React.useState<PendingExternalBaselineLayout>();
+    const getBaselineLayout = React.useCallback(() => {
+        if (
+            pendingExternalBaselineLayout &&
+            internalBaselineLayoutRef.current ===
+                pendingExternalBaselineLayout.previousBaselineLayout
+        ) {
+            return pendingExternalBaselineLayout.layout;
+        }
+
+        return internalBaselineLayoutRef.current;
+    }, [pendingExternalBaselineLayout]);
 
     const [externalLayoutRevision, setExternalLayoutRevision] = React.useState(0);
     const [temporaryLayout, setTemporaryLayout] = React.useState<TemporaryLayout | null>(null);
@@ -169,7 +189,7 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
 
             const baselineConfig = {
                 ...props.config,
-                layout: internalBaselineLayoutRef.current,
+                layout: getBaselineLayout(),
             };
 
             const newConfig = UpdateManager.updateLayout({
@@ -186,16 +206,19 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
 
             internalBaselineLayoutRef.current = newConfig.layout;
         },
-        [props.config, props.emitDashKitEvent, onChange],
+        [getBaselineLayout, props.config, props.emitDashKitEvent, onChange],
     );
 
-    const getLayoutItem = React.useCallback((id: string) => {
-        return internalBaselineLayoutRef.current.find(({i}) => i === id);
-    }, []);
+    const getLayoutItem = React.useCallback(
+        (id: string) => {
+            return getBaselineLayout().find(({i}) => i === id);
+        },
+        [getBaselineLayout],
+    );
 
     const getOuterLayout = React.useCallback((): ConfigLayout[] => {
-        return convertEnrichedLayoutToConfigLayout(internalBaselineLayoutRef.current);
-    }, []);
+        return convertEnrichedLayoutToConfigLayout(getBaselineLayout());
+    }, [getBaselineLayout]);
 
     // to calculate items, only memorization of items and globalItems is important
     const configItems = React.useMemo(
@@ -348,20 +371,32 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
         }
     }, [props.registerManager, props.groups, visualLayout]);
 
-    // Synchronize internal baseline and visual layout when external props.layout changes re-init.
-    // When props.config.layout reference changes, external update occurred re-init.
-    React.useEffect(() => {
-        const internalNotEqualProps = !isEqual(
-            internalBaselineLayoutRef.current,
-            enrichedPropsLayout,
-        );
+    // Synchronize visual layout during render, so children never see new config with old layout.
+    // Keep the previous external layout separate from the drag baseline: a drag updates the latter.
+    if (previousEnrichedPropsLayout !== enrichedPropsLayout) {
+        setPreviousEnrichedPropsLayout(enrichedPropsLayout);
 
-        if (internalNotEqualProps) {
-            internalBaselineLayoutRef.current = enrichedPropsLayout;
+        if (!isEqual(internalBaselineLayoutRef.current, enrichedPropsLayout)) {
+            setPendingExternalBaselineLayout({
+                layout: enrichedPropsLayout,
+                previousBaselineLayout: internalBaselineLayoutRef.current,
+            });
             setVisualLayout(enrichedPropsLayout);
             setExternalLayoutRevision((r) => r + 1);
         }
-    }, [enrichedPropsLayout]);
+    }
+
+    React.useLayoutEffect(() => {
+        if (pendingExternalBaselineLayout) {
+            if (
+                internalBaselineLayoutRef.current ===
+                pendingExternalBaselineLayout.previousBaselineLayout
+            ) {
+                internalBaselineLayoutRef.current = pendingExternalBaselineLayout.layout;
+            }
+            setPendingExternalBaselineLayout(undefined);
+        }
+    }, [pendingExternalBaselineLayout]);
 
     const itemsParams = useDeepEqualMemo(
         () =>

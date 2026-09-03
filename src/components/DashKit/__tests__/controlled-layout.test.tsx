@@ -29,7 +29,8 @@ import React from 'react';
 
 import {act, render} from '@testing-library/react';
 
-import {DashKitContext, type DashKitCtxShape} from '../../../context';
+import {DashKitContext, DashkitOverlayControlsContext} from '../../../context';
+import type {DashKitCtxShape, OverlayControlsCtxShape} from '../../../context';
 import {type DashKitWithContextProps, withContext} from '../../../hocs/withContext';
 import type {Config} from '../../../shared';
 import {RegisterManager} from '../../../utils';
@@ -37,11 +38,11 @@ import {DashKit, _emitSymbol} from '../DashKit';
 
 const PLUGIN_TYPE = 'controlled-layout-test';
 
-const createConfig = (x: number): Config => ({
+const createConfig = (x: number, itemIds = ['item1']): Config => ({
     salt: 'test',
     counter: 1,
-    items: [{id: 'item1', type: PLUGIN_TYPE, namespace: 'default', data: {}}],
-    layout: [{i: 'item1', x, y: 0, w: 2, h: 2}],
+    items: itemIds.map((id) => ({id, type: PLUGIN_TYPE, namespace: 'default', data: {}})),
+    layout: itemIds.map((i) => ({i, x, y: 0, w: 2, h: 2})),
     aliases: {},
     connections: [],
 });
@@ -86,9 +87,30 @@ const createProps = ({
 };
 
 let captured: DashKitCtxShape = {} as DashKitCtxShape;
+let capturedControlsContext: OverlayControlsCtxShape | undefined;
+let renderedItemIds: Array<{config: string[]; layout: string[]}> = [];
+let layoutEffectAction:
+    | ((
+          dashkitContext: DashKitCtxShape,
+          controlsContext: OverlayControlsCtxShape | undefined,
+      ) => void)
+    | undefined;
 
 const ContextCapture = () => {
-    captured = React.useContext(DashKitContext);
+    const dashkitContext = React.useContext(DashKitContext);
+    const controlsContext = React.useContext(DashkitOverlayControlsContext);
+
+    captured = dashkitContext;
+    capturedControlsContext = controlsContext || undefined;
+    renderedItemIds.push({
+        config: captured.configItems.map(({id}) => id),
+        layout: captured.layout.map(({i}) => i),
+    });
+
+    React.useLayoutEffect(() => {
+        layoutEffectAction?.(dashkitContext, controlsContext || undefined);
+    }, [controlsContext, dashkitContext]);
+
     return null;
 };
 
@@ -97,6 +119,91 @@ const TestComponent = withContext(ContextCapture);
 describe('DashKit controlled layout strategy', () => {
     beforeEach(() => {
         captured = {} as DashKitCtxShape;
+        capturedControlsContext = undefined;
+        renderedItemIds = [];
+        layoutEffectAction = undefined;
+    });
+
+    it('updates visual layout in same render as externally added config item', () => {
+        const initialConfig = createConfig(0);
+        const externalConfig = createConfig(3, ['item1', 'item2']);
+        const dashkit = new DashKit(
+            DashKit.defaultProps as unknown as ConstructorParameters<typeof DashKit>[0],
+        );
+
+        const {rerender} = render(
+            <TestComponent
+                {...createProps({config: initialConfig, emitDashKitEvent: dashkit[_emitSymbol]})}
+            />,
+        );
+
+        act(() => {
+            rerender(
+                <TestComponent
+                    {...createProps({
+                        config: externalConfig,
+                        emitDashKitEvent: dashkit[_emitSymbol],
+                    })}
+                />,
+            );
+        });
+
+        expect(renderedItemIds).toEqual(
+            expect.arrayContaining([
+                {config: ['item1'], layout: ['item1']},
+                {config: ['item1', 'item2'], layout: ['item1', 'item2']},
+            ]),
+        );
+        expect(
+            renderedItemIds.every(({config, layout}) => config.join(',') === layout.join(',')),
+        ).toBe(true);
+    });
+
+    it('uses external baseline in child layout effect', () => {
+        const initialConfig = createConfig(0);
+        const externalConfig = createConfig(3, ['item1', 'item2']);
+        const nextLayout: Config['layout'] = [
+            {i: 'item1', x: 4, y: 0, w: 2, h: 2},
+            externalConfig.layout[1],
+        ];
+        const dashkit = new DashKit(
+            DashKit.defaultProps as unknown as ConstructorParameters<typeof DashKit>[0],
+        );
+        const onEventChange = jest.fn();
+        let layoutItemInLayoutEffect: Config['layout'][number] | undefined;
+        let layoutItemAfterLayoutChange: Config['layout'][number] | undefined;
+
+        dashkit.on('change', onEventChange);
+
+        const {rerender} = render(
+            <TestComponent
+                {...createProps({config: initialConfig, emitDashKitEvent: dashkit[_emitSymbol]})}
+            />,
+        );
+
+        layoutEffectAction = (dashkitContext, controlsContext) => {
+            layoutEffectAction = undefined;
+            layoutItemInLayoutEffect = controlsContext?.getLayoutItem('item2') || undefined;
+            dashkitContext.layoutChange(nextLayout);
+            layoutItemAfterLayoutChange = controlsContext?.getLayoutItem('item1') || undefined;
+        };
+
+        act(() => {
+            rerender(
+                <TestComponent
+                    {...createProps({
+                        config: externalConfig,
+                        emitDashKitEvent: dashkit[_emitSymbol],
+                    })}
+                />,
+            );
+        });
+
+        expect(layoutItemInLayoutEffect).toMatchObject(externalConfig.layout[1]);
+        expect(onEventChange).toHaveBeenCalledTimes(1);
+        expect(onEventChange.mock.calls[0][0].previousLayout).toMatchObject(externalConfig.layout);
+        expect(layoutItemAfterLayoutChange).toMatchObject(nextLayout[0]);
+        expect(capturedControlsContext?.getLayoutItem('item1')).toMatchObject(nextLayout[0]);
     });
 
     it('Case 1: keeps internal layout after change event without config update, then applies external config update', () => {
