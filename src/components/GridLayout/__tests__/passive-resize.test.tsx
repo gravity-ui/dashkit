@@ -18,8 +18,6 @@ type ResizeObserverCallback = (entries: ResizeObserverEntry[]) => void;
 
 const resizeObservers: TestResizeObserver[] = [];
 const mockPolyfillObservers: TestResizeObserver[] = [];
-const animationFrameCallbacks = new Map<number, FrameRequestCallback>();
-let animationFrameId = 0;
 
 jest.mock('resize-observer-polyfill', () => ({
     __esModule: true,
@@ -86,12 +84,6 @@ const emitPolyfillResizeFor = (element: Element, width: number) => {
         });
 };
 
-const runAnimationFrame = () => {
-    const callbacks = Array.from(animationFrameCallbacks.values());
-    animationFrameCallbacks.clear();
-    callbacks.forEach((callback) => callback(0));
-};
-
 const gridItem = (
     <GridItem
         adjustWidgetLayout={jest.fn()}
@@ -106,17 +98,11 @@ describe('Layout passive resize', () => {
     beforeEach(() => {
         resizeObservers.length = 0;
         mockPolyfillObservers.length = 0;
-        animationFrameCallbacks.clear();
-        animationFrameId = 0;
         global.ResizeObserver = TestResizeObserver as unknown as typeof ResizeObserver;
-        window.requestAnimationFrame = jest.fn((callback) => {
-            animationFrameId += 1;
-            animationFrameCallbacks.set(animationFrameId, callback);
-            return animationFrameId;
-        });
-        window.cancelAnimationFrame = jest.fn((frame) => {
-            animationFrameCallbacks.delete(frame);
-        });
+    });
+
+    afterEach(() => {
+        jest.useRealTimers();
     });
 
     test('does not render ReactGridLayout for passive container resize', () => {
@@ -166,7 +152,8 @@ describe('Layout passive resize', () => {
         },
     );
 
-    test('commits only latest width after delivery between two quiet frames', () => {
+    test('commits only latest width after resize settles', () => {
+        jest.useFakeTimers();
         const renderSpy = jest.spyOn(ReactGridLayout.prototype, 'render');
         render(
             <Layout
@@ -182,17 +169,17 @@ describe('Layout passive resize', () => {
 
         act(() => {
             emitResize(900);
-            runAnimationFrame();
+            jest.advanceTimersByTime(100);
             emitResize(1000);
         });
 
         expect(renderSpy).toHaveBeenCalledTimes(rendersBeforeResize);
         act(() => {
-            runAnimationFrame();
+            jest.advanceTimersByTime(149);
         });
         expect(renderSpy).toHaveBeenCalledTimes(rendersBeforeResize);
         act(() => {
-            runAnimationFrame();
+            jest.advanceTimersByTime(1);
         });
         expect(renderSpy).toHaveBeenCalledTimes(rendersBeforeResize + 1);
         expect((renderSpy.mock.instances.at(-1) as unknown as ReactGridLayout).props.width).toBe(
@@ -201,7 +188,8 @@ describe('Layout passive resize', () => {
         renderSpy.mockRestore();
     });
 
-    test('cancels second quiet frame on unmount', () => {
+    test('cancels settled width commit on unmount', () => {
+        jest.useFakeTimers();
         const renderSpy = jest.spyOn(ReactGridLayout.prototype, 'render');
         const {unmount} = render(
             <Layout
@@ -217,14 +205,15 @@ describe('Layout passive resize', () => {
 
         act(() => {
             emitResize(900);
-            runAnimationFrame();
+            jest.advanceTimersByTime(100);
         });
         expect(renderSpy).toHaveBeenCalledTimes(rendersBeforeResize);
+        expect(jest.getTimerCount()).toBe(1);
 
         unmount();
-        expect(window.cancelAnimationFrame).toHaveBeenLastCalledWith(2);
+        expect(jest.getTimerCount()).toBe(0);
         act(() => {
-            runAnimationFrame();
+            jest.advanceTimersByTime(150);
         });
         expect(renderSpy).toHaveBeenCalledTimes(rendersBeforeResize);
         renderSpy.mockRestore();
