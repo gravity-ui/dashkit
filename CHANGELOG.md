@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.4.4](https://github.com/gravity-ui/dashkit/compare/v10.4.3...v10.4.4) (2026-09-17)
+
+
+### Bug Fixes
+
+* debounce passive grid width commit ([#320](https://github.com/gravity-ui/dashkit/issues/320)) ([9654f78](https://github.com/gravity-ui/dashkit/commit/9654f784f4a84406c206af141b63d089b3bb0dfd))
+
 ## [10.4.3](https://github.com/gravity-ui/dashkit/compare/v10.4.2...v10.4.3) (2026-09-03)
 
 
