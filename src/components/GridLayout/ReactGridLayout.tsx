@@ -9,6 +9,7 @@ import ResizeObserverPolyfill from 'resize-observer-polyfill';
 import {DROPPING_ELEMENT_CLASS_NAME, OVERLAY_CLASS_NAME} from '../../constants';
 
 const GRID_LAYOUT_CLASS_NAME = 'react-grid-layout';
+const SETTLED_WIDTH_COMMIT_DELAY = 150;
 
 const isRefObject = (
     value: React.Ref<HTMLDivElement>,
@@ -535,7 +536,7 @@ class PassiveWidthProvider extends React.Component<
     private gridItems: HTMLElement[] = [];
     private lastAppliedWidth?: number;
     private resizeObserver?: ResizeObserver;
-    private settledWidthCommitFrame?: number;
+    private settledWidthCommitTimer?: number;
     private isComponentMounted = false;
 
     componentDidMount() {
@@ -554,10 +555,7 @@ class PassiveWidthProvider extends React.Component<
         this.isComponentMounted = false;
         this.resizeObserver?.disconnect();
         this.resizeObserver = undefined;
-        if (this.settledWidthCommitFrame !== undefined) {
-            window.cancelAnimationFrame(this.settledWidthCommitFrame);
-            this.settledWidthCommitFrame = undefined;
-        }
+        this.cancelSettledWidthCommit();
         this.element?.removeEventListener('pointerdown', this.handlePointerDown, true);
         this.element = null;
     }
@@ -655,6 +653,7 @@ class PassiveWidthProvider extends React.Component<
             return;
         }
 
+        this.cancelSettledWidthCommit();
         flushSync(() => {
             this.setState((state) => ({
                 interactionRevision: state.interactionRevision + 1,
@@ -664,6 +663,7 @@ class PassiveWidthProvider extends React.Component<
     };
 
     private syncSettledWidth = () => {
+        this.cancelSettledWidthCommit();
         if (this.state.settledWidth === this.widthRef.current) {
             return;
         }
@@ -673,18 +673,23 @@ class PassiveWidthProvider extends React.Component<
         });
     };
 
-    private scheduleSettledWidthCommit = () => {
-        if (this.settledWidthCommitFrame !== undefined) {
-            window.cancelAnimationFrame(this.settledWidthCommitFrame);
+    private cancelSettledWidthCommit = () => {
+        if (this.settledWidthCommitTimer === undefined) {
+            return;
         }
-        this.settledWidthCommitFrame = window.requestAnimationFrame(() => {
-            this.settledWidthCommitFrame = window.requestAnimationFrame(() => {
-                this.settledWidthCommitFrame = undefined;
-                if (this.state.settledWidth !== this.widthRef.current) {
-                    this.setState({settledWidth: this.widthRef.current});
-                }
-            });
-        });
+        window.clearTimeout(this.settledWidthCommitTimer);
+        this.settledWidthCommitTimer = undefined;
+    };
+
+    private scheduleSettledWidthCommit = () => {
+        this.cancelSettledWidthCommit();
+        // DOM grid items update in ResizeObserver; React reconciles only after resizing settles.
+        this.settledWidthCommitTimer = window.setTimeout(() => {
+            this.settledWidthCommitTimer = undefined;
+            if (this.isComponentMounted && this.state.settledWidth !== this.widthRef.current) {
+                this.setState({settledWidth: this.widthRef.current});
+            }
+        }, SETTLED_WIDTH_COMMIT_DELAY);
     };
 
     private syncElement = () => {
