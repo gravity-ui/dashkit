@@ -13,6 +13,38 @@ const b = cn('dashkit-action-panel');
 
 export const ActionPanelItemContainer = ({item}: {item: ActionPanelItem}) => {
     const dndProps = useDnDItemProps(item);
+    const draggingClassName = `${b('item')}_dragging`;
+    const disabledSourceClassName = `${b('item')}_dragging-source-disabled`;
+    const disableSourceTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    React.useEffect(
+        () => () => {
+            if (disableSourceTimer.current !== null) {
+                clearTimeout(disableSourceTimer.current);
+            }
+        },
+        [],
+    );
+
+    const onDragStart = (event: React.DragEvent<HTMLDivElement>) => {
+        const source = event.currentTarget;
+        source.classList.add(draggingClassName);
+        dndProps?.onDragStart(event);
+        // The native drag image captures the solid item before the panel source is disabled.
+        disableSourceTimer.current = setTimeout(() => {
+            source.classList.add(disabledSourceClassName);
+            disableSourceTimer.current = null;
+        }, 0);
+    };
+
+    const onDragEnd = (event: React.DragEvent<HTMLDivElement>) => {
+        if (disableSourceTimer.current !== null) {
+            clearTimeout(disableSourceTimer.current);
+            disableSourceTimer.current = null;
+        }
+        event.currentTarget.classList.remove(draggingClassName, disabledSourceClassName);
+        dndProps?.onDragEnd(event);
+    };
 
     return (
         <div
@@ -21,6 +53,8 @@ export const ActionPanelItemContainer = ({item}: {item: ActionPanelItem}) => {
             onClick={item.onClick}
             data-qa={item.qa}
             {...dndProps}
+            onDragStart={dndProps ? onDragStart : undefined}
+            onDragEnd={dndProps ? onDragEnd : undefined}
         >
             <div className={b('icon')}>{item.icon}</div>
             <div className={b('title')} title={item.title}>

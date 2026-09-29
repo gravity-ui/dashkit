@@ -57,6 +57,8 @@
 }
 
 .react-grid-item.dropping {
+    // RGL's slot-sized dropping node follows the cursor; keep only its separate grid placeholder visible.
+    opacity: 0;
     // Disable evety mouse event for dropping element placeholder
     user-select: none;
     pointer-events: none;
@@ -92,10 +94,11 @@
 }
 
 .react-grid-item.react-grid-placeholder {
-    --_-dashkit-placeholder-color: var(--dashkit-placeholder-color, #fc0);
+    --_-dashkit-placeholder-color: var(--dashkit-placeholder-color, #027bfe80);
     --_-dashkit-placeholder-opacity: var(--dashkit-placeholder-opacity, 0.2);
 
     background: var(--_-dashkit-placeholder-color);
+    border-radius: var(--dashkit-grid-item-border-radius, 3px);
     opacity: var(--_-dashkit-placeholder-opacity);
     transition-duration: 100ms;
     z-index: 2;

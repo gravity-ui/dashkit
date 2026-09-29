@@ -17,7 +17,7 @@ export const useDnDItemProps = (item: ActionPanelItem): DndProps => {
         (e: React.DragEvent) => {
             if (dragContext && item.dragProps) {
                 dragContext.onDragStart(e, item.dragProps);
-                e.dataTransfer.setDragImage(dragContext.dragImagePreview, 0, 0);
+                e.dataTransfer.setDragImage(dragContext.dragImagePreview || e.currentTarget, 0, 0);
             }
         },
         [dragContext, item.dragProps],

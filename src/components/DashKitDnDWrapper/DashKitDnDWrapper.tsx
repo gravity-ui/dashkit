@@ -14,15 +14,16 @@ type DashKitDnDWrapperProps = {
     children: React.ReactElement;
 };
 
-const defaultImageSrc =
-    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
-
 export const DashKitDnDWrapper: React.FC<DashKitDnDWrapperProps> = (props) => {
     const [dragProps, setDragProps] = React.useState<ItemDragProps | null>(null);
 
     const dragImagePreview = React.useMemo(() => {
+        if (!props.dragImageSrc) {
+            return null;
+        }
+
         const img = new Image();
-        img.src = props.dragImageSrc || defaultImageSrc;
+        img.src = props.dragImageSrc;
         return img;
     }, [props.dragImageSrc]);
 
