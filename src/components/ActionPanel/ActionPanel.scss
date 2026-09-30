@@ -149,8 +149,10 @@
     }
 }
 
-.g-root_theme_light .dashkit-action-panel,
-.g-root_theme_light-hc .dashkit-action-panel {
+.dashkit-action-panel_theme_light,
+.dashkit-action-panel_theme_light-hc,
+.g-root_theme_light .dashkit-action-panel_theme_unset,
+.g-root_theme_light-hc .dashkit-action-panel_theme_unset {
     --_--dashkit-action-panel-default-color: #000000b2;
     --_--dashkit-action-panel-default-item-dragging-color: #4d4d4d;
     --_--dashkit-action-panel-default-item-hover-color: #ffffff12;
