@@ -7,11 +7,11 @@ import React from 'react';
 
 import {ThemeProvider} from '@gravity-ui/uikit';
 import {render} from '@testing-library/react';
-// Sass 1.53 does not expose its bundled declarations through TS bundler resolution.
-// @ts-expect-error sass declarations are not resolvable with moduleResolution: bundler
-import * as sass from 'sass';
 
 import {ActionPanel} from '../ActionPanel';
+
+// Sass package declaration resolution differs between local installs and CI.
+const sass = require('sass') as {compileString(scss: string): {css: string}};
 
 it('uses the nearest theme provider instead of an outer light theme', () => {
     const stylesheet = document.createElement('style');
