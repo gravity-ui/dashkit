@@ -1,6 +1,5 @@
 import React from 'react';
 
-import {ThemeContext} from '@gravity-ui/uikit';
 import {CSSTransition} from 'react-transition-group';
 
 import {useDnDItemProps} from '../../hooks/useDnDItemProps';
@@ -66,13 +65,12 @@ export const ActionPanelItemContainer = ({item}: {item: ActionPanelItem}) => {
 };
 
 export const ActionPanel = (props: ActionPanelProps) => {
-    const theme = React.useContext(ThemeContext)?.themeValue ?? 'unset';
     const isDisabled = props.disable ?? false;
     const isAnimated = props.toggleAnimation ?? false;
     const nodeRef = React.useRef<HTMLDivElement | null>(null);
 
     const content = (
-        <div ref={nodeRef} className={b({theme}, props.className)}>
+        <div ref={nodeRef} className={b(null, props.className)}>
             {props.items.map(({wrapTo, ...item}) => {
                 const key = `dk-action-panel-${item.id}`;
                 const children = <ActionPanelItemContainer key={key} item={item} />;
