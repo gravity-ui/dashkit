@@ -125,15 +125,8 @@
     &__icon {
         display: flex;
         flex: 0 0 auto;
-        width: 16px;
-        height: 16px;
         align-items: center;
         justify-content: center;
-
-        svg {
-            width: 16px;
-            height: 16px;
-        }
     }
 
     &__title {

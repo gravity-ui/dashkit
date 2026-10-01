@@ -20,7 +20,7 @@ export const CssApiShowcase: React.FC = () => {
         () => [
             {
                 id: 'chart',
-                icon: <Icon data={ChartColumn} />,
+                icon: <Icon data={ChartColumn} size={24} />,
                 title: 'Chart',
                 className: 'test',
                 qa: 'chart',
