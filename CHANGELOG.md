@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.5.0](https://github.com/gravity-ui/dashkit/compare/v10.4.4...v10.5.0) (2026-10-02)
+
+
+### Features
+
+* refresh action panel editing UI ([#322](https://github.com/gravity-ui/dashkit/issues/322)) ([ed48204](https://github.com/gravity-ui/dashkit/commit/ed4820422270ca44a2069cae7c862b1aff9fa7e7))
+
 ## [10.4.4](https://github.com/gravity-ui/dashkit/compare/v10.4.3...v10.4.4) (2026-09-17)
 
 
