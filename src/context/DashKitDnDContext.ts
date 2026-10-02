@@ -4,7 +4,7 @@ import type {DraggedOverItem, ItemDragProps} from '../shared/types';
 
 export type DashKitDnDCtxShape = {
     dragProps: ItemDragProps | null;
-    dragImagePreview: HTMLImageElement;
+    dragImagePreview: HTMLImageElement | null;
     onDragStart: (e: React.DragEvent<Element>, itemDragProps: ItemDragProps) => void;
     onDragEnd: (e: React.DragEvent<Element>) => void;
     onDropDragOver?: (

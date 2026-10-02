@@ -410,7 +410,7 @@ interface DashKitDnDWrapperProps {
 }
 ```
 
-- `dragImageSrc` — изображение для предпросмотра при перетаскивании элемента. По умолчанию используется прозрачный PNG-файл размером 1 пиксель в формате `base64`.
+- `dragImageSrc` — необязательное изображение для предпросмотра при перетаскивании. По умолчанию отображается сам перетаскиваемый элемент `ActionPanel`.
 - `onDragStart` — обратный вызов, срабатывающий при начале перетаскивания элемента из `ActionPanel`.
 - `onDragEnd` — обратный вызов, срабатывающий при завершении перетаскивания элемента или его отмене.
 
@@ -472,7 +472,9 @@ const onDrop = (dropProps: ItemDropProps) => {
 | `--dashkit-action-panel-item-color`            | Цвет фона.       |
 | `--dashkit-action-panel-item-text-color`       | Цвет текста.            |
 | `--dashkit-action-panel-item-color-hover`      | Цвет фона при наведении. |
+| `--dashkit-action-panel-item-color-dragging`   | Цвет фона при перетаскивании. |
 | `--dashkit-action-panel-item-text-color-hover` | Цвет текста при наведении.      |
+| `--dashkit-action-panel-item-text-color-dragging` | Цвет текста при перетаскивании. |
 | Переменные оверлея                              |                       |
 | `--dashkit-overlay-border-color`               | Цвет границы.          |
 | `--dashkit-overlay-color`                      | Цвет фона.      |

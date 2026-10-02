@@ -20,35 +20,35 @@ export const CssApiShowcase: React.FC = () => {
         () => [
             {
                 id: 'chart',
-                icon: <Icon data={ChartColumn} />,
+                icon: <Icon data={ChartColumn} size={20} />,
                 title: 'Chart',
                 className: 'test',
                 qa: 'chart',
             },
             {
                 id: 'selector',
-                icon: <Icon data={Sliders} />,
+                icon: <Icon data={Sliders} size={20} />,
                 title: 'Selector',
                 qa: 'selector',
             },
             {
                 id: 'text',
-                icon: <Icon data={TextAlignLeft} />,
+                icon: <Icon data={TextAlignLeft} size={20} />,
                 title: 'Text',
             },
             {
                 id: 'header',
-                icon: <Icon data={Heading} />,
+                icon: <Icon data={Heading} size={20} />,
                 title: 'Header',
             },
             {
                 id: 'links',
-                icon: <Icon data={PlugConnection} />,
+                icon: <Icon data={PlugConnection} size={20} />,
                 title: 'Links',
             },
             {
                 id: 'tabs',
-                icon: <Icon data={Layers3Diagonal} />,
+                icon: <Icon data={Layers3Diagonal} size={20} />,
                 title: 'Tabs',
             },
         ],
@@ -77,7 +77,7 @@ export const CssApiShowcase: React.FC = () => {
                     --dashkit-placeholder-opacity: 1;
                 }`}
             </style>
-            <Demo title="CSS API">
+            <Demo title="Customization">
                 <DemoRow title="Component view">
                     <ActionPanel items={items} />
                     <DashKit editMode={true} config={getConfig()} />
