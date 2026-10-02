@@ -89,8 +89,8 @@ export const Default = DefaultTemplate.bind({});
 const ShowcaseTemplate: Story = () => <DashKitShowcase />;
 export const Showcase = ShowcaseTemplate.bind({});
 
-const CssApiShowcaseTemplate: Story<DashKitProps> = () => <CssApiShowcase />;
-export const CSS_API = CssApiShowcaseTemplate.bind({});
+const CustomizationTemplate: Story<DashKitProps> = () => <CssApiShowcase />;
+export const Customization = CustomizationTemplate.bind({});
 
 const DndShowcaseTemplate: Story<DashKitProps> = () => <DashKitDnDShowcase />;
 export const DragNDrop = DndShowcaseTemplate.bind({});
