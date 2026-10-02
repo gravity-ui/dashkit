@@ -94,8 +94,8 @@
 }
 
 .react-grid-item.react-grid-placeholder {
-    --_-dashkit-placeholder-color: var(--dashkit-placeholder-color, #027bfe80);
-    --_-dashkit-placeholder-opacity: var(--dashkit-placeholder-opacity, 0.2);
+    --_-dashkit-placeholder-color: var(--dashkit-placeholder-color, var(--g-color-base-brand));
+    --_-dashkit-placeholder-opacity: var(--dashkit-placeholder-opacity, 0.1);
 
     background: var(--_-dashkit-placeholder-color);
     border-radius: var(--dashkit-grid-item-border-radius, 3px);
