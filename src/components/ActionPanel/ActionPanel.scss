@@ -72,7 +72,7 @@
         max-width: 200px;
         flex: 0 0 auto;
         display: flex;
-        gap: 4px;
+        gap: 8px;
         justify-content: center;
         align-items: center;
         border-radius: var(--g-border-radius-xl);
@@ -82,6 +82,11 @@
         background-color: var(--_--dashkit-action-panel-item-color);
         color: var(--_--dashkit-action-panel-item-text-color);
         cursor: pointer;
+        transition:
+            background-color 0.15s ease,
+            color 0.15s ease,
+            transform 0.15s ease,
+            box-shadow 0.15s ease;
 
         &:hover,
         &:focus-visible {
@@ -131,9 +136,7 @@
 
     &__title {
         min-width: 0;
-        font-size: 12px;
-        font-weight: 400;
-        line-height: 16px;
+        font: var(--g-text-subheader-1-font);
         overflow: hidden;
         text-overflow: ellipsis;
     }
