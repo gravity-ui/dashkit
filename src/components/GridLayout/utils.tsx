@@ -20,6 +20,20 @@ export function shallowObjectEqual<T extends object>(a: T, b: T): boolean {
     return keysA.every((key) => a[key] === b[key]);
 }
 
-export function getEventPosition(event: MouseEvent | TouchEvent): MouseEvent | Touch {
-    return 'touches' in event ? event.touches[0] || event.changedTouches[0] : event;
+export function getEventPosition(
+    event: MouseEvent | TouchEvent,
+    touchIdentifier?: number,
+): MouseEvent | Touch | undefined {
+    if (!('touches' in event)) {
+        return event;
+    }
+
+    if (touchIdentifier === undefined) {
+        return event.targetTouches[0] || event.changedTouches[0];
+    }
+
+    return (
+        Array.from(event.touches).find((touch) => touch.identifier === touchIdentifier) ||
+        Array.from(event.changedTouches).find((touch) => touch.identifier === touchIdentifier)
+    );
 }

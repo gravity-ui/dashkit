@@ -32,7 +32,11 @@ type SharedDragPosition = {
 type DragOverLayoutProps = ReactGridLayout.ReactGridLayoutProps & {
     innerRef?: React.Ref<HTMLDivElement>;
     isDragCaptured?: boolean;
-    dragStateRef?: React.MutableRefObject<{isDragging: boolean; sourceGroup: string | null}>;
+    dragStateRef?: React.MutableRefObject<{
+        isDragging: boolean;
+        sourceGroup: string | null;
+        touchIdentifier?: number;
+    }>;
     sharedDragPositionRef?: React.MutableRefObject<SharedDragPosition | null>;
     group?: string;
     onDragTargetRestore?: () => void;
@@ -326,9 +330,13 @@ class DragOverLayout extends ReactGridLayout {
         sintEv: {e: Event; node: HTMLElement},
     ): void => {
         if ('changedTouches' in sintEv.e) {
-            this.touchTarget?.dispatchEvent(
-                new MouseEvent('mouseup', getEventPosition(sintEv.e as TouchEvent)),
+            const position = getEventPosition(
+                sintEv.e as TouchEvent,
+                this.props.dragStateRef?.current.touchIdentifier,
             );
+            if (position) {
+                this.touchTarget?.dispatchEvent(new MouseEvent('mouseup', position));
+            }
             this.touchTarget = null;
         }
 
@@ -537,7 +545,10 @@ class DragOverLayout extends ReactGridLayout {
         return React.cloneElement(gridItem, {children: gridItemChild});
     }
     private updateTouchTarget(event: TouchEvent): void {
-        const position = getEventPosition(event);
+        const position = getEventPosition(event, this.props.dragStateRef?.current.touchIdentifier);
+        if (!position) {
+            return;
+        }
         const target =
             document
                 .elementsFromPoint(position.clientX, position.clientY)
