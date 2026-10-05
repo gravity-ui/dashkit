@@ -1,3 +1,5 @@
+@use '@gravity-ui/uikit/styles/mixins';
+
 .dashkit-action-panel {
     $show_panel_transform: translateX(-50%) translateY(0);
     $hide_panel_transform: translateX(-50%) translateY(calc(100% + 20px));
@@ -136,7 +138,7 @@
 
     &__title {
         min-width: 0;
-        font: var(--g-text-subheader-1-font);
+        @include mixins.text-subheader-1();
         overflow: hidden;
         text-overflow: ellipsis;
     }

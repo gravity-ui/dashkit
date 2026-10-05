@@ -85,7 +85,7 @@ task('copy-i18n', () => {
 
 task('styles-components', () => {
     return src(['src/**/*.scss', '!src/components/**/__stories__/**/*.scss'])
-        .pipe(sass().on('error', sass.logError))
+        .pipe(sass({includePaths: ['node_modules']}).on('error', sass.logError))
         .pipe(dest(path.resolve(BUILD_DIR, 'esm')))
         .pipe(dest(path.resolve(BUILD_DIR, 'cjs')));
 });
