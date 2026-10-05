@@ -22,6 +22,7 @@ import type {
     MemoGroupLayout,
     ReloadItemsOptions,
 } from './types';
+import {getEventPosition} from './utils';
 
 const hasPluginId = (value: PluginRef): value is {props: {id: string}} => {
     return (
@@ -337,7 +338,12 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
         };
     }
 
-    updateDraggingElementState(group: string, layoutItem: ConfigLayout, e: MouseEvent) {
+    updateDraggingElementState(
+        group: string,
+        layoutItem: ConfigLayout,
+        e: MouseEvent,
+        element: HTMLElement,
+    ) {
         let currentDraggingElement: CurrentDraggingElement | null =
             this.state.currentDraggingElement;
 
@@ -356,11 +362,11 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
             let {offsetX, offsetY} =
                 (e as MouseEvent & {nativeEvent?: MouseEvent}).nativeEvent || {};
             if (offsetX === undefined || offsetY === undefined) {
-                const target = e.currentTarget as HTMLElement;
-                const gridRect = target?.getBoundingClientRect();
+                const gridRect = element.getBoundingClientRect();
+                const {clientX, clientY} = getEventPosition(e);
 
-                offsetX = e.clientX - (gridRect?.left || 0);
-                offsetY = e.clientY - (gridRect?.top || 0);
+                offsetX = clientX - gridRect.left;
+                offsetY = clientY - gridRect.top;
             }
 
             currentDraggingElement = {
@@ -421,7 +427,7 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
         }
 
         const parentRect = parent.getBoundingClientRect();
-        const {clientX, clientY} = e;
+        const {clientX, clientY} = getEventPosition(e);
 
         let isDraggedOut = this.state.isDraggedOut;
         if (
@@ -485,7 +491,7 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
                 this._sharedDragRef.current = {isDragging: true, sourceGroup: group};
             }
             this._initDragCoordinatesWatcher(element);
-            this.updateDraggingElementState(group, layoutItem, e);
+            this.updateDraggingElementState(group, layoutItem, e, element);
             this.setState({isDragging: true});
         }
     }
