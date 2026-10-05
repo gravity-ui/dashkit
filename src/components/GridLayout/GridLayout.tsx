@@ -22,6 +22,7 @@ import type {
     MemoGroupLayout,
     ReloadItemsOptions,
 } from './types';
+import {getEventPosition} from './utils';
 
 const hasPluginId = (value: PluginRef): value is {props: {id: string}} => {
     return (
@@ -49,6 +50,7 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
     private _sharedDragRef: React.MutableRefObject<{
         isDragging: boolean;
         sourceGroup: string | null;
+        touchIdentifier?: number;
     }> = {current: {isDragging: false, sourceGroup: null}};
     private _sharedDragPositionRef: React.MutableRefObject<{
         offsetX: number;
@@ -337,7 +339,12 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
         };
     }
 
-    updateDraggingElementState(group: string, layoutItem: ConfigLayout, e: MouseEvent) {
+    updateDraggingElementState(
+        group: string,
+        layoutItem: ConfigLayout,
+        e: MouseEvent,
+        element: HTMLElement,
+    ) {
         let currentDraggingElement: CurrentDraggingElement | null =
             this.state.currentDraggingElement;
 
@@ -356,11 +363,15 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
             let {offsetX, offsetY} =
                 (e as MouseEvent & {nativeEvent?: MouseEvent}).nativeEvent || {};
             if (offsetX === undefined || offsetY === undefined) {
-                const target = e.currentTarget as HTMLElement;
-                const gridRect = target?.getBoundingClientRect();
+                const gridRect = element.getBoundingClientRect();
+                const position = getEventPosition(e, this._sharedDragRef.current.touchIdentifier);
+                if (!position) {
+                    return;
+                }
+                const {clientX, clientY} = position;
 
-                offsetX = e.clientX - (gridRect?.left || 0);
-                offsetY = e.clientY - (gridRect?.top || 0);
+                offsetX = clientX - gridRect.left;
+                offsetY = clientY - gridRect.top;
             }
 
             currentDraggingElement = {
@@ -421,7 +432,11 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
         }
 
         const parentRect = parent.getBoundingClientRect();
-        const {clientX, clientY} = e;
+        const position = getEventPosition(e, this._sharedDragRef.current.touchIdentifier);
+        if (!position) {
+            return;
+        }
+        const {clientX, clientY} = position;
 
         let isDraggedOut = this.state.isDraggedOut;
         if (
@@ -482,10 +497,18 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
             this.setState({isDragging: true});
         } else {
             if (!this._sharedDragRef.current.isDragging) {
-                this._sharedDragRef.current = {isDragging: true, sourceGroup: group};
+                const position = getEventPosition(e);
+                if (!position) {
+                    return;
+                }
+                this._sharedDragRef.current = {
+                    isDragging: true,
+                    sourceGroup: group,
+                    touchIdentifier: 'identifier' in position ? position.identifier : undefined,
+                };
             }
             this._initDragCoordinatesWatcher(element);
-            this.updateDraggingElementState(group, layoutItem, e);
+            this.updateDraggingElementState(group, layoutItem, e, element);
             this.setState({isDragging: true});
         }
     }

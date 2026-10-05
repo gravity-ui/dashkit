@@ -8,6 +8,8 @@ import ResizeObserverPolyfill from 'resize-observer-polyfill';
 
 import {DROPPING_ELEMENT_CLASS_NAME, OVERLAY_CLASS_NAME} from '../../constants';
 
+import {getEventPosition} from './utils';
+
 const GRID_LAYOUT_CLASS_NAME = 'react-grid-layout';
 const SETTLED_WIDTH_COMMIT_DELAY = 150;
 
@@ -30,7 +32,11 @@ type SharedDragPosition = {
 type DragOverLayoutProps = ReactGridLayout.ReactGridLayoutProps & {
     innerRef?: React.Ref<HTMLDivElement>;
     isDragCaptured?: boolean;
-    dragStateRef?: React.MutableRefObject<{isDragging: boolean; sourceGroup: string | null}>;
+    dragStateRef?: React.MutableRefObject<{
+        isDragging: boolean;
+        sourceGroup: string | null;
+        touchIdentifier?: number;
+    }>;
     sharedDragPositionRef?: React.MutableRefObject<SharedDragPosition | null>;
     group?: string;
     onDragTargetRestore?: () => void;
@@ -117,6 +123,7 @@ class DragOverLayout extends ReactGridLayout {
     // Without this flag, our setState would trigger onLayoutChange back to the consumer
     // that just initiated the action, causing a spurious 'change' event.
     _isRestoringExternalLayout = false;
+    private touchTarget: Element | null = null;
     private readonly gridItemChildren = new WeakMap<
         React.ReactElement,
         {child: React.ReactElement; metadata: Record<string, string>}
@@ -299,6 +306,10 @@ class DragOverLayout extends ReactGridLayout {
         y: number,
         sintEv: {e: Event; node: HTMLElement},
     ): void => {
+        if ('touches' in sintEv.e) {
+            this.updateTouchTarget(sintEv.e as TouchEvent);
+        }
+
         if (this.props.isDragCaptured) {
             if (!this._savedDraggedOutLayout) {
                 this._savedDraggedOutLayout = this.hideLocalPlaceholder(i);
@@ -318,6 +329,17 @@ class DragOverLayout extends ReactGridLayout {
         y: number,
         sintEv: {e: Event; node: HTMLElement},
     ): void => {
+        if ('changedTouches' in sintEv.e) {
+            const position = getEventPosition(
+                sintEv.e as TouchEvent,
+                this.props.dragStateRef?.current.touchIdentifier,
+            );
+            if (position) {
+                this.touchTarget?.dispatchEvent(new MouseEvent('mouseup', position));
+            }
+            this.touchTarget = null;
+        }
+
         // Restoring layout if item was dropped outside of the grid
         if (this._savedDraggedOutLayout) {
             const savedLayout = this._savedDraggedOutLayout;
@@ -521,6 +543,25 @@ class DragOverLayout extends ReactGridLayout {
         }
 
         return React.cloneElement(gridItem, {children: gridItemChild});
+    }
+    private updateTouchTarget(event: TouchEvent): void {
+        const position = getEventPosition(event, this.props.dragStateRef?.current.touchIdentifier);
+        if (!position) {
+            return;
+        }
+        const target =
+            document
+                .elementsFromPoint(position.clientX, position.clientY)
+                .find((element) => element.classList.contains(GRID_LAYOUT_CLASS_NAME)) || null;
+
+        // Touch events keep their original target, so route group transitions explicitly.
+        if (target !== this.touchTarget) {
+            this.touchTarget?.dispatchEvent(new MouseEvent('mouseleave', position));
+            target?.dispatchEvent(new MouseEvent('mouseenter', position));
+            this.touchTarget = target;
+        }
+
+        target?.dispatchEvent(new MouseEvent('mousemove', position));
     }
 }
 
