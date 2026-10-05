@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.5.1](https://github.com/gravity-ui/dashkit/compare/v10.5.0...v10.5.1) (2026-10-05)
+
+
+### Bug Fixes
+
+* support touch dragging between groups ([ba00312](https://github.com/gravity-ui/dashkit/commit/ba0031283ca7d99db24bd2e12eba9223313372c9))
+
 ## [10.5.0](https://github.com/gravity-ui/dashkit/compare/v10.4.4...v10.5.0) (2026-10-02)
 
 
