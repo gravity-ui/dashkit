@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.5.2](https://github.com/gravity-ui/dashkit/compare/v10.5.1...v10.5.2) (2026-10-06)
+
+
+### Bug Fixes
+
+* refine action panel item styling ([#326](https://github.com/gravity-ui/dashkit/issues/326)) ([8becfa0](https://github.com/gravity-ui/dashkit/commit/8becfa037392c255e9627bdd69083fe22ce68403))
+
 ## [10.5.1](https://github.com/gravity-ui/dashkit/compare/v10.5.0...v10.5.1) (2026-10-05)
 
 
