@@ -502,7 +502,9 @@ function useMemoStateContext(
     const resultLayout = React.useMemo(() => {
         const adjusted = adjustedLayouts.current;
         const original = originalLayouts.current;
-        const nowrapAdjust = nowrapAdjustedLayouts.current;
+        const nowrapAdjust: NowrapAdjustedLayouts = containers?.length
+            ? {}
+            : nowrapAdjustedLayouts.current;
 
         return visualLayout.map((item) => {
             const widgetId = item.i;
