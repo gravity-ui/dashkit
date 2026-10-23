@@ -1787,3 +1787,168 @@ test('nowrap constraints stay correct across flat to nested to flat revisions', 
     expect(onChange).toHaveBeenCalledTimes(2);
     view.unmount();
 });
+
+// Critical: yes. Chart-body interactions must not accidentally move saved widgets.
+test('custom plugin handles bind after portal render and update without remount', async () => {
+    const customType = 'native-custom-handle-regression';
+    const bodyDown = jest.fn();
+    DashKitGridStack.reloadPlugins({
+        type: customType,
+        defaultLayout: {w: 2, h: 2},
+        renderer: (props, ref) => (
+            <div>
+                <Plugin {...props} ref={ref} />
+                {props.data.handleVisible && (
+                    <span className="handle-a" key={String(props.data.handleVersion)}>
+                        Handle A
+                    </span>
+                )}
+                <button className="handle-b">Handle B</button>
+                <span className="chart-body" onMouseDown={bodyDown}>
+                    Chart body
+                </span>
+            </div>
+        ),
+    });
+    const measure = jest
+        .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+        .mockImplementation(function (this: HTMLElement) {
+            const node = this.closest<GridItemHTMLElement>('[data-dashkit-id]')?.gridstackNode;
+            const x =
+                this.style.position === 'fixed'
+                    ? parseFloat(this.style.left) || 0
+                    : (node?.x || 0) * 50;
+            const y =
+                this.style.position === 'fixed'
+                    ? parseFloat(this.style.top) || 0
+                    : (node?.y || 0) * 20;
+            const width = this.style.width === '1px' ? 1 : (node?.w || 12) * 50;
+            const height = this.style.height === '1px' ? 1 : (node?.h || 20) * 20;
+            return {
+                x,
+                y,
+                width,
+                height,
+                left: x,
+                top: y,
+                right: x + width,
+                bottom: y + height,
+                toJSON: () => ({}),
+            };
+        });
+    const initial: Config = {
+        ...config,
+        containers: undefined,
+        layoutVersion: undefined,
+        items: [
+            {
+                ...config.items[0],
+                type: customType,
+                data: {text: 'Custom plugin', handleVisible: true, handleVersion: 1},
+            },
+        ],
+        layout: [{i: 'a', x: 0, y: 0, w: 2, h: 2}],
+    };
+    const onChange = jest.fn();
+    const onDragStart = jest.fn();
+    const groups: DashKitGroup[] = [
+        {
+            gridProperties: () => ({
+                cols: 12,
+                rowHeight: 20,
+                margin: [0, 0],
+                containerPadding: [0, 0],
+                compactType: null,
+            }),
+        },
+    ];
+    const ref = React.createRef<DashKitGridStack>();
+    const fixture = (document: Config, handle?: string) => (
+        <DashKitGridStack
+            ref={ref}
+            config={document}
+            groups={groups}
+            editMode
+            draggableHandleClassName={handle}
+            onChange={onChange}
+            onDragStart={onDragStart}
+        />
+    );
+    const view = render(fixture(initial, 'handle-a'));
+    const host = requireValue(
+        view.container.querySelector<GridItemHTMLElement>('[data-dashkit-id="a"]'),
+        'custom host',
+    );
+    const plugin = host.querySelector('[data-identity]');
+    const meta = await Promise.all(requireValue(ref.current, 'DashKit ref').getItemsMeta());
+    const flush = () =>
+        act(async () => {
+            await Promise.resolve();
+        });
+    const drag = async (target: Element) => {
+        const x = (host.gridstackNode?.x || 0) * 50 + 10;
+        fireEvent.mouseDown(target, {button: 0, clientX: x, clientY: 10, buttons: 1});
+        fireEvent.mouseMove(document, {clientX: x + 5, clientY: 10, buttons: 1});
+        fireEvent.mouseMove(document, {clientX: x + 50, clientY: 10, buttons: 1});
+        fireEvent.mouseUp(document, {clientX: x + 50, clientY: 10});
+        await flush();
+    };
+    try {
+        await flush();
+        await drag(view.getByText('Chart body'));
+        expect(bodyDown).toHaveBeenCalledTimes(1);
+        expect(onDragStart).not.toHaveBeenCalled();
+        expect(onChange).not.toHaveBeenCalled();
+        expect(host.gridstackNode?.x).toBe(0);
+        await drag(view.getByText('Handle A'));
+        expect(onChange.mock.calls.at(-1)[0].config.layout[0].x).toBe(1);
+        view.rerender(fixture(initial, 'handle-b'));
+        await flush();
+        const count = onChange.mock.calls.length;
+        await drag(view.getByText('Handle A'));
+        expect(onChange).toHaveBeenCalledTimes(count);
+        await drag(view.getByText('Handle B'));
+        expect(onChange).toHaveBeenCalledTimes(count + 1);
+        expect(onChange.mock.calls.at(-1)[0].config.layout[0].x).toBe(2);
+        const hidden: Config = {
+            ...initial,
+            items: [
+                {
+                    ...initial.items[0],
+                    data: {text: 'Custom plugin', handleVisible: false, handleVersion: 2},
+                },
+            ],
+        };
+        view.rerender(fixture(hidden, 'handle-a'));
+        await flush();
+        const noHandleCount = onChange.mock.calls.length;
+        await drag(view.getByText('Chart body'));
+        expect(onChange).toHaveBeenCalledTimes(noHandleCount);
+        const revealed: Config = {
+            ...initial,
+            items: [
+                {
+                    ...initial.items[0],
+                    data: {text: 'Custom plugin', handleVisible: true, handleVersion: 3},
+                },
+            ],
+        };
+        view.rerender(fixture(revealed, 'handle-a'));
+        await flush();
+        await drag(view.getByText('Handle A'));
+        expect(onChange).toHaveBeenCalledTimes(noHandleCount + 1);
+        view.rerender(fixture(initial));
+        await flush();
+        const defaultCount = onChange.mock.calls.length;
+        await drag(view.getByText('Chart body'));
+        expect(onChange).toHaveBeenCalledTimes(defaultCount + 1);
+        expect(host.querySelector('[data-identity]')).toBe(plugin);
+        expect(await Promise.all(requireValue(ref.current, 'DashKit ref').getItemsMeta())).toEqual(
+            meta,
+        );
+        view.unmount();
+        expect(GridStack.getDD().isDraggable(host)).toBe(false);
+    } finally {
+        measure.mockRestore();
+    }
+});

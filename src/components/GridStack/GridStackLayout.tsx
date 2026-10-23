@@ -44,6 +44,8 @@ interface Host {
     key: string;
     container?: boolean;
     lastRecord?: GridRecord;
+    dragHandle?: {selector: string; elements: HTMLElement[]};
+    dragObserver?: MutationObserver;
 }
 interface GridRecord {
     grid: DashKitNativeGrid;
@@ -159,6 +161,7 @@ class GridStackCanvas extends React.PureComponent {
         window.removeEventListener('mousemove', this.refreshGestureScale, true);
         window.removeEventListener('touchmove', this.refreshGestureScale, true);
         this.observer?.disconnect();
+        this.hosts.forEach((host) => host.dragObserver?.disconnect());
         [...this.grids.values()]
             .sort((a, b) => gridDepth(b) - gridDepth(a))
             .forEach(({grid, root}) => {
@@ -368,6 +371,51 @@ class GridStackCanvas extends React.PureComponent {
         root.addEventListener('drop', this.paletteDrop);
         root.addEventListener('dragleave', this.paletteLeave);
         return record;
+    }
+    private syncDragHandle(id: string) {
+        const host = this.hosts.get(id);
+        if (!host || !this.mounted || host.container || this.active || this.preview) {
+            return;
+        }
+        const custom = this.context.draggableHandleClassName;
+        if (!custom && !host.dragHandle) {
+            return;
+        }
+        const grid = host.el.gridstackNode?.grid;
+        if (!grid) {
+            return;
+        }
+        if (custom && !host.dragObserver) {
+            // Portal content and async plugin handles can appear after makeWidget initializes DD.
+            host.dragObserver = new MutationObserver(() => this.syncDragHandle(id));
+            host.dragObserver.observe(host.content, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['class'],
+            });
+        }
+        const selector = custom ? `.${custom}` : '.grid-stack-item-content';
+        const elements = [...host.el.querySelectorAll<HTMLElement>(selector)].filter(
+            (element) => element.closest('.grid-stack-item') === host.el,
+        );
+        if (
+            host.dragHandle?.selector !== selector ||
+            host.dragHandle.elements.length !== elements.length ||
+            elements.some((element, index) => host.dragHandle?.elements[index] !== element)
+        ) {
+            grid.opts.draggable = {...grid.opts.draggable, handle: selector};
+            grid.prepareDragDrop(host.el, true);
+            host.dragHandle = {selector, elements};
+        }
+        if (custom && !elements.length) {
+            GridStack.getDD().draggable(host.el, 'disable');
+        }
+        if (!custom) {
+            host.dragObserver?.disconnect();
+            delete host.dragObserver;
+            delete host.dragHandle;
+        }
     }
     private createHost(id: string, key: string, container = false): Host {
         const el: GridItemHTMLElement = document.createElement('div');
@@ -600,6 +648,7 @@ class GridStackCanvas extends React.PureComponent {
             }
             this.hosts.forEach((host, id) => {
                 if (!retained.has(id)) {
+                    host.dragObserver?.disconnect();
                     this.grids.get(host.key)?.grid.removeWidget(host.el, false, false);
                     host.el.remove();
                     this.hosts.delete(id);
@@ -622,6 +671,7 @@ class GridStackCanvas extends React.PureComponent {
                     }
                     this.updateGrid(record, key);
                 });
+            this.hosts.forEach((_host, id) => this.syncDragHandle(id));
         } finally {
             this.grids.forEach(({grid: gridInput}) => {
                 const grid = gridInput;
