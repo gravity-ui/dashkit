@@ -38,6 +38,7 @@ export function getGridProperties(
             autoSize: false,
             ...container.grid,
             width: undefined,
+            style: undefined,
             verticalCompact: undefined,
             margin: container.gap,
             containerPadding: [0, 0],

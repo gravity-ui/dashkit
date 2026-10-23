@@ -2132,3 +2132,105 @@ test('nested grids measure local content width through controlled resize with an
         }
     }
 });
+
+test('empty nested drop zones fill their container with a fixed-height root style', () => {
+    const defaults = registerManager.gridLayout;
+    const clientWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth');
+    const clientHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight');
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+        configurable: true,
+        get(this: HTMLElement) {
+            return this.closest('[data-dashkit-id="box"]') ? 280 : 640;
+        },
+    });
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+        configurable: true,
+        get(this: HTMLElement) {
+            if (this.style.height.endsWith('px')) {
+                return parseFloat(this.style.height);
+            }
+            const node =
+                this.closest<GridItemHTMLElement>('[data-dashkit-id="box"]')?.gridstackNode;
+            if (this.style.height === '100%' && node?.grid) {
+                return (node.h || 0) * node.grid.getCellHeight(true);
+            }
+            return 0;
+        },
+    });
+    const nested: Config = {
+        ...config,
+        items: [],
+        layout: [],
+        containers: [
+            {
+                ...box,
+                w: 280,
+                h: 200,
+                padding: [0, 0, 0, 0],
+                gap: [0, 0],
+                grid: {cols: 12, rowHeight: 20, compactType: null},
+            },
+        ],
+    };
+    const before = JSON.stringify(nested);
+    const onChange = jest.fn();
+    let view: ReturnType<typeof render> | undefined;
+    try {
+        DashKitGridStack.setSettings({
+            gridLayout: {
+                cols: 640,
+                rowHeight: 1,
+                width: 640,
+                margin: [0, 0],
+                containerPadding: [0, 0],
+                compactType: null,
+                autoSize: false,
+                style: {height: 400},
+            },
+        });
+        view = render(<DashKitGridStack config={nested} editMode onChange={onChange} />);
+        const root = requireValue(
+            view.container.querySelector<HTMLElement>('.grid-stack'),
+            'root grid',
+        );
+        const child = requireValue(
+            view.container.querySelector<HTMLElement>('[data-dashkit-id="box"] .grid-stack'),
+            'child grid',
+        );
+        const wrapper = requireValue(child.parentElement, 'child wrapper');
+        expect(root.parentElement?.style.height).toBe('400px');
+        expect(wrapper.style.height).toBe('100%');
+        expect(wrapper.clientHeight).toBe(200);
+        expect(child.style.height).toBe('200px');
+        expect(child.style.width).toBe('280px');
+        const resized: Config = {
+            ...nested,
+            containers: [{...requireValue(nested.containers, 'containers')[0], h: 240}],
+        };
+        view.rerender(<DashKitGridStack config={resized} editMode onChange={onChange} />);
+        expect(view.container.querySelector('[data-dashkit-id="box"] .grid-stack')).toBe(child);
+        expect(wrapper.style.height).toBe('100%');
+        expect(wrapper.clientHeight).toBe(240);
+        expect(child.style.height).toBe('240px');
+        expect(root.parentElement?.style.height).toBe('400px');
+        expect(onChange).not.toHaveBeenCalled();
+        expect(JSON.stringify(nested)).toBe(before);
+    } finally {
+        view?.unmount();
+        DashKitGridStack.setSettings({
+            gridLayout: {
+                ...defaults,
+                width: defaults.width,
+                compactType: defaults.compactType,
+                autoSize: defaults.autoSize,
+                style: defaults.style,
+            },
+        });
+        if (clientWidth) {
+            Object.defineProperty(HTMLElement.prototype, 'clientWidth', clientWidth);
+        }
+        if (clientHeight) {
+            Object.defineProperty(HTMLElement.prototype, 'clientHeight', clientHeight);
+        }
+    }
+});
