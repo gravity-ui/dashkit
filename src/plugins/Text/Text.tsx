@@ -56,6 +56,7 @@ export class PluginText extends React.PureComponent<PluginTextProps, PluginTextS
     };
 
     private _isUnmounted = false;
+    private _requestGeneration = 0;
 
     componentDidMount() {
         this._isUnmounted = false;
@@ -70,6 +71,7 @@ export class PluginText extends React.PureComponent<PluginTextProps, PluginTextS
 
     componentWillUnmount() {
         this._isUnmounted = true;
+        this._requestGeneration += 1;
     }
 
     render() {
@@ -131,6 +133,7 @@ export class PluginText extends React.PureComponent<PluginTextProps, PluginTextS
         if (typeof this.props.apiHandler !== 'function') {
             return;
         }
+        const generation = ++this._requestGeneration;
         this.setState({status: LoadStatus.Pending});
 
         const onLoadComplete = this.props.onBeforeLoad();
@@ -141,20 +144,30 @@ export class PluginText extends React.PureComponent<PluginTextProps, PluginTextS
                 const loadedData = await this.props.apiHandler({text: this.state.text});
                 htmlText = loadedData.result;
             }
-            if (this._isUnmounted) {
+            if (this._isUnmounted || generation !== this._requestGeneration) {
                 return;
             }
-            this.setState({
-                htmlText,
-                status: LoadStatus.Success,
-            });
+            this.setState(
+                {
+                    htmlText,
+                    status: LoadStatus.Success,
+                },
+                () => {
+                    if (!this._isUnmounted && generation === this._requestGeneration) {
+                        onLoadComplete();
+                    }
+                },
+            );
         } catch {
-            if (this._isUnmounted) {
+            if (this._isUnmounted || generation !== this._requestGeneration) {
                 return;
             }
-            this.setState({status: LoadStatus.Fail});
+            this.setState({status: LoadStatus.Fail}, () => {
+                if (!this._isUnmounted && generation === this._requestGeneration) {
+                    onLoadComplete();
+                }
+            });
         }
-        onLoadComplete();
     }
 
     private onRetryClick = () => {
