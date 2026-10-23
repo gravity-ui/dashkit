@@ -546,8 +546,11 @@ test('subtree admission, finite bounds, scale continuation and StrictMode', asyn
             };
         });
     const legacy1 = await localRect();
-    await page.mouse.move(lx + 105, ly + 65, {steps: 4});
-    await frames();
+    // Let React commit each native move before the next delta is calculated.
+    for (let step = 1; step <= 4; step++) {
+        await page.mouse.move(lx + 65 + step * 10, ly + 45 + step * 5);
+        await frames();
+    }
     const legacy2 = await localRect();
     await page.mouse.up();
     await frames();
