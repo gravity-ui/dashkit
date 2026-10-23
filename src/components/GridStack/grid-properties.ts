@@ -37,6 +37,7 @@ export function getGridProperties(
             noOverlay: zone.noOverlay,
             autoSize: false,
             ...container.grid,
+            width: undefined,
             verticalCompact: undefined,
             margin: container.gap,
             containerPadding: [0, 0],

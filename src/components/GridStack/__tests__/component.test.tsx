@@ -37,6 +37,7 @@ import {DashKit, _emitSymbol} from '../../DashKit/DashKit';
 import {registerManager} from '../../DashKit/registration';
 import {DashKitDnDWrapper} from '../../DashKitDnDWrapper/DashKitDnDWrapper';
 import {DashKitGridStack} from '../DashKitGridStack';
+import {getGridStackLayoutRects} from '../geometry';
 import {requireValue} from '../invariants';
 import {gridStackLayoutAdapter} from '../layout-adapter';
 import {GridStack} from '../runtime';
@@ -1994,5 +1995,140 @@ test('custom plugin handles bind after portal render and update without remount'
         expect(GridStack.getDD().isDraggable(host)).toBe(false);
     } finally {
         measure.mockRestore();
+    }
+});
+
+// Critical: yes. Root width leaking into children mis-sizes mounted widgets and their saved projections.
+test('nested grids measure local content width through controlled resize with an explicit root width', async () => {
+    const defaults = registerManager.gridLayout;
+    const clientWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth');
+    const widthType = 'nested-local-width';
+    const widths = new Map<string, number>();
+    DashKitGridStack.reloadPlugins({
+        type: widthType,
+        defaultLayout: {w: 6, h: 2},
+        renderer: (props, ref) => {
+            widths.set(props.id, props.width);
+            return <Plugin {...props} ref={ref} />;
+        },
+    });
+    const rootProperties = {
+        cols: 640,
+        rowHeight: 1,
+        width: 640,
+        margin: [0, 0] as [number, number],
+        containerPadding: [0, 0] as [number, number],
+        compactType: null,
+        isDraggable: false,
+        isResizable: false,
+    };
+    let outerWidth = 320;
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+        configurable: true,
+        get() {
+            if (this.closest('[data-dashkit-id="inner"]')) {
+                return (outerWidth - 40) / 2 - 20;
+            }
+            return this.closest('[data-dashkit-id="box"]') ? outerWidth - 40 : 500;
+        },
+    });
+    const nested: Config = {
+        ...config,
+        items: ['root', 'child', 'deep'].map((id) => ({
+            id,
+            type: widthType,
+            namespace: 'default',
+            data: {text: id},
+        })),
+        layout: [
+            {i: 'root', x: 400, y: 0, w: 100, h: 40},
+            {i: 'child', x: 0, y: 0, w: 6, h: 2, containerId: 'box'},
+            {i: 'deep', x: 0, y: 0, w: 6, h: 2, containerId: 'inner'},
+        ],
+        containers: [
+            {
+                ...box,
+                w: outerWidth,
+                h: 200,
+                padding: [0, 20, 0, 20],
+                gap: [0, 0],
+                grid: {cols: 12, rowHeight: 20, compactType: null},
+            },
+            {
+                ...box,
+                id: 'inner',
+                containerId: 'box',
+                y: 3,
+                w: 6,
+                h: 4,
+                padding: [0, 10, 0, 10],
+                gap: [0, 0],
+                grid: {cols: 12, rowHeight: 20, compactType: null},
+            },
+        ],
+    };
+    const before = JSON.stringify(nested);
+    const ref = React.createRef<DashKitGridStack>();
+    const onChange = jest.fn();
+    let view: ReturnType<typeof render> | undefined;
+    try {
+        DashKitGridStack.setSettings({gridLayout: rootProperties});
+        view = render(<DashKitGridStack ref={ref} config={nested} editMode onChange={onChange} />);
+        const identities = [...view.container.querySelectorAll('[data-identity]')];
+        const meta = await Promise.all(requireValue(ref.current, 'DashKit ref').getItemsMeta());
+        const verify = (document: Config) => {
+            const projection = getGridStackLayoutRects(document, {
+                [DEFAULT_GROUP]: {width: 640, gridProperties: rootProperties},
+            });
+            for (const id of ['root', 'child', 'deep']) {
+                expect(widths.get(id)).toBe(projection[id].width);
+                const host = requireValue(
+                    view?.container.querySelector(`[data-dashkit-id="${id}"]`),
+                    'widget host',
+                );
+                expect(host.classList.contains('ui-draggable-disabled')).toBe(true);
+                expect(host.classList.contains('ui-resizable-disabled')).toBe(true);
+            }
+            const grids = [
+                ...requireValue(view, 'view').container.querySelectorAll<HTMLElement>(
+                    '.grid-stack',
+                ),
+            ];
+            expect(grids.map((grid) => grid.style.width)).toEqual([
+                '640px',
+                `${outerWidth - 40}px`,
+                `${(outerWidth - 40) / 2 - 20}px`,
+            ]);
+        };
+        verify(nested);
+        outerWidth = 400;
+        const resized = {
+            ...nested,
+            containers: requireValue(nested.containers, 'containers').map((entry) =>
+                entry.id === 'box' ? {...entry, w: outerWidth} : entry,
+            ),
+        };
+        view.rerender(<DashKitGridStack ref={ref} config={resized} editMode onChange={onChange} />);
+        verify(resized);
+        expect([...view.container.querySelectorAll('[data-identity]')]).toEqual(identities);
+        expect(await Promise.all(requireValue(ref.current, 'DashKit ref').getItemsMeta())).toEqual(
+            meta,
+        );
+        expect(onChange).not.toHaveBeenCalled();
+        expect(JSON.stringify(nested)).toBe(before);
+    } finally {
+        view?.unmount();
+        DashKitGridStack.setSettings({
+            gridLayout: {
+                ...defaults,
+                width: defaults.width,
+                compactType: defaults.compactType,
+                isDraggable: defaults.isDraggable,
+                isResizable: defaults.isResizable,
+            },
+        });
+        if (clientWidth) {
+            Object.defineProperty(HTMLElement.prototype, 'clientWidth', clientWidth);
+        }
     }
 });
