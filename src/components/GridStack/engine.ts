@@ -203,7 +203,8 @@ export class DashKitEngine extends EngineBase {
                 this.nodes.reduce((sum, other) => sum + (other === node ? 0 : other.w), 0);
             options.w = Math.min(options.w ?? node.w, maxW);
             options.y = 0;
-            if (options.w < (node.minW || 1)) {
+            const minW = node.minW || 1;
+            if (options.w < (options.resizing ? minW : Math.min(node.w, minW))) {
                 return false;
             }
         }

@@ -185,3 +185,17 @@ test.each([
         expect(saved).toEqual({id: 'fraction', x, y, w: 0.5, h: 0.5, ...constraints});
     },
 );
+
+test.each([1, 2])('nowrap moves retain subunit saved width with minW %s', (minW) => {
+    const engine = new DashKitEngine({column: 12, maxRow: 4});
+    engine.mode = {compactType: 'horizontal-nowrap', allowOverlap: true};
+    const node = engine.addNode({id: 'fraction', x: 0, y: 0, w: 0.5, h: 0.5, minW, minH: 1});
+    expect(engine.moveNodeCheck(node as (typeof engine.nodes)[number], {x: 3, y: 0})).toBe(true);
+    expect(node).toMatchObject({x: 3, y: 0, w: 0.5, h: 0.5, minW, minH: 1});
+    expect(engine.moveNodeCheck(node as (typeof engine.nodes)[number], {x: 11.5, y: 0})).toBe(true);
+    expect(node).toMatchObject({x: 11.5, y: 0, w: 0.5, h: 0.5});
+    expect(
+        engine.moveNodeCheck(node as (typeof engine.nodes)[number], {w: 0.25, resizing: true}),
+    ).toBe(false);
+    expect(node).toMatchObject({x: 11.5, y: 0, w: 0.5, h: 0.5});
+});
