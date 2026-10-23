@@ -114,11 +114,12 @@ const geometry = (container: HTMLElement, id: string) => {
 const rects = (layout: Config['layout']) => layout.map(({i, x, y, w, h}) => ({i, x, y, w, h}));
 
 // Critical: yes. Saved edits, parameter identity and restore must survive either renderer.
-// Only UI chrome is mocked; both layout components, adapters and plugin refs are real.
-describe.each([
+// Only UI chrome is mocked; layout components, context, Item and plugin refs are real.
+const LAYOUT_ENGINES = [
     ['legacy', DashKit],
     ['gridstack', DashKitGridStack],
-] as const)('[%s] common flat DashKit contract', (_engine, Component) => {
+] as const;
+describe.each(LAYOUT_ENGINES)('[%s] common flat DashKit contract', (_engine, Component) => {
     beforeAll(() => {
         Component.reloadPlugins({
             type,
@@ -400,6 +401,61 @@ describe.each([
         expect(instance).toBeNull();
     });
 
+    test('controlled unrendered group membership survives another widget save and later reveal', async () => {
+        const renderGroup: DashKitGroup['render'] = (id, content) => (
+            <section key={id} data-group={id}>
+                {content}
+            </section>
+        );
+        const left = {...groups[0], id: 'left', render: renderGroup};
+        const inactive = {...groups[0], id: 'inactive', render: renderGroup};
+        const initial = {
+            ...config,
+            layout: config.layout.map((entry) => ({...entry, parent: 'left'})),
+        };
+        const hidden = {
+            ...initial,
+            layout: initial.layout.map((entry) =>
+                entry.i === 'a' ? {...entry, parent: 'inactive'} : entry,
+            ),
+        };
+        const before = JSON.stringify({initial, hidden});
+        const onChange = jest.fn();
+        const view = render(
+            <Component config={initial} groups={[left]} editMode onChange={onChange} />,
+        );
+        expect(view.container.querySelectorAll('[data-widget]')).toHaveLength(2);
+        view.rerender(<Component config={hidden} groups={[left]} editMode onChange={onChange} />);
+        expect(view.container.querySelector('[data-widget="a"]')).toBeNull();
+        expect(view.container.querySelectorAll('[data-widget]')).toHaveLength(1);
+        expect(
+            view.container.querySelector('[data-group="left"] [data-widget="b"]'),
+        ).not.toBeNull();
+        expect(onChange).not.toHaveBeenCalled();
+
+        await drag(view.container, 'b', 50);
+        expect(onChange).toHaveBeenCalledTimes(1);
+        const saved: Config = onChange.mock.calls[0][0].config;
+        expect(saved.layout).toEqual([hidden.layout[0], {...hidden.layout[1], x: 7}]);
+        expect(view.container.querySelector('[data-widget="a"]')).toBeNull();
+        expect(JSON.stringify({initial, hidden})).toBe(before);
+
+        view.rerender(
+            <Component config={saved} groups={[left, inactive]} editMode onChange={onChange} />,
+        );
+        expect(view.container.querySelectorAll('[data-widget]')).toHaveLength(2);
+        expect(
+            view.container.querySelector('[data-group="inactive"] [data-widget="a"]'),
+        ).not.toBeNull();
+        expect(
+            view.container.querySelector('[data-group="left"] [data-widget="b"]'),
+        ).not.toBeNull();
+        expect(geometry(view.container, 'a')).toEqual({x: 0, y: 0, w: 2, h: 2});
+        expect(geometry(view.container, 'b')).toEqual({x: 7, y: 0, w: 2, h: 2});
+        expect(onChange).toHaveBeenCalledTimes(1);
+        expect(JSON.stringify({initial, hidden})).toBe(before);
+    });
+
     test('view to edit transition retains widget identity and one metadata ref per item without echo', async () => {
         let instance: DashKit | DashKitGridStack | null = null;
         const current = () => {
@@ -484,7 +540,10 @@ describe.each([
                 onItemRender={ready}
             />,
         );
-        expect(mounted).toHaveBeenCalledWith(offscreen.items[0], {isAsync: true, isMounted: true});
+        expect(mounted).toHaveBeenCalledWith(offscreen.items[0], {
+            isAsync: true,
+            isMounted: true,
+        });
         expect(ready).not.toHaveBeenCalled();
         const latest = {...offscreen.items[0], data: {text: 'latest'}};
         view.rerender(
