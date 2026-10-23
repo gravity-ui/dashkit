@@ -17,6 +17,7 @@ type EngineNode = GridStackNode & {
     w: number;
     h: number;
     _dirty?: boolean;
+    _orig?: {x: number; y: number; w: number; h: number};
     _id?: number;
     _willFitPos?: GridStackMoveOpts;
 };
@@ -49,13 +50,32 @@ export class DashKitEngine extends EngineBase {
         if (resizing) {
             super.nodeBoundFix(node, resizing);
         } else {
-            const {minW, minH, maxW, maxH} = node;
+            const {minW, minH, maxW, maxH, x, y, w, h} = node;
+            const {_dirty, _orig} = node as EngineNode;
             delete node.minW;
             delete node.minH;
             delete node.maxW;
             delete node.maxH;
             try {
                 super.nodeBoundFix(node, resizing);
+                const fractionalW = w !== undefined && w > 0 && w < 1;
+                const fractionalH = h !== undefined && h > 0 && h < 1;
+                // Stock bounds impose a one-unit minimum even on saved geometry and moves.
+                if (fractionalW) {
+                    node.w = Math.min(w, this.column);
+                    node.x = Math.max(0, Math.min(x ?? 0, this.column - node.w));
+                }
+                if (fractionalH) {
+                    node.h = Math.min(h, this.maxRow || Infinity);
+                    node.y = Math.max(0, Math.min(y ?? 0, (this.maxRow || Infinity) - node.h));
+                }
+                if (fractionalW || fractionalH) {
+                    (node as EngineNode)._dirty =
+                        _dirty ||
+                        (_orig
+                            ? !Utils.samePos(node, _orig)
+                            : node.x !== x || node.y !== y || node.w !== w || node.h !== h);
+                }
             } finally {
                 Object.assign(node, {minW, minH, maxW, maxH});
             }

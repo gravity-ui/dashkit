@@ -143,3 +143,45 @@ test.each([null, 'vertical', 'horizontal', 'horizontal-nowrap'] as const)(
         }
     },
 );
+
+// Critical: yes. Native moves and admission must not enlarge accepted saved widgets or displace edge positions.
+test.each([
+    {x: 0.5, y: 0.5},
+    {x: 11.5, y: 3.5},
+])(
+    'fractional load, move and fit retain dimensions at %j and resizing still enforces constraints',
+    ({x, y}) => {
+        const engine = new DashKitEngine({column: 12, maxRow: 4, float: true});
+        engine.mode = {compactType: null};
+        const constraints = {minW: 2, minH: 2, maxW: 3, maxH: 3};
+        const saved = {id: 'fraction', x, y, w: 0.5, h: 0.5, ...constraints};
+        const a = engine.addNode({...saved}) as (typeof engine.nodes)[number];
+        const other = engine.addNode({id: 'other', x: 5, y: 0, w: 2, h: 2});
+        expect(a).toMatchObject(saved);
+        engine.batchUpdate();
+        engine.batchUpdate(false);
+        expect(engine.moveNodeCheck(a, {x, y})).toBe(false);
+        expect(engine.getDirtyNodes()).toEqual([]);
+        const candidate = {...saved};
+        expect(engine.willItFit(candidate)).toBe(true);
+        expect(candidate).toMatchObject({...saved, _willFitPos: {x, y, w: 0.5, h: 0.5}});
+        expect(nodes(engine)).toEqual([
+            {id: 'fraction', x, y, w: 0.5, h: 0.5},
+            {id: 'other', x: 5, y: 0, w: 2, h: 2},
+        ]);
+        expect(engine.moveNodeCheck(a, {x: 11.75, y: 3.75})).toBe(x !== 11.5 || y !== 3.5);
+        expect(a).toMatchObject({...constraints, x: 11.5, y: 3.5, w: 0.5, h: 0.5});
+        engine.batchUpdate();
+        engine.batchUpdate(false);
+        engine.nodeBoundFix(a);
+        expect(engine.getDirtyNodes()).toEqual([]);
+        expect(engine.moveNodeCheck(a, {x: -0.25, y: -0.25})).toBe(true);
+        expect(a).toMatchObject({x: 0, y: 0, w: 0.5, h: 0.5});
+        expect(other).toMatchObject({x: 5, y: 0, w: 2, h: 2});
+        engine.moveNodeCheck(a, {w: 0.25, h: 0.25, resizing: true});
+        expect(a).toMatchObject({...constraints, w: 2, h: 2});
+        engine.moveNodeCheck(a, {w: 8, h: 8, resizing: true});
+        expect(a).toMatchObject({...constraints, w: 3, h: 3});
+        expect(saved).toEqual({id: 'fraction', x, y, w: 0.5, h: 0.5, ...constraints});
+    },
+);

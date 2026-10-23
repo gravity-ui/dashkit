@@ -337,3 +337,88 @@ test.each([undefined, 2, 100])(
         expect(nested.layout).toEqual([]);
     },
 );
+
+// Critical: yes. Unrelated public edits must not silently enlarge valid fractional saved geometry.
+test.each([undefined, 'box', 'inner'])(
+    'reflow and setItem preserve sub-unit saved geometry in %s without mutating callers',
+    (containerId) => {
+        const containers: GridStackContainer[] = [
+            {...box, x: 0, y: 0, w: 6, h: 6},
+            {...box, id: 'inner', containerId: 'box', x: 6, y: 0, w: 6, h: 4},
+        ];
+        const fraction = {i: 'fraction', x: 11.5, y: 0.5, w: 0.5, h: 0.5, containerId};
+        const untouched = {i: 'untouched', x: 8, y: 8, w: 2, h: 2};
+        const document: Config = {
+            ...config,
+            containers,
+            items: ['fraction', 'untouched'].map((id) => ({
+                id,
+                type,
+                namespace: 'default',
+                data: {},
+            })),
+            layout: [fraction, untouched],
+        };
+        const input = JSON.stringify(document);
+        const incoming = {i: 'incoming', x: 8, y: 12, w: 1, h: 1};
+        expect(
+            DashKitGridStack.reflowLayout({
+                layout: document.layout,
+                containers,
+                groups: groups(null),
+            }),
+        ).toEqual(document.layout);
+        expect(
+            DashKitGridStack.reflowLayout({
+                layout: document.layout,
+                containers,
+                groups: groups(null),
+                newLayoutItem: incoming,
+            }),
+        ).toEqual([...document.layout, incoming]);
+        const next = DashKitGridStack.setItem({
+            config: document,
+            groups: groups(null),
+            item: {type, data: {}, layout: incoming},
+        });
+        expect(next.layout.slice(0, 2)).toEqual(document.layout);
+        expect(next.layout[2]).toMatchObject({x: 8, y: 12, w: 1, h: 1});
+        expect(next.containers).toEqual(containers);
+        expect(next.items.slice(0, 2)).toEqual(document.items);
+        expect(JSON.stringify(document)).toBe(input);
+        expect(incoming).toEqual({i: 'incoming', x: 8, y: 12, w: 1, h: 1});
+    },
+);
+
+// Critical: yes. A valid child in a sub-unit physical row budget must remain saveable after reflow.
+test('fractional geometry fits a container with less than one row of physical capacity', () => {
+    const grid: DashKitGroup[] = [
+        {
+            gridProperties: () => ({
+                cols: 12,
+                rowHeight: 40,
+                margin: [0, 0],
+                containerPadding: [0, 0],
+                compactType: null,
+            }),
+        },
+    ];
+    const containers = [{...box, h: 0.75, grid: {...box.grid, rowHeight: 40}}];
+    const layout = [{i: 'fraction', containerId: 'box', x: 11.5, y: 0.25, w: 0.5, h: 0.5}];
+    const document: Config = {
+        ...config,
+        containers,
+        layout,
+        items: [{id: 'fraction', type, namespace: 'default', data: {}}],
+    };
+    const before = JSON.stringify(document);
+    expect(DashKitGridStack.reflowLayout({layout, containers, groups: grid})).toEqual(layout);
+    const next = DashKitGridStack.setItem({
+        config: document,
+        groups: grid,
+        item: {type, data: {}, layout: {x: 0, y: 2, w: 1, h: 1}},
+    });
+    expect(next.layout[0]).toEqual(layout[0]);
+    expect(next.containers).toEqual(containers);
+    expect(JSON.stringify(document)).toBe(before);
+});
