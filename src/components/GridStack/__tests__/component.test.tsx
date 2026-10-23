@@ -284,9 +284,10 @@ test.each([
         ];
         const before = JSON.stringify(nested);
         const onChange = jest.fn();
-        const view = render(
-            <DashKitGridStack config={nested} groups={groups} editMode onChange={onChange} />,
+        const fixture = (document = nested) => (
+            <DashKitGridStack config={document} groups={groups} editMode onChange={onChange} />
         );
+        const view = render(fixture());
         const plugin = view.getByText('Tall content');
         const host = requireValue(
             view.container.querySelector('[data-dashkit-id="a"]'),
@@ -317,12 +318,27 @@ test.each([
         act(grow);
         expect(renderer).toHaveBeenCalledTimes(renders);
         expect(view.getByText('Tall content')).toBe(plugin);
+        const shrunk = {...nested, containers: [{...container, h: 4}]};
+        view.rerender(fixture(shrunk));
+        const shrunkRemaining =
+            Math.min(
+                maxRows ?? Infinity,
+                (4 * 20 - 2 - padding[0] - padding[2] + gap[1]) / (18 + gap[1]),
+            ) - y;
+        expect(current().layout[0]).toMatchObject({
+            h: shrunkRemaining,
+            minH: shrunkRemaining,
+            maxH: shrunkRemaining,
+        });
+        expect(requireValue(host.gridstackNode, 'native node').h).toBeCloseTo(shrunkRemaining, 10);
+        expect(onChange).not.toHaveBeenCalled();
         fireEvent.click(plugin);
         expect(onChange).toHaveBeenCalledTimes(1);
         expect(onChange.mock.calls[0][0].config.layout).toEqual(nested.layout);
         act(() => current().adjustWidgetLayout({widgetId: 'a', needSetDefault: true}));
         expect(current().layout[0].h).toBe(2);
-        expect(requireValue(host.gridstackNode, 'native node').h).toBe(2);
+        expect(requireValue(host.gridstackNode, 'native node')).toMatchObject({h: 2, minH: 1});
+        expect(requireValue(host.gridstackNode, 'native node').maxH).toBeUndefined();
         await act(async () => {
             const node = requireValue(host.gridstackNode, 'native node');
             const grid = requireValue(node.grid, 'native grid') as GridStack & {
@@ -335,9 +351,26 @@ test.each([
         });
         expect(onChange).toHaveBeenCalledTimes(2);
         expect(onChange.mock.calls[1][0].config.layout).toEqual([{...nested.layout[0], x: 1}]);
-        expect(onChange.mock.calls[1][0].config.containers).toEqual([container]);
+        expect(onChange.mock.calls[1][0].config.containers).toEqual(shrunk.containers);
         expect(view.getByText('Tall content')).toBe(plugin);
         expect(JSON.stringify(nested)).toBe(before);
+        const {containerId: _containerId, ...rootLayout} = nested.layout[0];
+        view.rerender(fixture({...shrunk, layout: [{...rootLayout, x: 0, y: 0}]}));
+        expect(view.getByText('Tall content')).toBe(plugin);
+        expect(view.container.querySelector('[data-dashkit-id="a"]')).toBe(host);
+        expect(requireValue(host.gridstackNode, 'native node')).toMatchObject({h: 2, minH: 1});
+        expect(requireValue(host.gridstackNode, 'native node').maxH).toBeUndefined();
+        expect(onChange).toHaveBeenCalledTimes(2);
+        view.rerender(fixture(shrunk));
+        act(grow);
+        const error = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+        try {
+            expect(() =>
+                view.rerender(fixture({...shrunk, layout: [{...nested.layout[0], h: 20}]})),
+            ).toThrow('exceeds its container content bounds');
+        } finally {
+            error.mockRestore();
+        }
         view.unmount();
     },
 );

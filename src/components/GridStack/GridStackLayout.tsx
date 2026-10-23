@@ -450,6 +450,26 @@ class GridStackCanvas extends React.PureComponent {
         if (this.syncing || !this.mounted) {
             return;
         }
+        // Validate new saved input before clipping its temporary visual layout.
+        if (this.autoHeightItems.size && this.context.config !== this.appliedContext?.config) {
+            this.validateGeometry(this.context.config);
+        }
+        for (const widgetId of this.autoHeightItems) {
+            const entry: WidgetLayout | undefined = this.context.layout.find(
+                ({i}) => i === widgetId,
+            );
+            if (entry?.containerId) {
+                const remaining =
+                    requireValue(
+                        this.getProperties(getGridKey(entry)).maxRows,
+                        'containing grid row capacity',
+                    ) - entry.y;
+                if (Math.max(entry.h, entry.minH ?? 0, entry.maxH ?? 0) > remaining) {
+                    this.adjustWidgetLayout({widgetId, adjustedWidgetLayout: entry});
+                    return;
+                }
+            }
+        }
         this.validateGeometry({
             ...this.context.config,
             layout: this.context.layout,
