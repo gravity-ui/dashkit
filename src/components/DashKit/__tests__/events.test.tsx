@@ -104,6 +104,48 @@ describe('DashKit change event — onChange gate', () => {
         }
     });
 
+    // Critical: yes. A renderer no-op must not create a saved history transaction.
+    it('ignores enriched sizing defaults while preserving saved geometry changes', () => {
+        const onChange = jest.fn();
+        const emitDashKitEvent = jest.fn();
+        const enriched = {...TEST_CONFIG, layout: [{...TEST_CONFIG.layout[0], minW: 1, minH: 1}]};
+        emitDashKitChangeEvent({
+            config: enriched,
+            newConfig: TEST_CONFIG,
+            onChange,
+            emitDashKitEvent,
+        });
+        expect(emitDashKitEvent).not.toHaveBeenCalled();
+        expect(onChange).not.toHaveBeenCalled();
+        emitDashKitChangeEvent({
+            config: enriched,
+            newConfig: NEXT_CONFIG,
+            onChange,
+            emitDashKitEvent,
+        });
+        expect(emitDashKitEvent).toHaveBeenCalledTimes(1);
+        expect(emitDashKitEvent.mock.calls[0][1].patches).toEqual(NEXT_LAYOUT);
+        expect(onChange).toHaveBeenCalledTimes(1);
+    });
+
+    it('preserves layout additions, removals and order changes', () => {
+        const second = {...TEST_CONFIG.layout[0], i: 'item2', x: 4};
+        for (const [previous, next] of [
+            [TEST_CONFIG, {...TEST_CONFIG, layout: [...TEST_CONFIG.layout, second]}],
+            [TEST_CONFIG, {...TEST_CONFIG, layout: []}],
+            [
+                {...TEST_CONFIG, layout: [...TEST_CONFIG.layout, second]},
+                {...TEST_CONFIG, layout: [second, ...TEST_CONFIG.layout]},
+            ],
+        ] as Array<[Config, Config]>) {
+            const onChange = jest.fn();
+            const emitDashKitEvent = jest.fn();
+            emitDashKitChangeEvent({config: previous, newConfig: next, onChange, emitDashKitEvent});
+            expect(emitDashKitEvent).toHaveBeenCalledTimes(1);
+            expect(onChange).toHaveBeenCalledWith({config: next});
+        }
+    });
+
     it('same layout: event and onChange do not fire', () => {
         const onChange = jest.fn();
         const emitDashKitEvent = jest.fn();
