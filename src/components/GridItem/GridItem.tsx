@@ -71,6 +71,8 @@ type GridItemProps = {
     forwardedRef?: React.Ref<HTMLDivElement>;
     forwardedPluginRef?: (pluginRef: PluginRef) => void;
     isPlaceholder?: boolean;
+    layoutTransform?: string;
+    fillParent?: boolean;
 
     onItemMountChange?: DashKitProps['onItemMountChange'];
     onItemRender?: DashKitProps['onItemRender'];
@@ -223,7 +225,7 @@ export class GridItem extends React.PureComponent<GridItemProps, GridItemState> 
             style?.width === undefined ? undefined : Number.parseInt(String(style.width), 10);
         const height =
             style?.height === undefined ? undefined : Number.parseInt(String(style.height), 10);
-        const transform = style?.transform;
+        const transform = this.props.layoutTransform ?? style?.transform;
         const preparedClassName =
             (editMode
                 ? className
@@ -272,7 +274,7 @@ export class GridItem extends React.PureComponent<GridItemProps, GridItemState> 
                 data-dashkit-grid-w={this.props['data-dashkit-grid-w']}
                 data-dashkit-grid-x={this.props['data-dashkit-grid-x']}
                 data-dashkit-grid-y={this.props['data-dashkit-grid-y']}
-                style={style}
+                style={this.props.fillParent ? {...style, width: '100%', height: '100%'} : style}
                 ref={this.props.forwardedRef}
                 {...reactGridLayoutProps}
                 {...reactFocusProps}

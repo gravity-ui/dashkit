@@ -19,6 +19,7 @@ import {act, fireEvent, render} from '@testing-library/react';
 import {DashKitContext} from '../../../context';
 import type {Config} from '../../../shared';
 import type {DashKitEventMap, DashKitGroup, PluginWidgetProps} from '../../../typings';
+import {DashKitGridStack} from '../../GridStack/DashKitGridStack';
 import {DashKit} from '../DashKit';
 
 const type = 'flat-contract-widget';
@@ -114,7 +115,10 @@ const rects = (layout: Config['layout']) => layout.map(({i, x, y, w, h}) => ({i,
 
 // Critical: yes. Saved edits, parameter identity and restore must survive either renderer.
 // Only UI chrome is mocked; layout components, context, Item and plugin refs are real.
-const LAYOUT_ENGINES = [['legacy', DashKit]] as const;
+const LAYOUT_ENGINES = [
+    ['legacy', DashKit],
+    ['gridstack', DashKitGridStack],
+] as const;
 describe.each(LAYOUT_ENGINES)('[%s] common flat DashKit contract', (_engine, Component) => {
     beforeAll(() => {
         Component.reloadPlugins({
@@ -150,8 +154,15 @@ describe.each(LAYOUT_ENGINES)('[%s] common flat DashKit contract', (_engine, Com
                 this.style.position === 'fixed'
                     ? parseFloat(this.style.top) || 0
                     : Number(entry?.dataset.dashkitGridY || 0) * 20;
-            const width = entry ? Number(entry.dataset.dashkitGridW) * 50 : 600;
-            const height = entry ? Number(entry.dataset.dashkitGridH) * 20 : 400;
+            let width = entry ? Number(entry.dataset.dashkitGridW) * 50 : 600;
+            let height = entry ? Number(entry.dataset.dashkitGridH) * 20 : 400;
+            // GridStack measures this native 1px reference to calculate CSS scale.
+            if (this.style.width === '1px') {
+                width = 1;
+            }
+            if (this.style.height === '1px') {
+                height = 1;
+            }
             return {
                 x,
                 y,
@@ -311,7 +322,7 @@ describe.each(LAYOUT_ENGINES)('[%s] common flat DashKit contract', (_engine, Com
     });
 
     test('external add, data update, reorder and removal retain widget identity and live refs', async () => {
-        let instance: DashKit | null = null;
+        let instance: DashKit | DashKitGridStack | null = null;
         const current = () => {
             assert(instance);
             return instance;
@@ -446,7 +457,7 @@ describe.each(LAYOUT_ENGINES)('[%s] common flat DashKit contract', (_engine, Com
     });
 
     test('view to edit transition retains widget identity and one metadata ref per item without echo', async () => {
-        let instance: DashKit | null = null;
+        let instance: DashKit | DashKitGridStack | null = null;
         const current = () => {
             assert(instance);
             return instance;

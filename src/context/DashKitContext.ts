@@ -9,6 +9,7 @@ import type {
     ConfigLayout,
     DraggedOverItem,
     GlobalParams,
+    GridStackContainer,
     ItemDragProps,
     ItemParams,
     ItemState,
@@ -54,7 +55,8 @@ export type DashKitCtxShape = DashkitPropsPassedToCtx & {
     externalLayoutRevision: number;
     configItems: ConfigItem[];
     layout: ConfigLayout[];
-    layoutChange: (layout: ConfigLayout[]) => void;
+    containers?: GridStackContainer[];
+    layoutChange: (layout: ConfigLayout[], containers?: GridStackContainer[]) => void;
     temporaryLayout: TemporaryLayout | null;
     memorizeOriginalLayout: (
         widgetId: string,
@@ -84,9 +86,11 @@ export type DashKitCtxShape = DashkitPropsPassedToCtx & {
         gridProps: ReactGridLayoutProps,
         groupLayout: ConfigLayout[],
         sharedItem?: DraggedOverItem,
+        defaultsOverride?: Partial<import('../typings').WidgetLayout>,
     ) => {w?: number; h?: number} | false | undefined;
     outerDnDEnable: boolean;
     dragOverPlugin: null | RegisterManagerPlugin;
+    dragProps?: ItemDragProps | null;
 };
 
 const DashKitContext = React.createContext<DashKitCtxShape>({} as DashKitCtxShape);

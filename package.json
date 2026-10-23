@@ -27,6 +27,16 @@
         "types": "./build/cjs/helpers.d.ts",
         "default": "./build/cjs/helpers.js"
       }
+    },
+    "./gridstack": {
+      "import": {
+        "types": "./build/esm/gridstack.d.ts",
+        "default": "./build/esm/gridstack.js"
+      },
+      "require": {
+        "types": "./build/cjs/gridstack.d.ts",
+        "default": "./build/cjs/gridstack.js"
+      }
     }
   },
   "files": [
@@ -49,13 +59,16 @@
       ],
       "helpers": [
         "./build/esm/helpers.d.ts"
+      ],
+      "gridstack": [
+        "./build/esm/gridstack.d.ts"
       ]
     }
   },
   "scripts": {
     "lint:prettier": "prettier --check --log-level=error '**/*.{js,jsx,ts,tsx,scss}'",
     "lint:prettier:fix": "prettier --write '**/*.md'",
-    "lint:js": "eslint src --ext .js,.jsx,.ts,.tsx",
+    "lint:js": "eslint src tests playwright.config.ts .storybook/main.ts gulpfile.js --ext .js,.jsx,.ts,.tsx --no-ignore",
     "lint:js:fix": "npm run lint:js -- --fix",
     "lint:styles": "stylelint 'src/**/*.scss'",
     "lint:styles:fix": "npm run lint:styles -- --fix",
@@ -66,13 +79,15 @@
     "build:docs": "gulp copy-docs",
     "build:watch": "gulp watch",
     "start": "storybook dev -p 7120",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tests/browser/tsconfig.json",
     "build-storybook": "sb build -c .storybook -o storybook-static",
     "prepare": "husky install",
-    "prepublishOnly": "npm run lint && npm run test && npm run build"
+    "prepublishOnly": "npm run lint && npm run test && npm run build",
+    "test:browser": "playwright test"
   },
   "dependencies": {
     "@bem-react/classname": "^1.6.0",
+    "gridstack": "12.6.0",
     "hashids": "^2.2.8",
     "immutability-helper": "^3.1.1",
     "prop-types": "^15.8.1",
@@ -87,6 +102,7 @@
     "react-dom": "^16.8.0 || ^17 || ^18 || ^19"
   },
   "devDependencies": {
+    "@babel/plugin-transform-typescript": "7.29.7",
     "@commitlint/cli": "^19.6.1",
     "@commitlint/config-conventional": "^19.6.0",
     "@gravity-ui/eslint-config": "^3.2.0",
@@ -97,6 +113,7 @@
     "@gravity-ui/stylelint-config": "^4.0.1",
     "@gravity-ui/tsconfig": "^1.0.0",
     "@gravity-ui/uikit": "^7.2.0",
+    "@playwright/test": "1.48.2",
     "@storybook/addon-essentials": "^7.6.15",
     "@storybook/addon-knobs": "^7.0.2",
     "@storybook/cli": "^7.6.15",
