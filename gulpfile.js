@@ -72,6 +72,36 @@ task('compile-to-cjs', () => {
     return compileTs();
 });
 
+// GridStack publishes extensionless ESM. Transpile its native modules for our CJS entry.
+task('gridstack-cjs', (done) => {
+    const fs = require('fs');
+    const ts = require('typescript');
+    const source = path.dirname(require.resolve('gridstack'));
+    const target = path.join(BUILD_DIR, 'cjs', 'gridstack-runtime');
+    fs.mkdirSync(target, {recursive: true});
+    for (const name of fs.readdirSync(source)) {
+        if (!name.endsWith('.js') || name.includes('-all')) {
+            continue;
+        }
+        const result = ts.transpileModule(fs.readFileSync(path.join(source, name), 'utf8'), {
+            compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020},
+        });
+        fs.writeFileSync(path.join(target, name), result.outputText);
+    }
+    fs.copyFileSync(path.join(source, '..', 'LICENSE'), path.join(target, 'LICENSE'));
+    const entry = path.join(BUILD_DIR, 'cjs', 'components', 'GridStack', 'runtime.js');
+    fs.writeFileSync(
+        entry,
+        fs
+            .readFileSync(entry, 'utf8')
+            .replace(
+                /require\(["']gridstack["']\)/g,
+                'require("../../gridstack-runtime/gridstack")',
+            ),
+    );
+    done();
+});
+
 task('copy-js-declarations', () => {
     return src(['src/**/*.d.ts', '!src/**/__stories__/**/*.d.ts'])
         .pipe(dest(path.resolve(BUILD_DIR, 'esm')))
@@ -98,7 +128,15 @@ task('copy-docs', (done) => {
     buildDocs({
         rootDir: __dirname,
         outDir: path.join(__dirname, 'build', 'docs'),
-        sources: [],
+        sources: [
+            {
+                title: 'Guides',
+                kind: 'markdown',
+                baseDir: 'docs',
+                outPrefix: 'guides',
+                nameFromTitle: true,
+            },
+        ],
     });
     done();
 });
@@ -110,6 +148,7 @@ task(
         parallel(['compile-to-esm', 'compile-to-cjs']),
         parallel(['copy-js-declarations', 'copy-i18n']),
         'styles-components',
+        'gridstack-cjs',
         'copy-docs',
     ]),
 );
@@ -118,12 +157,15 @@ task('default', series(['build']));
 
 task(
     'rebuild',
-    parallel([
-        'compile-to-esm',
-        'compile-to-cjs',
-        'copy-js-declarations',
-        'copy-i18n',
-        'styles-components',
+    series([
+        parallel([
+            'compile-to-esm',
+            'compile-to-cjs',
+            'copy-js-declarations',
+            'copy-i18n',
+            'styles-components',
+        ]),
+        'gridstack-cjs',
     ]),
 );
 

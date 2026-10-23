@@ -19,7 +19,7 @@ import type {
     TemporaryLayout,
 } from '../context';
 import {useDeepEqualMemo} from '../hooks/useDeepEqualMemo';
-import type {ConfigLayout} from '../shared';
+import type {ConfigLayout, GridStackContainer} from '../shared';
 import {CONFIG_LAYOUT_FIELDS, getAllConfigItems, getItemsParams, getItemsState} from '../shared';
 import type {DashKitEventMap, DashKitEventName, PluginRef} from '../typings';
 import type {RegisterManager, RegisterManagerPlugin} from '../utils';
@@ -73,6 +73,17 @@ type UseMemoStateContextResult = {
     controlsContextValue: OverlayControlsCtxShape;
 };
 
+export interface LayoutStateAdapter {
+    serializeLayout: (layout: ConfigLayout[]) => ConfigLayout[];
+    /** Native layouts need the context to retain edits until controlled props catch up. */
+    optimistic: boolean;
+}
+
+const legacyLayoutAdapter: LayoutStateAdapter = {
+    serializeLayout: (layout) => layout,
+    optimistic: false,
+};
+
 const hasGetMeta = (value: PluginRef): value is {getMeta: () => Promise<any>} => {
     return (
         typeof value === 'object' &&
@@ -93,7 +104,10 @@ const hasReload = (
     );
 };
 
-function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContextResult {
+function useMemoStateContext(
+    props: DashKitWithContextProps,
+    layoutAdapter: LayoutStateAdapter,
+): UseMemoStateContextResult {
     // Since we don't want to store widget parameters with auto-height enabled in the store or server,
     // the actual layout (visible to the user at any moment) will be stored in state.
     // However, to ensure the store gets the layout without considering auto-height widgets,
@@ -114,6 +128,9 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
         [props.config.layout, props.registerManager],
     );
 
+    const baselineContainers = React.useRef(props.config.containers);
+    const [containers, setContainers] = React.useState(props.config.containers);
+    const [previousContainers, setPreviousContainers] = React.useState(props.config.containers);
     const internalBaselineLayoutRef = React.useRef<ConfigLayout[]>(enrichedPropsLayout);
     const [visualLayout, setVisualLayout] = React.useState<ConfigLayout[]>(enrichedPropsLayout);
     const [previousEnrichedPropsLayout, setPreviousEnrichedPropsLayout] =
@@ -169,13 +186,23 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
     // values stored are not adjusted (as if auto-height was disabled), we correct them using
     // the originalLayouts stored without adjustments.
     const onLayoutChange = React.useCallback(
-        (layout: ConfigLayout[]) => {
+        (
+            layout: ConfigLayout[],
+            nextContainers: GridStackContainer[] | undefined = baselineContainers.current,
+        ) => {
             const currentInnerLayout = layout.map((item) => {
                 if (item.i in originalLayouts.current) {
-                    const {parent: _parent, ...originalCopy} = originalLayouts.current[item.i];
+                    const {
+                        parent: _parent,
+                        containerId: _containerId,
+                        ...originalCopy
+                    } = originalLayouts.current[item.i];
 
                     if (item.parent) {
                         (originalCopy as ConfigLayout).parent = item.parent;
+                    }
+                    if (item.containerId) {
+                        (originalCopy as ConfigLayout).containerId = item.containerId;
                     }
                     originalCopy.w = item.w;
                     originalCopy.x = item.x;
@@ -189,14 +216,21 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
 
             const baselineConfig = {
                 ...props.config,
-                layout: getBaselineLayout(),
+                layout: layoutAdapter.serializeLayout(getBaselineLayout()),
+                ...(baselineContainers.current
+                    ? {containers: baselineContainers.current, layoutVersion: 2 as const}
+                    : {}),
             };
 
             const newConfig = UpdateManager.updateLayout({
-                layout: currentInnerLayout,
+                layout: layoutAdapter.serializeLayout(currentInnerLayout),
                 config: baselineConfig,
             });
 
+            if (nextContainers !== undefined) {
+                newConfig.containers = nextContainers;
+                newConfig.layoutVersion = 2;
+            }
             emitDashKitChangeEvent({
                 config: baselineConfig,
                 newConfig,
@@ -205,8 +239,13 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
             });
 
             internalBaselineLayoutRef.current = newConfig.layout;
+            baselineContainers.current = nextContainers;
+            if (layoutAdapter.optimistic) {
+                setVisualLayout(currentInnerLayout);
+                setContainers(nextContainers);
+            }
         },
-        [getBaselineLayout, props.config, props.emitDashKitEvent, onChange],
+        [getBaselineLayout, props.config, layoutAdapter, props.emitDashKitEvent, onChange],
     );
 
     const getLayoutItem = React.useCallback(
@@ -219,6 +258,17 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
     const getOuterLayout = React.useCallback((): ConfigLayout[] => {
         return convertEnrichedLayoutToConfigLayout(getBaselineLayout());
     }, [getBaselineLayout]);
+
+    const getOuterConfig = React.useCallback(
+        () => ({
+            ...props.config,
+            layout: getOuterLayout(),
+            ...(baselineContainers.current
+                ? {containers: baselineContainers.current, layoutVersion: 2 as const}
+                : {}),
+        }),
+        [props.config, getOuterLayout],
+    );
 
     // to calculate items, only memorization of items and globalItems is important
     const configItems = React.useMemo(
@@ -245,7 +295,7 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
                 onChange(
                     UpdateManager.removeItem({
                         id,
-                        config: {...props.config, layout: getOuterLayout()},
+                        config: getOuterConfig(),
                         itemsStateAndParams: props.itemsStateAndParams,
                     }),
                 );
@@ -255,9 +305,8 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
             resetTemporaryLayout,
             temporaryLayout,
             onChange,
-            props.config,
             props.itemsStateAndParams,
-            getOuterLayout,
+            getOuterConfig,
         ],
     );
 
@@ -265,7 +314,7 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
         DashKitCtxShape['onItemStateAndParamsChange']
     >(
         (id, stateAndParams, options) => {
-            const currentConfig = {...props.config, layout: getOuterLayout()};
+            const currentConfig = getOuterConfig();
             onChange({
                 config: currentConfig,
                 // config is not strictly required here; ideally it should be removed along with the default props
@@ -278,7 +327,7 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
                 }),
             });
         },
-        [props.config, props.itemsStateAndParams, getOuterLayout, onChange],
+        [props.itemsStateAndParams, getOuterConfig, onChange],
     );
 
     const memorizeOriginalLayout = React.useCallback<DashKitCtxShape['memorizeOriginalLayout']>(
@@ -386,6 +435,15 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
         }
     }
 
+    if (previousContainers !== props.config.containers) {
+        setPreviousContainers(props.config.containers);
+        if (!isEqual(baselineContainers.current, props.config.containers)) {
+            baselineContainers.current = props.config.containers;
+            setContainers(props.config.containers);
+            setExternalLayoutRevision((revision) => revision + 1);
+        }
+    }
+
     React.useLayoutEffect(() => {
         if (pendingExternalBaselineLayout) {
             if (
@@ -447,7 +505,11 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
             if (widgetId in adjusted || widgetId in nowrapAdjust) {
                 original[widgetId] = item;
                 // eslint-disable-next-line no-unused-vars
-                const {parent: _parent2, ...adjustedItem} = adjusted[widgetId] || item;
+                const {
+                    parent: _parent2,
+                    containerId: _containerId2,
+                    ...adjustedItem
+                } = adjusted[widgetId] || item;
 
                 adjustedItem.w = item.w;
                 adjustedItem.x = item.x;
@@ -457,6 +519,9 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
                     (adjustedItem as ConfigLayout).parent = item.parent;
                 }
 
+                if (item.containerId) {
+                    (adjustedItem as ConfigLayout).containerId = item.containerId;
+                }
                 if (widgetId in nowrapAdjust) {
                     (adjustedItem as ConfigLayout & {maxW?: number}).maxW = nowrapAdjust[widgetId];
                 }
@@ -495,7 +560,7 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
     }, [dragPropsContext, props.registerManager]);
 
     const onDropDragOver = React.useCallback<DashKitCtxShape['onDropDragOver']>(
-        (_e, group, gridProps, groupLayout, sharedItem) => {
+        (_e, group, gridProps, groupLayout, sharedItem, defaultsOverride) => {
             if (temporaryLayout) {
                 resetTemporaryLayout();
                 return false;
@@ -507,10 +572,17 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
                 const {type, h, w} = sharedItem;
                 dragItemType = type;
                 const _defaults = props.registerManager.getItem(type);
-                defaultLayout = _defaults ? {..._defaults.defaultLayout, h, w} : {h, w};
+                defaultLayout = _defaults
+                    ? {
+                          ..._defaults.defaultLayout,
+                          ...pick(sharedItem, 'minW', 'minH', 'maxW', 'maxH'),
+                          h,
+                          w,
+                      }
+                    : {h, w};
             } else if (dragOverPlugin) {
                 dragItemType = dragOverPlugin.type;
-                defaultLayout = dragOverPlugin.defaultLayout;
+                defaultLayout = {...dragOverPlugin.defaultLayout, ...defaultsOverride};
             } else {
                 return false;
             }
@@ -540,7 +612,7 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
             const {
                 h = defaultLayout?.h || DEFAULT_WIDGET_HEIGHT,
                 w = defaultLayout?.w || DEFAULT_WIDGET_WIDTH,
-            } = dragPropsContext?.layout || {};
+            } = defaultsOverride || dragPropsContext?.layout || {};
 
             const itemLayout = {
                 h: maxH ? Math.min(h, maxH) : h,
@@ -585,20 +657,27 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
                 dragProps: dragPropsContext,
             });
 
-            onDropProp?.({
-                newLayout: newLayout.reduce<ConfigLayout[]>((memo, l) => {
-                    if (l.i !== item.i) {
-                        memo.push(pick(l, CONFIG_LAYOUT_FIELDS));
-                    }
+            try {
+                onDropProp?.({
+                    newLayout: newLayout.reduce<ConfigLayout[]>((memo, l) => {
+                        if (l.i !== item.i) {
+                            memo.push(pick(l, CONFIG_LAYOUT_FIELDS));
+                        }
 
-                    return memo;
-                }, []),
-                itemLayout: pick(item, CONFIG_LAYOUT_FIELDS),
-                commit: resetTemporaryLayout,
-                dragProps: dragPropsContext,
-            });
+                        return memo;
+                    }, []),
+                    itemLayout: pick(item, CONFIG_LAYOUT_FIELDS),
+                    commit: resetTemporaryLayout,
+                    dragProps: dragPropsContext,
+                });
+            } catch (error) {
+                if (layoutAdapter.optimistic) {
+                    resetTemporaryLayout();
+                }
+                throw error;
+            }
         },
-        [dragPropsContext, onDropProp, setTemporaryLayout, resetTemporaryLayout],
+        [dragPropsContext, onDropProp, layoutAdapter, setTemporaryLayout, resetTemporaryLayout],
     );
 
     const dashkitContextValue = React.useMemo(
@@ -622,6 +701,7 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
             forwardedMetaRef: props.forwardedMetaRef,
 
             layout: resultLayout,
+            containers,
             temporaryLayout,
             layoutChange: onLayoutChange,
             memorizeOriginalLayout,
@@ -638,6 +718,7 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
             onDropDragOver,
             outerDnDEnable,
             dragOverPlugin,
+            dragProps: dragPropsContext,
 
             onItemFocus: props.onItemFocus,
             onItemBlur: props.onItemBlur,
@@ -653,6 +734,7 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
         [
             externalLayoutRevision,
             resultLayout,
+            containers,
             temporaryLayout,
             props.config,
             configItems,
@@ -680,6 +762,7 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
             props.draggableHandleClassName,
             outerDnDEnable,
             dragOverPlugin,
+            dragPropsContext,
 
             props.onItemFocus,
             props.onItemBlur,
@@ -730,9 +813,15 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
     return {controlsContextValue, dashkitContextValue};
 }
 
-export function withContext(Component: React.ComponentType) {
+export function withContext(
+    Component: React.ComponentType,
+    layoutAdapter: LayoutStateAdapter = legacyLayoutAdapter,
+) {
     const WithContext = (props: DashKitWithContextProps) => {
-        const {dashkitContextValue, controlsContextValue} = useMemoStateContext(props);
+        const {dashkitContextValue, controlsContextValue} = useMemoStateContext(
+            props,
+            layoutAdapter,
+        );
 
         return (
             <DashKitContext.Provider value={dashkitContextValue}>

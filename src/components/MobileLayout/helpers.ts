@@ -33,6 +33,37 @@ export const getSortedConfigItems = (
 ) => {
     const sortComparator = getWidgetsSortComparator(hasOrderId);
 
+    const containers = config.containers;
+    if (containers?.length) {
+        const entries = configItems.map((item) => ({
+            ...item,
+            ...config.layout.find(({i}) => i === item.id),
+        }));
+        if (hasOrderId) {
+            return entries.sort((a, b) => sortByOrderComparator(a, b, 'orderId'));
+        }
+        const result: typeof entries = [];
+        const visit = (containerId?: string) => {
+            const children = [
+                ...entries
+                    .filter((item) => item.containerId === containerId)
+                    .map((item) => ({id: item.id, x: item.x || 0, y: item.y || 0, item})),
+                ...containers
+                    .filter((item) => item.containerId === containerId)
+                    .map((item) => ({...item, item: undefined})),
+            ].sort((a, b) => a.y - b.y || a.x - b.x);
+            children.forEach((child) => {
+                if (child.item) {
+                    result.push(child.item);
+                } else {
+                    visit(child.id);
+                }
+            });
+        };
+        visit();
+        return result;
+    }
+
     return configItems
         .map((item, index) => Object.assign({}, item, config.layout[index]))
         .sort(sortComparator);

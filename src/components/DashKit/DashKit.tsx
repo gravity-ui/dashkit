@@ -45,6 +45,16 @@ const getReflowGroupsConfig = (groups: DashKitGroup[] = []) => {
     };
 };
 
+function assertLegacyLayout(config: Pick<Config, 'layout' | 'containers' | 'layoutVersion'>) {
+    if (
+        config.layoutVersion === 2 ||
+        config.containers?.length ||
+        config.layout.some((item) => item.containerId)
+    ) {
+        throw new Error('Nested configuration requires @gravity-ui/dashkit/gridstack');
+    }
+}
+
 export class DashKit extends DashKitBase<GridLayout> {
     static setItem({
         item: setItem,
@@ -59,6 +69,10 @@ export class DashKit extends DashKitBase<GridLayout> {
         options?: Omit<AddNewItemOptions, 'reflowLayoutOptions'>;
         groups?: DashKitGroup[];
     }): Config {
+        assertLegacyLayout({
+            ...config,
+            layout: [...config.layout, ...(options.updateLayout || [])],
+        });
         if (setItem.id) {
             return UpdateManager.editItem({
                 item: setItem,
@@ -77,6 +91,7 @@ export class DashKit extends DashKitBase<GridLayout> {
             const copyItem = {...item};
 
             if (copyItem.layout) {
+                assertLegacyLayout({layout: [{...copyItem.layout, i: 'incoming item'}]});
                 Object.assign(layout, copyItem.layout);
                 delete copyItem.layout;
             }
@@ -100,6 +115,7 @@ export class DashKit extends DashKitBase<GridLayout> {
         config: Config;
         itemsStateAndParams: ItemsStateAndParams;
     }): {config: Config; itemsStateAndParams: ItemsStateAndParams} {
+        assertLegacyLayout(config);
         return UpdateManager.removeItem({id, config, itemsStateAndParams});
     }
 
@@ -112,6 +128,7 @@ export class DashKit extends DashKitBase<GridLayout> {
         layout: ConfigLayout[];
         groups?: DashKitGroup[];
     }) {
+        assertLegacyLayout({layout: newLayoutItem ? [...layout, newLayoutItem] : layout});
         return reflowLayout({
             newLayoutItem,
             layout,
@@ -120,6 +137,7 @@ export class DashKit extends DashKitBase<GridLayout> {
     }
 
     render() {
+        assertLegacyLayout(this.props.config);
         const content = (
             <DashKitView
                 registerManager={registerManager}

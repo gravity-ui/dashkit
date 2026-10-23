@@ -9,3 +9,7 @@ node_modules
 # Generated content
 build
 storybook-static
+
+# Playwright
+playwright-report/
+test-results/

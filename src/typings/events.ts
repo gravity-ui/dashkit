@@ -1,10 +1,10 @@
-import type {ConfigLayout} from '../shared';
+import type {ConfigLayout, GridStackContainer} from '../shared';
 
 /**
  * @experimental This API can change in minor releases.
  */
 export type DashKitLayoutPatch = Pick<ConfigLayout, 'i'> &
-    Partial<Pick<ConfigLayout, 'x' | 'y' | 'w' | 'h' | 'parent'>>;
+    Partial<Pick<ConfigLayout, 'x' | 'y' | 'w' | 'h' | 'parent' | 'containerId'>>;
 
 /**
  * @experimental This API can change in minor releases.
@@ -21,6 +21,8 @@ export type DashKitChangeEvent = DashKitBaseEvent & {
     patches: DashKitLayoutPatch[];
     layout: ConfigLayout[];
     previousLayout: ConfigLayout[];
+    containers?: GridStackContainer[];
+    previousContainers?: GridStackContainer[];
 };
 
 /**

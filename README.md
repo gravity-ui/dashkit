@@ -4,6 +4,8 @@
 
 A dashboard grid rendering library.
 
+The separate [`DashKitGridStack` entry](docs/gridstack.md) provides GridStack layout with the same plugin and parameter APIs, including optional nested containers. Existing root imports keep the legacy layout.
+
 ## Installation
 
 ```bash

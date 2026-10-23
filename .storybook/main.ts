@@ -5,6 +5,13 @@ const config: StorybookConfig = {
         name: '@storybook/react-webpack5',
         options: {fastRefresh: true, legacyRootApi: false},
     },
+    babel: async (options) => ({
+        ...options,
+        plugins: [
+            ['@babel/plugin-transform-typescript', {allowDeclareFields: true}],
+            ...(options.plugins || []),
+        ],
+    }),
     stories: ['../src/**/*.stories.@(ts|tsx)'],
     docs: {
         autodocs: false,

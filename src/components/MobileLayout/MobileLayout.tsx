@@ -15,7 +15,7 @@ import './MobileLayout.scss';
 
 const b = cn('dashkit-mobile-layout');
 
-type MobileLayoutProps = {};
+type MobileLayoutProps = {'data-dashkit-engine'?: string};
 
 type MobileLayoutState = {
     itemsWithActiveAutoheight: Record<string, boolean>;
@@ -32,6 +32,8 @@ export default class MobileLayout extends React.PureComponent<
     sortedLayoutItems: Record<string, ReturnType<typeof getSortedConfigItems>> | null = null;
 
     _memoLayout = this.context.layout;
+    _memoContainers = this.context.config.containers;
+    _memoItems = this.context.configItems;
     _memoForwardedPluginRef: Array<(refObject: PluginRef) => void> = [];
     _memoAdjustWidgetLayout: Record<string, (props: {needSetDefault?: boolean}) => void> = {};
 
@@ -55,7 +57,10 @@ export default class MobileLayout extends React.PureComponent<
         let indexOffset = 0;
 
         return (
-            <div className={b()}>
+            <div
+                className={b()}
+                data-dashkit-engine={this.props['data-dashkit-engine'] || 'legacy'}
+            >
                 {groups.map((group) => {
                     const groupId = group.id || DEFAULT_GROUP;
                     const items = sortedItems[groupId] || [];
@@ -105,11 +110,20 @@ export default class MobileLayout extends React.PureComponent<
     }
 
     getSortedLayoutItems() {
-        if (this.sortedLayoutItems && this.context.layout === this._memoLayout) {
+        const nested = this.context.config.containers?.length || this._memoContainers?.length;
+        if (
+            this.sortedLayoutItems &&
+            this.context.layout === this._memoLayout &&
+            (!nested ||
+                (this.context.config.containers === this._memoContainers &&
+                    this.context.configItems === this._memoItems))
+        ) {
             return this.sortedLayoutItems;
         }
 
         this._memoLayout = this.context.layout;
+        this._memoContainers = this.context.config.containers;
+        this._memoItems = this.context.configItems;
 
         const hasOrderId = Boolean(this.context.configItems.find((item) => item.orderId));
 
