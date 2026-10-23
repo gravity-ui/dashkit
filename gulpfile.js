@@ -36,7 +36,8 @@ async function compileTs(modules = false) {
         src([
             'src/**/*.{js,jsx,ts,tsx}',
             '!src/**/__stories__/**/*.{js,jsx,ts,tsx}',
-            '!src/**/__test__/**/*.*])',
+            '!src/**/__test__/**/*.*',
+            '!src/**/__tests__/**/*.*',
         ])
             .pipe(sourcemaps.init())
             .pipe(
