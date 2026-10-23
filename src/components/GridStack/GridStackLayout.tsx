@@ -44,7 +44,6 @@ interface Host {
     key: string;
     container?: boolean;
     lastRecord?: GridRecord;
-    dragHandle?: {selector: string; elements: HTMLElement[]};
     dragObserver?: MutationObserver;
 }
 interface GridRecord {
@@ -378,11 +377,11 @@ class GridStackCanvas extends React.PureComponent {
             return;
         }
         const custom = this.context.draggableHandleClassName;
-        if (!custom && !host.dragHandle) {
+        if (!custom && !host.dragObserver) {
             return;
         }
-        const grid = host.el.gridstackNode?.grid;
-        if (!grid) {
+        const grid = this.grids.get(host.key)?.grid;
+        if (!grid || host.el.gridstackNode?.grid !== grid) {
             return;
         }
         if (custom && !host.dragObserver) {
@@ -395,26 +394,19 @@ class GridStackCanvas extends React.PureComponent {
                 attributeFilter: ['class'],
             });
         }
-        const selector = custom ? `.${custom}` : '.grid-stack-item-content';
-        const elements = [...host.el.querySelectorAll<HTMLElement>(selector)].filter(
-            (element) => element.closest('.grid-stack-item') === host.el,
+        const selector = custom ? `.${custom}, .${custom} *` : '.grid-stack-item-content';
+        const elements = [...host.el.querySelectorAll(selector)].filter(
+            (element) =>
+                element.closest('.grid-stack-item') === host.el &&
+                !element.closest('input, textarea, select, option'),
         );
-        if (
-            host.dragHandle?.selector !== selector ||
-            host.dragHandle.elements.length !== elements.length ||
-            elements.some((element, index) => host.dragHandle?.elements[index] !== element)
-        ) {
-            grid.opts.draggable = {...grid.opts.draggable, handle: selector};
-            grid.prepareDragDrop(host.el, true);
-            host.dragHandle = {selector, elements};
-        }
+        grid.setDragHandles(host.el, selector, elements);
         if (custom && !elements.length) {
             GridStack.getDD().draggable(host.el, 'disable');
         }
         if (!custom) {
             host.dragObserver?.disconnect();
             delete host.dragObserver;
-            delete host.dragHandle;
         }
     }
     private createHost(id: string, key: string, container = false): Host {

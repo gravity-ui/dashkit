@@ -1794,7 +1794,7 @@ test('custom plugin handles bind after portal render and update without remount'
     const bodyDown = jest.fn();
     DashKitGridStack.reloadPlugins({
         type: customType,
-        defaultLayout: {w: 2, h: 2},
+        defaultLayout: {w: 2, h: 2, minW: 1, minH: 1},
         renderer: (props, ref) => (
             <div>
                 <Plugin {...props} ref={ref} />
@@ -1803,7 +1803,12 @@ test('custom plugin handles bind after portal render and update without remount'
                         Handle A
                     </span>
                 )}
-                <button className="handle-b">Handle B</button>
+                <button className="handle-b">
+                    <span>Handle B</span>
+                    <svg data-testid="handle-icon">
+                        <path />
+                    </svg>
+                </button>
                 <span className="chart-body" onMouseDown={bodyDown}>
                     Chart body
                 </span>
@@ -1859,16 +1864,18 @@ test('custom plugin handles bind after portal render and update without remount'
                 margin: [0, 0],
                 containerPadding: [0, 0],
                 compactType: null,
+                resizeHandles: ['se'],
+                resizeHandle: () => <span>Custom resize control</span>,
             }),
         },
     ];
     const ref = React.createRef<DashKitGridStack>();
-    const fixture = (document: Config, handle?: string) => (
+    const fixture = (document: Config, handle?: string, editMode = true) => (
         <DashKitGridStack
             ref={ref}
             config={document}
             groups={groups}
-            editMode
+            editMode={editMode}
             draggableHandleClassName={handle}
             onChange={onChange}
             onDragStart={onDragStart}
@@ -1895,6 +1902,8 @@ test('custom plugin handles bind after portal render and update without remount'
     };
     try {
         await flush();
+        const resizeControl = view.getByText('Custom resize control');
+        const resizeTarget = resizeControl.parentElement;
         await drag(view.getByText('Chart body'));
         expect(bodyDown).toHaveBeenCalledTimes(1);
         expect(onDragStart).not.toHaveBeenCalled();
@@ -1910,6 +1919,26 @@ test('custom plugin handles bind after portal render and update without remount'
         await drag(view.getByText('Handle B'));
         expect(onChange).toHaveBeenCalledTimes(count + 1);
         expect(onChange.mock.calls.at(-1)[0].config.layout[0].x).toBe(2);
+        await drag(
+            requireValue(view.getByTestId('handle-icon').querySelector('path'), 'handle icon path'),
+        );
+        expect(onChange).toHaveBeenCalledTimes(count + 2);
+        expect(onChange.mock.calls.at(-1)[0].config.layout[0].x).toBe(3);
+        expect(view.getByText('Custom resize control')).toBe(resizeControl);
+        expect(resizeControl.parentElement).toBe(resizeTarget);
+        view.rerender(fixture(initial, 'handle-a', false));
+        await flush();
+        const viewCount = onChange.mock.calls.length;
+        await drag(view.getByText('Handle A'));
+        expect(onChange).toHaveBeenCalledTimes(viewCount);
+        view.rerender(fixture(initial, 'handle-b', false));
+        await flush();
+        view.rerender(fixture(initial, 'handle-b'));
+        await flush();
+        const restoredX = host.gridstackNode?.x || 0;
+        await drag(view.getByText('Handle B'));
+        expect(onChange).toHaveBeenCalledTimes(viewCount + 1);
+        expect(onChange.mock.calls.at(-1)[0].config.layout[0].x).toBe(restoredX + 1);
         const hidden: Config = {
             ...initial,
             items: [
@@ -1942,6 +1971,21 @@ test('custom plugin handles bind after portal render and update without remount'
         const defaultCount = onChange.mock.calls.length;
         await drag(view.getByText('Chart body'));
         expect(onChange).toHaveBeenCalledTimes(defaultCount + 1);
+        const restoredResizeControl = view.getByText('Custom resize control');
+        expect(host.contains(restoredResizeControl)).toBe(true);
+        const resizeX = ((host.gridstackNode?.x || 0) + (host.gridstackNode?.w || 0)) * 50;
+        const resizeCount = onChange.mock.calls.length;
+        fireEvent.mouseDown(restoredResizeControl, {
+            button: 0,
+            clientX: resizeX,
+            clientY: 40,
+            buttons: 1,
+        });
+        fireEvent.mouseMove(document, {clientX: resizeX + 50, clientY: 40, buttons: 1});
+        fireEvent.mouseUp(document, {clientX: resizeX + 50, clientY: 40});
+        await flush();
+        expect(onChange).toHaveBeenCalledTimes(resizeCount + 1);
+        expect(onChange.mock.calls.at(-1)[0].config.layout[0].w).toBe(3);
         expect(host.querySelector('[data-identity]')).toBe(plugin);
         expect(await Promise.all(requireValue(ref.current, 'DashKit ref').getItemsMeta())).toEqual(
             meta,

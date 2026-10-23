@@ -2,7 +2,7 @@ import type {ReactGridLayoutProps} from '../../typings';
 
 import {requireValue} from './invariants';
 import {GridStack, Utils} from './runtime';
-import type {GridItemHTMLElement, GridStackNode, GridStackOptions} from './runtime';
+import type {DDElementHost, GridItemHTMLElement, GridStackNode, GridStackOptions} from './runtime';
 
 type Transform = {xScale: number; yScale: number; xOffset: number; yOffset: number};
 type UI = {position: {left: number; top: number}; size?: {width: number; height: number}};
@@ -73,6 +73,28 @@ export class DashKitNativeGrid extends NativeBase {
                 : `${Math.max(0, bottom * this.getCellHeight(true) - (props.margin?.[1] ?? 2))}px`;
         }
         return this;
+    }
+
+    setDragHandles(el: GridItemHTMLElement, selector: string, elements: Element[]) {
+        const draggable = (el as DDElementHost).ddElement?.ddDraggable;
+        if (!draggable) {
+            return;
+        }
+        // GridStack 12.6 caches handle targets; preserve native callbacks and React resize portals.
+        const native = draggable as typeof draggable & {dragEls: Element[]};
+        if (
+            native.option.handle === selector &&
+            native.dragEls.length === elements.length &&
+            elements.every((element, index) => element === native.dragEls[index])
+        ) {
+            return;
+        }
+        native.disable();
+        native.updateOption({handle: selector});
+        native.dragEls = elements;
+        native.enable();
+        this.opts.draggable = {...this.opts.draggable, handle: selector};
+        this.prepareDragDrop(el);
     }
 
     refreshPositions() {
