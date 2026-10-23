@@ -1,5 +1,6 @@
 import React from 'react';
 
+import isEqual from 'lodash/isEqual';
 import {createPortal} from 'react-dom';
 import ResizeObserverPolyfill from 'resize-observer-polyfill';
 
@@ -87,6 +88,7 @@ class GridStackCanvas extends React.PureComponent {
     private grids = new Map<string, GridRecord>();
     private hosts = new Map<string, Host>();
     private plugins = new Map<string, PluginRef>();
+    private autoHeightItems = new Set<string>();
     private pluginCallbacks = new Map<string, (value: PluginRef) => void>();
     private observer?: ResizeObserver;
     private syncing = false;
@@ -387,9 +389,10 @@ class GridStackCanvas extends React.PureComponent {
             w: entry.w,
             h: entry.h,
             minW: inheritedConstraints.minW,
-            minH: inheritedConstraints.minH,
+            // Autoheight constraints are already expressed in the containing grid units.
+            minH: this.autoHeightItems.has(id) ? constraints.minH : inheritedConstraints.minH,
             maxW: inheritedConstraints.maxW,
-            maxH: inheritedConstraints.maxH,
+            maxH: this.autoHeightItems.has(id) ? constraints.maxH : inheritedConstraints.maxH,
         };
         if (host.el.parentElement !== record.root || host.el.gridstackNode?.grid !== record.grid) {
             record.root.appendChild(host.el);
@@ -558,6 +561,7 @@ class GridStackCanvas extends React.PureComponent {
                     this.grids.get(host.key)?.grid.removeWidget(host.el, false, false);
                     host.el.remove();
                     this.hosts.delete(id);
+                    this.autoHeightItems.delete(id);
                     this.plugins.delete(id);
                     this.pluginCallbacks.delete(id);
                 }
@@ -1196,14 +1200,33 @@ class GridStackCanvas extends React.PureComponent {
     }: {
         widgetId: string;
         needSetDefault?: boolean;
-        adjustedWidgetLayout?: ConfigLayout;
+        adjustedWidgetLayout?: WidgetLayout;
     }) => {
         if (needSetDefault) {
+            this.autoHeightItems.delete(widgetId);
             this.context.revertToOriginalLayout(widgetId);
         } else if (adjustedWidgetLayout) {
             const entry = this.context.layout.find(({i}) => i === widgetId);
             if (entry) {
-                this.context.memorizeOriginalLayout(widgetId, {...entry}, adjustedWidgetLayout);
+                const adjusted = {...adjustedWidgetLayout};
+                if (entry.containerId) {
+                    const remaining =
+                        requireValue(
+                            this.getProperties(getGridKey(entry)).maxRows,
+                            'containing grid row capacity',
+                        ) - entry.y;
+                    adjusted.h = Math.min(adjusted.h, remaining);
+                    if (adjusted.minH !== undefined) {
+                        adjusted.minH = Math.min(adjusted.minH, adjusted.h);
+                    }
+                    if (adjusted.maxH !== undefined) {
+                        adjusted.maxH = Math.min(adjusted.maxH, remaining);
+                    }
+                }
+                this.autoHeightItems.add(widgetId);
+                if (!isEqual(entry, adjusted)) {
+                    this.context.memorizeOriginalLayout(widgetId, {...entry}, adjusted);
+                }
             }
         }
     };

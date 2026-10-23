@@ -235,26 +235,112 @@ test('suppressed container and widget transactions advance the full baseline use
     expect(events).toHaveLength(count);
 });
 
-test('autoheight is visual while move and reset retain the original saved height', () => {
-    const instance = new DashKit(DashKit.defaultProps as never);
-    const onChange = jest.fn();
-    const props = {
-        ...DashKit.defaultProps,
-        config,
-        editMode: true,
-        registerManager,
-        forwardedMetaRef: null,
-        emitDashKitEvent: instance[_emitSymbol],
-        onChange,
-    };
-    render(<ContextProbe {...props} />);
-    act(() => context.memorizeOriginalLayout('a', config.layout[0], {...config.layout[0], h: 8}));
-    expect(context.layout[0].h).toBe(8);
-    act(() => context.layoutChange([{...context.layout[0], x: 2}]));
-    expect(onChange.mock.calls[0][0].config.layout[0]).toMatchObject({h: 4, x: 2});
-    act(() => context.revertToOriginalLayout('a'));
-    expect(context.layout[0].h).toBe(4);
-});
+// Critical: yes. Loading tall content must not replace a valid nested dashboard with an error.
+test.each([
+    {padding: [0, 0, 0, 0], gap: [2, 2], y: 0, maxRows: undefined},
+    {padding: [3, 0, 4, 0], gap: [2, 3], y: 1.25, maxRows: undefined},
+    {padding: [3, 0, 4, 0], gap: [2, 3], y: 1.25, maxRows: 4},
+])(
+    'nested autoheight bounds visual sizing, resets and retains saved height: %j',
+    async ({padding, gap, y, maxRows}) => {
+        let widget: PluginWidgetProps | undefined;
+        const renderer = jest.fn((props: PluginWidgetProps) => {
+            widget = props;
+            return (
+                <button onClick={() => props.onStateAndParamsChange({state: {clicked: true}})}>
+                    Tall content
+                </button>
+            );
+        });
+        const autoType = 'nested-autoheight';
+        DashKitGridStack.reloadPlugins({
+            type: autoType,
+            defaultLayout: {w: 2, h: 2, minH: 1},
+            renderer,
+        });
+        const container: GridStackContainer = {
+            ...box,
+            h: 6,
+            padding: padding as GridStackContainer['padding'],
+            gap: gap as GridStackContainer['gap'],
+            grid: {...box.grid, maxRows},
+        };
+        const nested: Config = {
+            ...config,
+            containers: [container],
+            items: [{...config.items[0], type: autoType}],
+            layout: [{i: 'a', x: 0, y, w: 2, h: 2, containerId: 'box'}],
+        };
+        const groups = [
+            {
+                gridProperties: () => ({
+                    cols: 12,
+                    rowHeight: 18,
+                    margin: [2, 2] as [number, number],
+                    containerPadding: [0, 0] as [number, number],
+                    compactType: null,
+                }),
+            },
+        ];
+        const before = JSON.stringify(nested);
+        const onChange = jest.fn();
+        const view = render(
+            <DashKitGridStack config={nested} groups={groups} editMode onChange={onChange} />,
+        );
+        const plugin = view.getByText('Tall content');
+        const host = requireValue(
+            view.container.querySelector('[data-dashkit-id="a"]'),
+            'widget host',
+        ) as import('../runtime').GridItemHTMLElement;
+        const current = () => requireValue(widget, 'mounted plugin props');
+        const grow = () => {
+            const props = current();
+            const entry = requireValue(
+                props.layout.find(({i}) => i === 'a'),
+                'widget layout',
+            );
+            props.adjustWidgetLayout({
+                widgetId: 'a',
+                adjustedWidgetLayout: {...entry, h: 20, minH: 20, maxH: 20},
+            });
+        };
+        const capacity = Math.min(
+            maxRows ?? Infinity,
+            (6 * 20 - 2 - padding[0] - padding[2] + gap[1]) / (18 + gap[1]),
+        );
+        const remaining = capacity - y;
+        act(grow);
+        expect(current().layout[0]).toMatchObject({h: remaining, minH: remaining, maxH: remaining});
+        expect(requireValue(host.gridstackNode, 'native node').h).toBeCloseTo(remaining, 10);
+        expect(onChange).not.toHaveBeenCalled();
+        const renders = renderer.mock.calls.length;
+        act(grow);
+        expect(renderer).toHaveBeenCalledTimes(renders);
+        expect(view.getByText('Tall content')).toBe(plugin);
+        fireEvent.click(plugin);
+        expect(onChange).toHaveBeenCalledTimes(1);
+        expect(onChange.mock.calls[0][0].config.layout).toEqual(nested.layout);
+        act(() => current().adjustWidgetLayout({widgetId: 'a', needSetDefault: true}));
+        expect(current().layout[0].h).toBe(2);
+        expect(requireValue(host.gridstackNode, 'native node').h).toBe(2);
+        await act(async () => {
+            const node = requireValue(host.gridstackNode, 'native node');
+            const grid = requireValue(node.grid, 'native grid') as GridStack & {
+                triggerEvent(event: Event, target: HTMLElement): void;
+            };
+            grid.triggerEvent(new Event('dragstart'), host);
+            grid.engine.moveNodeCheck(node, {x: 1, y});
+            grid.triggerEvent(new Event('dragstop'), host);
+            await Promise.resolve();
+        });
+        expect(onChange).toHaveBeenCalledTimes(2);
+        expect(onChange.mock.calls[1][0].config.layout).toEqual([{...nested.layout[0], x: 1}]);
+        expect(onChange.mock.calls[1][0].config.containers).toEqual([container]);
+        expect(view.getByText('Tall content')).toBe(plugin);
+        expect(JSON.stringify(nested)).toBe(before);
+        view.unmount();
+    },
+);
 
 test('statics retain container membership and reject nonempty or unknown removal', () => {
     expect(() =>
