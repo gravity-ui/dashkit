@@ -360,6 +360,11 @@ function useMemoStateContext(
     }, []);
 
     React.useMemo(() => {
+        if (containers?.length) {
+            // Nested engines enforce nowrap budgets locally, including container footprints.
+            nowrapAdjustedLayouts.current = {};
+            return;
+        }
         const groups = props.groups;
         // Use visualLayout instead of props.layout (which is now optional)
         const layout = visualLayout;
@@ -418,7 +423,7 @@ function useMemoStateContext(
                 });
             });
         }
-    }, [props.registerManager, props.groups, visualLayout]);
+    }, [props.registerManager, props.groups, visualLayout, containers]);
 
     // Synchronize visual layout during render, so children never see new config with old layout.
     // Keep the previous external layout separate from the drag baseline: a drag updates the latter.
@@ -534,7 +539,7 @@ function useMemoStateContext(
                 return item;
             }
         });
-    }, [visualLayout, layoutUpdateCounter]);
+    }, [visualLayout, layoutUpdateCounter, containers]);
 
     const reloadItems = React.useCallback<DashKitCtxShape['reloadItems']>((pluginsRefs, data) => {
         pluginsRefs.forEach((ref) => ref && hasReload(ref) && ref.reload(data));

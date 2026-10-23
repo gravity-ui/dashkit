@@ -25,6 +25,7 @@ import React from 'react';
 
 import {act, fireEvent, render} from '@testing-library/react';
 
+import {DEFAULT_GROUP} from '../../../constants';
 import {DashKitContext} from '../../../context';
 import type {DashKitCtxShape} from '../../../context';
 import {withContext} from '../../../hocs/withContext';
@@ -1614,3 +1615,175 @@ test.each([
         view.unmount();
     },
 );
+
+// Critical: yes. Child-grid columns must not shrink an unrelated saved root widget.
+test.each([2, 20])(
+    'nested width %s keeps root nowrap resizing in root units',
+    async (childWidth) => {
+        const groups: DashKitGroup[] = [
+            {
+                id: DEFAULT_GROUP,
+                gridProperties: () => ({
+                    cols: 12,
+                    rowHeight: 20,
+                    margin: [0, 0],
+                    containerPadding: [0, 0],
+                    compactType: 'horizontal-nowrap',
+                }),
+            },
+        ];
+        const nested: Config = {
+            ...config,
+            items: ['root', 'child'].map((id) => ({...config.items[0], id, data: {text: id}})),
+            layout: [
+                {i: 'root', x: 6, y: 0, w: 2, h: 2},
+                {i: 'child', containerId: 'box', x: 0, y: 0, w: childWidth, h: 2},
+            ],
+            containers: [
+                {
+                    ...box,
+                    x: 0,
+                    y: 0,
+                    w: 6,
+                    h: 6,
+                    padding: [0, 0, 0, 0],
+                    gap: [0, 0],
+                    grid: {cols: 24, rowHeight: 20, compactType: null},
+                },
+            ],
+        };
+        const before = JSON.stringify(nested);
+        const onChange = jest.fn();
+        const view = render(
+            <DashKitGridStack config={nested} groups={groups} editMode onChange={onChange} />,
+        );
+        const host = requireValue(
+            view.container.querySelector<GridItemHTMLElement>('[data-dashkit-id="root"]'),
+            'root host',
+        );
+        const plugin = host.querySelector('[data-identity]');
+        const grid = requireValue(host.gridstackNode?.grid, 'root grid') as GridStack & {
+            triggerEvent(event: Event, target: HTMLElement): void;
+        };
+        for (const [requested, expected] of [
+            [4, 4],
+            [20, 6],
+        ]) {
+            await act(async () => {
+                grid.triggerEvent(new Event('resizestart'), host);
+                grid.engine.moveNodeCheck(requireValue(host.gridstackNode, 'root node'), {
+                    x: 6,
+                    y: 0,
+                    w: requested,
+                    h: 2,
+                    resizing: true,
+                });
+                grid.triggerEvent(new Event('resizestop'), host);
+                await Promise.resolve();
+            });
+            expect(host.gridstackNode).toMatchObject({x: 6, y: 0, w: expected, h: 2});
+            expect(onChange.mock.calls.at(-1)[0].config.layout).toEqual([
+                {...nested.layout[0], w: expected},
+                nested.layout[1],
+            ]);
+            expect(onChange.mock.calls.at(-1)[0].config.containers).toEqual(nested.containers);
+            expect(host.querySelector('[data-identity]')).toBe(plugin);
+        }
+        expect(onChange).toHaveBeenCalledTimes(2);
+        expect(JSON.stringify(nested)).toBe(before);
+        view.unmount();
+    },
+);
+
+// Critical: yes. Controlled reparenting must remove stale flat constraints and restore them on return.
+test('nowrap constraints stay correct across flat to nested to flat revisions', async () => {
+    const groups: DashKitGroup[] = [
+        {
+            id: DEFAULT_GROUP,
+            gridProperties: () => ({
+                cols: 12,
+                rowHeight: 20,
+                margin: [0, 0],
+                containerPadding: [0, 0],
+                compactType: 'horizontal-nowrap',
+            }),
+        },
+    ];
+    const flat: Config = {
+        ...config,
+        containers: undefined,
+        layoutVersion: undefined,
+        items: ['root', 'child'].map((id) => ({...config.items[0], id, data: {text: id}})),
+        layout: [
+            {i: 'root', x: 8, y: 0, w: 2, h: 2},
+            {i: 'child', x: 0, y: 0, w: 8, h: 2},
+        ],
+    };
+    const nested: Config = {
+        ...flat,
+        layoutVersion: 2,
+        layout: [
+            {...flat.layout[0], x: 6},
+            {...flat.layout[1], containerId: 'box'},
+        ],
+        containers: [
+            {
+                ...box,
+                x: 0,
+                y: 0,
+                w: 6,
+                h: 6,
+                padding: [0, 0, 0, 0],
+                gap: [0, 0],
+                grid: {cols: 24, rowHeight: 20, compactType: null},
+            },
+        ],
+    };
+    const onChange = jest.fn();
+    const fixture = (document: Config) => (
+        <DashKitGridStack config={document} groups={groups} editMode onChange={onChange} />
+    );
+    const view = render(fixture(flat));
+    const host = requireValue(
+        view.container.querySelector<GridItemHTMLElement>('[data-dashkit-id="root"]'),
+        'root host',
+    );
+    const plugin = host.querySelector('[data-identity]');
+    expect(host.gridstackNode?.maxW).toBe(4);
+    view.rerender(fixture(nested));
+    expect(onChange).not.toHaveBeenCalled();
+    const resize = async (width: number) => {
+        const grid = requireValue(host.gridstackNode?.grid, 'root grid') as GridStack & {
+            triggerEvent(event: Event, target: HTMLElement): void;
+        };
+        await act(async () => {
+            grid.triggerEvent(new Event('resizestart'), host);
+            grid.engine.moveNodeCheck(requireValue(host.gridstackNode, 'root node'), {
+                w: width,
+                resizing: true,
+            });
+            grid.triggerEvent(new Event('resizestop'), host);
+            await Promise.resolve();
+        });
+    };
+    await resize(6);
+    expect(host.gridstackNode).toMatchObject({x: 6, y: 0, w: 6, h: 2});
+    expect(onChange.mock.calls.at(-1)[0].config.layout).toEqual([
+        {...nested.layout[0], w: 6},
+        nested.layout[1],
+    ]);
+    expect(onChange.mock.calls.at(-1)[0].config.containers).toEqual(nested.containers);
+    view.rerender(fixture(flat));
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(host.gridstackNode?.maxW).toBe(4);
+    await resize(10);
+    expect(host.gridstackNode).toMatchObject({x: 8, y: 0, w: 4, h: 2});
+    expect(onChange.mock.calls.at(-1)[0].config.layout).toEqual([
+        {...flat.layout[0], w: 4},
+        flat.layout[1],
+    ]);
+    expect(onChange.mock.calls.at(-1)[0].config.containers).toBeUndefined();
+    expect(host.querySelector('[data-identity]')).toBe(plugin);
+    expect(onChange).toHaveBeenCalledTimes(2);
+    view.unmount();
+});
