@@ -29,7 +29,7 @@ import {DashKitContext} from '../../../context';
 import type {DashKitCtxShape} from '../../../context';
 import {withContext} from '../../../hocs/withContext';
 import type {Config, GridStackContainer} from '../../../shared';
-import type {PluginWidgetProps} from '../../../typings';
+import type {DashKitGroup, PluginWidgetProps} from '../../../typings';
 import * as legacyGrid from '../../../utils/grid-layout';
 import {ActionPanel} from '../../ActionPanel/ActionPanel';
 import {DashKit, _emitSymbol} from '../../DashKit/DashKit';
@@ -39,6 +39,7 @@ import {DashKitGridStack} from '../DashKitGridStack';
 import {requireValue} from '../invariants';
 import {gridStackLayoutAdapter} from '../layout-adapter';
 import {GridStack} from '../runtime';
+import type {GridItemHTMLElement} from '../runtime';
 
 const type = 'gridstack-mounted-contract';
 const box: GridStackContainer = {
@@ -717,6 +718,333 @@ test('controlled pin to an empty or newly introduced zone keeps the widget and i
     expect(onChange).not.toHaveBeenCalled();
     view.unmount();
 });
+
+// Critical: yes. A stale gesture must not overwrite independent controlled document edits.
+test.each([
+    ['drag', 'layout'],
+    ['resize', 'layout'],
+    ['drag', 'containers'],
+    ['resize', 'containers'],
+] as const)(
+    'controlled %s cancellation accepts a new %s revision without echo and retains the next gesture',
+    async (gesture, revision) => {
+        const initial: Config = {
+            ...config,
+            containers: [{...box, w: 2, h: 2, padding: [0, 0, 0, 0]}],
+            items: [config.items[0], {...config.items[0], id: 'b'}],
+            layout: [
+                {i: 'a', x: 0, y: 0, w: 2, h: 2},
+                {i: 'b', x: 6, y: 0, w: 2, h: 2},
+            ],
+        };
+        const groups: DashKitGroup[] = [
+            {
+                gridProperties: () => ({
+                    cols: 12,
+                    rowHeight: 20,
+                    margin: [0, 0],
+                    containerPadding: [0, 0],
+                    compactType: null,
+                    allowOverlap: true,
+                }),
+            },
+        ];
+        const onChange = jest.fn();
+        const events = jest.fn();
+        const ref = React.createRef<DashKitGridStack>();
+        const fixture = (document: Config) => (
+            <DashKitGridStack
+                ref={ref}
+                config={document}
+                groups={groups}
+                editMode
+                onChange={onChange}
+            />
+        );
+        const view = render(fixture(initial));
+        requireValue(ref.current, 'DashKit ref').on('change', events);
+        const host = requireValue(
+            view.container.querySelector<GridItemHTMLElement>('[data-dashkit-id="a"]'),
+            'active host',
+        );
+        const plugin = host.querySelector('[data-identity]');
+        const meta = await Promise.all(requireValue(ref.current, 'DashKit ref').getItemsMeta());
+        const grid = requireValue(host.gridstackNode?.grid, 'active grid') as GridStack & {
+            triggerEvent(event: Event, target: HTMLElement): void;
+        };
+        act(() => {
+            grid.triggerEvent(new Event(`${gesture}start`), host);
+            grid.engine.moveNodeCheck(requireValue(host.gridstackNode, 'active node'), {
+                x: 1,
+                w: gesture === 'resize' ? 3 : 2,
+                resizing: gesture === 'resize',
+            });
+        });
+        const external: Config = {
+            ...initial,
+            ...(revision === 'layout'
+                ? {
+                      layout: [
+                          {...initial.layout[0], x: 4},
+                          {...initial.layout[1], y: 5},
+                      ],
+                  }
+                : {containers: [{...requireValue(initial.containers, 'containers')[0], x: 2}]}),
+        };
+        view.rerender(fixture(external));
+        expect(host.gridstackNode).toMatchObject({x: external.layout[0].x, y: 0, w: 2, h: 2});
+        expect(
+            view.container.querySelector<GridItemHTMLElement>('[data-dashkit-id="box"]')
+                ?.gridstackNode?.x,
+        ).toBe(revision === 'containers' ? 2 : 0);
+        await act(async () => {
+            grid.triggerEvent(new Event(`${gesture}stop`), host);
+            await Promise.resolve();
+        });
+        expect(host.gridstackNode).toMatchObject({x: external.layout[0].x, y: 0, w: 2, h: 2});
+        expect(onChange).not.toHaveBeenCalled();
+        expect(events).not.toHaveBeenCalled();
+        expect(host.querySelector('[data-identity]')).toBe(plugin);
+        expect(await Promise.all(requireValue(ref.current, 'DashKit ref').getItemsMeta())).toEqual(
+            meta,
+        );
+        const next = requireValue(
+            view.container.querySelector<GridItemHTMLElement>('[data-dashkit-id="b"]'),
+            'next host',
+        );
+        await act(async () => {
+            grid.triggerEvent(new Event('dragstart'), next);
+            grid.engine.moveNodeCheck(requireValue(next.gridstackNode, 'next node'), {x: 7});
+            grid.triggerEvent(new Event('dragstop'), next);
+            await Promise.resolve();
+        });
+        expect(onChange).toHaveBeenCalledTimes(1);
+        expect(events).toHaveBeenCalledTimes(1);
+        expect(onChange.mock.calls[0][0].config.layout).toEqual([
+            external.layout[0],
+            {...external.layout[1], x: 7},
+        ]);
+        expect(onChange.mock.calls[0][0].config.containers).toEqual(external.containers);
+        view.unmount();
+    },
+);
+
+// Critical: yes. Native pointer cleanup must not resave a stale document or break the next edit.
+test.each(['drag', 'resize'] as const)(
+    'controlled revision stops native %s pointer handlers before accepting the next gesture',
+    async (gesture) => {
+        const measure = jest
+            .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+            .mockImplementation(function (this: HTMLElement) {
+                const host = this.closest<GridItemHTMLElement>('[data-dashkit-id]');
+                const node = host?.gridstackNode;
+                const x =
+                    this.style.position === 'fixed'
+                        ? parseFloat(this.style.left) || 0
+                        : (node?.x || 0) * (640 / 12);
+                const y =
+                    this.style.position === 'fixed'
+                        ? parseFloat(this.style.top) || 0
+                        : (node?.y || 0) * 20;
+                const width = this.style.width === '1px' ? 1 : (node?.w || 12) * (640 / 12);
+                const height = this.style.height === '1px' ? 1 : (node?.h || 20) * 20;
+                return {
+                    x,
+                    y,
+                    left: x,
+                    top: y,
+                    right: x + width,
+                    bottom: y + height,
+                    width,
+                    height,
+                    toJSON: () => ({}),
+                };
+            });
+        const initial = {
+            ...config,
+            containers: undefined,
+            layoutVersion: undefined,
+            layout: [{i: 'a', x: 0, y: 0, w: 6, h: 4}],
+        };
+        const groups: DashKitGroup[] = [
+            {
+                gridProperties: () => ({
+                    cols: 12,
+                    rowHeight: 20,
+                    margin: [0, 0],
+                    containerPadding: [0, 0],
+                    compactType: null,
+                }),
+            },
+        ];
+        const onChange = jest.fn();
+        const onStart = jest.fn();
+        const view = render(
+            <DashKitGridStack
+                config={initial}
+                groups={groups}
+                editMode
+                onChange={onChange}
+                onDragStart={onStart}
+                onResizeStart={onStart}
+            />,
+        );
+        const host = requireValue(
+            view.container.querySelector<GridItemHTMLElement>('[data-dashkit-id="a"]'),
+            'pointer host',
+        );
+        const plugin = host.querySelector('[data-identity]');
+        const target = requireValue(
+            host.querySelector<HTMLElement>(
+                gesture === 'drag' ? '.grid-stack-item-content' : '.ui-resizable-se',
+            ),
+            'native pointer target',
+        );
+        fireEvent.mouseDown(target, {clientX: 100, clientY: 30, buttons: 1});
+        fireEvent.mouseMove(document, {clientX: 110, clientY: 40, buttons: 1});
+        fireEvent.mouseMove(document, {clientX: 165, clientY: 55, buttons: 1});
+        expect(onStart).toHaveBeenCalledTimes(1);
+        const external = {...initial, layout: [{...initial.layout[0], x: 2, y: 3}]};
+        view.rerender(
+            <DashKitGridStack
+                config={external}
+                groups={groups}
+                editMode
+                onChange={onChange}
+                onDragStart={onStart}
+                onResizeStart={onStart}
+            />,
+        );
+        await act(async () => {
+            await Promise.resolve();
+        });
+        fireEvent.mouseMove(document, {clientX: 300, clientY: 200, buttons: 1});
+        fireEvent.mouseUp(document, {clientX: 300, clientY: 200});
+        await act(async () => {
+            await Promise.resolve();
+        });
+        expect(host.gridstackNode).toMatchObject({x: 2, y: 3, w: 6, h: 4});
+        expect(onChange).not.toHaveBeenCalled();
+        expect(host.querySelector('[data-identity]')).toBe(plugin);
+        fireEvent.mouseDown(
+            requireValue(
+                host.querySelector<HTMLElement>('.grid-stack-item-content'),
+                'next pointer target',
+            ),
+            {clientX: 150, clientY: 80, buttons: 1},
+        );
+        fireEvent.mouseMove(document, {clientX: 160, clientY: 80, buttons: 1});
+        fireEvent.mouseMove(document, {clientX: 215, clientY: 80, buttons: 1});
+        fireEvent.mouseUp(document, {clientX: 215, clientY: 80});
+        await act(async () => {
+            await Promise.resolve();
+        });
+        expect(onStart).toHaveBeenCalledTimes(2);
+        expect(onChange).toHaveBeenCalledTimes(1);
+        expect(onChange.mock.calls[0][0].config.layout).toEqual([{i: 'a', x: 3, y: 3, w: 6, h: 4}]);
+        expect(host.querySelector('[data-identity]')).toBe(plugin);
+        view.unmount();
+        measure.mockRestore();
+    },
+);
+
+// Critical: yes. Hidden destinations must not leak stale membership into the next saved edit.
+test.each([false, true])(
+    'controlled move to an absent zone parks the same widget/subtree (nested=%s)',
+    async (nested) => {
+        const initial: Config = {
+            ...config,
+            containers: nested
+                ? [{...box, parent: 'left', w: 6, padding: [0, 0, 0, 0]}]
+                : undefined,
+            items: [config.items[0], {...config.items[0], id: 'b'}],
+            layout: [
+                {
+                    i: 'a',
+                    parent: 'left',
+                    x: 0,
+                    y: 0,
+                    w: 2,
+                    h: 2,
+                    ...(nested ? {containerId: 'box'} : {}),
+                },
+                {i: 'b', parent: 'left', x: 8, y: 0, w: 2, h: 2},
+            ],
+        };
+        const group: DashKitGroup = {
+            id: 'left',
+            gridProperties: () => ({
+                cols: 12,
+                rowHeight: 20,
+                margin: [0, 0],
+                containerPadding: [0, 0],
+                compactType: null,
+                allowOverlap: true,
+            }),
+        };
+        const groups = [group];
+        const onChange = jest.fn();
+        const ref = React.createRef<DashKitGridStack>();
+        const fixture = (document: Config, renderedGroups = groups) => (
+            <DashKitGridStack
+                ref={ref}
+                config={document}
+                groups={renderedGroups}
+                editMode
+                onChange={onChange}
+            />
+        );
+        const view = render(fixture(initial));
+        const host = requireValue(
+            view.container.querySelector<GridItemHTMLElement>('[data-dashkit-id="a"]'),
+            'widget host',
+        );
+        const plugin = host.querySelector('[data-identity]');
+        const meta = await Promise.all(requireValue(ref.current, 'DashKit ref').getItemsMeta());
+        const moved: Config = {
+            ...initial,
+            layout: [{...initial.layout[0], parent: 'inactive'}, initial.layout[1]],
+            containers: initial.containers?.map((entry) => ({...entry, parent: 'inactive'})),
+        };
+        view.rerender(fixture(moved));
+        expect(view.container.contains(host)).toBe(false);
+        expect(host.querySelector('[data-identity]')).toBe(plugin);
+        expect(await Promise.all(requireValue(ref.current, 'DashKit ref').getItemsMeta())).toEqual(
+            meta,
+        );
+        expect(onChange).not.toHaveBeenCalled();
+        const next = requireValue(
+            view.container.querySelector<GridItemHTMLElement>('[data-dashkit-id="b"]'),
+            'visible host',
+        );
+        const grid = requireValue(next.gridstackNode?.grid, 'visible grid') as GridStack & {
+            triggerEvent(event: Event, target: HTMLElement): void;
+        };
+        await act(async () => {
+            grid.triggerEvent(new Event('dragstart'), next);
+            grid.engine.moveNodeCheck(requireValue(next.gridstackNode, 'visible node'), {x: 9});
+            grid.triggerEvent(new Event('dragstop'), next);
+            await Promise.resolve();
+        });
+        expect(onChange).toHaveBeenCalledTimes(1);
+        expect(onChange.mock.calls[0][0].config.layout).toEqual([
+            moved.layout[0],
+            {...moved.layout[1], x: 9},
+        ]);
+        expect(onChange.mock.calls[0][0].config.containers).toEqual(moved.containers);
+        view.rerender(
+            fixture(onChange.mock.calls[0][0].config, [...groups, {...group, id: 'inactive'}]),
+        );
+        expect(view.container.querySelector('[data-dashkit-id="a"]')).toBe(host);
+        expect(host.querySelector('[data-identity]')).toBe(plugin);
+        expect(host.gridstackNode).toMatchObject({id: 'a', x: 0, y: 0, w: 2, h: 2});
+        expect(await Promise.all(requireValue(ref.current, 'DashKit ref').getItemsMeta())).toEqual(
+            meta,
+        );
+        expect(onChange).toHaveBeenCalledTimes(1);
+        view.unmount();
+    },
+);
 
 test('invalid controlled membership is rejected before a replacement document callback', () => {
     const onChange = jest.fn();

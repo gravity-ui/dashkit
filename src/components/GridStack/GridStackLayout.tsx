@@ -121,6 +121,25 @@ class GridStackCanvas extends React.PureComponent {
         });
     }
     componentDidUpdate() {
+        if (
+            this.active &&
+            this.appliedContext?.externalLayoutRevision !== this.context.externalLayoutRevision
+        ) {
+            this.active.cancelled = true;
+            // Finish native pointer cleanup before applying the authoritative document.
+            this.syncing = true;
+            try {
+                const el = this.active.element as GridItemHTMLElement;
+                el.gridstackNode?.grid?.prepareDragDrop(el, true);
+            } finally {
+                this.syncing = false;
+            }
+            const host = this.hosts.get(this.active.id);
+            if (host?.el.gridstackNode) {
+                this.membership(host);
+            }
+            this.sync();
+        }
         if (!this.active && this.appliedContext !== this.context) {
             this.clearPreview();
             this.sync();
@@ -364,10 +383,16 @@ class GridStackCanvas extends React.PureComponent {
     private attach(id: string, entry: Omit<ConfigLayout, 'i'>, container = false) {
         const key = getGridKey(entry);
         const record = this.grids.get(key);
+        const previous = this.hosts.get(id);
         if (!record) {
+            if (previous) {
+                this.grids.get(previous.key)?.grid.removeWidget(previous.el, false, false);
+                previous.el.remove();
+                previous.key = key;
+            }
             return undefined;
         }
-        const host = this.hosts.get(id) || this.createHost(id, key, container);
+        const host = previous || this.createHost(id, key, container);
         host.lastRecord = record;
         if (host.key !== key) {
             this.grids.get(host.key)?.grid.removeWidget(host.el, false, false);
@@ -520,13 +545,10 @@ class GridStackCanvas extends React.PureComponent {
             for (let pass = 0; pending.length && pass <= containers.length; pass++) {
                 for (let index = pending.length - 1; index >= 0; index--) {
                     const container = pending[index];
-                    if (!this.grids.has(getGridKey(container))) {
+                    const host = this.attach(container.id, container, true);
+                    if (!host) {
                         continue;
                     }
-                    const host = requireValue(
-                        this.attach(container.id, container, true),
-                        'container host',
-                    );
                     host.content.classList.add('dashkit-gridstack__container');
                     const key = `container:${container.id}`;
                     if (!this.grids.has(key)) {
@@ -942,12 +964,16 @@ class GridStackCanvas extends React.PureComponent {
     private finishGesture(event: Event, el: GridItemHTMLElement) {
         const active = requireValue(this.active, 'active gesture');
         const host = this.hosts.get(active.id);
-        if (host) {
+        if (host?.el.gridstackNode) {
             this.membership(host);
         }
         if (active.cancelled) {
             this.sync();
-            this.callback(this.context.onDragStop, event, el);
+            this.callback(
+                active.resize ? this.context.onResizeStop : this.context.onDragStop,
+                event,
+                el,
+            );
             return;
         }
         if (host) {
