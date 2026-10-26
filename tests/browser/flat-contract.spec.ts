@@ -70,6 +70,8 @@ for (const engine of ['legacy']) {
         // The first single-move drag must save its full delta, exactly once.
         const resizedWidget = page.locator('[data-widget-id="b"]');
         const resizedBox = checked(await resizedWidget.boundingBox());
+        assert.equal(resizedBox.width, 205);
+        assert.equal(resizedBox.height, 145);
         await page.mouse.move(resizedBox.x + 30, resizedBox.y + 60);
         await page.mouse.down();
         await page.mouse.move(resizedBox.x + 65, resizedBox.y + 80, {steps: 1});
