@@ -155,7 +155,7 @@ export class DashKitEngine extends EngineBase {
                         node.x > 0 &&
                         !placed.some((other) => Utils.isIntercepted(node, other))
                     ) {
-                        node.x -= 1;
+                        node.x = Math.max(0, node.x - 1);
                     }
                 }
             }
