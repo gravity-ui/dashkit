@@ -89,8 +89,20 @@ test('subtree admission, finite bounds, scale continuation and StrictMode', asyn
         await page.mouse.down();
         await page.mouse.move(x + 5, y + 5);
         await page.mouse.move(destination.x, destination.y, {steps: 16});
+        const preview = await page.locator('[data-dashkit-id]').evaluateAll((elements) =>
+            Object.fromEntries(
+                elements.map((el) => {
+                    const node = (el as NativeElement).gridstackNode;
+                    return [
+                        (el as HTMLElement).dataset.dashkitId,
+                        {x: node.x, y: node.y, w: node.w, h: node.h},
+                    ];
+                }),
+            ),
+        );
         await page.mouse.up();
         await frames();
+        return preview;
     };
     await page.goto(storyUrl('bounded-subtrees'));
     await page.locator('[data-widget-id="b"]').waitFor();
@@ -181,15 +193,36 @@ test('subtree admission, finite bounds, scale continuation and StrictMode', asyn
         {x: 800, y: 550},
     ]) {
         const current = await snapshot();
-        await dragTo(checked(current.containers.find(({id}) => id === 'large')).rect, destination);
-        const rejected = await snapshot();
-        assert.deepEqual(rejected.config, current.config);
-        assert.equal(rejected.events, current.events);
-        sameRects(rejected, current);
+        const preview = await dragTo(
+            checked(current.containers.find(({id}) => id === 'large')).rect,
+            destination,
+        );
+        const applied = await snapshot();
+        // Rejected destinations retain membership; release still commits the valid source preview.
+        const expected = {
+            ...current.config,
+            containers: checked(current.config.containers).map((container) => ({
+                ...container,
+                ...preview[container.id],
+            })),
+        };
+        assert.deepEqual(applied.config, expected);
+        const changed = JSON.stringify(expected) !== JSON.stringify(current.config);
+        assert.equal(
+            applied.events,
+            `Events: ${Number(current.events?.split(': ')[1]) + Number(changed)}`,
+        );
         assert.deepEqual(
-            rejected.widgets.map(({id, instance}) => [id, instance]),
+            applied.widgets.map(({id, instance}) => [id, instance]),
             current.widgets.map(({id, instance}) => [id, instance]),
         );
+        if (changed) {
+            await page.getByRole('button', {name: 'Undo subtree', exact: true}).click();
+            await frames();
+            const undonePreview = await snapshot();
+            assert.deepEqual(undonePreview.config, current.config);
+            sameRects(undonePreview, current);
+        }
     }
     const cancelBefore = await snapshot();
     const cancelRect = checked(cancelBefore.containers.find(({id}) => id === 'small')).rect;
@@ -223,7 +256,7 @@ test('subtree admission, finite bounds, scale continuation and StrictMode', asyn
         Math.min(checked(oldSmall).x + 35, checked(left).width - checked(oldSmall).w),
     );
     assert.equal(checked(nextSmall).y, checked(oldSmall).y + 20);
-    assert.equal(nextGesture.events, 'Events: 4');
+    assert.equal(nextGesture.events, `Events: ${Number(rejected.events?.split(': ')[1]) + 1}`);
     assert.deepEqual(nextGesture.config.layout, rejected.config.layout);
     assert.deepEqual(
         nextGesture.widgets.map(({id, instance}) => [id, instance]),
@@ -235,7 +268,7 @@ test('subtree admission, finite bounds, scale continuation and StrictMode', asyn
     assert.deepEqual(nextUndo.config, rejected.config);
     sameRects(nextUndo, rejected);
     evidence.push({
-        check: 'bounded native container subtree transfer converts source pixels before fit, preserves descendants/refs, one transaction, undo, Escape cancel and actual oversize/outside/gap rejection',
+        check: 'bounded native container subtree transfer converts source pixels before fit, preserves descendants/refs, one transaction, undo, Escape cancel, oversize admission rejection and outside/gap preview commit',
         before,
         inside,
         undone,

@@ -1020,22 +1020,6 @@ class GridStackCanvas extends React.PureComponent {
         }
         if (host) {
             const record = requireValue(this.grids.get(host.key), 'host grid record');
-            const pointer = event as MouseEvent;
-            const rect = record.root.getBoundingClientRect();
-            if (
-                !active.resize &&
-                this.grids.size > 1 &&
-                Number.isFinite(pointer.clientX) &&
-                (pointer.clientX < rect.left ||
-                    pointer.clientX >= rect.right ||
-                    pointer.clientY < rect.top ||
-                    pointer.clientY >= rect.bottom)
-            ) {
-                // A rejected/outside cross-grid release restores the whole pre-gesture document.
-                this.sync();
-                this.callback(this.context.onDragStop, event, el);
-                return;
-            }
             if (host.key !== active.sourceKey && host.el.gridstackNode) {
                 const source = requireValue(
                     this.grids.get(active.sourceKey),
