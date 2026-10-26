@@ -73,6 +73,15 @@ type UseMemoStateContextResult = {
     controlsContextValue: OverlayControlsCtxShape;
 };
 
+export interface LayoutStateAdapter {
+    serializeLayout: (layout: ConfigLayout[]) => ConfigLayout[];
+    optimistic: boolean;
+}
+const legacyLayoutAdapter: LayoutStateAdapter = {
+    serializeLayout: (layout) => layout,
+    optimistic: false,
+};
+
 const hasGetMeta = (value: PluginRef): value is {getMeta: () => Promise<any>} => {
     return (
         typeof value === 'object' &&
@@ -93,7 +102,10 @@ const hasReload = (
     );
 };
 
-function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContextResult {
+function useMemoStateContext(
+    props: DashKitWithContextProps,
+    layoutAdapter: LayoutStateAdapter,
+): UseMemoStateContextResult {
     // Since we don't want to store widget parameters with auto-height enabled in the store or server,
     // the actual layout (visible to the user at any moment) will be stored in state.
     // However, to ensure the store gets the layout without considering auto-height widgets,
@@ -189,11 +201,11 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
 
             const baselineConfig = {
                 ...props.config,
-                layout: getBaselineLayout(),
+                layout: layoutAdapter.serializeLayout(getBaselineLayout()),
             };
 
             const newConfig = UpdateManager.updateLayout({
-                layout: currentInnerLayout,
+                layout: layoutAdapter.serializeLayout(currentInnerLayout),
                 config: baselineConfig,
             });
 
@@ -205,8 +217,11 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
             });
 
             internalBaselineLayoutRef.current = newConfig.layout;
+            if (layoutAdapter.optimistic) {
+                setVisualLayout(currentInnerLayout);
+            }
         },
-        [getBaselineLayout, props.config, props.emitDashKitEvent, onChange],
+        [getBaselineLayout, props.config, layoutAdapter, props.emitDashKitEvent, onChange],
     );
 
     const getLayoutItem = React.useCallback(
@@ -730,9 +745,15 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
     return {controlsContextValue, dashkitContextValue};
 }
 
-export function withContext(Component: React.ComponentType) {
+export function withContext(
+    Component: React.ComponentType,
+    layoutAdapter: LayoutStateAdapter = legacyLayoutAdapter,
+) {
     const WithContext = (props: DashKitWithContextProps) => {
-        const {dashkitContextValue, controlsContextValue} = useMemoStateContext(props);
+        const {dashkitContextValue, controlsContextValue} = useMemoStateContext(
+            props,
+            layoutAdapter,
+        );
 
         return (
             <DashKitContext.Provider value={dashkitContextValue}>

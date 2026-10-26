@@ -3,6 +3,7 @@ import React from 'react';
 import type {Meta, StoryFn} from '@storybook/react';
 
 import {DashKit} from '../../../src/components/DashKit/DashKit';
+import {DashKitGridStack} from '../../../src/components/GridStack/DashKitGridStack';
 import type {Config} from '../../../src/shared';
 import type {DashKitGroup, PluginWidgetProps} from '../../../src/typings';
 
@@ -87,14 +88,14 @@ const groups: DashKitGroup[] = [
         }),
     },
 ];
-const engines = {legacy: DashKit};
+const engines = {legacy: DashKit, gridstack: DashKitGridStack};
 function Contract({engine = 'legacy'}: {engine?: keyof typeof engines}) {
     const Component = engines[engine];
     const [config, setConfig] = React.useState(initial);
     const [editing, setEditing] = React.useState(true);
     const [events, setEvents] = React.useState(0);
     return (
-        <div data-dashkit-engine={engine}>
+        <div>
             <button onClick={() => setEditing((value) => !value)}>Toggle edit</button>
             <button onClick={() => setConfig(initial)}>Restore</button>
             <span data-qa="event-count">Events: {events}</span>

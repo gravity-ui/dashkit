@@ -6,7 +6,7 @@ import type {Config} from '../../src/shared';
 
 import {checked, storyUrl, test} from './fixtures';
 // Critical: yes. Mounted renderers must save the same native gesture and restore it silently.
-for (const engine of ['legacy']) {
+for (const engine of ['legacy', 'gridstack']) {
     test(`[${engine}] common flat native drag, resize, restore and identity`, async ({
         page,
         evidence,
@@ -54,7 +54,7 @@ for (const engine of ['legacy']) {
         assert(Math.abs(restored.y - before.y) <= 1);
         const corner = await page
             .locator(
-                '[data-qa="dashkit-grid-item"]:has([data-widget-id="b"]) .react-resizable-handle-se',
+                '[data-qa="dashkit-grid-item"]:has([data-widget-id="b"]) .react-resizable-handle-se, [data-dashkit-id="b"] > .ui-resizable-se',
             )
             .boundingBox();
         assert(corner);
@@ -93,7 +93,7 @@ for (const engine of ['legacy']) {
 }
 
 // Critical: no. Exact visible geometry catches clipped or unreset autoheight that saved-layout checks miss.
-for (const engine of ['legacy']) {
+for (const engine of ['legacy', 'gridstack']) {
     test(`[${engine}] common mounted autoheight grows, survives a move and resets to saved height`, async ({
         page,
         evidence,
