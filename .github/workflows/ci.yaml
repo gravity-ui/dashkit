@@ -61,6 +61,15 @@ jobs:
       run: npx playwright install --with-deps chromium firefox webkit
     - name: Browser Tests
       run: npm run test:browser
+    - name: Upload failure artifacts
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: browser-contract-failures
+        path: |
+          playwright-report/
+          test-results/
+        retention-days: 7
 
   # Validate the lower edge of the React peer range. Runs only on
   # release-please PRs so regular PR CI stays fast; failure here blocks

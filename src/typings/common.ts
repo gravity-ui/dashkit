@@ -48,6 +48,8 @@ export type MenuItem = (typeof MenuItems)[keyof typeof MenuItems] | OverlayCusto
 export interface SettingsProps {
     autoupdateInterval: number;
     silentLoading: boolean;
+    /** Limit renderer updates to this widget; defaults to full-layout updates. */
+    isolateItemUpdates?: boolean;
 }
 
 export interface ContextProps {
