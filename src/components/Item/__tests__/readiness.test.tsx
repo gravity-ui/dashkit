@@ -1,14 +1,52 @@
 /** @jest-environment jsdom */
+jest.mock('@gravity-ui/uikit', () => {
+    const ReactMock = require('react');
+    return {
+        Loader: () => ReactMock.createElement('span', null, 'loading'),
+        Button: ({children}: {children?: unknown}) =>
+            ReactMock.createElement('button', null, children),
+    };
+});
+
 import React from 'react';
 
-import {act, render} from '@testing-library/react';
+import {act, fireEvent, render} from '@testing-library/react';
 
 import {DashKitContext} from '../../../context/DashKitContext';
 import type {DashKitCtxShape} from '../../../context/DashKitContext';
+import {PluginText} from '../../../plugins/Text/Text';
 import type {ConfigItem} from '../../../shared';
 import type {PluginWidgetProps} from '../../../typings';
 import {RegisterManager} from '../../../utils/register-manager';
 import Item from '../Item';
+
+function createContext(item: ConfigItem, registerManager: RegisterManager): DashKitCtxShape {
+    return {
+        config: {salt: 'test', counter: 1, items: [item], layout: [], aliases: {}, connections: []},
+        editMode: false,
+        context: {},
+        settings: {autoupdateInterval: 0, silentLoading: false},
+        globalParams: {},
+        registerManager,
+        forwardedMetaRef: null,
+        externalLayoutRevision: 0,
+        configItems: [item],
+        layout: [],
+        layoutChange: jest.fn(),
+        temporaryLayout: null,
+        memorizeOriginalLayout: jest.fn(),
+        revertToOriginalLayout: jest.fn(),
+        itemsState: {async: {}},
+        itemsParams: {async: {}},
+        onItemStateAndParamsChange: jest.fn(),
+        getItemsMeta: jest.fn(),
+        reloadItems: jest.fn(),
+        onDrop: jest.fn(),
+        onDropDragOver: jest.fn(),
+        outerDnDEnable: false,
+        dragOverPlugin: null,
+    };
+}
 
 // Critical: yes. Stale readiness can export unfinished content or signal a removed widget as ready.
 test('only the latest live async load marks the current item ready', () => {
@@ -37,31 +75,7 @@ test('only the latest live async load marks the current item ready', () => {
         namespace: 'default',
         data: {text: 'initial'},
     };
-    const context: DashKitCtxShape = {
-        config: {salt: 'test', counter: 1, items: [item], layout: [], aliases: {}, connections: []},
-        editMode: false,
-        context: {},
-        settings: {autoupdateInterval: 0, silentLoading: false},
-        globalParams: {},
-        registerManager,
-        forwardedMetaRef: null,
-        externalLayoutRevision: 0,
-        configItems: [item],
-        layout: [],
-        layoutChange: jest.fn(),
-        temporaryLayout: null,
-        memorizeOriginalLayout: jest.fn(),
-        revertToOriginalLayout: jest.fn(),
-        itemsState: {async: {}},
-        itemsParams: {async: {}},
-        onItemStateAndParamsChange: jest.fn(),
-        getItemsMeta: jest.fn(),
-        reloadItems: jest.fn(),
-        onDrop: jest.fn(),
-        onDropDragOver: jest.fn(),
-        outerDnDEnable: false,
-        dragOverPlugin: null,
-    };
+    const context = createContext(item, registerManager);
     const mounted = jest.fn();
     const ready = jest.fn();
     const adjustWidgetLayout = jest.fn();
@@ -94,8 +108,139 @@ test('only the latest live async load marks the current item ready', () => {
     expect(ready).toHaveBeenCalledTimes(1);
     expect(ready).toHaveBeenLastCalledWith(latest);
 
-    view.unmount();
+    const replacement = {...latest, id: 'replacement', data: {text: 'replacement'}};
+    view.rerender(fixture(replacement));
+    act(() => completions[2]());
+    expect(ready).toHaveBeenCalledTimes(2);
+    expect(ready).toHaveBeenLastCalledWith(replacement);
     act(() => completions[1]());
-    expect(ready).toHaveBeenCalledTimes(1);
+    expect(ready).toHaveBeenCalledTimes(2);
+
+    view.rerender(fixture(latest));
+    act(() => completions[3]());
+    expect(ready).toHaveBeenCalledTimes(3);
+    expect(ready).toHaveBeenLastCalledWith(latest);
+    act(() => completions[1]());
+    expect(ready).toHaveBeenCalledTimes(3);
+
+    view.unmount();
+    act(() => completions[3]());
+    expect(ready).toHaveBeenCalledTimes(3);
     expect(mounted).toHaveBeenLastCalledWith(latest, {isAsync: true, isMounted: false});
 });
+
+// Critical: yes. Regression: retained readiness callbacks stop reporting post-processing/style changes.
+// Impact: unfinished preview/export. Unique protection: real Text and its wrapper acquire separately.
+test.each(['success', 'failure'] as const)(
+    'retained wrapper notifications survive real Text loads and obsolete %s',
+    async (outcome) => {
+        function pending() {
+            let resolve!: (result: {result: string}) => void;
+            let reject!: (error: Error) => void;
+            const promise = new Promise<{result: string}>((yes, no) => {
+                resolve = yes;
+                reject = no;
+            });
+            return {promise, resolve, reject};
+        }
+        const initial = pending();
+        const obsolete = pending();
+        const latest = pending();
+        let retainedCompletion!: () => void;
+        function TextWrapper(props: PluginWidgetProps) {
+            const completionRef = React.useRef<(() => void) | undefined>(undefined);
+            if (!completionRef.current) {
+                completionRef.current = props.onBeforeLoad();
+            }
+            retainedCompletion = completionRef.current;
+            const handleBeforeLoad = () => {
+                const complete = props.onBeforeLoad();
+                return () => complete();
+            };
+            return (
+                <>
+                    <PluginText
+                        {...props}
+                        data={{text: props.data.text as string}}
+                        apiHandler={({text}) => {
+                            if (text === 'markdown') {
+                                return initial.promise;
+                            }
+                            return text === 'obsolete' ? obsolete.promise : latest.promise;
+                        }}
+                        onBeforeLoad={handleBeforeLoad}
+                        onBeforeRender={() => () => {}}
+                    />
+                    <button onClick={() => completionRef.current?.()}>Post-process</button>
+                    <button onClick={() => completionRef.current?.()}>Style changed</button>
+                </>
+            );
+        }
+        const registerManager = new RegisterManager();
+        registerManager.registerPlugin({
+            type: 'wrapped-text',
+            renderer: (props) => <TextWrapper {...props} />,
+        });
+        const item: ConfigItem = {
+            id: 'async',
+            type: 'wrapped-text',
+            namespace: 'default',
+            data: {text: 'markdown'},
+        };
+        const context = createContext(item, registerManager);
+        const ready = jest.fn(() => expect(document.body.textContent).toContain('committed'));
+        const adjustWidgetLayout = jest.fn();
+        const fixture = (current: ConfigItem) => (
+            <DashKitContext.Provider value={context}>
+                <Item
+                    id={current.id}
+                    item={current}
+                    layout={context.layout}
+                    shouldItemUpdate
+                    adjustWidgetLayout={adjustWidgetLayout}
+                    onItemRender={ready}
+                />
+            </DashKitContext.Provider>
+        );
+        const view = render(fixture(item));
+        expect(ready).not.toHaveBeenCalled();
+        await act(async () => initial.resolve({result: '<p>committed markdown</p>'}));
+        expect(ready).toHaveBeenCalledTimes(1);
+        expect(ready).toHaveBeenLastCalledWith(item);
+        fireEvent.click(view.getByText('Post-process'));
+        expect(ready).toHaveBeenCalledTimes(2);
+        fireEvent.click(view.getByText('Style changed'));
+        expect(ready).toHaveBeenCalledTimes(3);
+
+        view.rerender(fixture({...item, data: {text: 'obsolete'}}));
+        fireEvent.click(view.getByText('Style changed'));
+        expect(ready).toHaveBeenCalledTimes(3);
+        const current = {...item, data: {text: 'latest'}};
+        view.rerender(fixture(current));
+        fireEvent.click(view.getByText('Post-process'));
+        expect(ready).toHaveBeenCalledTimes(3);
+        await act(async () => latest.resolve({result: '<p>committed latest</p>'}));
+        expect(ready).toHaveBeenCalledTimes(4);
+        expect(ready).toHaveBeenLastCalledWith(current);
+        fireEvent.click(view.getByText('Post-process'));
+        expect(ready).toHaveBeenCalledTimes(5);
+        fireEvent.click(view.getByText('Style changed'));
+        expect(ready).toHaveBeenCalledTimes(6);
+        await act(async () => {
+            if (outcome === 'success') {
+                obsolete.resolve({result: '<p>obsolete content</p>'});
+            } else {
+                obsolete.reject(new Error('obsolete request'));
+            }
+        });
+        expect(view.getByText('committed latest')).toBeTruthy();
+        expect(view.queryByText('obsolete content')).toBeNull();
+        expect(ready).toHaveBeenCalledTimes(6);
+        fireEvent.click(view.getByText('Style changed'));
+        expect(ready).toHaveBeenCalledTimes(7);
+        expect(ready).toHaveBeenLastCalledWith(current);
+        view.unmount();
+        act(() => retainedCompletion());
+        expect(ready).toHaveBeenCalledTimes(7);
+    },
+);
