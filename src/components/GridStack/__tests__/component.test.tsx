@@ -355,32 +355,8 @@ test('custom plugin handles bind after portal render and update without remount'
     }
 });
 
-// Critical: yes. Unsupported documents must be rejected before they can be saved as flat data.
-test.each([
-    {layoutVersion: 2},
-    {containers: []},
-    {layout: [{...config.layout[0], containerId: 'box'}]},
-])('rejects unsupported nested input %j without mutating it', (extra) => {
-    const nested = {...config, ...extra};
-    const before = JSON.stringify(nested);
-    expect(() =>
-        new DashKitGridStack({
-            ...DashKitGridStack.defaultProps,
-            config: nested,
-            editMode: true,
-        }).render(),
-    ).toThrow('nested config');
-    expect(() => DashKitGridStack.setItem({config: nested, item: {type, data: {}}})).toThrow(
-        'nested config',
-    );
-    expect(() =>
-        DashKitGridStack.removeItem({config: nested, id: 'a', itemsStateAndParams: {}}),
-    ).toThrow('nested config');
-    expect(JSON.stringify(nested)).toBe(before);
-});
-
 // Critical: yes. Native reflow must not mutate saved input while resolving a collision.
-test('static reflow retains input geometry and rejects nested options before engine work', () => {
+test('static reflow retains input geometry and rejects unknown nested membership', () => {
     const layout = [
         {i: 'a', x: 0, y: 0, w: 8, h: 2},
         {i: 'b', x: 2, y: 0, w: 6, h: 2},
@@ -392,10 +368,10 @@ test('static reflow retains input geometry and rejects nested options before eng
     });
     expect(JSON.stringify(layout)).toBe(before);
     const options = {layout, containers: []};
-    expect(() => DashKitGridStack.reflowLayout(options)).toThrow('nested config');
+    expect(DashKitGridStack.reflowLayout(options)).toEqual(DashKitGridStack.reflowLayout({layout}));
     const incoming = {i: 'nested', x: 0, y: 0, w: 1, h: 1, containerId: 'box'};
     expect(() => DashKitGridStack.reflowLayout({layout, newLayoutItem: incoming})).toThrow(
-        'nested config',
+        'unknown container',
     );
 });
 

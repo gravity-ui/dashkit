@@ -489,7 +489,7 @@ export class UpdateManager {
         counter = newIdData.counter;
 
         const newItem = {...item, id: newIdData.id, data: newItemData.data, namespace};
-        const saveDefaultLayout = pick(layout, ['h', 'w', 'x', 'y', 'parent']);
+        const saveDefaultLayout = pick(layout, ['h', 'w', 'x', 'y', 'parent', 'containerId']);
 
         const updateActions = {
             counter: {$set: counter},

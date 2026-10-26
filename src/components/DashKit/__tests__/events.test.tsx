@@ -128,9 +128,24 @@ describe('DashKit change event — onChange gate', () => {
         expect(onChange).toHaveBeenCalledTimes(1);
     });
 
-    it('preserves layout additions, removals and order changes', () => {
+    it('preserves container-only changes and layout additions, removals and order changes', () => {
+        const container = {
+            id: 'box',
+            x: 0,
+            y: 0,
+            w: 12,
+            h: 10,
+            padding: [0, 0, 0, 0] as [number, number, number, number],
+            gap: [0, 0] as [number, number],
+            grid: {cols: 12, rowHeight: 18, compactType: null},
+        };
         const second = {...TEST_CONFIG.layout[0], i: 'item2', x: 4};
         for (const [previous, next] of [
+            [TEST_CONFIG, {...TEST_CONFIG, containers: [container]}],
+            [
+                {...TEST_CONFIG, containers: [container]},
+                {...TEST_CONFIG, containers: [{...container, x: 1}]},
+            ],
             [TEST_CONFIG, {...TEST_CONFIG, layout: [...TEST_CONFIG.layout, second]}],
             [TEST_CONFIG, {...TEST_CONFIG, layout: []}],
             [

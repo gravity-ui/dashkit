@@ -2,7 +2,7 @@ import React from 'react';
 
 import {DEFAULT_NAMESPACE} from '../../constants/common';
 import {withContext} from '../../hocs/withContext';
-import type {Config} from '../../shared';
+import type {Config, GridStackContainer} from '../../shared';
 import type {AddConfigItem, AddNewItemOptions, DashKitGroup, SetConfigItem} from '../../typings';
 import {UpdateManager} from '../../utils/update-manager';
 import {DashKitBase, _emitSymbol} from '../DashKit/DashKitBase';
@@ -10,14 +10,7 @@ import {registerManager} from '../DashKit/registration';
 import {DashKitDnDWrapper} from '../DashKitDnDWrapper/DashKitDnDWrapper';
 
 import {GridStackLayout} from './GridStackLayout';
-import {
-    configIds,
-    getGridKey,
-    validateConfig,
-    validateFlatDocument,
-    validateGrid,
-    validateLayout,
-} from './document';
+import {configIds, getGridKey, validateConfig, validateGrid, validateLayout} from './document';
 import {DashKitEngine} from './engine';
 import {getGridProperties} from './grid-properties';
 import {requireValue} from './invariants';
@@ -27,20 +20,24 @@ import type {DashKitGridStackProps} from './types';
 const GridStackView = withContext(GridStackLayout, gridStackLayoutAdapter);
 
 export class DashKitGridStack extends DashKitBase {
-    static reflowLayout(options: {
+    static reflowLayout({
+        newLayoutItem,
+        layout,
+        groups,
+        containers,
+    }: {
         newLayoutItem?: Config['layout'][number];
         layout: Config['layout'];
         groups?: DashKitGroup[];
+        containers?: GridStackContainer[];
     }) {
-        validateFlatDocument(options);
-        const {newLayoutItem, layout, groups} = options;
         const result = [...layout, ...(newLayoutItem ? [newLayoutItem] : [])].map((entry) => ({
             ...entry,
         }));
-        validateLayout(result);
+        validateLayout(result, containers, groups);
         const keys = new Set(result.map(getGridKey));
         keys.forEach((key) => {
-            const props = getGridProperties(key, registerManager.gridLayout, groups);
+            const props = getGridProperties(key, registerManager.gridLayout, groups, containers);
             validateGrid(props);
             const engine = new DashKitEngine({
                 column: props.cols || 36,
@@ -56,7 +53,12 @@ export class DashKitGridStack extends DashKitBase {
                 engine.mode.compactType = null;
             }
             const entries = result.filter((entry) => getGridKey(entry) === key);
+            this.validateNestedLayout(entries, groups, containers);
             engine.batchUpdate();
+            // Reflow returns widgets only, so descriptors are immovable collision footprints.
+            containers
+                ?.filter((entry) => getGridKey(entry) === key)
+                .forEach(({id, x, y, w, h}) => engine.addNode({id, x, y, w, h, locked: true}));
             const prioritized = newLayoutItem
                 ? [
                       ...entries.filter(({i}) => i === newLayoutItem.i),
@@ -73,6 +75,7 @@ export class DashKitGridStack extends DashKitBase {
                 Object.assign(entry, {x: node.x, y: node.y, w: node.w, h: node.h});
             });
         });
+        this.validateNestedLayout(result, groups, containers);
         return result;
     }
 
@@ -89,15 +92,21 @@ export class DashKitGridStack extends DashKitBase {
         options?: Omit<AddNewItemOptions, 'reflowLayoutOptions'>;
         groups?: DashKitGroup[];
     }): Config {
-        validateConfig(config);
+        validateConfig(config, groups);
         if (item.id) {
             const result = UpdateManager.editItem({item, namespace, config, options});
+            this.validateNestedLayout(result.layout, groups, result.containers);
             return result;
         }
         const addition = item as AddConfigItem;
         const plugin = registerManager.getItem(item.type);
         const layout = {...plugin.defaultLayout, ...addition.layout};
-        const props = getGridProperties(getGridKey(layout), registerManager.gridLayout, groups);
+        const props = getGridProperties(
+            getGridKey(layout),
+            registerManager.gridLayout,
+            groups,
+            config.containers,
+        );
         const needsReflow =
             Boolean(options.updateLayout) ||
             Number.isFinite(layout.y) ||
@@ -105,13 +114,13 @@ export class DashKitGridStack extends DashKitBase {
         layout.w = Number.isFinite(layout.w) ? layout.w : props.cols || 36;
         layout.y = Number.isFinite(layout.y)
             ? layout.y
-            : config.layout
+            : [...config.layout, ...(config.containers || [])]
                   .filter((entry) => getGridKey(entry) === getGridKey(layout))
                   .reduce((bottom, entry) => Math.max(bottom, entry.y + entry.h), 0);
         if (props.compactType === 'horizontal-nowrap') {
             const available =
                 (props.cols || 36) -
-                config.layout
+                [...config.layout, ...(config.containers || [])]
                     .filter((entry) => getGridKey(entry) === getGridKey(layout))
                     .reduce((sum, entry) => sum + entry.w, 0);
             if (available < (layout.minW || 1)) {
@@ -143,10 +152,12 @@ export class DashKitGridStack extends DashKitBase {
                           (entry) => !config.layout.some(({i}) => i === entry.i),
                       ),
                       groups,
+                      containers: config.containers,
                   }),
               }
             : next;
-        validateConfig(result);
+        validateConfig(result, groups);
+        this.validateNestedLayout(result.layout, groups, result.containers);
         return result;
     }
 
@@ -156,6 +167,26 @@ export class DashKitGridStack extends DashKitBase {
         itemsStateAndParams: NonNullable<DashKitGridStackProps['itemsStateAndParams']>;
     }) {
         validateConfig(options.config);
+        const container = options.config.containers?.find((entry) => entry.id === options.id);
+        if (container) {
+            if (
+                options.config.layout.some((entry) => entry.containerId === options.id) ||
+                options.config.containers?.some((entry) => entry.containerId === options.id)
+            ) {
+                throw new Error(
+                    `DashKitGridStack: move or remove children before removing container "${options.id}"`,
+                );
+            }
+            return {
+                config: {
+                    ...options.config,
+                    containers: options.config.containers?.filter(
+                        (entry) => entry.id !== options.id,
+                    ),
+                },
+                itemsStateAndParams: options.itemsStateAndParams,
+            };
+        }
         if (
             ![...options.config.items, ...(options.config.globalItems || [])].some(
                 (entry) => entry.id === options.id,
@@ -166,10 +197,35 @@ export class DashKitGridStack extends DashKitBase {
         return UpdateManager.removeItem(options);
     }
 
+    private static validateNestedLayout(
+        layout: Config['layout'],
+        groups?: DashKitGroup[],
+        containers?: GridStackContainer[],
+    ) {
+        [...layout, ...(containers || []).map(({id, ...entry}) => ({i: id, ...entry}))]
+            .filter((entry) => entry.containerId)
+            .forEach((entry) => {
+                const props = getGridProperties(
+                    getGridKey(entry),
+                    registerManager.gridLayout,
+                    groups,
+                    containers,
+                );
+                if (
+                    entry.y + entry.h > requireValue(props.maxRows, 'props.maxRows') + 1e-7 ||
+                    entry.x + entry.w > requireValue(props.cols, 'props.cols')
+                ) {
+                    throw new Error(
+                        `DashKitGridStack: child "${entry.i}" exceeds its container content bounds`,
+                    );
+                }
+            });
+    }
+
     declare props: DashKitGridStackProps & typeof DashKitBase.defaultProps;
 
     render() {
-        validateConfig(this.props.config);
+        validateConfig(this.props.config, this.props.groups);
         const content = (
             <GridStackView
                 {...this.props}
@@ -186,4 +242,4 @@ export class DashKitGridStack extends DashKitBase {
     }
 }
 
-export type {DashKitGridStackProps, GridStackConfig} from './types';
+export type {DashKitGridStackProps, GridStackConfig, GridStackContainer} from './types';
