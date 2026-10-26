@@ -206,3 +206,17 @@ export function projectLayoutDocument(
         }),
     };
 }
+
+export function getContainerDescendants(id: string, containers: GridStackContainer[]) {
+    const result = new Set([id]);
+    for (let changed = true; changed; ) {
+        changed = false;
+        containers.forEach((entry) => {
+            if (entry.containerId && result.has(entry.containerId) && !result.has(entry.id)) {
+                result.add(entry.id);
+                changed = true;
+            }
+        });
+    }
+    return result;
+}

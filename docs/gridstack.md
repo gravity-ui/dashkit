@@ -31,6 +31,9 @@ Static `setItem` and `reflowLayout` resolve the same effective grid settings as 
 
 Root widths, margins and padding are CSS pixels; saved x/y/w/h use grid units. For a grid of width `W`, `C` columns, horizontal padding `P` and gap `G`, the column step is `(W - 2P + G) / C`; a widget of width `w` occupies `w * step - G` CSS pixels. Vertical step is `rowHeight + gapY`.
 
+For a fixed pixel canvas, set `cols` to its unscaled width, `rowHeight: 1`, `margin: [0, 0]`, `compactType: null`, `allowOverlap: true` and a finite `maxRows`. Give the containing canvas a definite height and use `autoSize: false`; `maxRows` alone does not make an auto-sized zone tall.
+
+Live `transformScale` and `transformScaleRef` values map screen movement to unscaled layout units, including zoom changes during an active gesture. Fixed canvas bounds intersect configured row limits and nested physical content bounds. Scale values must be finite and positive.
 
 Ordinary auto-sized zones derive height from their content, gap and padding, including empty zones. They do not gain a minimum number of rows. A fluid grid's inline size is contained so the native grid's trailing gap cannot enlarge an ancestor's intrinsic width.
 
@@ -73,7 +76,7 @@ const nested = {
 
 The component validates duplicate/reserved IDs, geometry, padding, gaps, missing membership, cycles and inconsistent root zones before applying a document. Invalid input throws an explanatory error. The measured geometry and snapshot projection also reject nonpositive usable content width/height or children exceeding their container bounds; padding does not silently enlarge a saved container. Remove or move a container's children explicitly before deleting it; removing a nonempty container does not silently delete its subtree. Pass a nested configuration to `DashKitGridStack`; the legacy component explicitly rejects it.
 
-Controlled changes can move widgets between zones and containers while preserving their plugin instance and portal target. Dragging and resizing within the current grid is supported; native cross-grid dragging, subtree transfers and palette admission are disabled. Resizing a container respects the extents of its children. Mobile mode traverses the hierarchy and renders each widget once using the existing mobile presentation.
+Controlled changes can move widgets between zones and containers while preserving their plugin instance and portal target. Native dragging supports cross-zone and nested transfers, including whole container subtrees. Destinations validate available space and converted size constraints before admission. A release outside the reachable surface commits the last bounded preview; Escape cancels the transaction. Palette dragging previews collision changes without saving them; rejected or canceled drops restore neighbors and leave the next edit usable. Resizing a container respects the extents of its children. Mobile mode traverses the hierarchy and renders each widget once using the existing mobile presentation.
 
 For snapshots, import `getGridStackLayoutRects` and its rectangle/root-grid types from `@gravity-ui/dashkit/helpers`. `getGridStackLayoutRects(config, rootGrids)` returns widget rectangles in unscaled CSS pixels, accumulating container origins and padding. Supply each root zone's width and effective `gridProperties`; use `__default` for the default zone. It does not mount a grid, mutate a configuration or wait for plugin content.
 
@@ -83,7 +86,7 @@ The entry has ESM, CommonJS and TypeScript declarations. GridStack's published n
 
 The React peer range is unchanged. The new layout uses portals and the existing lifecycle shell; it does not require `createRoot` in consumer applications. Browser support follows modern GridStack requirements, including CSS variables and inline-size containment. ResizeObserver uses the existing polyfill when unavailable. A JavaScript build does not polyfill CSS features.
 
-The public stories include flat and nested examples. Native tests use Storybook's normal bundler and server; Playwright starts it automatically:
+The public stories include small flat and nested examples. Detailed native interaction fixtures live only under `tests/browser/stories` and are loaded with `DASHKIT_TEST_STORIES=1`. Native tests use Storybook's normal bundler and server; Playwright starts it automatically:
 
 ```sh
 npx playwright install chromium
@@ -93,3 +96,5 @@ npm run test:browser
 ```
 
 Playwright writes traces and failure screenshots to `test-results/` and its HTML report to `playwright-report/` (both ignored). `npm test` runs engine-independent helpers once, the same mounted flat contract for legacy and GridStack, and separate engine-specific suites. Separate native suites cover contained nesting, controlled cancellation and restoration, bounds, portal identity and StrictMode cleanup. The common flat browser contract runs with the same assertions for both renderers.
+
+The native CDP touch transport check runs in Chromium; other native gesture and common public contracts run in Chromium, Firefox and WebKit.

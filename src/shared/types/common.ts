@@ -17,6 +17,10 @@ export type ItemDragProps = {
 };
 
 export type DraggedOverItem = Omit<ConfigLayout, 'x' | 'y' | 'i'> & {
+    minW?: number;
+    minH?: number;
+    maxW?: number;
+    maxH?: number;
     type: string;
     i?: ConfigLayout['i'];
 };
