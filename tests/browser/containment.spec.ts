@@ -50,7 +50,7 @@ function containment(page: Page) {
         await frames();
     };
     const openBounds = async () => {
-        await page.goto(storyUrl('nested-bounds'));
+        await page.goto(storyUrl('tests-gridstack--nested-bounds'));
         await page.locator('[data-widget-id="b"]').waitFor();
     };
     const boundState = () =>
@@ -96,7 +96,7 @@ function containment(page: Page) {
 
 test('nested physical bounds preserve the next resize and undo', async ({page, evidence}) => {
     const {frames, state, held} = containment(page);
-    await page.goto(storyUrl('nested-containers'));
+    await page.goto(storyUrl('tests-gridstack--nested-containers'));
     await page.locator('[data-widget-id="b"]').waitFor();
     const item = await page.locator('[data-widget-id="b"]').boundingBox();
     const target = await page.locator('[data-dashkit-id="panel"] .grid-stack').boundingBox();

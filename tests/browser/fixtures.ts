@@ -16,8 +16,8 @@ export const test = base.extend<{evidence: unknown[]}>({
     },
 });
 
-export function storyUrl(story: string, args: Record<string, string | boolean | null> = {}) {
-    const search = new URLSearchParams({id: `tests-gridstack--${story}`, viewMode: 'story'});
+export function storyUrl(id: string, args: Record<string, string | boolean | null> = {}) {
+    const search = new URLSearchParams({id, viewMode: 'story'});
     if (Object.keys(args).length) {
         search.set(
             'args',

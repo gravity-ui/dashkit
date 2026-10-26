@@ -3,9 +3,29 @@ jest.mock('@gravity-ui/icons', () => ({Ellipsis: 'ellipsis', Gear: 'gear', Xmark
 jest.mock('@gravity-ui/uikit', () => {
     const ReactMock = require('react');
     return {
-        Button: ({children}: {children?: unknown}) =>
-            ReactMock.createElement('button', null, children),
-        DropdownMenu: () => null,
+        Button: ({
+            children,
+            onClick,
+            title,
+            qa,
+        }: {
+            children?: unknown;
+            onClick?: () => void;
+            title?: string;
+            qa?: string;
+        }) => ReactMock.createElement('button', {onClick, title, 'data-qa': qa}, children),
+        DropdownMenu: ({items}: {items: Array<{text: string; action: () => void}>}) =>
+            ReactMock.createElement(
+                'div',
+                null,
+                items.map((item) =>
+                    ReactMock.createElement(
+                        'button',
+                        {key: item.text, onClick: item.action},
+                        item.text,
+                    ),
+                ),
+            ),
         Icon: () => null,
     };
 });
@@ -17,7 +37,7 @@ import React from 'react';
 import {act, fireEvent, render} from '@testing-library/react';
 
 import {DashKitContext} from '../../../context';
-import type {Config} from '../../../shared';
+import type {Config, ItemsStateAndParams} from '../../../shared';
 import type {DashKitEventMap, DashKitGroup, PluginWidgetProps} from '../../../typings';
 import {DashKitGridStack} from '../../GridStack/DashKitGridStack';
 import {DashKit} from '../DashKit';
@@ -63,6 +83,35 @@ class Widget extends React.Component<PluginWidgetProps> {
         return (
             <div data-widget={this.props.id} data-identity={this.identity}>
                 {this.props.data.text as string}
+                <output data-params={this.props.id}>{JSON.stringify(this.props.params)}</output>
+                <output data-state={this.props.id}>{JSON.stringify(this.props.state)}</output>
+                {this.props.data.group?.map((selector) => (
+                    <button
+                        key={selector.id}
+                        onClick={() =>
+                            this.props.onStateAndParamsChange(
+                                {
+                                    params: {
+                                        [selector.id === 'country' ? 'Country' : 'Year']: [
+                                            'chosen',
+                                        ],
+                                    },
+                                },
+                                {groupItemIds: [selector.id]},
+                            )
+                        }
+                    >
+                        Apply {selector.id}
+                    </button>
+                ))}
+                {this.props.data.tabs?.map((tab) => (
+                    <button
+                        key={tab.id}
+                        onClick={() => this.props.onStateAndParamsChange({state: {tabId: tab.id}})}
+                    >
+                        Tab {tab.id}
+                    </button>
+                ))}
                 <button
                     onClick={() =>
                         this.props.onStateAndParamsChange({
@@ -110,6 +159,11 @@ const geometry = (container: HTMLElement, id: string) => {
             Number(el.getAttribute(`data-dashkit-grid-${key}`)),
         ]),
     );
+};
+const jsonOutput = (container: HTMLElement, selector: string) => {
+    const output = container.querySelector(selector);
+    assert(output?.textContent, `Missing ${selector}`);
+    return JSON.parse(output.textContent);
 };
 const rects = (layout: Config['layout']) => layout.map(({i, x, y, w, h}) => ({i, x, y, w, h}));
 
@@ -193,6 +247,270 @@ describe.each(LAYOUT_ENGINES)('[%s] common flat DashKit contract', (_engine, Com
             await Promise.resolve();
         });
     };
+
+    // Critical: yes. Wrong propagation after save/restore silently changes chart data.
+    // Unlike helper tests, this checks delivered plugin output after UI actions on each renderer.
+    test('multi-selector queue, aliases, ignores, namespaces and tabs survive gesture and controlled restore', async () => {
+        const document: Config = {
+            ...config,
+            aliases: {default: [['Country', 'region']]},
+            connections: [{from: 'ignored', to: 'country', kind: 'ignore'}],
+            items: [
+                {
+                    id: 'a',
+                    type,
+                    namespace: 'default',
+                    data: {
+                        group: [
+                            {
+                                id: 'country',
+                                namespace: 'default',
+                                defaults: {Country: ['widget'], priority: ['widget-priority']},
+                            },
+                            {id: 'year', namespace: 'default', defaults: {Year: ['2025']}},
+                        ],
+                    },
+                },
+                {
+                    id: 'b',
+                    type,
+                    namespace: 'default',
+                    data: {
+                        tabs: [
+                            {id: 'first', isDefault: true, params: {tabOnly: ['first']}},
+                            {id: 'second', params: {tabOnly: ['second']}},
+                        ],
+                    },
+                },
+                {
+                    id: 'other',
+                    type,
+                    namespace: 'separate',
+                    data: {},
+                    defaults: {Country: ['isolated']},
+                },
+                {id: 'ignored', type, namespace: 'default', data: {}},
+            ],
+            layout: [
+                ...config.layout,
+                {i: 'other', x: 0, y: 4, w: 2, h: 2},
+                {i: 'ignored', x: 6, y: 4, w: 2, h: 2},
+            ],
+        };
+        const original = JSON.stringify(document);
+        const defaults = {
+            Country: ['global-default'],
+            fallback: ['fallback'],
+            priority: ['default'],
+        };
+        const globals = {priority: ['URL']};
+        const settings = {autoupdateInterval: 0, silentLoading: true};
+        const initialState: ItemsStateAndParams = {
+            b: {state: {tabId: 'first'}, params: {_ap_old: ['stale']}},
+            __meta__: {version: 2, queue: [{id: 'b', tabId: 'first'}]},
+        };
+        const changed = jest.fn();
+        let currentDocument = document;
+        let currentState = initialState;
+        const view = render(<Component config={document} groups={groups} editMode />);
+        const show = () =>
+            view.rerender(
+                <Component
+                    config={currentDocument}
+                    itemsStateAndParams={currentState}
+                    defaultGlobalParams={defaults}
+                    globalParams={globals}
+                    settings={settings}
+                    groups={groups}
+                    editMode
+                    onChange={(next) => {
+                        changed(next);
+                        currentDocument = next.config;
+                        currentState = next.itemsStateAndParams;
+                        show();
+                    }}
+                />,
+            );
+        show();
+        const params = (id: string) => jsonOutput(view.container, `[data-params="${id}"]`);
+        const state = () => jsonOutput(view.container, '[data-state="b"]');
+        const base = {
+            Country: ['widget'],
+            region: ['widget'],
+            Year: ['2025'],
+            fallback: ['fallback'],
+            priority: ['URL'],
+        };
+        expect(params('b')).toEqual({...base, tabOnly: ['first'], _ap_old: ['stale']});
+        expect(params('ignored')).toEqual({
+            Country: ['global-default'],
+            region: ['global-default'],
+            Year: ['2025'],
+            fallback: ['fallback'],
+            priority: ['URL'],
+            old: ['stale'],
+        });
+        expect(params('other')).toEqual({
+            Country: ['isolated'],
+            fallback: ['fallback'],
+            priority: ['URL'],
+        });
+
+        fireEvent.click(view.getByText('Apply country'));
+        fireEvent.click(view.getByText('Apply year'));
+        expect(currentState.__meta__).toEqual({
+            version: 2,
+            queue: [
+                {id: 'b', tabId: 'first'},
+                {id: 'a', groupItemId: 'country'},
+                {id: 'a', groupItemId: 'year'},
+            ],
+        });
+        expect(currentState).toMatchObject({
+            a: {params: {country: {Country: ['chosen']}, year: {Year: ['chosen']}}},
+        });
+        expect(params('b')).toEqual({
+            ...base,
+            Country: ['chosen'],
+            region: ['chosen'],
+            Year: ['chosen'],
+            tabOnly: ['first'],
+            _ap_old: ['stale'],
+        });
+        expect(params('other')).toEqual({
+            Country: ['isolated'],
+            fallback: ['fallback'],
+            priority: ['URL'],
+        });
+        expect(params('ignored').Country).toEqual(['global-default']);
+        expect(params('ignored').Year).toEqual(['chosen']);
+
+        fireEvent.click(view.getByText('Tab second'));
+        expect(state()).toEqual({tabId: 'second'});
+        expect(params('b')).toEqual({
+            ...base,
+            Country: ['chosen'],
+            region: ['chosen'],
+            Year: ['chosen'],
+            tabOnly: ['second'],
+        });
+        expect(currentState.__meta__).toEqual({
+            version: 2,
+            queue: [
+                {id: 'a', groupItemId: 'country'},
+                {id: 'a', groupItemId: 'year'},
+            ],
+        });
+        const beforeGesture = {config: currentDocument, itemsStateAndParams: currentState};
+        const outputs = ['a', 'b', 'other', 'ignored'].map(params);
+        changed.mockClear();
+        await drag(view.container, 'b', 50);
+        expect(changed).toHaveBeenCalledTimes(1);
+        expect(currentDocument).toEqual({
+            ...document,
+            layout: [
+                document.layout[0],
+                {...document.layout[1], x: 7},
+                ...document.layout.slice(2),
+            ],
+        });
+        expect(currentState).toEqual(beforeGesture.itemsStateAndParams);
+        expect(['a', 'b', 'other', 'ignored'].map(params)).toEqual(outputs);
+        currentDocument = JSON.parse(JSON.stringify(beforeGesture.config));
+        currentState = JSON.parse(JSON.stringify(beforeGesture.itemsStateAndParams));
+        show();
+        expect(geometry(view.container, 'b')).toEqual({x: 6, y: 0, w: 2, h: 2});
+        expect(['a', 'b', 'other', 'ignored'].map(params)).toEqual(outputs);
+        expect(state()).toEqual({tabId: 'second'});
+        expect(changed).toHaveBeenCalledTimes(1);
+        expect(JSON.stringify(document)).toBe(original);
+    });
+
+    // Critical: no. Public customization must keep the correct actions and group content reachable.
+    // Unique protection: exercises the production overlay handler/filter and group consumer on each renderer.
+    test('group context and public overlay controls honor zone overrides and live params', () => {
+        const document = {
+            ...config,
+            layout: config.layout.map((entry, index) => ({
+                ...entry,
+                parent: index ? 'right' : 'left',
+            })),
+        };
+        const control = jest.fn();
+        const menu = jest.fn();
+        const renderGroup: DashKitGroup['render'] = (id, content, value) => (
+            <section key={id} data-group={id}>
+                <output data-group-context={id}>{JSON.stringify(value)}</output>
+                {content}
+            </section>
+        );
+        const zones: DashKitGroup[] = [
+            {
+                ...groups[0],
+                id: 'left',
+                render: renderGroup,
+                gridProperties: () => ({
+                    cols: 12,
+                    rowHeight: 20,
+                    margin: [0, 0],
+                    containerPadding: [0, 0],
+                    compactType: null,
+                    noOverlay: false,
+                }),
+            },
+            {...groups[0], id: 'right', render: renderGroup},
+        ];
+        const props = {
+            config: document,
+            groups: zones,
+            editMode: true,
+            noOverlay: true,
+            context: {dashboard: 'first'},
+            itemsStateAndParams: {a: {state: {clicked: true}, params: {value: ['live']}}},
+            overlayControls: {[type]: [{title: 'Inspect', handler: control}]},
+            overlayMenuItems: [
+                {
+                    id: 'inspect',
+                    title: 'Inspect menu',
+                    handler: menu,
+                    visible: (item: Config['items'][number]) => item.id === 'a',
+                },
+            ],
+        };
+        const view = render(<Component {...props} />);
+        const snapshot = (id: string) => jsonOutput(view.container, `[data-group-context="${id}"]`);
+        expect(snapshot('left')).toEqual({
+            isMobile: false,
+            config: document,
+            editMode: true,
+            items: [document.items[0]],
+            layout: [{...document.layout[0], minW: 1, minH: 1}],
+            context: {dashboard: 'first'},
+        });
+        expect(snapshot('right')).toEqual({
+            isMobile: false,
+            config: document,
+            editMode: true,
+            items: [document.items[1]],
+            layout: [{...document.layout[1], minW: 1, minH: 1}],
+            context: {dashboard: 'first'},
+        });
+        expect(view.container.querySelectorAll('button[title="Inspect"]')).toHaveLength(1);
+        const inspect = view.container.querySelector('button[title="Inspect"]');
+        assert(inspect);
+        fireEvent.click(inspect);
+        fireEvent.click(view.getByText('Inspect menu'));
+        expect(control).toHaveBeenCalledWith(document.items[0]);
+        expect(menu).toHaveBeenCalledWith(document.items[0], {value: ['live']}, {clicked: true});
+        view.rerender(<Component {...props} noOverlay={false} context={{dashboard: 'updated'}} />);
+        expect(view.container.querySelectorAll('button[title="Inspect"]')).toHaveLength(2);
+        expect(view.queryAllByText('Inspect menu')).toHaveLength(1);
+        expect(snapshot('right').context).toEqual({dashboard: 'updated'});
+        view.rerender(<Component {...props} noOverlay={false} editMode={false} />);
+        expect(view.container.querySelectorAll('button[title="Inspect"]')).toHaveLength(0);
+        expect(view.queryAllByText('Inspect menu')).toHaveLength(0);
+        expect(snapshot('left').editMode).toBe(false);
+    });
 
     test('mounted drag emits one public change and controlled restore applies without echo', async () => {
         const onChange = jest.fn();

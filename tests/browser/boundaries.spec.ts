@@ -108,7 +108,7 @@ function boundary(page: Page) {
 
 test('subtree admission, undo, cancellation and nested palette', async ({page, evidence}) => {
     const {frames, snapshot, sameRects, dragTo} = boundary(page);
-    await page.goto(storyUrl('bounded-subtrees'));
+    await page.goto(storyUrl('tests-gridstack--bounded-subtrees'));
     await page.locator('[data-widget-id="b"]').waitFor();
     assert.equal(
         await page.locator('[data-dashkit-engine]').getAttribute('data-dashkit-engine'),
@@ -332,7 +332,7 @@ test('hidden finite canvas reveals without remount and accepts the next resize',
     evidence,
 }) => {
     const {frames, snapshot} = boundary(page);
-    await page.goto(storyUrl('finite-nowrap'));
+    await page.goto(storyUrl('tests-gridstack--finite-nowrap'));
     await page.locator('[data-widget-id="a"]').waitFor();
     await page.getByRole('button', {name: 'Remove b', exact: true}).click();
     await frames();
@@ -402,7 +402,7 @@ test('hidden finite canvas reveals without remount and accepts the next resize',
 
 test('horizontal packing matches legacy public reflow', async ({page, evidence}) => {
     const {frames, snapshot} = boundary(page);
-    await page.goto(storyUrl('horizontal-packing'));
+    await page.goto(storyUrl('tests-gridstack--horizontal-packing'));
     await page.locator('[data-widget-id="b"]').waitFor();
     const golden = JSON.parse(
         checked(await page.locator('[data-qa="legacy-reflow"]').textContent()),
@@ -437,7 +437,7 @@ test('finite nowrap rejects unavailable palette space and commits valid drops', 
     evidence,
 }) => {
     const {frames, snapshot} = boundary(page);
-    await page.goto(storyUrl('finite-nowrap'));
+    await page.goto(storyUrl('tests-gridstack--finite-nowrap'));
     await page.locator('[data-widget-id="b"]').waitFor();
     const full = await snapshot();
     const fullHandle = await page.locator('[data-dashkit-id="a"] .ui-resizable-se').boundingBox();
@@ -510,7 +510,7 @@ test('finite nowrap rejects unavailable palette space and commits valid drops', 
 test('live scale continuation matches legacy geometry', async ({page, evidence}) => {
     const {frames, snapshot} = boundary(page);
     await page.setViewportSize({width: 1800, height: 1200});
-    await page.goto(storyUrl('report-canvas'));
+    await page.goto(storyUrl('tests-gridstack--report-canvas'));
     await page.locator('[data-widget-id="b"]').waitFor();
     const liveBefore = await snapshot();
     const b = checked(liveBefore.widgets.find(({id}) => id === 'b')).rect;
@@ -568,7 +568,7 @@ test('live scale continuation matches legacy geometry', async ({page, evidence})
         live2,
         liveAfter,
     });
-    await page.goto(storyUrl('legacy-scale-continuation'));
+    await page.goto(storyUrl('tests-gridstack--legacy-scale-continuation'));
     await page.locator('[data-widget-id="b"]').waitFor();
     assert.equal(
         await page.locator('[data-dashkit-engine]').getAttribute('data-dashkit-engine'),
@@ -630,7 +630,7 @@ test('live scale continuation matches legacy geometry', async ({page, evidence})
 test('StrictMode reorder, unmount and remount retain current refs', async ({page, evidence}) => {
     const {snapshot} = boundary(page);
     await page.setViewportSize({width: 1000, height: 1000});
-    await page.goto(storyUrl('strict-lifecycle'));
+    await page.goto(storyUrl('tests-gridstack--strict-lifecycle'));
     await page.locator('[data-widget-id="a"]').waitFor();
     await page.getByRole('button', {name: 'Read refs', exact: true}).click();
     await page.waitForFunction(() => {

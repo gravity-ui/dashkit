@@ -3,13 +3,13 @@ import React from 'react';
 import type {Meta, StoryFn} from '@storybook/react';
 import {createPortal} from 'react-dom';
 
-import {DashKitGridStack} from '../../../src/gridstack';
-import type {GridStackConfig} from '../../../src/gridstack';
-import type {DashKitGroup, PluginWidgetProps} from '../../../src/typings';
 import {ActionPanel} from '../../../src/components/ActionPanel/ActionPanel';
 import {DashKit} from '../../../src/components/DashKit/DashKit';
 import {DashKitDnDWrapper} from '../../../src/components/DashKitDnDWrapper/DashKitDnDWrapper';
 import {requireValue} from '../../../src/components/GridStack/invariants';
+import type {GridStackConfig} from '../../../src/gridstack';
+import {DashKitGridStack} from '../../../src/gridstack';
+import type {DashKitGroup, PluginWidgetProps} from '../../../src/typings';
 
 import {PreviewOverlap as PreviewOverlapFixture} from './PreviewOverlap';
 
@@ -962,4 +962,3 @@ export const PreviewOverlap: StoryFn<typeof PreviewOverlapFixture> = (args) => (
     <PreviewOverlapFixture {...args} />
 );
 PreviewOverlap.args = {nested: false, allowOverlap: false, compactType: null};
-

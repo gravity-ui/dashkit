@@ -43,7 +43,7 @@ function canvas(page: Page) {
             };
         });
     const reset = async () => {
-        await page.goto(storyUrl('report-canvas'));
+        await page.goto(storyUrl('tests-gridstack--report-canvas'));
         await page.locator('[data-widget-id="b"]').waitFor();
         const result = await state();
         assert.equal(result.engine, 'gridstack');
@@ -78,7 +78,7 @@ function canvas(page: Page) {
 }
 // Critical: yes. Real pointer actions must retain the saved document and plugin identity.
 test('portal flex geometry and passive resize preserve identity', async ({page, evidence}) => {
-    await page.goto(storyUrl('portal-flex-zones'));
+    await page.goto(storyUrl('tests-gridstack--portal-flex-zones'));
     await page.locator('[data-portal-case]').last().waitFor();
     const portalState = () =>
         page.evaluate(() => {
@@ -353,8 +353,8 @@ test('half-scale drag and resize preserve unscaled geometry', async ({page, evid
 });
 
 for (const [kind, fixtureUrl] of [
-    ['scalar', storyUrl('scalar-zoom')],
-    ['ref', storyUrl('report-canvas')],
+    ['scalar', storyUrl('tests-gridstack--scalar-zoom')],
+    ['ref', storyUrl('tests-gridstack--report-canvas')],
 ]) {
     test(`native ${kind} scale2 drag preserves geometry and identity`, async ({page, evidence}) => {
         const {state, drag, widget, layout} = canvas(page);
@@ -405,7 +405,7 @@ for (const edge of ['n', 's', 'e', 'w'] as const) {
     test(`native ${edge} edge resize anchors the opposite edge`, async ({page, evidence}) => {
         const {state, drag, widget, layout} = canvas(page);
         await page.setViewportSize({width: 1000, height: 1000});
-        await page.goto(storyUrl('all-handles'));
+        await page.goto(storyUrl('tests-gridstack--all-handles'));
         await page.locator('[data-widget-id="b"]').waitFor();
         const before = await state();
         const handle = await page
@@ -577,7 +577,7 @@ test('focus, keyboard and visual autoheight survive editing', async ({page, evid
 // Critical: yes. Real pointer actions must retain the saved document and plugin identity.
 test('collision prevents displacement of the neighbor', async ({page, evidence}) => {
     const {state, drag, widget, layout} = canvas(page);
-    await page.goto(storyUrl('collision'));
+    await page.goto(storyUrl('tests-gridstack--collision'));
     await page.locator('[data-widget-id="b"]').waitFor();
     const before = await state();
     const rect = checked(widget(before, 'b')).rect;
@@ -597,7 +597,7 @@ test('collision prevents displacement of the neighbor', async ({page, evidence})
 
 test('horizontal nowrap resize consumes remaining width', async ({page, evidence}) => {
     const {state, drag, layout} = canvas(page);
-    await page.goto(storyUrl('horizontal-nowrap'));
+    await page.goto(storyUrl('tests-gridstack--horizontal-nowrap'));
     await page.locator('[data-widget-id="b"]').waitFor();
     const before = await state();
     const resize = await page.locator('[data-dashkit-id="b"] .ui-resizable-se').boundingBox();
@@ -620,7 +620,7 @@ test('horizontal nowrap resize consumes remaining width', async ({page, evidence
 
 test('custom React handles retain plugin state', async ({page, evidence}) => {
     const {state, drag, widget, layout} = canvas(page);
-    await page.goto(storyUrl('custom-handles'));
+    await page.goto(storyUrl('tests-gridstack--custom-handles'));
     await page.locator('[data-widget-id="b"]').waitFor();
     const before = await state();
     assert.equal(await page.locator('[data-dashkit-id="b"] [data-custom-handle]').count(), 4);
@@ -649,7 +649,7 @@ test('nested transfer, resize and drag out preserve geometry and identity', asyn
     evidence,
 }) => {
     const {state, drag, widget, layout} = canvas(page);
-    const nestedURL = storyUrl('nested-containers');
+    const nestedURL = storyUrl('tests-gridstack--nested-containers');
     await page.goto(nestedURL);
     await page.locator('[data-widget-id="b"]').waitFor();
     let before = await state();
@@ -743,7 +743,7 @@ test('nested transfer, resize and drag out preserve geometry and identity', asyn
 
 test('cross-zone transfer preserves callback ordering and identity', async ({page, evidence}) => {
     const {state, drag, widget, layout} = canvas(page);
-    const zonesURL = storyUrl('cross-zones');
+    const zonesURL = storyUrl('tests-gridstack--cross-zones');
     await page.goto(zonesURL);
     await page.locator('[data-widget-id="b"]').waitFor();
     const before = await state();
@@ -803,7 +803,7 @@ test('cross-zone transfer preserves callback ordering and identity', async ({pag
 
 test('dashboard view/edit and passive resize converge', async ({page, evidence}) => {
     const {state, widget} = canvas(page);
-    await page.goto(storyUrl('dashboard'));
+    await page.goto(storyUrl('tests-gridstack--dashboard'));
     await page.locator('[data-widget-id="b"]').waitFor();
     const before = await state();
     for (let count = 0; count < 6; count++) {
@@ -868,7 +868,7 @@ test('dashboard view/edit and passive resize converge', async ({page, evidence})
 
 test('short and empty zone heights match legacy', async ({page, evidence}) => {
     await page.setViewportSize({width: 800, height: 1000});
-    await page.goto(storyUrl('height-compatibility'));
+    await page.goto(storyUrl('tests-gridstack--height-compatibility'));
     await page.locator('[data-height-engine="gridstack"] [data-widget-id="a"]').waitFor();
     await page.waitForFunction(() => {
         function required<T>(value: T | null | undefined): T {
@@ -920,7 +920,7 @@ test.describe('native touchscreen', () => {
     );
     test.use({hasTouch: true});
     test('native touchscreen drag', async ({page, evidence}) => {
-        await page.goto(storyUrl('report-canvas'));
+        await page.goto(storyUrl('tests-gridstack--report-canvas'));
         await page.locator('[data-widget-id="a"]').waitFor();
         const touchRect = await page.locator('[data-widget-id="a"]').boundingBox();
         const touchIdentity = await page

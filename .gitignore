@@ -10,6 +10,5 @@ node_modules
 build
 storybook-static
 
-# Playwright
-playwright-report/
-test-results/
+playwright-report
+test-results

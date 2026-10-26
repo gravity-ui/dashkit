@@ -4,5 +4,5 @@
     "noEmit": true,
     "declaration": false
   },
-  "include": ["./**/*.ts", "../../playwright.config.ts", "../../.storybook/main.ts"]
+  "include": ["./**/*.ts", "./**/*.tsx", "../../playwright.config.ts", "../../.storybook/main.ts"]
 }

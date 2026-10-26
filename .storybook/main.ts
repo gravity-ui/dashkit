@@ -12,7 +12,12 @@ const config: StorybookConfig = {
             ...(options.plugins || []),
         ],
     }),
-    stories: ['../src/**/*.stories.@(ts|tsx)'],
+    stories: [
+        '../src/**/*.stories.@(ts|tsx)',
+        ...(process.env.DASHKIT_TEST_STORIES === '1'
+            ? ['../tests/browser/stories/**/*.stories.@(ts|tsx)']
+            : []),
+    ],
     docs: {
         autodocs: false,
     },

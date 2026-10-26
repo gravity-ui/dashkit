@@ -28,7 +28,7 @@ test('palette cancellation and flat/nested overlap matrix', async ({page, eviden
         await page.mouse.up();
     };
     for (const nested of [false, true]) {
-        await page.goto(storyUrl('preview-overlap', {nested}));
+        await page.goto(storyUrl('tests-gridstack--preview-overlap', {nested}));
         await host('b').waitFor();
         const before = await saved();
         const palette = await page.getByRole('button', {name: '+ Add', exact: true}).boundingBox();
@@ -107,7 +107,7 @@ test('palette cancellation and flat/nested overlap matrix', async ({page, eviden
             after,
         });
         // A successful add keeps the collision-adjusted neighbors and the selected position.
-        await page.goto(storyUrl('preview-overlap', {nested}));
+        await page.goto(storyUrl('tests-gridstack--preview-overlap', {nested}));
         await host('b').waitFor();
         await page
             .getByRole('button', {name: '+ Add', exact: true})
@@ -124,7 +124,13 @@ test('palette cancellation and flat/nested overlap matrix', async ({page, eviden
         });
         for (const compactType of [null, 'vertical', 'horizontal', 'horizontal-nowrap']) {
             for (const allowOverlap of [true, false]) {
-                await page.goto(storyUrl('preview-overlap', {nested, compactType, allowOverlap}));
+                await page.goto(
+                    storyUrl('tests-gridstack--preview-overlap', {
+                        nested,
+                        compactType,
+                        allowOverlap,
+                    }),
+                );
                 await host('b').waitFor();
                 const mode = await host('b').evaluate(
                     (el) => (el as NativeElement).gridstackNode.grid.engine.mode,

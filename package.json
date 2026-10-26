@@ -79,11 +79,12 @@
     "build:docs": "gulp copy-docs",
     "build:watch": "gulp watch",
     "start": "storybook dev -p 7120",
-    "typecheck": "tsc --noEmit && tsc -p tests/browser/tsconfig.json",
+    "typecheck": "tsc --noEmit",
     "build-storybook": "sb build -c .storybook -o storybook-static",
     "prepare": "husky install",
     "prepublishOnly": "npm run lint && npm run test && npm run build",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "typecheck:browser": "tsc -p tests/browser/tsconfig.json"
   },
   "dependencies": {
     "@bem-react/classname": "^1.6.0",

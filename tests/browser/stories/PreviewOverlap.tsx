@@ -1,10 +1,10 @@
 import React from 'react';
 
-import type {Config, GridStackContainer} from '../../../src/shared';
-import type {CompactType} from '../../../src/typings';
 import {ActionPanel} from '../../../src/components/ActionPanel/ActionPanel';
 import {DashKitDnDWrapper} from '../../../src/components/DashKitDnDWrapper/DashKitDnDWrapper';
 import {DashKitGridStack} from '../../../src/components/GridStack/DashKitGridStack';
+import type {Config, GridStackContainer} from '../../../src/shared';
+import type {CompactType} from '../../../src/typings';
 
 const type = 'preview-overlap-contract';
 DashKitGridStack.reloadPlugins({
