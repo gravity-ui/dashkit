@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
 
+import type {Page} from '@playwright/test';
+
 import type {Config} from '../../src/shared';
 
 import {checked, storyUrl, test} from './fixtures';
 import type {NativeElement} from './types';
 // Critical: yes. Native edits must preserve saved geometry and a usable editor.
-test('nested physical bounds and continued gestures', async ({page, evidence}) => {
+function containment(page: Page) {
     const frames = () =>
         page.evaluate(
             () =>
@@ -47,6 +49,53 @@ test('nested physical bounds and continued gestures', async ({page, evidence}) =
         await page.mouse.move(x + dx, y + dy, {steps: 16});
         await frames();
     };
+    const openBounds = async () => {
+        await page.goto(storyUrl('nested-bounds'));
+        await page.locator('[data-widget-id="b"]').waitFor();
+    };
+    const boundState = () =>
+        page.locator('[data-dashkit-id="b"]').evaluate((el) => {
+            function required<T>(value: T | null | undefined): T {
+                if (value === null || value === undefined) {
+                    throw new Error('Missing native fixture value');
+                }
+                return value;
+            }
+            const node = (el as NativeElement).gridstackNode;
+            const content = required(el.parentElement).getBoundingClientRect();
+            const widget = required(
+                el.querySelector<NativeElement>('[data-widget-id]'),
+            ).getBoundingClientRect();
+            return {
+                node: Object.fromEntries((['x', 'y', 'w', 'h'] as const).map((k) => [k, node[k]])),
+                maxRow: node.grid.engine.maxRow,
+                nativeMaxRow: node.grid.opts.maxRow,
+                content: content.toJSON(),
+                widget: widget.toJSON(),
+            };
+        });
+    const contained = (current: Awaited<ReturnType<typeof boundState>>) => {
+        assert(current.node.y >= 0 && current.node.x >= 0);
+        assert(current.node.y + current.node.h <= current.maxRow + 1e-7);
+        assert(current.node.x + current.node.w <= 12 + 1e-7);
+        for (const side of ['left', 'top']) {
+            assert(
+                current.widget[side] >= current.content[side] - 1,
+                `${side}: ${JSON.stringify(current)}`,
+            );
+        }
+        for (const side of ['right', 'bottom']) {
+            assert(
+                current.widget[side] <= current.content[side] + 1,
+                `${side}: ${JSON.stringify(current)}`,
+            );
+        }
+    };
+    return {frames, state, held, openBounds, boundState, contained};
+}
+
+test('nested physical bounds preserve the next resize and undo', async ({page, evidence}) => {
+    const {frames, state, held} = containment(page);
     await page.goto(storyUrl('nested-containers'));
     await page.locator('[data-widget-id="b"]').waitFor();
     const item = await page.locator('[data-widget-id="b"]').boundingBox();
@@ -126,49 +175,11 @@ test('nested physical bounds and continued gestures', async ({page, evidence}) =
         after,
         next,
     });
-    const openBounds = async () => {
-        await page.goto(storyUrl('nested-bounds'));
-        await page.locator('[data-widget-id="b"]').waitFor();
-    };
-    const boundState = () =>
-        page.locator('[data-dashkit-id="b"]').evaluate((el) => {
-            function required<T>(value: T | null | undefined): T {
-                if (value === null || value === undefined) {
-                    throw new Error('Missing native fixture value');
-                }
-                return value;
-            }
-            const node = (el as NativeElement).gridstackNode;
-            const content = required(el.parentElement).getBoundingClientRect();
-            const widget = required(
-                el.querySelector<NativeElement>('[data-widget-id]'),
-            ).getBoundingClientRect();
-            return {
-                node: Object.fromEntries((['x', 'y', 'w', 'h'] as const).map((k) => [k, node[k]])),
-                maxRow: node.grid.engine.maxRow,
-                nativeMaxRow: node.grid.opts.maxRow,
-                content: content.toJSON(),
-                widget: widget.toJSON(),
-            };
-        });
-    const contained = (current: Awaited<ReturnType<typeof boundState>>) => {
-        assert(current.node.y >= 0 && current.node.x >= 0);
-        assert(current.node.y + current.node.h <= current.maxRow + 1e-7);
-        assert(current.node.x + current.node.w <= 12 + 1e-7);
-        for (const side of ['left', 'top']) {
-            assert(
-                current.widget[side] >= current.content[side] - 1,
-                `${side}: ${JSON.stringify(current)}`,
-            );
-        }
-        for (const side of ['right', 'bottom']) {
-            assert(
-                current.widget[side] <= current.content[side] + 1,
-                `${side}: ${JSON.stringify(current)}`,
-            );
-        }
-    };
-    for (const direction of ['n', 's', 'e', 'w', 'nw', 'ne', 'sw', 'se']) {
+});
+
+for (const direction of ['n', 's', 'e', 'w', 'nw', 'ne', 'sw', 'se']) {
+    test(`native nested ${direction} resize respects physical bounds`, async ({page, evidence}) => {
+        const {frames, state, held, openBounds, boundState, contained} = containment(page);
         await openBounds();
         const start = await state();
         const edge = await page
@@ -231,8 +242,12 @@ test('nested physical bounds and continued gestures', async ({page, evidence}) =
             check: `native nested ${direction} handle stops at physical content bounds and undo restores exact saved input without echo`,
             pendingEdge,
         });
-    }
-    for (const maxRows of [6, 100]) {
+    });
+}
+
+for (const maxRows of [6, 100]) {
+    test(`explicit maxRows ${maxRows} intersects physical height`, async ({page, evidence}) => {
+        const {frames, state, held, openBounds, boundState, contained} = containment(page);
         await openBounds();
         await page.getByRole('button', {name: `Cap ${maxRows}`, exact: true}).click();
         const edge = await page.locator('[data-dashkit-id="b"] .ui-resizable-se').boundingBox();
@@ -254,7 +269,11 @@ test('nested physical bounds and continued gestures', async ({page, evidence}) =
             check: `native explicit maxRows${maxRows} intersects physical height without rewriting descriptor`,
             pendingCap,
         });
-    }
+    });
+}
+
+test('fractional child survives reveal, parent resize and undo', async ({page, evidence}) => {
+    const {frames, state, held, openBounds, boundState, contained} = containment(page);
     await openBounds();
     await page.getByRole('button', {name: 'Fractional child', exact: true}).click();
     const fractional = await state();
@@ -291,6 +310,10 @@ test('nested physical bounds and continued gestures', async ({page, evidence}) =
         fractionNode,
         expanded,
     });
+});
+
+test('child drag continues after reparent cancellation and undo', async ({page, evidence}) => {
+    const {frames, state, held, openBounds} = containment(page);
     await openBounds();
     const dragPoint = () =>
         page.locator('[data-widget-id="b"]').evaluate((el) => {
@@ -353,7 +376,11 @@ test('nested physical bounds and continued gestures', async ({page, evidence}) =
         pointBefore,
         pointAfter,
     });
-    for (const height of [6, 18]) {
+});
+
+for (const height of [6, 18]) {
+    test(`palette admission respects content height ${height}`, async ({page, evidence}) => {
+        const {frames, state, openBounds} = containment(page);
         await openBounds();
         await page.getByRole('button', {name: `Empty content ${height}`, exact: true}).click();
         await frames();
@@ -380,5 +407,5 @@ test('nested physical bounds and continued gestures', async ({page, evidence}) =
             check: `native palette content height${height} has ${height === 6 ? 'zero full rows and rejects impossible minimum' : 'one row and admits one bounded child'}`,
             dropped,
         });
-    }
-});
+    });
+}

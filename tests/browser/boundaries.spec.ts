@@ -1,14 +1,13 @@
 import assert from 'node:assert/strict';
 
+import type {Page} from '@playwright/test';
+
 import type {Config} from '../../src/shared';
 
 import {checked, storyUrl, test} from './fixtures';
 import type {NativeElement} from './types';
 // Critical: yes. Native edits must preserve saved geometry and a usable editor.
-test('subtree admission, finite bounds, scale continuation and StrictMode', async ({
-    page,
-    evidence,
-}) => {
+function boundary(page: Page) {
     const frames = () =>
         page.evaluate(
             () =>
@@ -104,6 +103,11 @@ test('subtree admission, finite bounds, scale continuation and StrictMode', asyn
         await frames();
         return preview;
     };
+    return {frames, snapshot, sameRects, dragTo};
+}
+
+test('subtree admission, undo, cancellation and nested palette', async ({page, evidence}) => {
+    const {frames, snapshot, sameRects, dragTo} = boundary(page);
     await page.goto(storyUrl('bounded-subtrees'));
     await page.locator('[data-widget-id="b"]').waitFor();
     assert.equal(
@@ -321,6 +325,13 @@ test('subtree admission, finite bounds, scale continuation and StrictMode', asyn
         nestedBefore,
         nestedCommit,
     });
+});
+
+test('hidden finite canvas reveals without remount and accepts the next resize', async ({
+    page,
+    evidence,
+}) => {
+    const {frames, snapshot} = boundary(page);
     await page.goto(storyUrl('finite-nowrap'));
     await page.locator('[data-widget-id="a"]').waitFor();
     await page.getByRole('button', {name: 'Remove b', exact: true}).click();
@@ -387,6 +398,10 @@ test('subtree admission, finite bounds, scale continuation and StrictMode', asyn
         check: 'first native gesture after zero-width reveal uses settled geometry',
         afterRevealDrag,
     });
+});
+
+test('horizontal packing matches legacy public reflow', async ({page, evidence}) => {
+    const {frames, snapshot} = boundary(page);
     await page.goto(storyUrl('horizontal-packing'));
     await page.locator('[data-widget-id="b"]').waitFor();
     const golden = JSON.parse(
@@ -415,6 +430,13 @@ test('subtree admission, finite bounds, scale continuation and StrictMode', asyn
         golden,
         horizontal,
     });
+});
+
+test('finite nowrap rejects unavailable palette space and commits valid drops', async ({
+    page,
+    evidence,
+}) => {
+    const {frames, snapshot} = boundary(page);
     await page.goto(storyUrl('finite-nowrap'));
     await page.locator('[data-widget-id="b"]').waitFor();
     const full = await snapshot();
@@ -483,6 +505,10 @@ test('subtree admission, finite bounds, scale continuation and StrictMode', asyn
         available,
         committed,
     });
+});
+
+test('live scale continuation matches legacy geometry', async ({page, evidence}) => {
+    const {frames, snapshot} = boundary(page);
     await page.setViewportSize({width: 1800, height: 1200});
     await page.goto(storyUrl('report-canvas'));
     await page.locator('[data-widget-id="b"]').waitFor();
@@ -599,6 +625,10 @@ test('subtree admission, finite bounds, scale continuation and StrictMode', asyn
         gridstack1: live1,
         gridstack2: live2,
     });
+});
+
+test('StrictMode reorder, unmount and remount retain current refs', async ({page, evidence}) => {
+    const {snapshot} = boundary(page);
     await page.setViewportSize({width: 1000, height: 1000});
     await page.goto(storyUrl('strict-lifecycle'));
     await page.locator('[data-widget-id="a"]').waitFor();

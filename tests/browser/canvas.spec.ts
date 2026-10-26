@@ -217,13 +217,13 @@ test('portal flex geometry and passive resize preserve identity', async ({page, 
     });
 });
 // Critical: yes. Real pointer actions must retain the saved document and plugin identity.
-test('native drag, eight handles, scale, palette, focus and visual autoheight', async ({
+test('native overlapping drag and controlled restore preserve identity', async ({
     page,
     evidence,
 }) => {
     const {state, reset, drag, widget, layout} = canvas(page);
-    let before = await reset();
-    let rect = checked(widget(before, 'a')).rect;
+    const before = await reset();
+    const rect = checked(widget(before, 'a')).rect;
     const overlapDelta = {x: 45, y: 35};
     await drag(rect.x + 30, rect.y + 60, overlapDelta.x, overlapDelta.y);
     let after = await state();
@@ -243,7 +243,14 @@ test('native drag, eight handles, scale, palette, focus and visual autoheight', 
     near(checked(widget(after, 'a')).rect.x, rect.x);
     assert.equal(after.events, 'Events: 1');
     evidence.push({check: 'controlled restore without echo event', after});
-    before = await reset();
+});
+
+test('controlled layer order changes overlap hit testing without remount', async ({
+    page,
+    evidence,
+}) => {
+    const {state, reset, widget} = canvas(page);
+    const before = await reset();
     const hit = () =>
         page.evaluate(() =>
             document
@@ -254,7 +261,7 @@ test('native drag, eight handles, scale, palette, focus and visual autoheight', 
     assert.equal(await hit(), 'b');
     await page.getByRole('button', {name: 'Reverse layers', exact: true}).click();
     assert.equal(await hit(), 'a');
-    after = await state();
+    const after = await state();
     assert.equal(checked(widget(after, 'a')).instance, checked(widget(before, 'a')).instance);
     assert.equal(checked(widget(after, 'b')).instance, checked(widget(before, 'b')).instance);
     assert.equal(after.events, before.events);
@@ -262,8 +269,12 @@ test('native drag, eight handles, scale, palette, focus and visual autoheight', 
         check: 'controlled item order changes overlap hit testing without remount',
         after,
     });
-    for (const corner of ['nw', 'ne', 'sw', 'se']) {
-        before = await reset();
+});
+
+for (const corner of ['nw', 'ne', 'sw', 'se']) {
+    test(`native ${corner} corner resize anchors the opposite corner`, async ({page, evidence}) => {
+        const {state, reset, drag, widget, layout} = canvas(page);
+        const before = await reset();
         const handle = await page
             .locator(`[data-dashkit-id="b"] .ui-resizable-${corner}`)
             .boundingBox();
@@ -273,7 +284,7 @@ test('native drag, eight handles, scale, palette, focus and visual autoheight', 
             corner.includes('w') ? -25 : 25,
             corner.includes('n') ? -25 : 25,
         );
-        after = await state();
+        const after = await state();
         const old = checked(widget(before, 'b')).rect;
         const next = checked(widget(after, 'b')).rect;
         assert(next.width > old.width && next.height > old.height);
@@ -295,15 +306,19 @@ test('native drag, eight handles, scale, palette, focus and visual autoheight', 
             before,
             after,
         });
-    }
-    before = await reset();
+    });
+}
+
+test('half-scale drag and resize preserve unscaled geometry', async ({page, evidence}) => {
+    const {state, reset, drag, widget, layout} = canvas(page);
+    let before = await reset();
     await page.getByRole('button', {name: 'Toggle zoom', exact: true}).click();
     before = await state();
-    rect = checked(widget(before, 'a')).rect;
+    const rect = checked(widget(before, 'a')).rect;
     const zoom = 0.5;
     const zoomDelta = {x: 25, y: 25};
     await drag(rect.x + 15, rect.y + 30, zoomDelta.x, zoomDelta.y);
-    after = await state();
+    let after = await state();
     assert.equal(
         checked(layout(after, 'a')).x - checked(layout(before, 'a')).x,
         zoomDelta.x / zoom,
@@ -335,13 +350,17 @@ test('native drag, eight handles, scale, palette, focus and visual autoheight', 
         check: 'native scaled corner resize keeps opposite corner anchored in unscaled units',
         after,
     });
-    await page.setViewportSize({width: 1800, height: 1200});
-    const scale = 2;
-    const scaledDelta = {x: 90, y: 70};
-    for (const [kind, fixtureUrl] of [
-        ['scalar', storyUrl('scalar-zoom')],
-        ['ref', storyUrl('report-canvas')],
-    ]) {
+});
+
+for (const [kind, fixtureUrl] of [
+    ['scalar', storyUrl('scalar-zoom')],
+    ['ref', storyUrl('report-canvas')],
+]) {
+    test(`native ${kind} scale2 drag preserves geometry and identity`, async ({page, evidence}) => {
+        const {state, drag, widget, layout} = canvas(page);
+        await page.setViewportSize({width: 1800, height: 1200});
+        const scale = 2;
+        const scaledDelta = {x: 90, y: 70};
         await page.goto(fixtureUrl);
         await page.locator('[data-widget-id="a"]').waitFor();
         const renderCount = await page
@@ -356,11 +375,11 @@ test('native drag, eight handles, scale, palette, focus and visual autoheight', 
                 renderCount,
             );
         }
-        before = await state();
+        const before = await state();
         near(checked(widget(before, 'a')).rect.width, 320);
-        rect = checked(widget(before, 'a')).rect;
+        const rect = checked(widget(before, 'a')).rect;
         await drag(rect.x + 60, rect.y + 120, scaledDelta.x, scaledDelta.y, 10);
-        after = await state();
+        const after = await state();
         assert.equal(
             checked(layout(after, 'a')).x,
             checked(layout(before, 'a')).x + scaledDelta.x / scale,
@@ -379,12 +398,16 @@ test('native drag, eight handles, scale, palette, focus and visual autoheight', 
             before,
             after,
         });
-    }
-    await page.setViewportSize({width: 1000, height: 1000});
-    for (const edge of ['n', 's', 'e', 'w'] as const) {
+    });
+}
+
+for (const edge of ['n', 's', 'e', 'w'] as const) {
+    test(`native ${edge} edge resize anchors the opposite edge`, async ({page, evidence}) => {
+        const {state, drag, widget, layout} = canvas(page);
+        await page.setViewportSize({width: 1000, height: 1000});
         await page.goto(storyUrl('all-handles'));
         await page.locator('[data-widget-id="b"]').waitFor();
-        before = await state();
+        const before = await state();
         const handle = await page
             .locator(`[data-dashkit-id="b"] .ui-resizable-${edge}`)
             .boundingBox();
@@ -394,7 +417,7 @@ test('native drag, eight handles, scale, palette, focus and visual autoheight', 
             {e: 25, w: -25, n: 0, s: 0}[edge],
             {s: 25, n: -25, e: 0, w: 0}[edge],
         );
-        after = await state();
+        const after = await state();
         const old = checked(widget(before, 'b')).rect,
             next = checked(widget(after, 'b')).rect;
         if (edge === 'n' || edge === 's') {
@@ -414,16 +437,20 @@ test('native drag, eight handles, scale, palette, focus and visual autoheight', 
             before,
             after,
         });
-    }
-    before = await reset();
-    rect = checked(widget(before, 'b')).rect;
+    });
+}
+
+test('native drag clamps to right and bottom bounds', async ({page, evidence}) => {
+    const {state, reset, drag, widget, layout} = canvas(page);
+    const before = await reset();
+    const rect = checked(widget(before, 'b')).rect;
     await drag(
         rect.x + rect.width / 2,
         rect.y + rect.height / 2,
         before.root.right - 10 - rect.x - rect.width / 2,
         before.root.bottom - 10 - rect.y - rect.height / 2,
     );
-    after = await state();
+    const after = await state();
     assert.equal(checked(layout(after, 'b')).x + checked(layout(after, 'b')).w, 640);
     assert.equal(checked(layout(after, 'b')).y + checked(layout(after, 'b')).h, 400);
     assert.deepEqual(layout(after, 'a'), layout(before, 'a'));
@@ -432,15 +459,19 @@ test('native drag, eight handles, scale, palette, focus and visual autoheight', 
         before,
         after,
     });
-    before = await reset();
-    rect = checked(widget(before, 'b')).rect;
+});
+
+test('native drag clamps to left and top bounds', async ({page, evidence}) => {
+    const {state, reset, drag, widget, layout} = canvas(page);
+    const before = await reset();
+    const rect = checked(widget(before, 'b')).rect;
     await drag(
         rect.x + rect.width / 2,
         rect.y + rect.height / 2,
         before.root.left + 10 - rect.x - rect.width / 2,
         before.root.top + 10 - rect.y - rect.height / 2,
     );
-    after = await state();
+    const after = await state();
     assert.equal(checked(layout(after, 'b')).x, 0);
     assert.equal(checked(layout(after, 'b')).y, 0);
     assert.deepEqual(layout(after, 'a'), layout(before, 'a'));
@@ -449,11 +480,15 @@ test('native drag, eight handles, scale, palette, focus and visual autoheight', 
         before,
         after,
     });
-    before = await reset();
+});
+
+test('native palette drop preserves existing widgets', async ({page, evidence}) => {
+    const {state, reset} = canvas(page);
+    const before = await reset();
     await page
         .getByRole('button', {name: '+ Widget', exact: true})
         .dragTo(page.locator('.grid-stack').first(), {targetPosition: {x: 450, y: 300}});
-    after = await state();
+    const after = await state();
     assert.equal(after.config.items.length, 3);
     assert.equal(after.config.counter, 2);
     const added = after.config.layout.find(
@@ -469,7 +504,11 @@ test('native drag, eight handles, scale, palette, focus and visual autoheight', 
         before,
         after,
     });
-    before = await reset();
+});
+
+test('focus, keyboard and visual autoheight survive editing', async ({page, evidence}) => {
+    const {state, reset, drag, widget, layout} = canvas(page);
+    await reset();
     await page.getByRole('button', {name: 'Toggle edit', exact: true}).click();
     await page.locator('[data-qa="dashkit-grid-item"]').first().focus();
     await page.waitForFunction(() => {
@@ -514,12 +553,12 @@ test('native drag, eight handles, scale, palette, focus and visual autoheight', 
         true,
     );
     await page.locator('[data-qa="grow-a"]').click();
-    after = await state();
+    let after = await state();
     near(checked(widget(after, 'a')).rect.height, 140);
     assert.equal(checked(layout(after, 'a')).h, 100);
     assert.equal(after.events, 'Events: 0');
     await page.getByRole('button', {name: 'Toggle edit', exact: true}).click();
-    rect = checked(widget(after, 'a')).rect;
+    const rect = checked(widget(after, 'a')).rect;
     await drag(rect.x + 30, rect.y + 100, 45, 35);
     after = await state();
     assert.equal(checked(layout(after, 'a')).h, 100);
@@ -534,18 +573,16 @@ test('native drag, eight handles, scale, palette, focus and visual autoheight', 
         after,
     });
 });
+
 // Critical: yes. Real pointer actions must retain the saved document and plugin identity.
-test('collision, nowrap, custom handles, reparent, callbacks and view/edit convergence', async ({
-    page,
-    evidence,
-}) => {
+test('collision prevents displacement of the neighbor', async ({page, evidence}) => {
     const {state, drag, widget, layout} = canvas(page);
     await page.goto(storyUrl('collision'));
     await page.locator('[data-widget-id="b"]').waitFor();
-    let before = await state();
-    let rect = checked(widget(before, 'b')).rect;
+    const before = await state();
+    const rect = checked(widget(before, 'b')).rect;
     await drag(rect.x + 80, rect.y + 70, -200, 0);
-    let after = await state();
+    const after = await state();
     assert(
         checked(layout(after, 'b')).x >=
             checked(layout(after, 'a')).x + checked(layout(after, 'a')).w,
@@ -556,17 +593,21 @@ test('collision, nowrap, custom handles, reparent, callbacks and view/edit conve
         before,
         after,
     });
+});
+
+test('horizontal nowrap resize consumes remaining width', async ({page, evidence}) => {
+    const {state, drag, layout} = canvas(page);
     await page.goto(storyUrl('horizontal-nowrap'));
     await page.locator('[data-widget-id="b"]').waitFor();
-    before = await state();
-    let resize = await page.locator('[data-dashkit-id="b"] .ui-resizable-se').boundingBox();
+    const before = await state();
+    const resize = await page.locator('[data-dashkit-id="b"] .ui-resizable-se').boundingBox();
     await drag(
         checked(resize).x + checked(resize).width / 2,
         checked(resize).y + checked(resize).height / 2,
         600,
         0,
     );
-    after = await state();
+    const after = await state();
     assert.equal(checked(layout(after, 'b')).x + checked(layout(after, 'b')).w, 640);
     assert.equal(checked(layout(after, 'b')).y, 0);
     assert.deepEqual(layout(after, 'a'), layout(before, 'a'));
@@ -575,18 +616,24 @@ test('collision, nowrap, custom handles, reparent, callbacks and view/edit conve
         before,
         after,
     });
+});
+
+test('custom React handles retain plugin state', async ({page, evidence}) => {
+    const {state, drag, widget, layout} = canvas(page);
     await page.goto(storyUrl('custom-handles'));
     await page.locator('[data-widget-id="b"]').waitFor();
-    before = await state();
+    const before = await state();
     assert.equal(await page.locator('[data-dashkit-id="b"] [data-custom-handle]').count(), 4);
-    resize = await page.locator('[data-dashkit-id="b"] [data-custom-handle="se"]').boundingBox();
+    const resize = await page
+        .locator('[data-dashkit-id="b"] [data-custom-handle="se"]')
+        .boundingBox();
     await drag(
         checked(resize).x + checked(resize).width / 2,
         checked(resize).y + checked(resize).height / 2,
         25,
         25,
     );
-    after = await state();
+    const after = await state();
     assert.equal(checked(layout(after, 'b')).w, 205);
     assert.equal(checked(layout(after, 'b')).h, 145);
     assert.equal(checked(widget(after, 'b')).instance, checked(widget(before, 'b')).instance);
@@ -595,20 +642,27 @@ test('collision, nowrap, custom handles, reparent, callbacks and view/edit conve
         before,
         after,
     });
+});
+
+test('nested transfer, resize and drag out preserve geometry and identity', async ({
+    page,
+    evidence,
+}) => {
+    const {state, drag, widget, layout} = canvas(page);
     const nestedURL = storyUrl('nested-containers');
     await page.goto(nestedURL);
     await page.locator('[data-widget-id="b"]').waitFor();
-    before = await state();
+    let before = await state();
     const panel = await page.locator('[data-dashkit-id="panel"]').boundingBox();
     const child = await page.locator('[data-dashkit-id="panel"] .grid-stack').boundingBox();
-    rect = checked(widget(before, 'b')).rect;
+    let rect = checked(widget(before, 'b')).rect;
     await drag(
         rect.x + rect.width / 2,
         rect.y + rect.height / 2,
         checked(child).x + 110 - rect.x - rect.width / 2,
         checked(child).y + 80 - rect.y - rect.height / 2,
     );
-    after = await state();
+    let after = await state();
     assert.equal(checked(layout(after, 'b')).containerId, 'panel');
     assert.equal(checked(layout(after, 'b')).w, 9);
     assert.equal(checked(layout(after, 'b')).h, 5);
@@ -685,19 +739,23 @@ test('collision, nowrap, custom handles, reparent, callbacks and view/edit conve
         before,
         after,
     });
+});
+
+test('cross-zone transfer preserves callback ordering and identity', async ({page, evidence}) => {
+    const {state, drag, widget, layout} = canvas(page);
     const zonesURL = storyUrl('cross-zones');
     await page.goto(zonesURL);
     await page.locator('[data-widget-id="b"]').waitFor();
-    before = await state();
+    const before = await state();
     const destination = await page.locator('.grid-stack').nth(1).boundingBox();
-    rect = checked(widget(before, 'b')).rect;
+    const rect = checked(widget(before, 'b')).rect;
     await drag(
         rect.x + rect.width / 2,
         rect.y + rect.height / 2,
         checked(destination).x + 130 - rect.x - rect.width / 2,
         checked(destination).y + 100 - rect.y - rect.height / 2,
     );
-    after = await state();
+    const after = await state();
     assert.equal(checked(layout(after, 'b')).parent, 'right');
     assert.equal(checked(layout(after, 'a')).parent, 'left');
     assert.equal(checked(widget(after, 'b')).instance, checked(widget(before, 'b')).instance);
@@ -741,13 +799,17 @@ test('collision, nowrap, custom handles, reparent, callbacks and view/edit conve
         before,
         after,
     });
+});
+
+test('dashboard view/edit and passive resize converge', async ({page, evidence}) => {
+    const {state, widget} = canvas(page);
     await page.goto(storyUrl('dashboard'));
     await page.locator('[data-widget-id="b"]').waitFor();
-    before = await state();
+    const before = await state();
     for (let count = 0; count < 6; count++) {
         await page.getByRole('button', {name: 'Toggle edit', exact: true}).click();
     }
-    after = await state();
+    let after = await state();
     assert.equal(after.events, 'Events: 0');
     assert.deepEqual(after.config, before.config);
     assert.equal(checked(widget(after, 'a')).instance, checked(widget(before, 'a')).instance);
@@ -802,6 +864,10 @@ test('collision, nowrap, custom handles, reparent, callbacks and view/edit conve
         widths,
         after,
     });
+});
+
+test('short and empty zone heights match legacy', async ({page, evidence}) => {
+    await page.setViewportSize({width: 800, height: 1000});
     await page.goto(storyUrl('height-compatibility'));
     await page.locator('[data-height-engine="gridstack"] [data-widget-id="a"]').waitFor();
     await page.waitForFunction(() => {
@@ -845,6 +911,7 @@ test('collision, nowrap, custom handles, reparent, callbacks and view/edit conve
         heights,
     });
 });
+
 // Critical: yes. Native touchscreen edits must commit one unscaled transaction.
 test.describe('native touchscreen', () => {
     test.skip(
