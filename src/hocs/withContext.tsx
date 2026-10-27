@@ -169,7 +169,9 @@ function useMemoStateContext(
     }, [pendingExternalBaselineLayout]);
 
     const [externalLayoutRevision, setExternalLayoutRevision] = React.useState(0);
-    const [temporaryLayout, setTemporaryLayout] = React.useState<TemporaryLayout | null>(null);
+    const [temporaryLayout, setTemporaryLayout] = React.useState<
+        (TemporaryLayout & {owner: object}) | null
+    >(null);
     const resetTemporaryLayout = React.useCallback(
         () => setTemporaryLayout(null),
         [setTemporaryLayout],
@@ -717,11 +719,18 @@ function useMemoStateContext(
                 return;
             }
 
-            setTemporaryLayout({
+            const snapshot = {
+                // Removing a saved widget copies the snapshot but retains its drop owner.
+                owner: {},
                 data: [...newLayout, item],
                 ...(nextContainers !== undefined ? {containers: nextContainers} : {}),
                 dragProps: dragPropsContext,
-            });
+            };
+            setTemporaryLayout(snapshot);
+            const commit = () =>
+                setTemporaryLayout((current) =>
+                    current?.owner === snapshot.owner ? null : current,
+                );
 
             try {
                 onDropProp?.({
@@ -739,17 +748,17 @@ function useMemoStateContext(
                     }, []),
                     ...(nextContainers !== undefined ? {containers: nextContainers} : {}),
                     itemLayout: pick(item, CONFIG_LAYOUT_FIELDS),
-                    commit: resetTemporaryLayout,
+                    commit,
                     dragProps: dragPropsContext,
                 });
             } catch (error) {
                 if (layoutAdapter.optimistic) {
-                    resetTemporaryLayout();
+                    commit();
                 }
                 throw error;
             }
         },
-        [dragPropsContext, onDropProp, layoutAdapter, setTemporaryLayout, resetTemporaryLayout],
+        [dragPropsContext, onDropProp, layoutAdapter, setTemporaryLayout],
     );
 
     const dashkitContextValue = React.useMemo(

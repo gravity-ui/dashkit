@@ -23,7 +23,7 @@ jest.mock('@gravity-ui/uikit', () => {
 
 import React from 'react';
 
-import {act, fireEvent, render} from '@testing-library/react';
+import {act, fireEvent, render, within} from '@testing-library/react';
 
 import {DEFAULT_GROUP} from '../../../constants';
 import type {Config, GridStackContainer} from '../../../shared';
@@ -683,4 +683,45 @@ test('palette newLayout keeps saved autoheight while pending nodes keep visual h
         defaultLayout: {w: 6, h: 4},
         renderer: (props, ref) => <Plugin {...props} ref={ref} />,
     });
+});
+
+// Critical: yes. A late async completion cannot cancel a newer user's pending addition.
+test.each(['older-first', 'newer-first'])(
+    'palette commits own their pending snapshot in %s order',
+    (order) => {
+        const f = paletteTransaction();
+        f.start();
+        f.over();
+        f.drop();
+        const commitA = f.onDrop.mock.calls[0][0].commit;
+        f.over(); // Reentry cancels A; the following hover starts B.
+        f.over(300, 120);
+        f.drop();
+        expect(f.onDrop).toHaveBeenCalledTimes(2);
+        const commitB = f.onDrop.mock.calls[1][0].commit;
+        expect(f.host('__dropping-elem__').gridstackNode).toMatchObject({y: 3});
+        if (order === 'older-first') {
+            act(commitA);
+            expect(f.host('__dropping-elem__').gridstackNode).toMatchObject({y: 3});
+        }
+        act(commitB);
+        act(commitA);
+        expect(f.view.container.querySelector('[data-dashkit-id="__dropping-elem__"]')).toBeNull();
+        expect(f.host('a').gridstackNode?.y).toBe(0);
+        expect(f.onChange).not.toHaveBeenCalled();
+        f.view.unmount();
+    },
+);
+
+// Critical: yes. Deleting a saved widget must not strand the active pending drop.
+test('palette commit retains ownership after removing a saved widget from its snapshot', () => {
+    const f = paletteTransaction({noOverlay: false});
+    f.start();
+    f.over();
+    f.drop();
+    fireEvent.click(within(f.host('b')).getByRole('button', {name: 'Delete'}));
+    act(() => f.onDrop.mock.calls[0][0].commit());
+    expect(f.view.container.querySelector('[data-dashkit-id="__dropping-elem__"]')).toBeNull();
+    expect(f.root.gridstack.opts.disableDrag).toBeFalsy();
+    f.view.unmount();
 });
