@@ -115,6 +115,89 @@ test('native admission rejects a foreign instance host with the same widget ID',
     view.unmount();
 });
 
+// Critical: yes. Rounding converted bounds can make a valid source interval impossible.
+test.each(['width', 'height'] as const)(
+    'native admission rejects inverted converted %s bounds before touching drop state',
+    (axis) => {
+        const onChange = jest.fn();
+        const groups: DashKitGroup[] = [
+            {
+                id: 'source',
+                gridProperties: (properties) => ({
+                    ...properties,
+                    width: 640,
+                    cols: 64,
+                    rowHeight: 10,
+                    margin: [0, 0],
+                    containerPadding: [0, 0],
+                }),
+            },
+        ];
+        const invalid = {
+            i: 'a',
+            parent: 'source',
+            x: 0,
+            y: 0,
+            w: 3,
+            h: 3,
+            minW: axis === 'width' ? 3 : 1,
+            maxW: axis === 'width' ? 3 : 5,
+            minH: axis === 'height' ? 3 : 1,
+            maxH: axis === 'height' ? 3 : 5,
+        };
+        const valid = {...invalid, i: 'b', x: 5, minW: 1, maxW: 5, minH: 1, maxH: 5};
+        const document: Config = {
+            ...config,
+            containers: [
+                {
+                    ...box,
+                    id: 'target',
+                    parent: 'source',
+                    x: 20,
+                    w: 30,
+                    h: 10,
+                    padding: [0, 0, 0, 0],
+                    gap: [0, 0],
+                    grid: {cols: 32, rowHeight: 20, compactType: null},
+                },
+            ],
+            items: [config.items[0], {...config.items[0], id: 'b'}],
+            layout: [invalid, valid],
+        };
+        const view = render(
+            <DashKitGridStack config={document} editMode groups={groups} onChange={onChange} />,
+        );
+        const root = view.container.querySelector(
+            '[data-dashkit-id="target"] .grid-stack',
+        ) as HTMLElement & {
+            ddElement: {ddDroppable: {option: {accept: (el: Element) => boolean}}};
+            gridstack: GridStack;
+        };
+        const accept = root.ddElement.ddDroppable.option.accept;
+        const fit = jest.spyOn(root.gridstack.engine, 'willItFit');
+        const invalidHost = requireValue(
+            view.container.querySelector('[data-dashkit-id="a"]'),
+            'invalid',
+        );
+        const validHost = requireValue(
+            view.container.querySelector('[data-dashkit-id="b"]'),
+            'valid',
+        );
+        const engine = root.gridstack.engine as GridStack['engine'] & {dropSize?: unknown};
+        expect(root.gridstack.engine.column).toBe(32);
+        expect(accept(validHost)).toBe(true);
+        expect(engine.dropSize).toBeDefined();
+        fit.mockClear();
+        expect(accept(invalidHost)).toBe(false);
+        expect(fit).not.toHaveBeenCalled();
+        expect(engine.dropSize).toBeUndefined();
+        expect(accept(validHost)).toBe(true);
+        expect(onChange).not.toHaveBeenCalled();
+        view.unmount();
+        fit.mockRestore();
+    },
+);
+
 // Critical: yes. A move must not reset a plugin's state/ref or lose saved document membership.
 // Critical: yes. A valid subtree must reach native fit checks in destination units, not source pixels.
 test('native bounded droppable accepts fitting container units and rejects an oversized subtree', () => {

@@ -816,6 +816,44 @@ class GridStackCanvas extends React.PureComponent {
         return result;
     }
 
+    private convertedDropSize(
+        id: string,
+        node: GridStackNode,
+        source: GridRecord | undefined,
+        target: GridRecord,
+        container: boolean,
+    ): (Partial<WidgetLayout> & {w: number; h: number}) | undefined {
+        if (!source || source === target) {
+            return {w: requireValue(node.w, 'node.w'), h: requireValue(node.h, 'node.h')};
+        }
+        const visible = this.active || visibleGeometry(position(id, node), source.geometry);
+        const constraints = this.convertConstraints(this.active?.oldItem || node, source, target);
+        if (
+            (constraints.minW !== undefined &&
+                constraints.maxW !== undefined &&
+                constraints.minW > constraints.maxW) ||
+            (constraints.minH !== undefined &&
+                constraints.maxH !== undefined &&
+                constraints.minH > constraints.maxH)
+        ) {
+            return undefined;
+        }
+        return {
+            w: Math.min(
+                container ? Infinity : target.geometry.cols,
+                Math.max(
+                    1,
+                    Math.round((visible.width + target.geometry.gapX) / target.geometry.stepX),
+                ),
+            ),
+            h: Math.max(
+                1,
+                Math.round((visible.height + target.geometry.gapY) / target.geometry.stepY),
+            ),
+            ...constraints,
+        };
+    }
+
     private accept(key: string, el: GridItemHTMLElement) {
         if (!this.context.editMode) {
             return false;
@@ -839,30 +877,18 @@ class GridStackCanvas extends React.PureComponent {
             return false;
         }
         const source = this.grids.get(this.active?.sourceKey || host.key);
-        let converted;
-        if (source && source !== record) {
-            const visible =
-                this.active ||
-                visibleGeometry(position(requireValue(id, 'widget id'), node), source.geometry);
-            converted = {
-                w: Math.min(
-                    container ? Infinity : record.geometry.cols,
-                    Math.max(
-                        1,
-                        Math.round((visible.width + record.geometry.gapX) / record.geometry.stepX),
-                    ),
-                ),
-                h: Math.max(
-                    1,
-                    Math.round((visible.height + record.geometry.gapY) / record.geometry.stepY),
-                ),
-                ...this.convertConstraints(this.active?.oldItem || node, source, record),
-            };
-        } else {
-            converted = {w: requireValue(node.w, 'node.w'), h: requireValue(node.h, 'node.h')};
-        }
         const engine = record.grid.engine as DashKitEngine;
         engine.dropSize = undefined;
+        const converted = this.convertedDropSize(
+            requireValue(id, 'widget id'),
+            node,
+            source,
+            record,
+            Boolean(container),
+        );
+        if (!converted) {
+            return false;
+        }
         if (container) {
             const {minW = 1, minH = 1} = this.minimumContainer(container.id, record) || {};
             converted.w = Math.max(converted.w, minW);
