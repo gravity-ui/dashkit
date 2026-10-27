@@ -673,14 +673,9 @@ describe.each([
                 y: container.id === 'box' ? 2 : 0,
             }));
             act(() =>
-                captured.onDrop(
-                    config.layout,
-                    {i: TEMPORARY_ITEM_ID, x: 4, y: 0, w: 2, h: 2},
-                    undefined,
-                    pendingContainers,
-                ),
+                captured.onDrop(config.layout, {i: TEMPORARY_ITEM_ID, x: 4, y: 0, w: 2, h: 2}),
             );
-            expect(captured.containers).toEqual(pendingContainers);
+            expect(captured.containers).toEqual(config.containers);
             expect(captured.config.containers).toEqual(config.containers);
             expect(props.onChange).not.toHaveBeenCalled();
             const drop: ItemDropProps = onDrop.mock.calls[0][0];
@@ -688,7 +683,7 @@ describe.each([
                 view.rerender(
                     fixture({
                         ...config,
-                        containers: drop.containers,
+                        containers: pendingContainers,
                         items: [...config.items, {...config.items[0], id: 'item2'}],
                         layout: [...drop.newLayout, {...drop.itemLayout, i: 'item2'}],
                     }),
