@@ -1113,5 +1113,12 @@ PreviewOverlap.args = {nested: false, allowOverlap: false, compactType: null};
 export const PaletteDocument: StoryFn<typeof PaletteDocumentFixture> = (args) => (
     <PaletteDocumentFixture {...args} />
 );
-PaletteDocument.args = {admission: false, rerenderOnHover: false, rejectAfterHover: false};
+PaletteDocument.args = {
+    admission: false,
+    rerenderOnHover: false,
+    rejectAfterHover: false,
+    bounded: false,
+    scale: 1,
+    gap: 0,
+};
 export const PaletteAdmission: StoryFn = () => <PaletteDocumentFixture admission />;

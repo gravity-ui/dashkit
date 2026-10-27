@@ -757,6 +757,38 @@ test.each(['older-first', 'newer-first'])(
     },
 );
 
+// Critical: yes. Engine maxRows cannot admit widgets beyond a bounded physical canvas.
+test.each([1, 0.6, 2])(
+    'bounded palette clamps scaled canvas at %s with gaps and rejects final overflow',
+    (scale) => {
+        const f = paletteTransaction({bounded: true, scale, gap: 8});
+        f.start();
+        f.over(630, 390);
+        expect(f.host('__dropping-elem__').gridstackNode).toMatchObject({x: 9, y: 6, w: 3, h: 2});
+        f.drop();
+        expect(f.onDrop.mock.calls[0][0].itemLayout).toMatchObject({x: 9, y: 6});
+        act(() => f.onDrop.mock.calls[0][0].commit());
+        f.over(300, 120);
+        const node = requireValue(f.host('__dropping-elem__').gridstackNode, 'node');
+        node.y = 9; // Native collision/late movement can change the accepted proposal before drop.
+        f.drop();
+        expect(f.onDrop).toHaveBeenCalledTimes(1);
+        expect(f.view.container.querySelector('[data-dashkit-id="__dropping-elem__"]')).toBeNull();
+        expect(f.onChange).not.toHaveBeenCalled();
+        f.view.unmount();
+    },
+);
+
+test('bounded palette rejects an item taller than the physical canvas', () => {
+    const f = paletteTransaction({bounded: true, height: 40});
+    f.start();
+    f.over();
+    f.drop();
+    expect(f.onDrop).not.toHaveBeenCalled();
+    expect(f.view.container.querySelector('[data-dashkit-id="__dropping-elem__"]')).toBeNull();
+    f.view.unmount();
+});
+
 // Critical: yes. Deleting a saved widget must not strand the active pending drop.
 test('palette commit retains ownership after removing a saved widget from its snapshot', () => {
     const f = paletteTransaction({noOverlay: false});

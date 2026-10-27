@@ -4,7 +4,7 @@ import {ActionPanel} from '../../../src/components/ActionPanel/ActionPanel';
 import {DashKitDnDWrapper} from '../../../src/components/DashKitDnDWrapper/DashKitDnDWrapper';
 import {DashKitGridStack} from '../../../src/gridstack';
 import type {Config, ItemDropProps} from '../../../src/shared';
-import type {DashKitGroup} from '../../../src/typings';
+import type {DashKitGroup, ReactGridLayoutProps} from '../../../src/typings';
 
 const type = 'palette-document';
 function Child({id}: {id: string}) {
@@ -40,11 +40,30 @@ export function PaletteDocument({
     admission = false,
     rerenderOnHover = false,
     rejectAfterHover = false,
+    bounded = false,
+    scale = 1,
+    gap = 0,
 }: {
     admission?: boolean;
     rerenderOnHover?: boolean;
     rejectAfterHover?: boolean;
+    bounded?: boolean;
+    scale?: number;
+    gap?: number;
 }) {
+    const canvasGroups = React.useMemo(
+        () =>
+            groups.map((group) => ({
+                ...group,
+                gridProperties: (props: ReactGridLayoutProps) => ({
+                    ...group.gridProperties?.(props),
+                    ...(bounded
+                        ? {isBounded: true, maxRows: 100, margin: [gap, gap] as [number, number]}
+                        : {}),
+                }),
+            })),
+        [bounded, gap],
+    );
     const [config, setConfig] = React.useState<Config>(
         admission
             ? {
@@ -136,7 +155,7 @@ export function PaletteDocument({
                                     ...config,
                                     ...(pending.containers ? {containers: pending.containers} : {}),
                                 },
-                                groups,
+                                groups: canvasGroups,
                                 item: {type, data: {}, layout: pending.itemLayout},
                                 options: {updateLayout: pending.newLayout},
                             }),
@@ -156,10 +175,17 @@ export function PaletteDocument({
                 >
                     Cancel drop
                 </button>
-                <div style={{width: 600, height: 400}}>
+                <div
+                    style={{
+                        width: 600,
+                        height: 400,
+                        transform: `scale(${scale})`,
+                        transformOrigin: 'top left',
+                    }}
+                >
                     <DashKitGridStack
                         config={config}
-                        groups={groups}
+                        groups={canvasGroups}
                         context={rerenderOnHover ? {hovers} : undefined}
                         editMode
                         onDrop={(drop) => {

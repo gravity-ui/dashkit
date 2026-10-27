@@ -1243,16 +1243,29 @@ class GridStackCanvas extends React.PureComponent {
             return;
         }
         const rect = record.root.getBoundingClientRect();
-        const scale = record.root.clientWidth ? rect.width / record.root.clientWidth : 1;
+        const scaleX = record.root.clientWidth ? rect.width / record.root.clientWidth : 1;
+        const scaleY = record.root.clientHeight ? rect.height / record.root.clientHeight : scaleX;
         const entry: ConfigLayout = {
             i: TEMPORARY_ITEM_ID,
-            x: Math.max(0, Math.round((event.clientX - rect.left) / scale / record.geometry.stepX)),
-            y: Math.max(0, Math.round((event.clientY - rect.top) / scale / record.geometry.stepY)),
+            x: Math.max(
+                0,
+                Math.round((event.clientX - rect.left) / scaleX / record.geometry.stepX),
+            ),
+            y: Math.max(0, Math.round((event.clientY - rect.top) / scaleY / record.geometry.stepY)),
             w: sizes?.w || 3,
             h: sizes?.h || 3,
             ...(record.parent ? {parent: record.parent} : {}),
             ...(record.containerId ? {containerId: record.containerId} : {}),
         };
+        if (record.properties.isBounded) {
+            const bounds = this.paletteBounds(record, entry);
+            if (bounds.x < 0 || bounds.y < 0) {
+                this.clearPreview();
+                return;
+            }
+            entry.x = Math.min(entry.x, Math.floor(bounds.x + 1e-7));
+            entry.y = Math.min(entry.y, Math.floor(bounds.y + 1e-7));
+        }
         if (this.hosts.get(TEMPORARY_ITEM_ID)?.key !== getGridKey(entry)) {
             this.clearPreview();
         }
@@ -1284,6 +1297,16 @@ class GridStackCanvas extends React.PureComponent {
         }
         this.forceUpdate();
     };
+    private paletteBounds(record: GridRecord, entry: ConfigLayout) {
+        const rect = record.root.getBoundingClientRect();
+        const scaleX = record.root.clientWidth ? rect.width / record.root.clientWidth : 1;
+        const scaleY = record.root.clientHeight ? rect.height / record.root.clientHeight : scaleX;
+        const visible = visibleGeometry(entry, record.geometry);
+        return {
+            x: (rect.width / scaleX - visible.width) / record.geometry.stepX,
+            y: (rect.height / scaleY - visible.height) / record.geometry.stepY,
+        };
+    }
     private paletteDrop = (event: DragEvent) => {
         if (!this.preview) {
             return;
@@ -1293,7 +1316,10 @@ class GridStackCanvas extends React.PureComponent {
         const host = requireValue(this.hosts.get(TEMPORARY_ITEM_ID), 'palette preview host');
         const record = requireValue(this.grids.get(host.key), 'host grid record');
         const node = requireValue(host.el.gridstackNode, 'host native node');
+        const entry = position(TEMPORARY_ITEM_ID, node);
+        const bounds = record.properties.isBounded ? this.paletteBounds(record, entry) : undefined;
         if (
+            (bounds && (entry.x > bounds.x + 1e-7 || entry.y > bounds.y + 1e-7)) ||
             (record.grid.engine.maxRow &&
                 requireValue(node.y, 'node.y') + requireValue(node.h, 'node.h') >
                     record.grid.engine.maxRow) ||

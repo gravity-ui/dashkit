@@ -353,3 +353,88 @@ test('native palette keeps displaced subtree through pending drop, cancel and co
     assert.deepEqual(await position('child'), child);
     await expect(page.locator('[data-qa="change-count"]')).toHaveText('0');
 });
+
+// Critical: yes. Pending displacement must never reach a save via a real native pointer gesture.
+test('pending palette blocks native drag and resize until cancel, then next drag saves', async ({
+    page,
+    evidence,
+}) => {
+    await page.goto(storyUrl('tests-gridstack--palette-document', {rerenderOnHover: true}));
+    await hoverPalette(page);
+    await page.mouse.up();
+    await expect(page.locator('[data-qa="drop-count"]')).toHaveText('1');
+    const saved = page.locator('[data-qa="saved-config"]');
+    const before = await saved.textContent();
+    const box = page.locator('[data-dashkit-id="box"]');
+    const pending = checked(await box.boundingBox());
+    const gesture = async (x: number, y: number) => {
+        await page.mouse.move(x, y);
+        await page.mouse.down();
+        await page.mouse.move(x + 10, y + 10);
+        await page.mouse.move(x + 50, y + 40, {steps: 8});
+        await page.mouse.up();
+    };
+    await gesture(pending.x + 10, pending.y + pending.height - 20);
+    await gesture(pending.x + pending.width - 2, pending.y + pending.height - 2);
+    assert.equal(await saved.textContent(), before);
+    assert.deepEqual(await box.boundingBox(), pending);
+    await expect(page.locator('[data-qa="change-count"]')).toHaveText('0');
+    await page.getByRole('button', {name: 'Cancel drop'}).click();
+    const restored = checked(await box.boundingBox());
+    assert.equal(restored.y, pending.y - 80);
+    await gesture(restored.x + 10, restored.y + restored.height - 20);
+    await expect(page.locator('[data-qa="change-count"]')).toHaveText('1');
+    const after = JSON.parse(checked(await saved.textContent())) as Config;
+    assert.equal(checked(after.containers?.find(({id}) => id === 'box')).x, 5);
+    assert.equal(checked(after.containers?.find(({id}) => id === 'box')).y, 1);
+    assert.equal(after.items.length, 1);
+    evidence.push({
+        check: 'pending native drag/resize blocked, cancel restores, next pointer drag saves once',
+        after,
+    });
+});
+
+// Critical: yes. Physical bounded canvas is stricter than configured maxRows, under CSS scale/gaps.
+for (const scale of ['1', '0.6', '2']) {
+    test(`bounded palette respects physical canvas at scale ${scale}`, async ({page, evidence}) => {
+        await page.setViewportSize({width: 1600, height: 1200});
+        await page.goto(
+            storyUrl('tests-gridstack--palette-document', {bounded: true, scale, gap: '8'}),
+        );
+        const root = page.locator('.grid-stack').first();
+        await root.waitFor();
+        const before = await page.locator('[data-qa="saved-config"]').textContent();
+        const bounds = checked(await root.boundingBox());
+        await dropPalette(page, page.getByRole('button', {name: '+ Add', exact: true}), root, {
+            x: bounds.width - 5,
+            y: bounds.height - 5,
+        });
+        await expect(page.locator('[data-qa="drop-count"]')).toHaveText('1');
+        const preview = page.locator('[data-dashkit-id="__dropping-elem__"]');
+        const rect = checked(await preview.boundingBox());
+        assert(rect.x >= bounds.x && rect.y >= bounds.y);
+        assert(rect.x + rect.width <= bounds.x + bounds.width + 1);
+        assert(rect.y + rect.height <= bounds.y + bounds.height + 1);
+        const position = await preview.evaluate((element) => {
+            const {x, y, w, h} = (element as NativeElement).gridstackNode;
+            return {x, y, w, h};
+        });
+        assert.deepEqual(position, {x: 9, y: 6, w: 3, h: 2});
+        assert.equal(await page.locator('[data-qa="saved-config"]').textContent(), before);
+        await page.getByRole('button', {name: 'Apply drop'}).click();
+        const after = JSON.parse(
+            checked(await page.locator('[data-qa="saved-config"]').textContent()),
+        ) as Config;
+        assert.deepEqual(
+            after.layout.find(({i}) => i !== 'child'),
+            {i: checked(after.items.find(({id}) => id !== 'child')).id, ...position},
+        );
+        await expect(page.locator('[data-qa="change-count"]')).toHaveText('0');
+        evidence.push({
+            check: 'real HTML5 release within scaled physical bounds with gaps and maxRows100',
+            bounds,
+            rect,
+            position,
+        });
+    });
+}
