@@ -75,9 +75,7 @@ export interface DashKitProps extends DashKitGeneralProps, Partial<DashKitDefaul
 type DashKitInnerProps = DashKitGeneralProps & DashKitDefaultProps;
 
 /**
- * @internal Not part of the public API. Do not use in production code.
- * Module-scoped symbol — not accessible to external consumers holding a ref,
- * preventing synthetic event injection via instance._emit.
+ * @internal Exported for compatibility. Do not use in production code.
  */
 export const _emitSymbol = Symbol('DashKit._emit');
 
