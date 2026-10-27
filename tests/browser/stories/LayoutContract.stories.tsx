@@ -120,13 +120,16 @@ function Contract({
     engine = 'legacy',
     bounded = false,
     customResize = false,
+    delayedAck = false,
 }: {
     engine?: keyof typeof engines;
     bounded?: boolean;
     customResize?: boolean;
+    delayedAck?: boolean;
 }) {
     const Component = engines[engine];
     const [config, setConfig] = React.useState(bounded ? boundedInitial : initial);
+    const [savedConfig, setSavedConfig] = React.useState(config);
     const [editing, setEditing] = React.useState(true);
     const [events, setEvents] = React.useState(0);
     const [northWest, setNorthWest] = React.useState(false);
@@ -167,6 +170,17 @@ function Contract({
             </button>
             <button onClick={() => setNorthWest(true)}>Use northwest handles</button>
             <button onClick={() => setHandleLabel('new')}>Update handle renderer</button>
+            {delayedAck && (
+                <>
+                    <button onClick={() => setConfig(savedConfig)}>Acknowledge same</button>
+                    <button onClick={() => setConfig(structuredClone(savedConfig))}>
+                        Acknowledge clone
+                    </button>
+                    <button onClick={() => setConfig(structuredClone(boundedInitial))}>
+                        External reset
+                    </button>
+                </>
+            )}
             <span data-qa="event-count">Events: {events}</span>
             <div data-qa="canvas" style={{width: bounded ? 600 : 640, height: 400}}>
                 <Component
@@ -174,12 +188,15 @@ function Contract({
                     groups={activeGroups}
                     editMode={editing}
                     onChange={({config: next}) => {
-                        setConfig(next);
+                        setSavedConfig(next);
+                        if (!delayedAck) {
+                            setConfig(next);
+                        }
                         setEvents((value) => value + 1);
                     }}
                 />
             </div>
-            <pre data-qa="saved-config">{JSON.stringify(config)}</pre>
+            <pre data-qa="saved-config">{JSON.stringify(delayedAck ? savedConfig : config)}</pre>
         </div>
     );
 }
@@ -192,3 +209,6 @@ BoundedContract.args = {engine: 'legacy', bounded: true};
 
 export const ResizeControls: StoryFn<typeof Contract> = (args) => <Contract {...args} />;
 ResizeControls.args = {engine: 'legacy', customResize: true};
+
+export const DelayedAcknowledgment: StoryFn<typeof Contract> = (args) => <Contract {...args} />;
+DelayedAcknowledgment.args = {engine: 'legacy', bounded: true, delayedAck: true};

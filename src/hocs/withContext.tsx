@@ -216,12 +216,23 @@ function useMemoStateContext(
                 emitDashKitEvent: props.emitDashKitEvent,
             });
 
-            internalBaselineLayoutRef.current = newConfig.layout;
+            // Compare acknowledgments with the defaults in effect when this edit was saved.
+            internalBaselineLayoutRef.current = enrichLayoutWithDefaults(
+                newConfig,
+                props.registerManager,
+            );
             if (layoutAdapter.optimistic) {
                 setVisualLayout(currentInnerLayout);
             }
         },
-        [getBaselineLayout, props.config, layoutAdapter, props.emitDashKitEvent, onChange],
+        [
+            getBaselineLayout,
+            props.config,
+            props.registerManager,
+            layoutAdapter,
+            props.emitDashKitEvent,
+            onChange,
+        ],
     );
 
     const getLayoutItem = React.useCallback(
