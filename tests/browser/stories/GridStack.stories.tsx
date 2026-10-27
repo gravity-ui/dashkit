@@ -554,8 +554,8 @@ function Contract({
                                 options: {updateLayout: newLayout},
                                 groups,
                             });
-                            setConfig(next);
                             lastConfig.current = next;
+                            setConfig(next);
                             commit();
                         }}
                     />
