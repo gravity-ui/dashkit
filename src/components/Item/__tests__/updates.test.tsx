@@ -107,8 +107,8 @@ function mountItem(isolateItemUpdates?: boolean) {
     return {context, item, renderer, registerManager, fixture, view, current, forwardedPluginRef};
 }
 
-// Critical: yes. Selector CRUD must not re-run unchanged expensive widget renderers when explicitly isolated.
-test('opt-in suppresses unrelated selector/layout updates and preserves own data, state, params and geometry updates', () => {
+// Critical: yes. Sibling layout changes must not re-run isolated widget renderers with stable own props.
+test('opt-in skips sibling layout changes with stable callbacks and preserves own data, state, params and geometry updates', () => {
     const {context, item, renderer, fixture, view, current} = mountItem(true);
     let next = context;
     const update = (patch: Partial<DashKitCtxShape>) => {
