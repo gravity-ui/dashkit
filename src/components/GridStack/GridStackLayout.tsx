@@ -821,6 +821,7 @@ class GridStackCanvas extends React.PureComponent {
             return false;
         }
         const id = el.dataset.dashkitId;
+        const host = this.hosts.get(id as string);
         const {containers = []} = this.context;
         const container = containers.find((entry) => entry.id === id);
         if (
@@ -834,12 +835,10 @@ class GridStackCanvas extends React.PureComponent {
         const record = this.grids.get(key);
         const item = this.context.configItems.find((entry) => entry.id === id);
         const node = el.gridstackNode;
-        if (!record || !node || (!item && !container)) {
+        if (!record || !node || (!item && !container) || host?.el !== el) {
             return false;
         }
-        const source = this.grids.get(
-            this.active?.sourceKey || this.hosts.get(requireValue(id, 'widget id'))?.key || '',
-        );
+        const source = this.grids.get(this.active?.sourceKey || host.key);
         let converted;
         if (source && source !== record) {
             const visible =

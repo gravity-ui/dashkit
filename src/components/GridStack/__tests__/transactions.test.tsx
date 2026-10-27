@@ -85,6 +85,36 @@ beforeAll(() => {
     });
 });
 
+// Critical: yes. Two dashboard instances may use the same saved widget ID.
+test('native admission rejects a foreign instance host with the same widget ID', () => {
+    const onChange = jest.fn();
+    const view = render(
+        <>
+            <div data-testid="target">
+                <DashKitGridStack config={config} editMode onChange={onChange} />
+            </div>
+            <div data-testid="foreign">
+                <DashKitGridStack config={config} editMode onChange={onChange} />
+            </div>
+        </>,
+    );
+    const target = view.getByTestId('target');
+    const foreign = view.getByTestId('foreign');
+    const root = target.querySelector('.grid-stack') as HTMLElement & {
+        ddElement: {ddDroppable: {option: {accept: (el: Element) => boolean}}};
+    };
+    const ownHost = requireValue(target.querySelector('[data-dashkit-id="a"]'), 'own host');
+    const foreignHost = requireValue(
+        foreign.querySelector('[data-dashkit-id="a"]'),
+        'foreign host',
+    );
+    const accept = root.ddElement.ddDroppable.option.accept;
+    expect(accept(foreignHost)).toBe(false);
+    expect(accept(ownHost)).toBe(true);
+    expect(onChange).not.toHaveBeenCalled();
+    view.unmount();
+});
+
 // Critical: yes. A move must not reset a plugin's state/ref or lose saved document membership.
 // Critical: yes. A valid subtree must reach native fit checks in destination units, not source pixels.
 test('native bounded droppable accepts fitting container units and rejects an oversized subtree', () => {
