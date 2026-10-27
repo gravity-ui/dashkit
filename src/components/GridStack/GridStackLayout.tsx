@@ -451,11 +451,17 @@ class GridStackCanvas extends React.PureComponent {
             getGridStackLayoutRects(
                 {
                     ...config,
-                    layout: config.layout.filter(
-                        (entry) => rootGrids[entry.parent || DEFAULT_GROUP],
+                    layout: config.layout.filter((entry) =>
+                        Object.prototype.hasOwnProperty.call(
+                            rootGrids,
+                            entry.parent || DEFAULT_GROUP,
+                        ),
                     ),
-                    containers: config.containers.filter(
-                        (entry) => rootGrids[entry.parent || DEFAULT_GROUP],
+                    containers: config.containers.filter((entry) =>
+                        Object.prototype.hasOwnProperty.call(
+                            rootGrids,
+                            entry.parent || DEFAULT_GROUP,
+                        ),
                     ),
                 },
                 rootGrids,

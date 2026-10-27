@@ -110,12 +110,13 @@ function removeItemVersion1({id, config, itemsStateAndParams}: RemoveItemArg) {
         ...withoutUniqItemsParams,
     });
     const connections = config.connections.filter(({from, to}) => id !== from && id !== to);
+    const globalItemIndex = config.globalItems?.findIndex((item) => item.id === id) ?? -1;
     const newConfig = update(config, {
-        items: {
-            $splice: [[itemIndex, 1]],
-        },
+        ...(globalItemIndex === -1
+            ? {items: {$splice: [[itemIndex, 1]]}}
+            : {globalItems: {$splice: [[globalItemIndex, 1]]}}),
         layout: {
-            $splice: [[itemIndex, 1]],
+            $set: config.layout.filter((item) => item.i !== id),
         },
         connections: {
             $set: connections,
