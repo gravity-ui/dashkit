@@ -68,6 +68,11 @@ type PendingExternalBaselineLayout = {
     previousBaselineLayout: ConfigLayout[];
 };
 
+type PendingExternalBaselineContainers = {
+    containers: GridStackContainer[] | undefined;
+    previousBaselineRevision: number;
+};
+
 type UseMemoStateContextResult = {
     dashkitContextValue: DashKitCtxShape;
     controlsContextValue: OverlayControlsCtxShape;
@@ -129,8 +134,22 @@ function useMemoStateContext(
     );
 
     const baselineContainers = React.useRef(props.config.containers);
+    const baselineContainersRevision = React.useRef(0);
     const [containers, setContainers] = React.useState(props.config.containers);
     const [previousContainers, setPreviousContainers] = React.useState(props.config.containers);
+    const [pendingExternalBaselineContainers, setPendingExternalBaselineContainers] =
+        React.useState<PendingExternalBaselineContainers>();
+    const getBaselineContainers = React.useCallback(() => {
+        if (
+            pendingExternalBaselineContainers &&
+            baselineContainersRevision.current ===
+                pendingExternalBaselineContainers.previousBaselineRevision
+        ) {
+            return pendingExternalBaselineContainers.containers;
+        }
+
+        return baselineContainers.current;
+    }, [pendingExternalBaselineContainers]);
     const internalBaselineLayoutRef = React.useRef<ConfigLayout[]>(enrichedPropsLayout);
     const [visualLayout, setVisualLayout] = React.useState<ConfigLayout[]>(enrichedPropsLayout);
     const [previousEnrichedPropsLayout, setPreviousEnrichedPropsLayout] =
@@ -188,7 +207,7 @@ function useMemoStateContext(
     const onLayoutChange = React.useCallback(
         (
             layout: ConfigLayout[],
-            nextContainers: GridStackContainer[] | undefined = baselineContainers.current,
+            nextContainers: GridStackContainer[] | undefined = getBaselineContainers(),
         ) => {
             const currentInnerLayout = layout.map((item) => {
                 if (item.i in originalLayouts.current) {
@@ -214,11 +233,12 @@ function useMemoStateContext(
                 }
             });
 
+            const currentContainers = getBaselineContainers();
             const baselineConfig = {
                 ...props.config,
                 layout: layoutAdapter.serializeLayout(getBaselineLayout()),
-                ...(baselineContainers.current ? {containers: baselineContainers.current} : {}),
-                ...(baselineContainers.current?.length || props.config.containers?.length
+                ...(currentContainers ? {containers: currentContainers} : {}),
+                ...(currentContainers?.length || props.config.containers?.length
                     ? {layoutVersion: 2 as const}
                     : {}),
             };
@@ -247,6 +267,7 @@ function useMemoStateContext(
                 props.registerManager,
             );
             baselineContainers.current = nextContainers;
+            baselineContainersRevision.current += 1;
             if (layoutAdapter.optimistic) {
                 setVisualLayout(currentInnerLayout);
                 setContainers(nextContainers);
@@ -254,6 +275,7 @@ function useMemoStateContext(
         },
         [
             getBaselineLayout,
+            getBaselineContainers,
             props.config,
             props.registerManager,
             layoutAdapter,
@@ -273,17 +295,17 @@ function useMemoStateContext(
         return convertEnrichedLayoutToConfigLayout(getBaselineLayout());
     }, [getBaselineLayout]);
 
-    const getOuterConfig = React.useCallback(
-        () => ({
+    const getOuterConfig = React.useCallback(() => {
+        const currentContainers = getBaselineContainers();
+        return {
             ...props.config,
             layout: getOuterLayout(),
-            ...(baselineContainers.current ? {containers: baselineContainers.current} : {}),
-            ...(baselineContainers.current?.length || props.config.containers?.length
+            ...(currentContainers ? {containers: currentContainers} : {}),
+            ...(currentContainers?.length || props.config.containers?.length
                 ? {layoutVersion: 2 as const}
                 : {}),
-        }),
-        [props.config, getOuterLayout],
-    );
+        };
+    }, [props.config, getOuterLayout, getBaselineContainers]);
 
     // to calculate items, only memorization of items and globalItems is important
     const configItems = React.useMemo(
@@ -461,11 +483,28 @@ function useMemoStateContext(
     if (previousContainers !== props.config.containers) {
         setPreviousContainers(props.config.containers);
         if (!isEqual(baselineContainers.current, props.config.containers)) {
-            baselineContainers.current = props.config.containers;
+            // Keep render replay pure; child layout effects still need the external baseline.
+            setPendingExternalBaselineContainers({
+                containers: props.config.containers,
+                previousBaselineRevision: baselineContainersRevision.current,
+            });
             setContainers(props.config.containers);
             setExternalLayoutRevision((revision) => revision + 1);
         }
     }
+
+    React.useLayoutEffect(() => {
+        if (pendingExternalBaselineContainers) {
+            if (
+                baselineContainersRevision.current ===
+                pendingExternalBaselineContainers.previousBaselineRevision
+            ) {
+                baselineContainers.current = pendingExternalBaselineContainers.containers;
+                baselineContainersRevision.current += 1;
+            }
+            setPendingExternalBaselineContainers(undefined);
+        }
+    }, [pendingExternalBaselineContainers]);
 
     React.useLayoutEffect(() => {
         if (pendingExternalBaselineLayout) {
