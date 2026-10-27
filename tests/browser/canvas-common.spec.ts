@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 
 import {canvas, crossZone, near} from './canvas-utils';
-import {checked, storyUrl as fixtureUrl, test} from './fixtures';
+import {checked, dropPalette, storyUrl as fixtureUrl, test} from './fixtures';
 import type {NativeElement} from './types';
 
 for (const legacy of [false, true]) {
@@ -322,11 +322,12 @@ for (const legacy of [false, true]) {
         test('common palette drop preserves existing widgets', async ({page, evidence}) => {
             const {state, reset} = canvas(page, legacy);
             const before = await reset();
-            await page
-                .getByRole('button', {name: '+ Widget', exact: true})
-                .dragTo(page.locator('.grid-stack, .react-grid-layout').first(), {
-                    targetPosition: {x: 450, y: 300},
-                });
+            await dropPalette(
+                page,
+                page.getByRole('button', {name: '+ Widget', exact: true}),
+                page.locator('.grid-stack, .react-grid-layout').first(),
+                {x: 450, y: 300},
+            );
             const after = await state();
             assert.equal(after.config.items.length, 3);
             assert.equal(after.config.counter, 2);

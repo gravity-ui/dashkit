@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 
 import type {Config} from '../../src/shared';
 
-import {checked, storyUrl as fixtureUrl, test} from './fixtures';
+import {checked, dropPalette, storyUrl as fixtureUrl, test} from './fixtures';
 import type {NativeElement} from './types';
 // Critical: yes. Native edits must preserve saved geometry and a usable editor.
 for (const {legacy, nested, initialCompactType} of [
@@ -157,9 +157,10 @@ for (const {legacy, nested, initialCompactType} of [
         // A successful add keeps the collision-adjusted neighbors and the selected position.
         await page.goto(storyUrl('tests-gridstack--preview-overlap', {nested}));
         await host('b').waitFor();
-        await page
-            .getByRole('button', {name: '+ Add', exact: true})
-            .dragTo(root, {targetPosition: {x: initialCompactType === null ? 5 : 250, y: 5}});
+        await dropPalette(page, page.getByRole('button', {name: '+ Add', exact: true}), root, {
+            x: initialCompactType === null ? 5 : 250,
+            y: 5,
+        });
         await host('added').waitFor();
         const placed = await saved();
         const added = checked(placed.layout.find(({i}) => i === 'added'));
