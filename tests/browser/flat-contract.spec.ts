@@ -148,3 +148,164 @@ for (const engine of ['legacy', 'gridstack']) {
         });
     });
 }
+
+// Critical: yes. A bounded flat edit must never persist a widget outside its fixed canvas.
+for (const engine of ['legacy', 'gridstack']) {
+    test(`[${engine}] common bounded drag without maxRows`, async ({page, evidence}) => {
+        await page.goto(storyUrl('bounded-contract', {engine}));
+        const widget = page.locator('[data-widget-id="a"]');
+        await widget.waitFor();
+        await expect(page.locator('[data-dashkit-engine]')).toHaveAttribute(
+            'data-dashkit-engine',
+            engine,
+        );
+        const saved = async () =>
+            JSON.parse(
+                checked(await page.locator('[data-qa="saved-config"]').textContent()),
+            ) as Config;
+        const initial = await saved();
+        const before = checked(await widget.boundingBox());
+        const canvas = checked(await page.locator('[data-qa="canvas"]').boundingBox());
+        const identity = await widget.getAttribute('data-widget-instance');
+        const drag = async (dx: number, dy: number) => {
+            const box = checked(await widget.boundingBox());
+            await page.mouse.move(box.x + 30, box.y + 30);
+            await page.mouse.down();
+            await page.mouse.move(box.x + 35, box.y + 35);
+            await page.mouse.move(box.x + 30 + dx, box.y + 30 + dy, {steps: 1});
+            const moving = checked(await widget.boundingBox());
+            evidence.push({engine, check: 'live bounded geometry', moving, canvas});
+            await page.mouse.up();
+            return moving;
+        };
+        const live = await drag(0, 600);
+        await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 1');
+        const moved = await saved();
+        const after = checked(await widget.boundingBox());
+        evidence.push({engine, initial, before, moved, after, canvas});
+        assert.deepEqual(moved.layout, [{i: 'a', x: 0, y: 18, w: 2, h: 2}]);
+        assert(live.y + live.height <= canvas.y + canvas.height + 1);
+        assert.equal(after.y - before.y, 360);
+        assert.equal(after.y + after.height, canvas.y + canvas.height);
+        await page.getByRole('button', {name: 'Restore', exact: true}).click();
+        assert.deepEqual(await saved(), initial);
+        await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 1');
+        assert.equal(checked(await widget.boundingBox()).y, before.y);
+        await drag(50, 40);
+        await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 2');
+        assert.deepEqual((await saved()).layout, [{i: 'a', x: 1, y: 2, w: 2, h: 2}]);
+        const resize = async (dx: number, dy: number) => {
+            const handle = checked(
+                await page
+                    .locator(
+                        '[data-qa="dashkit-grid-item"] .react-resizable-handle-se, [data-dashkit-id="a"] > .ui-resizable-se',
+                    )
+                    .boundingBox(),
+            );
+            const x = handle.x + handle.width / 2;
+            const y = handle.y + handle.height / 2;
+            await page.mouse.move(x, y);
+            await page.mouse.down();
+            await page.mouse.move(x + dx, y + dy, {steps: 1});
+            await page.mouse.up();
+        };
+        await resize(250, 200);
+        await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 3');
+        assert.deepEqual((await saved()).layout, [{i: 'a', x: 1, y: 2, w: 4, h: 4}]);
+        await resize(-175, -70);
+        await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 4');
+        assert.deepEqual((await saved()).layout, [{i: 'a', x: 1, y: 2, w: 1, h: 1}]);
+        assert.equal(await widget.getAttribute('data-widget-instance'), identity);
+    });
+}
+
+// Critical: no. Dynamic public resize controls must remain mounted on native targets.
+for (const engine of ['legacy', 'gridstack']) {
+    test(`[${engine}] common custom resize controls survive renderer and direction changes`, async ({
+        page,
+        evidence,
+    }) => {
+        await page.goto(storyUrl('resize-controls', {engine}));
+        await expect(page.locator('[data-qa="custom-resize"]')).toHaveText(['se old', 'se old']);
+        await expect(page.locator('.dashkit-grid-item__overlay')).toHaveCount(0);
+        const before = await page.locator('[data-qa="saved-config"]').textContent();
+        const identities = await page
+            .locator('[data-widget-id]')
+            .evaluateAll((elements) =>
+                elements.map((el) => el.getAttribute('data-widget-instance')),
+            );
+        await page.getByRole('button', {name: 'Update handle renderer', exact: true}).click();
+        await expect(page.locator('[data-qa="custom-resize"]')).toHaveText(['se new', 'se new']);
+        await expect(page.locator('.dashkit-grid-item__overlay')).toHaveCount(2);
+        assert.equal(await page.locator('[data-qa="saved-config"]').textContent(), before);
+        await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 0');
+        const southeast = checked(
+            await page.locator('[data-qa="custom-resize"]').last().boundingBox(),
+        );
+        await page.mouse.move(
+            southeast.x + southeast.width / 2,
+            southeast.y + southeast.height / 2,
+        );
+        await page.mouse.down();
+        await page.mouse.move(
+            southeast.x + southeast.width / 2 + 20,
+            southeast.y + southeast.height / 2 + 20,
+            {steps: 1},
+        );
+        await page.mouse.up();
+        await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 1');
+        const initial = JSON.parse(checked(before)) as Config;
+        assert.deepEqual(
+            (
+                JSON.parse(
+                    checked(await page.locator('[data-qa="saved-config"]').textContent()),
+                ) as Config
+            ).layout,
+            [initial.layout[0], {...initial.layout[1], w: 200, h: 140}],
+        );
+        assert.deepEqual(
+            await page
+                .locator('[data-widget-id]')
+                .evaluateAll((elements) =>
+                    elements.map((el) => el.getAttribute('data-widget-instance')),
+                ),
+            identities,
+        );
+        await page.getByRole('button', {name: 'Restore', exact: true}).click();
+        assert.equal(await page.locator('[data-qa="saved-config"]').textContent(), before);
+        await page.getByRole('button', {name: 'Use northwest handles', exact: true}).click();
+        evidence.push({
+            engine,
+            controls: await page.locator('[data-qa="custom-resize"]').allTextContents(),
+            nativeTargets: await page.locator('.ui-resizable-nw').count(),
+        });
+        await expect(page.locator('[data-qa="custom-resize"]')).toHaveText(['nw new', 'nw new']);
+        assert.equal(await page.locator('[data-qa="saved-config"]').textContent(), before);
+        await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 1');
+        const handle = checked(
+            await page.locator('[data-qa="custom-resize"]').first().boundingBox(),
+        );
+        const x = handle.x + handle.width / 2;
+        const y = handle.y + handle.height / 2;
+        await page.mouse.move(x, y);
+        await page.mouse.down();
+        await page.mouse.move(x - 20, y - 20, {steps: 1});
+        await page.mouse.up();
+        await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 2');
+        const resized = JSON.parse(
+            checked(await page.locator('[data-qa="saved-config"]').textContent()),
+        ) as Config;
+        assert.deepEqual(resized.layout, [
+            {...initial.layout[0], x: 20, y: 20, w: 180, h: 120},
+            initial.layout[1],
+        ]);
+        assert.deepEqual(
+            await page
+                .locator('[data-widget-id]')
+                .evaluateAll((elements) =>
+                    elements.map((el) => el.getAttribute('data-widget-instance')),
+                ),
+            identities,
+        );
+    });
+}

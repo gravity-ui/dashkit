@@ -155,9 +155,12 @@ class GridStackCanvas extends React.PureComponent {
             editMode,
             context,
         } = this.context;
-        const portals = configItems.map((item) => this.renderItem(item));
+        const propertiesByGrid = new Map(
+            [...this.grids.keys()].map((key) => [key, this.getProperties(key)]),
+        );
+        const portals = configItems.map((item) => this.renderItem(item, propertiesByGrid));
         const customHandles = [...this.hosts].flatMap(([id, host]) => {
-            const properties = this.grids.get(host.key)?.properties;
+            const properties = propertiesByGrid.get(host.key);
             if (!properties?.resizeHandle) {
                 return [];
             }
@@ -236,7 +239,11 @@ class GridStackCanvas extends React.PureComponent {
         const {settings, editMode} = this.context;
         const interval = Number(settings.autoupdateInterval) * 1000;
         const remaining = interval - (Date.now() - this.lastReload);
-        if (force || (interval && !document.hidden && !editMode && remaining <= 0)) {
+        // Initial sync creates portal targets before React commits plugin refs.
+        if (
+            this.plugins.size &&
+            (force || (interval && !document.hidden && !editMode && remaining <= 0))
+        ) {
             if (interval) {
                 this.lastReload = Date.now();
             }
@@ -739,7 +746,17 @@ class GridStackCanvas extends React.PureComponent {
             [...this.hosts].map(([id, host]) => {
                 const record = this.grids.get(host.key);
                 const node = host.el.gridstackNode;
-                return [id, host.key, node?.x, node?.y, node?.w, node?.h, record?.geometry];
+                const handles = record?.grid.opts.resizable?.handles;
+                return [
+                    id,
+                    host.key,
+                    node?.x,
+                    node?.y,
+                    node?.w,
+                    node?.h,
+                    record?.geometry,
+                    handles,
+                ];
             }),
         );
     }
@@ -984,7 +1001,11 @@ class GridStackCanvas extends React.PureComponent {
             }
         }
     };
-    private renderItem(item: ConfigItem, placeholder = false) {
+    private renderItem(
+        item: ConfigItem,
+        propertiesByGrid: Map<string, ReactGridLayoutProps>,
+        placeholder = false,
+    ) {
         const host = this.hosts.get(item.id);
         const node = host?.el.gridstackNode || this.context.layout.find(({i}) => i === item.id);
         const record = host && (this.grids.get(host.key) || host.lastRecord);
@@ -994,7 +1015,7 @@ class GridStackCanvas extends React.PureComponent {
         const measured = visibleGeometry(position(item.id, node), record.geometry);
         const active = this.active?.id === item.id ? this.active : undefined;
         const {width, height} = active && !active.resize ? active : measured;
-        const props = record.properties;
+        const props = propertiesByGrid.get(host.key) || record.properties;
         if (!this.pluginCallbacks.has(item.id)) {
             this.pluginCallbacks.set(item.id, (value) => {
                 if (value) {
