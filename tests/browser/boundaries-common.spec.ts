@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import type {Config} from '../../src/shared';
 
 import {boundary, strictLifecycle} from './boundary-utils';
-import {checked, storyUrl as fixtureUrl, test} from './fixtures';
+import {checked, dropPalette, storyUrl as fixtureUrl, test} from './fixtures';
 
 for (const legacy of [false, true]) {
     test.describe(legacy ? 'legacy' : 'gridstack', () => {
@@ -226,11 +226,12 @@ for (const legacy of [false, true]) {
                     0,
                 );
                 assert.deepEqual((await snapshot()).config, available.config);
-                await page
-                    .getByRole('button', {name: '+ Widget', exact: true})
-                    .dragTo(page.locator('.grid-stack, .react-grid-layout').first(), {
-                        targetPosition: {x: 450, y: paletteY},
-                    });
+                await dropPalette(
+                    page,
+                    page.getByRole('button', {name: '+ Widget', exact: true}),
+                    page.locator('.grid-stack, .react-grid-layout').first(),
+                    {x: 450, y: paletteY},
+                );
                 const committed = await snapshot();
                 assert.equal(committed.config.items.length, 2);
                 assert.equal(committed.events, 'Events: 0');
