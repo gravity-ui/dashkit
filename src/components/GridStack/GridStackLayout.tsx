@@ -267,7 +267,7 @@ class GridStackCanvas extends React.PureComponent {
                 })}
                 {portals}
                 {customHandles}
-                {preview ? this.renderItem(preview, true) : null}
+                {preview ? this.renderItem(preview, propertiesByGrid, true) : null}
             </div>
         );
     }
