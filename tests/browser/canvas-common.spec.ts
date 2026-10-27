@@ -723,40 +723,87 @@ test('native scalar absent prop retains DOM CSS scale', async ({page, evidence})
     evidence.push({check: 'DOM-derived half scale with absent scalar prop', before, after});
 });
 
-test('native scalar removal during resize saves unscaled size', async ({page, evidence}) => {
-    const {state, widget, layout} = canvas(page);
-    await page.goto(fixtureUrl('tests-gridstack--scalar-zoom'));
-    await page.locator('[data-widget-id="b"]').waitFor();
-    await page.getByRole('button', {name: 'Toggle zoom'}).click();
-    const before = await state();
-    const handle = checked(
-        await page.locator('[data-dashkit-id="b"] .ui-resizable-se').boundingBox(),
-    );
-    const start = {x: handle.x + handle.width / 2, y: handle.y + handle.height / 2};
-    await page.mouse.move(start.x, start.y);
-    await page.mouse.down();
-    await page.mouse.move(start.x + 10, start.y + 10);
-    await page.evaluate(() => {
-        const button = [...document.querySelectorAll('button')].find(
-            (candidate) => candidate.textContent === 'Clear zoom',
-        );
-        if (!button) {
-            throw new Error('Missing Clear zoom button');
-        }
-        button.click();
-    });
-    await page.waitForFunction(
-        () =>
-            document.querySelector<HTMLElement>('[data-qa="contract-canvas"]')?.style.transform ===
-            'scale(1)',
-    );
-    await page.mouse.move(start.x + 35, start.y + 35);
-    await page.mouse.up();
-    const after = await state();
-    const resized = checked(widget(after, 'b')).rect;
-    near(checked(layout(after, 'b')).w, resized.width);
-    near(checked(layout(after, 'b')).h, resized.height);
-    assert.equal(after.events, 'Events: 1');
-    assert.equal(checked(widget(after, 'b')).instance, checked(widget(before, 'b')).instance);
-    evidence.push({check: 'clear scalar scale during resize', before, after});
-});
+for (const corner of ['se', 'nw']) {
+    for (const releaseAfterZoom of [false, true]) {
+        test(`native scalar removal during ${corner} resize preserves geometry${releaseAfterZoom ? ' on immediate release' : ''}`, async ({
+            page,
+            evidence,
+        }) => {
+            const {state, widget, layout} = canvas(page);
+            await page.goto(fixtureUrl('tests-gridstack--scalar-zoom'));
+            await page.locator('[data-widget-id="b"]').waitFor();
+            await page.getByRole('button', {name: 'Toggle zoom'}).click();
+            const before = await state();
+            const original = checked(layout(before, 'b'));
+            const handle = checked(
+                await page.locator(`[data-dashkit-id="b"] .ui-resizable-${corner}`).boundingBox(),
+            );
+            const start = {x: handle.x + handle.width / 2, y: handle.y + handle.height / 2};
+            const sign = corner === 'nw' ? -1 : 1;
+            const checkGeometry = async (growth: number, scale: number) => {
+                const current = await state();
+                const rect = checked(widget(current, 'b')).rect;
+                near(rect.width, (original.w + growth) * scale);
+                near(rect.height, (original.h + growth) * scale);
+                near(
+                    (corner === 'nw' ? rect.right : rect.left) - current.root.left,
+                    (original.x + (corner === 'nw' ? original.w : 0)) * scale,
+                );
+                near(
+                    (corner === 'nw' ? rect.bottom : rect.top) - current.root.top,
+                    (original.y + (corner === 'nw' ? original.h : 0)) * scale,
+                );
+                return current;
+            };
+            await page.mouse.move(start.x, start.y);
+            await page.mouse.down();
+            await page.mouse.move(start.x + sign * 10, start.y + sign * 10);
+            await checkGeometry(20, 0.5);
+            await page.evaluate(() => {
+                const button = [...document.querySelectorAll('button')].find(
+                    (candidate) => candidate.textContent === 'Clear zoom',
+                );
+                if (!button) {
+                    throw new Error('Missing Clear zoom button');
+                }
+                button.click();
+            });
+            await page.waitForFunction(
+                () =>
+                    document.querySelector<HTMLElement>('[data-qa="contract-canvas"]')?.style
+                        .transform === 'scale(1)',
+            );
+            await checkGeometry(20, 1);
+            if (!releaseAfterZoom) {
+                await page.mouse.move(start.x + sign * 10, start.y + sign * 10);
+                await checkGeometry(20, 1);
+                await page.mouse.move(start.x + sign * 35, start.y + sign * 35);
+                const held = await checkGeometry(45, 1);
+                assert.equal(held.events, 'Events: 0');
+                evidence.push({
+                    check: 'unchanged pointer and further movement after scale removal',
+                    held,
+                });
+            }
+            await page.mouse.up();
+            const growth = releaseAfterZoom ? 20 : 45;
+            const after = await checkGeometry(growth, 1);
+            const saved = checked(layout(after, 'b'));
+            near(saved.w, original.w + growth);
+            near(saved.h, original.h + growth);
+            near(saved.x, original.x - (corner === 'nw' ? growth : 0));
+            near(saved.y, original.y - (corner === 'nw' ? growth : 0));
+            assert.deepEqual(layout(after, 'a'), layout(before, 'a'));
+            assert.equal(after.events, 'Events: 1');
+            assert.equal(
+                checked(widget(after, 'b')).instance,
+                checked(widget(before, 'b')).instance,
+            );
+            evidence.push({
+                check: 'scale removal preserves resize units, opposite corner and saved result',
+                before,
+                after,
+            });
+        });
+    }
+}

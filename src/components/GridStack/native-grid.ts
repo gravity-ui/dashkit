@@ -10,6 +10,15 @@ type NativeDraggable = {
     dragOffset?: {offsetX: number; offsetTop: number};
     helperContainment?: HTMLElement;
 };
+type NativeResizable = {
+    rectScale: {x: number; y: number};
+    startEvent?: MouseEvent;
+    originalRect?: DOMRect;
+    temporalRect?: {width: number; height: number; left: number; right: number; top: number};
+    scrollEl: HTMLElement;
+    scrollY: number;
+    scrolled: number;
+};
 type UI = {position: {left: number; top: number}; size?: {width: number; height: number}};
 type NativeInternals = {
     dragTransform: Transform;
@@ -43,6 +52,7 @@ const NativeBase = GridStack as unknown as new (
 export class DashKitNativeGrid extends NativeBase {
     properties?: () => ReactGridLayoutProps;
     onCancel?: () => void;
+    private resizeEvent?: MouseEvent;
 
     cancelDrag() {
         // React owns these portal targets; native cancellation must not delete external subtrees.
@@ -157,6 +167,9 @@ export class DashKitNativeGrid extends NativeBase {
             ui = this.boundDrag(el, drag?.ui() || ui);
         }
         super._onStartMoving(el, event, ui, node, width, height);
+        if (event.type === 'resizestart') {
+            this.resizeEvent = event as MouseEvent;
+        }
         this.refreshScale(el);
         if (drag?.mouseDownEvent && drag.dragOffset) {
             const pointer = event as MouseEvent;
@@ -187,6 +200,9 @@ export class DashKitNativeGrid extends NativeBase {
         let ui = uiInput;
         const node = nodeInput;
         this.refreshScale(el);
+        if (event.type === 'resize') {
+            this.resizeEvent = event as MouseEvent;
+        }
         if (event.type === 'drag') {
             ui = this.boundDrag(el, ui);
         }
@@ -229,22 +245,46 @@ export class DashKitNativeGrid extends NativeBase {
         const element = el as GridItemHTMLElement & {
             ddElement?: {
                 ddDraggable?: NativeDraggable;
-                ddResizable?: {rectScale: {x: number; y: number}};
+                ddResizable?: NativeResizable;
             };
         };
         if (element.ddElement?.ddDraggable) {
             this.refreshDraggableScale(element.ddElement.ddDraggable, scale, xScale, yScale);
         }
         if (element.ddElement?.ddResizable) {
-            const resizeTransform =
-                scale === undefined && el.parentElement
-                    ? Utils.getValuesFromTransformedElement(el.parentElement)
-                    : undefined;
-            element.ddElement.ddResizable.rectScale = {
-                x: resizeTransform?.xScale ?? xScale,
-                y: resizeTransform?.yScale ?? yScale,
-            };
+            this.refreshResizableScale(el, element.ddElement.ddResizable, scale, xScale, yScale);
         }
+    }
+
+    private refreshResizableScale(
+        el: GridItemHTMLElement,
+        resizeInput: NativeResizable,
+        scale: number | undefined,
+        xScale: number,
+        yScale: number,
+    ) {
+        const resize = resizeInput;
+        const resizeTransform =
+            scale === undefined && el.parentElement
+                ? Utils.getValuesFromTransformedElement(el.parentElement)
+                : undefined;
+        const nextScale = {
+            x: resizeTransform?.xScale ?? xScale,
+            y: resizeTransform?.yScale ?? yScale,
+        };
+        if (
+            resize.startEvent &&
+            resize.originalRect &&
+            (resize.rectScale.x !== nextScale.x || resize.rectScale.y !== nextScale.y)
+        ) {
+            // Native resize deltas use screen pixels; retain current layout units after zoom.
+            resize.originalRect = el.getBoundingClientRect();
+            resize.startEvent = this.resizeEvent || resize.startEvent;
+            resize.scrollY = resize.scrollEl.scrollTop;
+            resize.scrolled = 0;
+            delete resize.temporalRect;
+        }
+        resize.rectScale = nextScale;
     }
 
     private refreshDraggableScale(
