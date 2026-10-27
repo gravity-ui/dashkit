@@ -794,6 +794,62 @@ export const BoundedSubtrees: StoryFn = () => {
     );
 };
 
+export const ConvertedFit: StoryFn = () => {
+    const [config, setConfig] = React.useState<GridStackConfig>({
+        ...initial,
+        items: initial.items.map((item) => ({...item, type: 'gridstack-budget-widget'})),
+        layout: [
+            {i: 'a', parent: 'left', x: 0, y: 0, w: 10, h: 10},
+            {i: 'b', parent: 'right', x: 0, y: 5, w: 12, h: 5},
+        ],
+    });
+    const [events, setEvents] = React.useState(0);
+    const groups = React.useMemo<DashKitGroup[]>(
+        () =>
+            ['left', 'right'].map((id) => ({
+                id,
+                render: (key, children) => (
+                    <section
+                        key={key}
+                        data-fit-zone={id}
+                        style={{display: 'inline-block', width: 240}}
+                    >
+                        {children}
+                    </section>
+                ),
+                gridProperties: () => ({
+                    cols: 12,
+                    rowHeight: id === 'left' ? 4 : 10,
+                    margin: [0, 0],
+                    containerPadding: [0, 0],
+                    compactType: null,
+                    autoSize: false,
+                    maxRows: id === 'left' ? 40 : 10,
+                    isBounded: true,
+                    style: {height: id === 'left' ? 160 : 100},
+                }),
+            })),
+        [],
+    );
+    return (
+        <DashKitDnDWrapper>
+            <div>
+                <DashKitGridStack
+                    config={config}
+                    groups={groups}
+                    editMode
+                    onChange={({config: next}) => {
+                        setConfig(next);
+                        setEvents((count) => count + 1);
+                    }}
+                />
+                <span data-qa="event-count">Events: {events}</span>
+                <pre data-qa="saved-config">{JSON.stringify(config)}</pre>
+            </div>
+        </DashKitDnDWrapper>
+    );
+};
+
 function StrictLifecycleFixture(args: React.ComponentProps<typeof Contract>) {
     const [mounted, setMounted] = React.useState(true);
     return (

@@ -871,7 +871,7 @@ class GridStackCanvas extends React.PureComponent {
             if (!engine.willItFit({...converted})) {
                 return false;
             }
-            engine.dropSize = converted;
+            engine.dropSize = {id: requireValue(id, 'widget id'), ...converted};
             return true;
         }
         const {layout, containers: liveContainers} = this.readDocument();
@@ -893,10 +893,13 @@ class GridStackCanvas extends React.PureComponent {
                     ...converted,
                 },
             ) !== false;
-        engine.dropSize = accepted ? converted : undefined;
+        engine.dropSize = accepted ? {id: requireValue(id, 'widget id'), ...converted} : undefined;
         return accepted;
     }
     private start(event: Event, el: GridItemHTMLElement) {
+        for (const {grid} of this.grids.values()) {
+            (grid.engine as DashKitEngine).dropSize = undefined;
+        }
         const id = requireValue(el.dataset.dashkitId, 'gesture widget id');
         const node = requireValue(el.gridstackNode, 'gesture native node');
         const host = requireValue(this.hosts.get(id), 'widget host');
@@ -998,6 +1001,9 @@ class GridStackCanvas extends React.PureComponent {
             try {
                 this.finishGesture(event, el);
             } finally {
+                for (const {grid} of this.grids.values()) {
+                    (grid.engine as DashKitEngine).dropSize = undefined;
+                }
                 this.active = undefined;
                 this.forceUpdate();
             }
