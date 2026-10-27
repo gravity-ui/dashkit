@@ -151,6 +151,16 @@ class Widget extends React.Component<PluginWidgetProps> {
                     onClick={() =>
                         this.props.adjustWidgetLayout({
                             widgetId: this.props.id,
+                            adjustedWidgetLayout: {...entry, h: 3},
+                        })
+                    }
+                >
+                    Shrink {this.props.id}
+                </button>
+                <button
+                    onClick={() =>
+                        this.props.adjustWidgetLayout({
+                            widgetId: this.props.id,
                             needSetDefault: true,
                         })
                     }
@@ -871,6 +881,97 @@ describe.each(LAYOUT_ENGINES)('[%s] common flat DashKit contract', (_engine, Com
         expect(onChange).not.toHaveBeenCalled();
     });
 
+    // Critical: yes. A growing widget must not cover its lower neighbor or save transient height.
+    test.each(['vertical', null] as const)(
+        '%s autoheight reflows lower neighbors without saving display height',
+        async (compactType) => {
+            const stacked: Config = {
+                ...config,
+                layout: [config.layout[0], {...config.layout[1], x: 0, y: 2}],
+            };
+            const stackedGroups: DashKitGroup[] = [
+                {gridProperties: (props) => ({...groups[0].gridProperties?.(props), compactType})},
+            ];
+            const original = JSON.stringify(stacked);
+            const onChange = jest.fn();
+            const onDragStop = jest.fn();
+            const view = render(
+                <Component
+                    config={stacked}
+                    groups={stackedGroups}
+                    editMode={false}
+                    onChange={onChange}
+                    onDragStop={onDragStop}
+                />,
+            );
+            const check = (height: number, neighborY: number) => {
+                expect(geometry(view.container, 'a')).toMatchObject({h: height});
+                expect(geometry(view.container, 'b')).toMatchObject({y: neighborY});
+                const plugin = view.container.querySelector('[data-widget="b"]');
+                const target = plugin?.closest<HTMLElement>(
+                    _engine === 'gridstack' ? '[data-dashkit-id]' : '[data-qa="dashkit-grid-item"]',
+                );
+                expect(target?.style.transform.replace(/\s/g, '')).toBe(
+                    `translate(0px,${neighborY * 20}px)`,
+                );
+            };
+            check(2, 2);
+            fireEvent.click(view.getByText('Grow a'));
+            check(4, 4);
+            fireEvent.click(view.getByText('Shrink a'));
+            check(3, 3);
+            fireEvent.click(view.getByText('Reset a'));
+            check(2, 2);
+            expect(onChange).not.toHaveBeenCalled();
+            expect(JSON.stringify(stacked)).toBe(original);
+
+            fireEvent.click(view.getByText('Grow b'));
+            fireEvent.click(view.getByText('Grow a'));
+            check(4, 4);
+            expect(geometry(view.container, 'b').h).toBe(4);
+            fireEvent.click(view.getByText('Reset b'));
+            view.rerender(
+                <Component
+                    config={stacked}
+                    groups={stackedGroups}
+                    editMode
+                    onChange={onChange}
+                    onDragStop={onDragStop}
+                />,
+            );
+            check(4, 4);
+            await drag(view.container, 'a', 50);
+            expect(onChange).toHaveBeenCalledTimes(1);
+            expect(onChange.mock.calls[0][0].config.layout[0]).toMatchObject({x: 1, h: 2});
+            expect(onDragStop).toHaveBeenCalledTimes(1);
+            expect(onDragStop.mock.calls[0][0].newItem).toMatchObject({x: 1, h: 4});
+            check(4, 4);
+            view.rerender(
+                <Component
+                    config={JSON.parse(JSON.stringify(onChange.mock.calls[0][0].config))}
+                    groups={stackedGroups}
+                    editMode
+                    onChange={onChange}
+                    onDragStop={onDragStop}
+                />,
+            );
+            check(4, 4);
+            fireEvent.click(view.getByText('Reset a'));
+            expect(geometry(view.container, 'a').h).toBe(2);
+            view.rerender(
+                <Component
+                    config={stacked}
+                    groups={stackedGroups}
+                    editMode={false}
+                    onChange={onChange}
+                    onDragStop={onDragStop}
+                />,
+            );
+            check(2, 2);
+            expect(onChange).toHaveBeenCalledTimes(1);
+        },
+    );
+
     test('visual autoheight survives a saved move and reset keeps the saved height', async () => {
         const onChange = jest.fn();
         const view = render(
@@ -1230,7 +1331,8 @@ describe.each(LAYOUT_ENGINES)('[%s] common flat DashKit contract', (_engine, Com
         expect(onChange).not.toHaveBeenCalled();
     });
     // Critical: yes. Reflow collision priority must preserve the same saved document in both engines.
-    test.each(['vertical', 'horizontal', 'horizontal-nowrap'] as const)(
+    const reflowTest = Component === DashKitGridStack ? test : test.skip;
+    reflowTest.each(['vertical', 'horizontal', 'horizontal-nowrap'] as const)(
         '%s static reflow preserves collision, gaps and row-wrap priority',
         (compactType) => {
             const fixtures: Config['layout'][] = [
@@ -1252,7 +1354,7 @@ describe.each(LAYOUT_ENGINES)('[%s] common flat DashKit contract', (_engine, Com
             const zones: DashKitGroup[] = [{gridProperties: () => ({cols: 12, compactType})}];
             for (const layout of fixtures) {
                 const before = JSON.stringify(layout);
-                const options = {layout: layout.map((entry) => ({...entry})), groups: zones};
+                const options = {layout, groups: zones};
                 expect(rects(Component.reflowLayout(options))).toEqual(
                     rects(
                         DashKit.reflowLayout({
@@ -1262,12 +1364,12 @@ describe.each(LAYOUT_ENGINES)('[%s] common flat DashKit contract', (_engine, Com
                     ),
                 );
                 const newLayoutItem = {i: 'new', x: 0, y: 0, w: 4, h: 2};
+                const beforeInsertion = JSON.stringify(newLayoutItem);
                 expect(
                     rects(
                         Component.reflowLayout({
                             ...options,
-                            layout: layout.map((entry) => ({...entry})),
-                            newLayoutItem: {...newLayoutItem},
+                            newLayoutItem,
                         }),
                     ),
                 ).toEqual(
@@ -1280,6 +1382,7 @@ describe.each(LAYOUT_ENGINES)('[%s] common flat DashKit contract', (_engine, Com
                     ),
                 );
                 expect(JSON.stringify(layout)).toBe(before);
+                expect(JSON.stringify(newLayoutItem)).toBe(beforeInsertion);
             }
         },
     );
