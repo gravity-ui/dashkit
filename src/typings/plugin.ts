@@ -20,6 +20,8 @@ export interface PluginWidgetProps<T = StringParams> {
         stateAndParams: ItemStateAndParams,
         options?: ItemStateAndParamsChangeOptions,
     ) => void;
+    // Completion may be retained for later visual updates. Plugins suppress superseded requests;
+    // DashKit suppresses completions after unmount or item replacement.
     onBeforeLoad: () => () => void;
     width?: number;
     height?: number;

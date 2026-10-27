@@ -49,6 +49,10 @@ export function prepareItem(
                 return true;
             }
 
+            if (this.props.item.type !== nextProps.item.type) {
+                return true;
+            }
+
             // While dragging — skip content updates
             if (!nextProps.shouldItemUpdate) {
                 return false;
@@ -76,6 +80,7 @@ export function prepareItem(
 
             return (
                 <WrappedComponent
+                    key={item.type}
                     forwardedPluginRef={forwardedPluginRef}
                     rendererProps={this.getRenderProps()}
                     registerManager={registerManager}

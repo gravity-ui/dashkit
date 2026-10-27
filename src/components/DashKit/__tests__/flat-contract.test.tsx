@@ -496,16 +496,30 @@ describe.each(LAYOUT_ENGINES)('[%s] common flat DashKit contract', (_engine, Com
     test('offscreen async content reports readiness only for the latest live load', () => {
         const completions: Array<() => void> = [];
         class AsyncWidget extends React.Component<PluginWidgetProps> {
+            private generation = 0;
+
             componentDidMount() {
-                completions.push(this.props.onBeforeLoad());
+                completions.push(this.startLoad());
             }
             componentDidUpdate(previous: PluginWidgetProps) {
                 if (previous.data !== this.props.data) {
-                    completions.push(this.props.onBeforeLoad());
+                    completions.push(this.startLoad());
                 }
+            }
+            componentWillUnmount() {
+                this.generation++;
             }
             render() {
                 return <span>{this.props.data.text as string}</span>;
+            }
+            startLoad() {
+                const generation = ++this.generation;
+                const complete = this.props.onBeforeLoad();
+                return () => {
+                    if (generation === this.generation) {
+                        complete();
+                    }
+                };
             }
         }
         const asyncType = 'flat-contract-async';
@@ -553,6 +567,71 @@ describe.each(LAYOUT_ENGINES)('[%s] common flat DashKit contract', (_engine, Com
         act(() => completions[1]());
         expect(ready).toHaveBeenCalledTimes(1);
         expect(mounted.mock.calls.at(-1)[1].isMounted).toBe(false);
+    });
+
+    // Critical: yes. Same-id type edits must release loading without accepting old async completion.
+    test('same-id async to synchronous type edit reports readiness once', () => {
+        let completeOld!: () => void;
+        function AsyncWidget(props: PluginWidgetProps) {
+            const completion = React.useRef<(() => void) | undefined>(undefined);
+            if (!completion.current) {
+                completion.current = props.onBeforeLoad();
+                completeOld = completion.current;
+            }
+            return <span>Pending</span>;
+        }
+        Component.reloadPlugins({
+            type: 'type-replacement-async',
+            renderer: (props) => <AsyncWidget {...props} />,
+        });
+        Component.reloadPlugins({
+            type: 'type-replacement-sync',
+            renderer: () => <span>Ready replacement</span>,
+        });
+        const original = {
+            ...config,
+            items: [{...config.items[0], type: 'type-replacement-async'}],
+            layout: [config.layout[0]],
+        };
+        const mounted = jest.fn();
+        const ready = jest.fn();
+        const view = render(
+            <Component
+                config={original}
+                groups={groups}
+                editMode={false}
+                onItemMountChange={mounted}
+                onItemRender={ready}
+            />,
+        );
+        expect(ready).not.toHaveBeenCalled();
+        const replacement = Component.setItem({
+            config: original,
+            item: {...original.items[0], type: 'type-replacement-sync'},
+            groups,
+        });
+        view.rerender(
+            <Component
+                config={replacement}
+                groups={groups}
+                editMode={false}
+                onItemMountChange={mounted}
+                onItemRender={ready}
+            />,
+        );
+        expect(view.getByText('Ready replacement')).toBeTruthy();
+        expect(ready).toHaveBeenCalledTimes(1);
+        expect(ready).toHaveBeenCalledWith(replacement.items[0]);
+        act(() => completeOld());
+        expect(ready).toHaveBeenCalledTimes(1);
+        expect(mounted).toHaveBeenCalledWith(original.items[0], {
+            isAsync: true,
+            isMounted: false,
+        });
+        expect(mounted).toHaveBeenCalledWith(replacement.items[0], {
+            isAsync: false,
+            isMounted: true,
+        });
     });
 
     test('flat statics add, edit, promote and remove without mutating the caller document', () => {
