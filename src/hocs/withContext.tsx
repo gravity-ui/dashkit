@@ -651,6 +651,7 @@ function useMemoStateContext(
             forwardedMetaRef: props.forwardedMetaRef,
 
             layout: resultLayout,
+            adjustedLayoutIds: Object.keys(adjustedLayouts.current),
             temporaryLayout,
             layoutChange: onLayoutChange,
             memorizeOriginalLayout,

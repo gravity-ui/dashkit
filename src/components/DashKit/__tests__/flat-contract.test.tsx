@@ -972,6 +972,96 @@ describe.each(LAYOUT_ENGINES)('[%s] common flat DashKit contract', (_engine, Com
         },
     );
 
+    // Critical: yes. External restores must not hide neighbors or reverse adjusted widgets.
+    test.each(
+        (['vertical', null] as const).flatMap((compactType) =>
+            (['match-restore', 'remove-readd', 'two-adjusted'] as const).map((scenario) => ({
+                compactType,
+                scenario,
+            })),
+        ),
+    )(
+        '$compactType autoheight survives $scenario through the next gesture and reset',
+        async ({compactType, scenario}) => {
+            const stacked: Config = {
+                ...config,
+                layout: [config.layout[0], {...config.layout[1], x: 0, y: 2}],
+            };
+            const before = JSON.stringify(stacked);
+            const stackedGroups: DashKitGroup[] = [
+                {gridProperties: (props) => ({...groups[0].gridProperties?.(props), compactType})},
+            ];
+            const onChange = jest.fn();
+            const onDragStop = jest.fn();
+            const fixture = (document: Config, editMode = false) => (
+                <Component
+                    config={document}
+                    groups={stackedGroups}
+                    editMode={editMode}
+                    onChange={onChange}
+                    onDragStop={onDragStop}
+                />
+            );
+            const view = render(fixture(stacked));
+            if (scenario === 'two-adjusted') {
+                fireEvent.click(view.getByText('Grow b'));
+            }
+            fireEvent.click(view.getByText('Grow a'));
+            if (scenario === 'remove-readd') {
+                view.rerender(
+                    fixture({...stacked, items: [stacked.items[1]], layout: [stacked.layout[1]]}),
+                );
+                expect(view.container.querySelector('[data-widget="a"]')).toBeNull();
+            } else {
+                view.rerender(
+                    fixture({
+                        ...stacked,
+                        layout: [
+                            {...stacked.layout[0], h: 4},
+                            {...stacked.layout[1], y: 4},
+                        ],
+                    }),
+                );
+                expect(geometry(view.container, 'a')).toMatchObject({y: 0, h: 4});
+            }
+            const restored = {...stacked, layout: stacked.layout.map((entry) => ({...entry}))};
+            view.rerender(fixture(restored));
+            expect(geometry(view.container, 'a')).toMatchObject({y: 0, h: 4});
+            expect(geometry(view.container, 'b')).toMatchObject({
+                y: 4,
+                h: scenario === 'two-adjusted' ? 4 : 2,
+            });
+            expect(onChange).not.toHaveBeenCalled();
+            expect(JSON.stringify(stacked)).toBe(before);
+
+            view.rerender(fixture(restored, true));
+            await drag(view.container, 'a', 50);
+            expect(onChange).toHaveBeenCalledTimes(1);
+            const saved = onChange.mock.calls[0][0].config;
+            expect(saved.layout[0]).toMatchObject({x: 1, h: 2});
+            expect(saved.layout[1]).toMatchObject({h: 2});
+            expect(onDragStop).toHaveBeenCalledTimes(1);
+            expect(onDragStop.mock.calls[0][0].newItem).toMatchObject({x: 1, h: 4});
+            view.rerender(fixture(JSON.parse(JSON.stringify(saved)), true));
+            expect(geometry(view.container, 'a').h).toBe(4);
+            fireEvent.click(view.getByText('Reset a'));
+            if (scenario === 'two-adjusted') {
+                fireEvent.click(view.getByText('Reset b'));
+            }
+            expect(geometry(view.container, 'a').h).toBe(2);
+            expect(geometry(view.container, 'b')).toMatchObject({
+                y: compactType === 'vertical' ? 2 : 4,
+                h: 2,
+            });
+            view.rerender(
+                fixture({...stacked, layout: stacked.layout.map((entry) => ({...entry}))}),
+            );
+            expect(geometry(view.container, 'a')).toMatchObject({x: 0, y: 0, h: 2});
+            expect(geometry(view.container, 'b')).toMatchObject({y: 2, h: 2});
+            expect(onChange).toHaveBeenCalledTimes(1);
+        },
+    );
+
     test('visual autoheight survives a saved move and reset keeps the saved height', async () => {
         const onChange = jest.fn();
         const view = render(

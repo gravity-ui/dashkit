@@ -463,16 +463,18 @@ class GridStackCanvas extends React.PureComponent {
                     this.hosts.delete(id);
                     this.plugins.delete(id);
                     this.pluginCallbacks.delete(id);
-                    this.autoheightWidgets.delete(id);
                 }
             });
             // Saved geometry restores verbatim; only autoheight reflows its visual neighbors.
+            const autoheightWidgets = new Set(this.context.adjustedLayoutIds);
             this.grids.forEach(({grid}) => {
                 const engine = grid.engine as DashKitEngine;
                 engine.restoring = false;
-                const adjusted = engine.nodes.filter((node) =>
-                    this.autoheightWidgets.has(requireValue(node.id, 'autoheight widget id')),
-                );
+                const adjusted = engine.nodes.filter((node) => {
+                    const id = requireValue(node.id, 'autoheight widget id');
+                    // Previous IDs keep the reset's final reflow before adjustment ends.
+                    return autoheightWidgets.has(id) || this.autoheightWidgets.has(id);
+                });
                 if (adjusted.length) {
                     adjusted
                         .sort((a, b) => a.y - b.y || a.x - b.x)
@@ -480,14 +482,7 @@ class GridStackCanvas extends React.PureComponent {
                     engine._packNodes();
                 }
             });
-            this.autoheightWidgets.forEach((id) => {
-                if (
-                    layout.find(({i}) => i === id)?.h ===
-                    this.context.config.layout.find(({i}) => i === id)?.h
-                ) {
-                    this.autoheightWidgets.delete(id);
-                }
-            });
+            this.autoheightWidgets = autoheightWidgets;
             [...this.grids].forEach(([key, record]) => {
                 this.updateGrid(record, key);
             });
@@ -765,7 +760,6 @@ class GridStackCanvas extends React.PureComponent {
             if (entry) {
                 const adjusted = {...adjustedWidgetLayout};
                 if (!isEqual(entry, adjusted)) {
-                    this.autoheightWidgets.add(widgetId);
                     this.context.memorizeOriginalLayout(widgetId, {...entry}, adjusted);
                 }
             }
