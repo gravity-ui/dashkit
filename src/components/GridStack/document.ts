@@ -45,13 +45,7 @@ export function validateLayout(
     const ids = new Set<string>();
     const zones = new Set(groups?.map((group) => group.id || DEFAULT_GROUP) || [DEFAULT_GROUP]);
     const addId = (id: string) => {
-        if (
-            !id ||
-            ids.has(id) ||
-            id === DEFAULT_GROUP ||
-            id === TEMPORARY_ITEM_ID ||
-            zones.has(id)
-        ) {
+        if (!id || ids.has(id) || id === TEMPORARY_ITEM_ID) {
             fail(`duplicate or reserved id "${id}"`);
         }
         ids.add(id);
@@ -59,6 +53,9 @@ export function validateLayout(
     itemIds.forEach(addId);
     const containers = new Map(containerEntries.map((entry) => [entry.id, entry]));
     containerEntries.forEach((container) => {
+        if (container.id === DEFAULT_GROUP || zones.has(container.id)) {
+            fail(`duplicate or reserved id "${container.id}"`);
+        }
         addId(container.id);
         if (
             !Array.isArray(container.padding) ||

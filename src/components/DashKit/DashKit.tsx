@@ -96,6 +96,8 @@ export class DashKit extends DashKitBase<GridLayout> {
                 delete copyItem.layout;
             }
 
+            assertLegacyLayout({layout: [{...layout, i: 'incoming item'}]});
+
             return UpdateManager.addItem({
                 item: copyItem,
                 namespace,
