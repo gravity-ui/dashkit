@@ -156,7 +156,13 @@ class GridStackCanvas extends React.PureComponent {
             context,
         } = this.context;
         const propertiesByGrid = new Map(
-            [...this.grids.keys()].map((key) => [key, this.getProperties(key)]),
+            [...this.grids.keys()]
+                .filter(
+                    (key) =>
+                        !key.startsWith('container:') ||
+                        this.context.containers?.some(({id}) => key === `container:${id}`),
+                )
+                .map((key) => [key, this.getProperties(key)]),
         );
         const portals = configItems.map((item) => this.renderItem(item, propertiesByGrid));
         const customHandles = [...this.hosts].flatMap(([id, host]) => {
