@@ -91,6 +91,7 @@ class GridStackCanvas extends React.PureComponent {
     private plugins = new Map<string, PluginRef>();
     private autoHeightItems = new Set<string>();
     private pluginCallbacks = new Map<string, (value: PluginRef) => void>();
+    private autoheightWidgets = new Set<string>();
     private observer?: ResizeObserver;
     private syncing = false;
     private appliedContext?: DashKitCtxShape;
@@ -640,6 +641,24 @@ class GridStackCanvas extends React.PureComponent {
                     this.pluginCallbacks.delete(id);
                 }
             });
+            // Saved geometry restores verbatim; only autoheight reflows its visual neighbors.
+            const autoheightWidgets = new Set(this.context.adjustedLayoutIds);
+            this.grids.forEach(({grid}) => {
+                const engine = grid.engine as DashKitEngine;
+                engine.restoring = false;
+                const adjusted = engine.nodes.filter((node) => {
+                    const id = requireValue(node.id, 'autoheight widget id');
+                    // Previous IDs keep the reset's final reflow before adjustment ends.
+                    return autoheightWidgets.has(id) || this.autoheightWidgets.has(id);
+                });
+                if (adjusted.length) {
+                    adjusted
+                        .sort((a, b) => a.y - b.y || a.x - b.x)
+                        .forEach((node) => engine._fixCollisions(node));
+                    engine._packNodes();
+                }
+            });
+            this.autoheightWidgets = autoheightWidgets;
             [...this.grids]
                 .sort(([, a], [, b]) => gridDepth(b) - gridDepth(a))
                 .forEach(([key, record]) => {
