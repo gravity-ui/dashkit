@@ -25,8 +25,6 @@ const Item: React.FC<ItemProps> = ({
     const onItemRenderRef = React.useRef(onItemRender);
     const onItemMountChangeRef = React.useRef(onItemMountChange);
     const mountedRef = React.useRef(true);
-    const loadGenerationRef = React.useRef(0);
-    const completedLoadGenerationRef = React.useRef(0);
     const itemIdentityRef = React.useRef({});
 
     if (itemRef.current.id !== item.id || itemRef.current.type !== item.type) {
@@ -69,17 +67,9 @@ const Item: React.FC<ItemProps> = ({
 
     const onBeforeLoad = React.useCallback(() => {
         isAsyncItemRef.current = true;
-        const generation = ++loadGenerationRef.current;
         const identity = itemIdentityRef.current;
         return () => {
-            if (
-                mountedRef.current &&
-                identity === itemIdentityRef.current &&
-                (generation === loadGenerationRef.current ||
-                    completedLoadGenerationRef.current === loadGenerationRef.current)
-            ) {
-                // Retained callbacks can report visual updates once the latest load has committed.
-                completedLoadGenerationRef.current = loadGenerationRef.current;
+            if (mountedRef.current && identity === itemIdentityRef.current) {
                 onLoad();
             }
         };
