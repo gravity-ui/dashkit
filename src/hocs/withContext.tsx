@@ -727,7 +727,12 @@ function useMemoStateContext(
                 onDropProp?.({
                     newLayout: newLayout.reduce<ConfigLayout[]>((memo, l) => {
                         if (l.i !== item.i) {
-                            memo.push(pick(l, CONFIG_LAYOUT_FIELDS));
+                            memo.push(
+                                pick(
+                                    {...l, h: originalLayouts.current[l.i]?.h ?? l.h},
+                                    CONFIG_LAYOUT_FIELDS,
+                                ),
+                            );
                         }
 
                         return memo;

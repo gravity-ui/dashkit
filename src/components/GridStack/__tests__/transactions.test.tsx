@@ -537,3 +537,150 @@ test.each([2, 20])(
         view.unmount();
     },
 );
+
+function paletteTransaction({
+    bounded = false,
+    scale = 1,
+    gap = 0,
+    height = 400,
+    noOverlay = true,
+} = {}) {
+    const flat: Config = {
+        ...config,
+        containers: undefined,
+        layoutVersion: undefined,
+        items: [config.items[0], {...config.items[0], id: 'b'}],
+        layout: [
+            {i: 'a', x: 0, y: 0, w: 3, h: 2},
+            {i: 'b', x: 8, y: 0, w: 3, h: 2},
+        ],
+    };
+    const onChange = jest.fn();
+    const onDrop = jest.fn();
+    const onDragStart = jest.fn();
+    const onResizeStart = jest.fn();
+    const view = render(
+        <DashKitDnDWrapper>
+            <div>
+                <ActionPanel
+                    items={[
+                        {
+                            id: 'add',
+                            icon: '+',
+                            title: 'Add',
+                            dragProps: {type, layout: {w: 3, h: 2}},
+                        },
+                    ]}
+                />
+                <DashKitGridStack
+                    config={flat}
+                    editMode
+                    noOverlay={noOverlay}
+                    groups={[
+                        {
+                            gridProperties: () => ({
+                                cols: 12,
+                                rowHeight: 40,
+                                margin: [gap, gap],
+                                containerPadding: [0, 0],
+                                compactType: null,
+                                maxRows: 100,
+                                isBounded: bounded,
+                            }),
+                        },
+                    ]}
+                    onChange={onChange}
+                    onDrop={onDrop}
+                    onDragStart={onDragStart}
+                    onResizeStart={onResizeStart}
+                />
+            </div>
+        </DashKitDnDWrapper>,
+    );
+    const root = requireValue(
+        view.container.querySelector<HTMLElement>('.grid-stack'),
+        'root',
+    ) as HTMLElement & {gridstack: GridStack & {triggerEvent(event: Event, el: HTMLElement): void}};
+    jest.spyOn(root, 'clientHeight', 'get').mockReturnValue(height);
+    jest.spyOn(root, 'getBoundingClientRect').mockReturnValue({
+        left: 20,
+        top: 30,
+        right: 20 + 640 * scale,
+        bottom: 30 + height * scale,
+        width: 640 * scale,
+        height: height * scale,
+        x: 20,
+        y: 30,
+        toJSON: () => ({}),
+    });
+    const host = (id: string) =>
+        requireValue(
+            view.container.querySelector<GridItemHTMLElement>(`[data-dashkit-id="${id}"]`),
+            'host',
+        );
+    const start = () =>
+        fireEvent.dragStart(view.getByRole('button', {name: '+ Add'}), {
+            dataTransfer: {setDragImage: jest.fn()},
+        });
+    const over = (x = 0, y = 0) => {
+        const event = new Event('dragover', {bubbles: true, cancelable: true});
+        Object.assign(event, {clientX: 20 + x * scale, clientY: 30 + y * scale});
+        fireEvent(root, event);
+    };
+    const drop = () => fireEvent.drop(root);
+    return {
+        view,
+        root,
+        host,
+        flat,
+        start,
+        over,
+        drop,
+        onDrop,
+        onChange,
+        onDragStart,
+        onResizeStart,
+    };
+}
+
+// Critical: yes. Saving an unrelated palette item must preserve original autoheight data.
+test('palette newLayout keeps saved autoheight while pending nodes keep visual height and displacement', () => {
+    const renderer = ({id, layout, adjustWidgetLayout}: PluginWidgetProps) => (
+        <button
+            onClick={() => {
+                const entry = requireValue(
+                    layout.find(({i}) => i === id),
+                    'layout',
+                );
+                adjustWidgetLayout({
+                    widgetId: id,
+                    adjustedWidgetLayout: {...entry, h: 4, minH: 4, maxH: 4},
+                });
+            }}
+        >
+            Grow {id}
+        </button>
+    );
+    DashKitGridStack.reloadPlugins({type, defaultLayout: {w: 3, h: 2}, renderer});
+    const f = paletteTransaction();
+    fireEvent.click(f.view.getByRole('button', {name: 'Grow a'}));
+    expect(f.host('a').gridstackNode?.h).toBe(4);
+    f.start();
+    f.over();
+    f.drop();
+    expect(f.onDrop).toHaveBeenCalledTimes(1);
+    expect(f.onDrop.mock.calls[0][0].newLayout).toEqual([
+        {...f.flat.layout[0], y: 2},
+        f.flat.layout[1],
+    ]);
+    expect(f.host('a').gridstackNode).toMatchObject({y: 2, h: 4});
+    expect(f.onChange).not.toHaveBeenCalled();
+    act(() => f.onDrop.mock.calls[0][0].commit());
+    expect(f.host('a').gridstackNode).toMatchObject({y: 0, h: 4});
+    f.view.unmount();
+    DashKitGridStack.reloadPlugins({
+        type,
+        defaultLayout: {w: 6, h: 4},
+        renderer: (props, ref) => <Plugin {...props} ref={ref} />,
+    });
+});
