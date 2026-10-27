@@ -125,6 +125,8 @@ export abstract class DashKitBase<
 
     private _handlers = new Map<string, Set<(...args: any[]) => void>>();
 
+    abstract render(): React.ReactNode;
+
     getItemsMeta() {
         return this.metaRef.current?.getItemsMeta() ?? [];
     }
