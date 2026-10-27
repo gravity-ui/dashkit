@@ -289,9 +289,19 @@ for (const engine of ['legacy', 'gridstack']) {
         );
         const x = handle.x + handle.width / 2;
         const y = handle.y + handle.height / 2;
+        const widget = page.locator('[data-widget-id]').first();
+        const originalBox = checked(await widget.boundingBox());
         await page.mouse.move(x, y);
         await page.mouse.down();
+        await page.mouse.move(x - 5, y - 5);
+        // WebKit must apply the first resize position before the final native delta.
+        await expect
+            .poll(async () => checked(await widget.boundingBox()).x)
+            .toBe(originalBox.x - 5);
         await page.mouse.move(x - 20, y - 20, {steps: 1});
+        await expect
+            .poll(async () => checked(await widget.boundingBox()).x)
+            .toBe(originalBox.x - 20);
         await page.mouse.up();
         await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 2');
         const resized = JSON.parse(
