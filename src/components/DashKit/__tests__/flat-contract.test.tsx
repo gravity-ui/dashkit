@@ -711,6 +711,118 @@ describe.each(LAYOUT_ENGINES)('[%s] common flat DashKit contract', (_engine, Com
         expect(instance).toBeNull();
     });
 
+    // Critical: no. Public mobile groups must retain widget geometry and identity after item reorder.
+    test.each(['geometry', 'orderId'] as const)(
+        'mobile item reorder preserves groups, layout and plugin identity with %s sorting',
+        (sorting) => {
+            Component.setSettings({isMobile: true});
+            try {
+                const mobileConfig: Config = {
+                    ...config,
+                    items: ['a', 'b', 'c', 'd'].map((id, index) => ({
+                        ...config.items[0],
+                        id,
+                        data: {text: id},
+                        orderId: sorting === 'orderId' ? [1, 4, 3, 2][index] : undefined,
+                    })),
+                    layout: [
+                        {i: 'a', x: 0, y: 2, w: 2, h: 2, parent: 'left'},
+                        {i: 'b', x: 6, y: 0, w: 3, h: 4, parent: 'right'},
+                        {i: 'c', x: 4, y: 0, w: 4, h: 3, parent: 'left'},
+                        {i: 'd', x: 2, y: 3, w: 5, h: 1, parent: 'right'},
+                    ],
+                };
+                const renderGroup: DashKitGroup['render'] = (id, children, props) => (
+                    <section key={id} data-group={id} data-items={JSON.stringify(props.items)}>
+                        {children}
+                    </section>
+                );
+                const mobileGroups = ['right', 'left'].map((id) => ({id, render: renderGroup}));
+                const onChange = jest.fn();
+                const mounted = jest.fn();
+                const ready = jest.fn();
+                const props = {
+                    groups: mobileGroups,
+                    editMode: false,
+                    onChange,
+                    onItemMountChange: mounted,
+                    onItemRender: ready,
+                };
+                const view = render(<Component {...props} config={mobileConfig} />);
+                const originalPlugins = Array.from(
+                    view.container.querySelectorAll('[data-widget]'),
+                );
+                const expectedGroups =
+                    sorting === 'geometry'
+                        ? [
+                              [
+                                  {id: 'b', ...mobileConfig.layout[1]},
+                                  {id: 'd', ...mobileConfig.layout[3]},
+                              ],
+                              [
+                                  {id: 'c', ...mobileConfig.layout[2]},
+                                  {id: 'a', ...mobileConfig.layout[0]},
+                              ],
+                          ]
+                        : [
+                              [
+                                  {id: 'd', ...mobileConfig.layout[3]},
+                                  {id: 'b', ...mobileConfig.layout[1]},
+                              ],
+                              [
+                                  {id: 'a', ...mobileConfig.layout[0]},
+                                  {id: 'c', ...mobileConfig.layout[2]},
+                              ],
+                          ];
+                const renderedGroups = () =>
+                    Array.from(view.container.querySelectorAll<HTMLElement>('[data-group]'));
+                const renderedItems = () =>
+                    renderedGroups().map((group) => {
+                        assert(group.dataset.items);
+                        return JSON.parse(group.dataset.items);
+                    });
+                expect(renderedGroups().map((group) => group.dataset.group)).toEqual([
+                    'right',
+                    'left',
+                ]);
+                expect(renderedItems()).toMatchObject(expectedGroups);
+                expect(originalPlugins).toHaveLength(4);
+                expect(mounted).toHaveBeenCalledTimes(4);
+                expect(ready).toHaveBeenCalledTimes(4);
+
+                // Keep the layout array and its entries unchanged; only reorder config.items.
+                view.rerender(
+                    <Component
+                        {...props}
+                        config={{...mobileConfig, items: [...mobileConfig.items].reverse()}}
+                    />,
+                );
+
+                expect(renderedGroups().map((group) => group.dataset.group)).toEqual([
+                    'right',
+                    'left',
+                ]);
+                expect(renderedItems()).toMatchObject(expectedGroups);
+                expect(Array.from(view.container.querySelectorAll('[data-widget]'))).toEqual(
+                    originalPlugins,
+                );
+                for (const plugin of originalPlugins) {
+                    expect(
+                        view.container.querySelector(
+                            `[data-widget="${plugin.getAttribute('data-widget')}"]`,
+                        ),
+                    ).toBe(plugin);
+                }
+                expect(mounted).toHaveBeenCalledTimes(4);
+                expect(ready).toHaveBeenCalledTimes(4);
+                expect(onChange).not.toHaveBeenCalled();
+                view.unmount();
+            } finally {
+                Component.setSettings({isMobile: false});
+            }
+        },
+    );
+
     test('controlled unrendered group membership survives another widget save and later reveal', async () => {
         const renderGroup: DashKitGroup['render'] = (id, content) => (
             <section key={id} data-group={id}>
