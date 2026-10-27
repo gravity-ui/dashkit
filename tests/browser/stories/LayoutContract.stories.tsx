@@ -8,6 +8,7 @@ import type {Config} from '../../../src/shared';
 import type {DashKitGroup, PluginWidgetProps} from '../../../src/typings';
 
 const type = 'layout-contract-widget';
+const boundedType = 'layout-contract-bounded-widget';
 let identity = 0;
 class Widget extends React.Component<PluginWidgetProps> {
     private identity = ++identity;
@@ -61,6 +62,12 @@ DashKit.reloadPlugins({
     renderer: (props, ref) => <Widget {...props} ref={ref} />,
 });
 
+DashKit.reloadPlugins({
+    type: boundedType,
+    defaultLayout: {w: 2, h: 2, minW: 1, minH: 1, maxW: 4, maxH: 4},
+    renderer: (props, ref) => <Widget {...props} ref={ref} />,
+});
+
 const initial: Config = {
     salt: 'layout-contract',
     counter: 1,
@@ -88,21 +95,80 @@ const groups: DashKitGroup[] = [
         }),
     },
 ];
+const boundedInitial: Config = {
+    ...initial,
+    items: [{...initial.items[0], type: boundedType}],
+    layout: [{i: 'a', x: 0, y: 0, w: 2, h: 2}],
+};
+const boundedGroups: DashKitGroup[] = [
+    {
+        gridProperties: () => ({
+            cols: 12,
+            rowHeight: 20,
+            margin: [0, 0],
+            containerPadding: [0, 0],
+            compactType: null,
+            autoSize: false,
+            style: {height: 400},
+            isBounded: true,
+            width: 600,
+        }),
+    },
+];
 const engines = {legacy: DashKit, gridstack: DashKitGridStack};
-function Contract({engine = 'legacy'}: {engine?: keyof typeof engines}) {
+function Contract({
+    engine = 'legacy',
+    bounded = false,
+    customResize = false,
+}: {
+    engine?: keyof typeof engines;
+    bounded?: boolean;
+    customResize?: boolean;
+}) {
     const Component = engines[engine];
-    const [config, setConfig] = React.useState(initial);
+    const [config, setConfig] = React.useState(bounded ? boundedInitial : initial);
     const [editing, setEditing] = React.useState(true);
     const [events, setEvents] = React.useState(0);
+    const [northWest, setNorthWest] = React.useState(false);
+    let activeGroups: DashKitGroup[] = bounded ? boundedGroups : groups;
+    if (customResize) {
+        activeGroups = [
+            {
+                gridProperties: () => ({
+                    cols: 640,
+                    rowHeight: 1,
+                    width: 640,
+                    margin: [0, 0],
+                    containerPadding: [0, 0],
+                    compactType: null,
+                    autoSize: false,
+                    allowOverlap: true,
+                    resizeHandles: northWest ? ['nw'] : ['se'],
+                    resizeHandle: (direction, ref?: React.Ref<HTMLSpanElement>) => (
+                        <span
+                            ref={ref}
+                            className={`react-resizable-handle react-resizable-handle-${direction}`}
+                            data-qa="custom-resize"
+                        >
+                            {direction}
+                        </span>
+                    ),
+                }),
+            },
+        ];
+    }
     return (
         <div>
             <button onClick={() => setEditing((value) => !value)}>Toggle edit</button>
-            <button onClick={() => setConfig(initial)}>Restore</button>
+            <button onClick={() => setConfig({...(bounded ? boundedInitial : initial)})}>
+                Restore
+            </button>
+            <button onClick={() => setNorthWest(true)}>Use northwest handles</button>
             <span data-qa="event-count">Events: {events}</span>
-            <div style={{width: 640, height: 400}}>
+            <div data-qa="canvas" style={{width: bounded ? 600 : 640, height: 400}}>
                 <Component
                     config={config}
-                    groups={groups}
+                    groups={activeGroups}
                     editMode={editing}
                     onChange={({config: next}) => {
                         setConfig(next);
@@ -117,3 +183,9 @@ function Contract({engine = 'legacy'}: {engine?: keyof typeof engines}) {
 export default {title: 'Tests/Layout Contract', component: Contract} as Meta;
 export const FlatContract: StoryFn<typeof Contract> = (args) => <Contract {...args} />;
 FlatContract.args = {engine: 'legacy'};
+
+export const BoundedContract: StoryFn<typeof Contract> = (args) => <Contract {...args} />;
+BoundedContract.args = {engine: 'legacy', bounded: true};
+
+export const ResizeControls: StoryFn<typeof Contract> = (args) => <Contract {...args} />;
+ResizeControls.args = {engine: 'legacy', customResize: true};

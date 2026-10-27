@@ -146,7 +146,7 @@ export class DashKitNativeGrid extends NativeBase {
         const drag = event.type === 'dragstart' ? host.ddElement?.ddDraggable : undefined;
         el.style.transform = '';
         if (event.type === 'dragstart') {
-            ui = drag?.ui() || ui;
+            ui = this.boundDrag(el, drag?.ui() || ui);
         }
         super._onStartMoving(el, event, ui, node, width, height);
         if (drag?.mouseDownEvent && drag.dragOffset) {
@@ -165,5 +165,56 @@ export class DashKitNativeGrid extends NativeBase {
                 height,
             );
         }
+    }
+    _dragOrResize(
+        el: GridItemHTMLElement,
+        event: Event,
+        ui: UI,
+        node: GridStackNode,
+        width: number,
+        height: number,
+    ) {
+        super._dragOrResize(
+            el,
+            event,
+            event.type === 'drag' ? this.boundDrag(el, ui) : ui,
+            node,
+            width,
+            height,
+        );
+    }
+
+    private boundDrag(elInput: GridItemHTMLElement, ui: UI): UI {
+        const el = elInput;
+        if (!this.properties?.().isBounded) {
+            return ui;
+        }
+        const bounds = this.el.getBoundingClientRect();
+        const rect = el.getBoundingClientRect();
+        const scaleX = this.el.clientWidth / bounds.width || 1;
+        const scaleY = this.el.clientHeight / bounds.height || 1;
+        const helperScaleX = el.offsetWidth / rect.width || 1;
+        const helperScaleY = el.offsetHeight / rect.height || 1;
+        const dx =
+            Math.max(bounds.left, Math.min(rect.left, bounds.right - rect.width)) - rect.left;
+        const dy = Math.max(bounds.top, Math.min(rect.top, bounds.bottom - rect.height)) - rect.top;
+        // Native drag helpers are fixed-positioned and can escape even when the engine is bounded.
+        if (dx) {
+            if (this.opts.rtl) {
+                el.style.right = `${(parseFloat(el.style.right) || 0) - dx * helperScaleX}px`;
+            } else {
+                el.style.left = `${(parseFloat(el.style.left) || 0) + dx * helperScaleX}px`;
+            }
+        }
+        if (dy) {
+            el.style.top = `${(parseFloat(el.style.top) || 0) + dy * helperScaleY}px`;
+        }
+        return {
+            ...ui,
+            position: {
+                left: ui.position.left + (this.opts.rtl ? -dx : dx) * scaleX,
+                top: ui.position.top + dy * scaleY,
+            },
+        };
     }
 }

@@ -225,7 +225,11 @@ class GridStackCanvas extends React.PureComponent {
         const {settings, editMode} = this.context;
         const interval = Number(settings.autoupdateInterval) * 1000;
         const remaining = interval - (Date.now() - this.lastReload);
-        if (force || (interval && !document.hidden && !editMode && remaining <= 0)) {
+        // Initial sync creates portal targets before React commits plugin refs.
+        if (
+            this.plugins.size &&
+            (force || (interval && !document.hidden && !editMode && remaining <= 0))
+        ) {
             if (interval) {
                 this.lastReload = Date.now();
             }
@@ -553,7 +557,17 @@ class GridStackCanvas extends React.PureComponent {
             [...this.hosts].map(([id, host]) => {
                 const record = this.grids.get(host.key);
                 const node = host.el.gridstackNode;
-                return [id, host.key, node?.x, node?.y, node?.w, node?.h, record?.geometry];
+                const handles = record?.grid.opts.resizable?.handles;
+                return [
+                    id,
+                    host.key,
+                    node?.x,
+                    node?.y,
+                    node?.w,
+                    node?.h,
+                    record?.geometry,
+                    handles,
+                ];
             }),
         );
     }

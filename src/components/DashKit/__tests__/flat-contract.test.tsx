@@ -951,6 +951,51 @@ describe.each(LAYOUT_ENGINES)('[%s] common flat DashKit contract', (_engine, Com
         expect(styled?.style.width).toBe('600px');
     });
 
+    // Critical: yes. A view mounted with refresh enabled must deliver fresh data through live refs.
+    test('initial positive refresh, periodic reload, force targets and cleanup use current refs', async () => {
+        jest.useFakeTimers();
+        jest.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+        const hidden = jest.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+        const ref = React.createRef<DashKit | DashKitGridStack>();
+        const original = JSON.stringify(config);
+        const view = render(
+            <Component
+                ref={ref}
+                config={config}
+                groups={groups}
+                editMode={false}
+                settings={{autoupdateInterval: 1, silentLoading: true}}
+            />,
+        );
+        try {
+            expect(reload.mock.calls).toEqual([
+                ['a', {silentLoading: true, noVeil: true}],
+                ['b', {silentLoading: true, noVeil: true}],
+            ]);
+            assert(ref.current);
+            const metadata = await Promise.all(ref.current.getItemsMeta());
+            act(() => jest.advanceTimersByTime(999));
+            expect(reload).toHaveBeenCalledTimes(2);
+            act(() => jest.advanceTimersByTime(1));
+            expect(reload.mock.calls.slice(2)).toEqual([
+                ['a', {silentLoading: true, noVeil: true}],
+                ['b', {silentLoading: true, noVeil: true}],
+            ]);
+            ref.current.reloadItems({targetIds: ['b'], force: true});
+            expect(reload).toHaveBeenCalledTimes(5);
+            expect(reload.mock.calls.at(-1)).toEqual(['b', {silentLoading: true, noVeil: true}]);
+            expect(await Promise.all(ref.current.getItemsMeta())).toEqual(metadata);
+            expect(JSON.stringify(config)).toBe(original);
+            view.unmount();
+            act(() => jest.advanceTimersByTime(5000));
+            expect(reload).toHaveBeenCalledTimes(5);
+        } finally {
+            view.unmount();
+            hidden.mockRestore();
+            jest.useRealTimers();
+        }
+    });
+
     // Critical: yes. A disabled refresh clock must not delay newly enabled live data.
     test('reload timing, force targets, visibility, editing and cleanup share the same clock', () => {
         jest.useFakeTimers();
