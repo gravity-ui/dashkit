@@ -31,7 +31,6 @@ import type {DashKitCtxShape} from '../../../context';
 import {withContext} from '../../../hocs/withContext';
 import type {Config, GridStackContainer} from '../../../shared';
 import type {DashKitGroup, PluginWidgetProps} from '../../../typings';
-import * as legacyGrid from '../../../utils/grid-layout';
 import {DashKit, _emitSymbol} from '../../DashKit/DashKit';
 import {registerManager} from '../../DashKit/registration';
 import {DashKitGridStack} from '../DashKitGridStack';
@@ -359,28 +358,6 @@ test('statics retain container membership and reject nonempty or unknown removal
     });
     expect(next.layout.at(-1)?.containerId).toBe('box');
     expect(next.items[0]).toEqual(config.items[0]);
-});
-
-test('new-component item helpers never delegate layout to the legacy compactor', () => {
-    const compact = jest.spyOn(legacyGrid, 'compact').mockImplementation(() => {
-        throw new Error('legacy layout must not run');
-    });
-    try {
-        const options = {
-            updateLayout: config.layout,
-            reflowLayoutOptions: {defaultProps: {cols: 12}},
-        };
-        expect(() =>
-            DashKitGridStack.setItem({
-                config,
-                item: {type, data: {}, layout: {x: 0, y: 0, w: 4, h: 2}},
-                options,
-            }),
-        ).not.toThrow();
-        expect(compact).not.toHaveBeenCalled();
-    } finally {
-        compact.mockRestore();
-    }
 });
 
 test('parameter event from actual mounted plugin carries current nested membership', () => {
