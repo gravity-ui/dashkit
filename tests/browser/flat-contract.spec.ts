@@ -125,6 +125,8 @@ for (const engine of ['legacy', 'gridstack']) {
         await page.mouse.move(grown.x + 30, grown.y + 70);
         await page.mouse.down();
         await page.mouse.move(grown.x + 35, grown.y + 75);
+        // Commit the first drag position before sending the next native delta.
+        await expect.poll(async () => checked(await widget.boundingBox()).x).toBe(grown.x + 5);
         await page.mouse.move(grown.x + 65, grown.y + 90, {steps: 1});
         await page.mouse.up();
         await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 1');
