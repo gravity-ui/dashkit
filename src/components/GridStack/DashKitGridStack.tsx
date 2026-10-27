@@ -94,7 +94,16 @@ export class DashKitGridStack extends DashKitBase {
     }): Config {
         validateConfig(config, groups);
         if (item.id) {
-            const result = UpdateManager.editItem({item, namespace, config, options});
+            const result = UpdateManager.editItem({
+                item,
+                namespace,
+                config,
+                options: {
+                    ...options,
+                    excludeIds: [...(options.excludeIds || []), ...configIds(config)],
+                },
+            });
+            validateConfig(result, groups);
             this.validateNestedLayout(result.layout, groups, result.containers);
             return result;
         }

@@ -40,6 +40,7 @@ import {DashKitContext} from '../../../context';
 import type {Config, ItemsStateAndParams} from '../../../shared';
 import type {DashKitEventMap, DashKitGroup, PluginWidgetProps} from '../../../typings';
 import {DashKitGridStack} from '../../GridStack/DashKitGridStack';
+import {validateConfig} from '../../GridStack/document';
 import {DashKit} from '../DashKit';
 
 const type = 'flat-contract-widget';
@@ -951,6 +952,51 @@ describe.each(LAYOUT_ENGINES)('[%s] common flat DashKit contract', (_engine, Com
         expect(styled?.style.width).toBe('600px');
     });
 
+    // Critical: yes. A view mounted with refresh enabled must deliver fresh data through live refs.
+    test('initial positive refresh, periodic reload, force targets and cleanup use current refs', async () => {
+        jest.useFakeTimers();
+        jest.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+        const hidden = jest.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+        const ref = React.createRef<DashKit | DashKitGridStack>();
+        const original = JSON.stringify(config);
+        const view = render(
+            <Component
+                ref={ref}
+                config={config}
+                groups={groups}
+                editMode={false}
+                settings={{autoupdateInterval: 1, silentLoading: true}}
+            />,
+        );
+        try {
+            expect(reload.mock.calls).toEqual([
+                ['a', {silentLoading: true, noVeil: true}],
+                ['b', {silentLoading: true, noVeil: true}],
+            ]);
+            assert(ref.current);
+            const metadata = await Promise.all(ref.current.getItemsMeta());
+            act(() => jest.advanceTimersByTime(999));
+            expect(reload).toHaveBeenCalledTimes(2);
+            act(() => jest.advanceTimersByTime(1));
+            expect(reload.mock.calls.slice(2)).toEqual([
+                ['a', {silentLoading: true, noVeil: true}],
+                ['b', {silentLoading: true, noVeil: true}],
+            ]);
+            ref.current.reloadItems({targetIds: ['b'], force: true});
+            expect(reload).toHaveBeenCalledTimes(5);
+            expect(reload.mock.calls.at(-1)).toEqual(['b', {silentLoading: true, noVeil: true}]);
+            expect(await Promise.all(ref.current.getItemsMeta())).toEqual(metadata);
+            expect(JSON.stringify(config)).toBe(original);
+            view.unmount();
+            act(() => jest.advanceTimersByTime(5000));
+            expect(reload).toHaveBeenCalledTimes(5);
+        } finally {
+            view.unmount();
+            hidden.mockRestore();
+            jest.useRealTimers();
+        }
+    });
+
     // Critical: yes. A disabled refresh clock must not delay newly enabled live data.
     test('reload timing, force targets, visibility, editing and cleanup share the same clock', () => {
         jest.useFakeTimers();
@@ -1200,5 +1246,79 @@ describe.each(LAYOUT_ENGINES)('[%s] common flat DashKit contract', (_engine, Com
         expect(geometry(view.container, 'a')).toEqual({x: 0, y: 0, w: 2, h: 2});
         expect(rects(onChange.mock.calls[1][0].config.layout)).toEqual(config.layout.slice(0, 1));
         expect(view.container.querySelector('[data-widget="a"]')).toBe(widget);
+    });
+});
+
+// Critical: yes. Removal must retain the remaining widget's saved geometry and state.
+describe.each([
+    ['legacy flat', DashKit, false],
+    ['GridStack flat', DashKitGridStack, false],
+    ['GridStack nested', DashKitGridStack, true],
+] as const)('%s removal with reordered layout', (_name, Component, nested) => {
+    test.each([1, 2])('version %s removes the selected local or global item', (version) => {
+        for (const global of [false, true]) {
+            const a = {...config.items[0], defaults: {value: ['initial'], removedOnly: ['a']}};
+            const b = config.items[1];
+            const layout = [...config.layout]
+                .reverse()
+                .map((entry) => (nested ? {...entry, containerId: 'box'} : entry));
+            const original: Config = {
+                ...config,
+                aliases: {default: [['value', 'alias']]},
+                connections: [
+                    {from: 'a', to: 'b', kind: 'ignore'},
+                    {from: 'b', to: 'b', kind: 'ignore'},
+                ],
+                items: global ? [b] : [a, b],
+                globalItems: global ? [a] : [],
+                layout,
+                ...(nested
+                    ? {
+                          layoutVersion: 2,
+                          containers: [
+                              {
+                                  id: 'box',
+                                  x: 0,
+                                  y: 0,
+                                  w: 12,
+                                  h: 6,
+                                  padding: [0, 0, 0, 0],
+                                  gap: [0, 0],
+                                  grid: {cols: 12, rowHeight: 20, compactType: null},
+                              },
+                          ],
+                      }
+                    : {}),
+            };
+            const state: ItemsStateAndParams = {
+                a: {params: {value: ['a']}},
+                b: {params: {value: ['b'], removedOnly: ['stale']}},
+                __meta__: {version, queue: []},
+            };
+            const before = JSON.stringify({original, state});
+            if (Component === DashKitGridStack) {
+                expect(() => validateConfig(original)).not.toThrow();
+            }
+            const result = Component.removeItem({
+                config: original,
+                id: 'a',
+                itemsStateAndParams: state,
+            });
+            expect(result.config.items).toEqual([b]);
+            expect(result.config.globalItems).toEqual([]);
+            expect(result.config.layout).toEqual([layout[0]]);
+            expect(result.config.connections).toEqual([{from: 'b', to: 'b', kind: 'ignore'}]);
+            expect(result.config.aliases).toEqual(original.aliases);
+            expect(result.itemsStateAndParams).toEqual({
+                b: {
+                    params: version === 1 ? {value: ['b']} : {value: ['b'], removedOnly: ['stale']},
+                },
+                __meta__: {version, queue: []},
+            });
+            if (Component === DashKitGridStack) {
+                expect(() => validateConfig(result.config)).not.toThrow();
+            }
+            expect(JSON.stringify({original, state})).toBe(before);
+        }
     });
 });

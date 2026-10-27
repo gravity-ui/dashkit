@@ -35,6 +35,7 @@ import * as legacyGrid from '../../../utils/grid-layout';
 import {DashKit, _emitSymbol} from '../../DashKit/DashKit';
 import {registerManager} from '../../DashKit/registration';
 import {DashKitGridStack} from '../DashKitGridStack';
+import {validateConfig} from '../document';
 import {getGridStackLayoutRects} from '../geometry';
 import {requireValue} from '../invariants';
 import {gridStackLayoutAdapter} from '../layout-adapter';
@@ -1450,4 +1451,45 @@ test('empty nested drop zones fill their container with a fixed-height root styl
             Object.defineProperty(HTMLElement.prototype, 'clientHeight', clientHeight);
         }
     }
+});
+
+// Critical: yes. A parked subtree must not prevent a visible dashboard from rendering.
+test.each(['constructor', 'toString'])(
+    'absent root %s does not block the visible root',
+    (parent) => {
+        const parked = {
+            ...config,
+            containers: [{...box, parent}],
+        };
+        const before = JSON.stringify(parked);
+        const view = render(<DashKitGridStack config={parked} editMode />);
+        expect(view.getByText('retained')).toBeTruthy();
+        expect(JSON.stringify(parked)).toBe(before);
+        view.unmount();
+    },
+);
+
+// Critical: yes. Editing selectors must not create a document that cannot be rendered.
+test('editing reserves container and caller-excluded IDs and validates the result', () => {
+    const original: Config = {
+        ...config,
+        containers: [{...box, id: 'Ay'}],
+    };
+    const before = JSON.stringify(original);
+    const item = {...original.items[0], data: {tabs: [{id: ''}]}};
+    expect(() => validateConfig(original)).not.toThrow();
+    const result = DashKitGridStack.setItem({config: original, item});
+    const generated = requireValue(result.items[0].data.tabs, 'tabs')[0].id;
+    const excluded = DashKitGridStack.setItem({
+        config: original,
+        item,
+        options: {excludeIds: [generated]},
+    });
+    expect(requireValue(excluded.items[0].data.tabs, 'tabs')[0].id).not.toBe(generated);
+    expect(generated).not.toBe('Ay');
+    expect(() => validateConfig(result)).not.toThrow();
+    expect(() =>
+        DashKitGridStack.setItem({config: original, item: {...item, data: {tabs: [{id: 'Ay'}]}}}),
+    ).toThrow('duplicate or reserved id "Ay"');
+    expect(JSON.stringify(original)).toBe(before);
 });
