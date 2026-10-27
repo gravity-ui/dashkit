@@ -309,3 +309,87 @@ for (const engine of ['legacy', 'gridstack']) {
         );
     });
 }
+
+// Critical: yes. A delayed save acknowledgment must not discard the next active edit.
+// Real pointer geometry and saved output catch cancellation that revision-only checks miss.
+for (const engine of ['legacy', 'gridstack']) {
+    for (const acknowledgment of ['same', 'clone']) {
+        test(`[${engine}] common delayed ${acknowledgment} acknowledgment preserves active drag`, async ({
+            page,
+            evidence,
+        }) => {
+            await page.goto(storyUrl('delayed-acknowledgment', {engine}));
+            const widget = page.locator('[data-widget-id="a"]');
+            await widget.waitFor();
+            await expect(page.locator('[data-dashkit-engine]')).toHaveAttribute(
+                'data-dashkit-engine',
+                engine,
+            );
+            const original = checked(await widget.boundingBox());
+            const identity = await widget.getAttribute('data-widget-instance');
+            const saved = async () =>
+                JSON.parse(
+                    checked(await page.locator('[data-qa="saved-config"]').textContent()),
+                ) as Config;
+            const initial = await saved();
+            const startDrag = async () => {
+                const box = checked(await widget.boundingBox());
+                await page.mouse.move(box.x + 25, box.y + 30);
+                await page.mouse.down();
+                await page.mouse.move(box.x + 30, box.y + 30);
+                await page.mouse.move(box.x + 75, box.y + 30);
+            };
+            await startDrag();
+            await page.mouse.up();
+            await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 1');
+            assert.deepEqual((await saved()).layout, [{...initial.layout[0], x: 1}]);
+            await expect
+                .poll(async () => checked(await widget.boundingBox()).x - original.x)
+                .toBe(50);
+            await startDrag();
+            await expect
+                .poll(async () => checked(await widget.boundingBox()).x - original.x)
+                .toBe(100);
+            // Dispatch the host acknowledgment without releasing or moving the held pointer.
+            await page
+                .getByRole('button', {name: `Acknowledge ${acknowledgment}`, exact: true})
+                .dispatchEvent('click');
+            await expect
+                .poll(async () => checked(await widget.boundingBox()).x - original.x)
+                .toBe(100);
+            await page.mouse.up();
+            await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 2');
+            assert.deepEqual((await saved()).layout, [{...initial.layout[0], x: 2}]);
+            assert.equal(checked(await widget.boundingBox()).x - original.x, 100);
+            assert.equal(await widget.getAttribute('data-widget-instance'), identity);
+            evidence.push({engine, acknowledgment, initial, saved: await saved()});
+        });
+    }
+}
+
+// Critical: yes. A genuinely different external document must still cancel a native gesture.
+test('[gridstack] external value clone cancels active drag without saving it', async ({page}) => {
+    await page.goto(storyUrl('delayed-acknowledgment', {engine: 'gridstack'}));
+    const widget = page.locator('[data-widget-id="a"]');
+    await widget.waitFor();
+    const original = checked(await widget.boundingBox());
+    const startDrag = async () => {
+        const box = checked(await widget.boundingBox());
+        await page.mouse.move(box.x + 25, box.y + 30);
+        await page.mouse.down();
+        await page.mouse.move(box.x + 30, box.y + 30);
+        await page.mouse.move(box.x + 75, box.y + 30);
+    };
+    await startDrag();
+    await page.mouse.up();
+    await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 1');
+    const saved = await page.locator('[data-qa="saved-config"]').textContent();
+    await startDrag();
+    await expect.poll(async () => checked(await widget.boundingBox()).x - original.x).toBe(100);
+    await page.getByRole('button', {name: 'External reset', exact: true}).dispatchEvent('click');
+    await expect.poll(async () => checked(await widget.boundingBox()).x).toBe(original.x);
+    await page.mouse.up();
+    await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 1');
+    assert.equal(await page.locator('[data-qa="saved-config"]').textContent(), saved);
+    assert.equal(checked(await widget.boundingBox()).x, original.x);
+});

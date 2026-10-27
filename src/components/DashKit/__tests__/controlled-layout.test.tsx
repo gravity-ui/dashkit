@@ -34,6 +34,7 @@ import type {DashKitCtxShape, OverlayControlsCtxShape} from '../../../context';
 import {type DashKitWithContextProps, withContext} from '../../../hocs/withContext';
 import type {Config} from '../../../shared';
 import {RegisterManager} from '../../../utils';
+import {gridStackLayoutAdapter} from '../../GridStack/layout-adapter';
 import {DashKit, _emitSymbol} from '../DashKit';
 
 const PLUGIN_TYPE = 'controlled-layout-test';
@@ -380,5 +381,38 @@ describe('DashKit controlled layout strategy', () => {
             );
         });
         expect(captured.layout).toMatchObject(config3.layout);
+    });
+});
+
+// Critical: yes. Matching geometry must not hide changed plugin or explicit constraints.
+describe.each([
+    ['legacy', TestComponent],
+    ['gridstack', withContext(ContextCapture, gridStackLayoutAdapter)],
+] as const)('%s controlled constraints after a saved edit', (_engine, Component) => {
+    it.each(['plugin', 'explicit'] as const)('applies changed %s constraints', (source) => {
+        const onChange = jest.fn();
+        const props = createProps({config: createConfig(0), emitDashKitEvent: jest.fn(), onChange});
+        props.registerManager.reloadPlugin({
+            type: PLUGIN_TYPE,
+            defaultLayout: {w: 2, h: 2, minW: 1, minH: 1},
+            renderer: () => null,
+        });
+        const view = render(<Component {...props} />);
+        act(() => captured.layoutChange([{i: 'item1', x: 1, y: 0, w: 2, h: 2}]));
+        const savedConfig: Config = onChange.mock.calls[0][0].config;
+        const external = JSON.parse(JSON.stringify(savedConfig)) as Config;
+        if (source === 'plugin') {
+            props.registerManager.reloadPlugin({
+                type: PLUGIN_TYPE,
+                defaultLayout: {w: 2, h: 2, minW: 2, minH: 2},
+                renderer: () => null,
+            });
+        } else {
+            external.layout = external.layout.map((item) => ({...item, minW: 2, minH: 2}));
+        }
+        view.rerender(<Component {...props} config={external} />);
+        expect(captured.layout).toEqual([{i: 'item1', x: 1, y: 0, w: 2, h: 2, minW: 2, minH: 2}]);
+        expect(onChange).toHaveBeenCalledTimes(1);
+        expect(savedConfig.layout).toEqual([{i: 'item1', x: 1, y: 0, w: 2, h: 2}]);
     });
 });

@@ -205,6 +205,11 @@ class DragOverLayout extends ReactGridLayout {
             return;
         }
 
+        if (this.state.activeDrag && prevProps.layout !== this.props.layout) {
+            // Consume acknowledgments without replaying their older geometry when the gesture ends.
+            this.setState({propsLayout: this.props.layout} as unknown as DragOverLayoutState);
+        }
+
         // Maintain parent behavior for all non-restore cycles (drag, resize, etc.).
         super.componentDidUpdate?.(prevProps, prevState);
     }
