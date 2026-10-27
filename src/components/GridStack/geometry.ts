@@ -1,8 +1,7 @@
-import {DEFAULT_GROUP} from '../../constants/common';
 import type {Config, ConfigLayout, GridStackContainer} from '../../shared';
 import type {ReactGridLayoutProps} from '../../typings';
 
-import {validateConfig, validateGrid} from './document';
+import {getGridKey, validateConfig, validateGrid} from './document';
 import {requireValue} from './invariants';
 
 export function getGridGeometry(width: number, props: ReactGridLayoutProps) {
@@ -88,11 +87,7 @@ export function getGridStackLayoutRects(config: Config, rootGrids: GridStackRoot
         let resolved = false;
         for (let index = pending.length - 1; index >= 0; index--) {
             const container = pending[index];
-            const parent = grids.get(
-                container.containerId
-                    ? `container:${container.containerId}`
-                    : `zone:${container.parent || DEFAULT_GROUP}`,
-            );
+            const parent = grids.get(getGridKey(container));
             if (!parent) {
                 continue;
             }
@@ -136,11 +131,7 @@ export function getGridStackLayoutRects(config: Config, rootGrids: GridStackRoot
         }
     }
     config.layout.forEach((entry) => {
-        const grid = grids.get(
-            entry.containerId
-                ? `container:${entry.containerId}`
-                : `zone:${entry.parent || DEFAULT_GROUP}`,
-        );
+        const grid = grids.get(getGridKey(entry));
         if (!grid) {
             throw new Error(`DashKitGridStack: missing grid for widget "${entry.i}"`);
         }
