@@ -224,6 +224,8 @@ test.each([
     'drop-error',
     'controlled',
     'edit-off',
+    'geometry',
+    'width',
 ] as const)(
     'palette collision followed by %s restores neighbors before a later saved gesture',
     async (cancellation) => {
@@ -239,11 +241,12 @@ test.each([
         };
         const onChange = jest.fn();
         let allowed = true;
+        let rowHeight = 18;
         const groups = [
             {
                 gridProperties: () => ({
                     cols: 12,
-                    rowHeight: 18,
+                    rowHeight,
                     margin: [0, 0] as [number, number],
                     containerPadding: [0, 0] as [number, number],
                     compactType: null,
@@ -353,6 +356,16 @@ test.each([
         }
         if (cancellation === 'edit-off') {
             view.rerender(fixture(flat, false));
+        }
+        if (cancellation === 'geometry') {
+            rowHeight = 20;
+            view.rerender(fixture());
+        }
+        if (cancellation === 'width') {
+            jest.spyOn(root.parentElement as HTMLElement, 'clientWidth', 'get').mockReturnValue(
+                600,
+            );
+            view.rerender(fixture());
         }
         expect(host.gridstackNode).toMatchObject({
             id: expected.i,

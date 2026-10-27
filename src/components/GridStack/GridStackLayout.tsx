@@ -142,8 +142,39 @@ class GridStackCanvas extends React.PureComponent {
             this.sync();
         }
         if (!this.active && this.appliedContext !== this.context) {
-            this.clearPreview();
-            this.sync();
+            const previous = this.appliedContext;
+            if (
+                this.preview &&
+                previous?.config === this.context.config &&
+                previous.externalLayoutRevision === this.context.externalLayoutRevision &&
+                previous.layout === this.context.layout &&
+                previous.containers === this.context.containers &&
+                previous.temporaryLayout === this.context.temporaryLayout &&
+                previous.dragProps === this.context.dragProps &&
+                previous.dragOverPlugin === this.context.dragOverPlugin &&
+                previous.editMode === this.context.editMode &&
+                previous.groups === this.context.groups &&
+                previous.draggableHandleClassName === this.context.draggableHandleClassName &&
+                [...this.grids].every(([key, record]) => {
+                    const properties = this.getProperties(key);
+                    return (
+                        isEqual(record.properties, properties) &&
+                        isEqual(
+                            record.geometry,
+                            getGridGeometry(
+                                properties.width ?? record.wrapper.clientWidth,
+                                properties,
+                            ),
+                        )
+                    );
+                })
+            ) {
+                // Callback/metadata updates must not restore saved positions over a live preview.
+                this.appliedContext = this.context;
+            } else {
+                this.clearPreview();
+                this.sync();
+            }
         }
         clearTimeout(this.timer);
         this.reloadItems();
@@ -1264,14 +1295,17 @@ class GridStackCanvas extends React.PureComponent {
             ),
             ...this.membership(host),
         };
+        const preview = this.preview;
         try {
             const {layout, containers} = this.readDocument();
+            // Native listeners can synchronously render the pending controlled drop in React 17.
+            this.preview = undefined;
             this.context.onDrop(layout, item, event as unknown as MouseEvent, containers);
         } catch (error) {
+            this.preview = preview;
             this.clearPreview();
             throw error;
         }
-        this.preview = undefined;
     };
     private paletteLeave = (event: DragEvent) => {
         const root = event.currentTarget as HTMLElement;

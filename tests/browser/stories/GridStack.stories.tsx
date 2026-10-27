@@ -12,7 +12,7 @@ import type {GridStackConfig} from '../../../src/gridstack';
 import {DashKitGridStack} from '../../../src/gridstack';
 import type {DashKitGroup, PluginWidgetProps} from '../../../src/typings';
 
-import {PaletteDocument} from './PaletteDocument';
+import {PaletteDocument as PaletteDocumentFixture} from './PaletteDocument';
 import {PreviewOverlap as PreviewOverlapFixture} from './PreviewOverlap';
 
 const type = 'gridstack-contract-widget';
@@ -1110,5 +1110,8 @@ export const PreviewOverlap: StoryFn<typeof PreviewOverlapFixture> = (args) => (
 );
 PreviewOverlap.args = {nested: false, allowOverlap: false, compactType: null};
 
-export {PaletteDocument};
-export const PaletteAdmission: StoryFn = () => <PaletteDocument admission />;
+export const PaletteDocument: StoryFn<typeof PaletteDocumentFixture> = (args) => (
+    <PaletteDocumentFixture {...args} />
+);
+PaletteDocument.args = {admission: false, rerenderOnHover: false, rejectAfterHover: false};
+export const PaletteAdmission: StoryFn = () => <PaletteDocumentFixture admission />;

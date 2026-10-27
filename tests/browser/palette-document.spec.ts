@@ -1,11 +1,118 @@
 import assert from 'node:assert/strict';
 
 import {expect} from '@playwright/test';
+import type {Page} from '@playwright/test';
 
 import type {Config} from '../../src/shared';
 
 import {checked, dropPalette, storyUrl, test} from './fixtures';
 import type {NativeElement} from './types';
+
+async function hoverPalette(page: Page) {
+    const source = page.getByRole('button', {name: '+ Add', exact: true});
+    const root = page.locator('.grid-stack').first();
+    await page.locator('[data-dashkit-id="child"]').waitFor();
+    const from = checked(await source.boundingBox());
+    const to = checked(await root.boundingBox());
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(from.x + from.width / 2 + 10, from.y + from.height / 2, {steps: 3});
+    // Stay just outside the snapped preview so mounting it cannot change the native drop target.
+    await page.mouse.move(to.x + 145, to.y + 5);
+    await page.mouse.move(to.x + 145, to.y + 5);
+    await expect(page.locator('[data-qa="hover-count"]')).not.toHaveText('0');
+}
+
+// Critical: yes. Parent hover feedback must not discard an accepted public palette drop.
+// Real pointer release after the callback rerender catches context cancellation missed by units.
+test('native palette survives public hover callback rerenders until pointer release', async ({
+    page,
+    evidence,
+}) => {
+    await page.goto(storyUrl('tests-gridstack--palette-document', {rerenderOnHover: true}));
+    await page.locator('[data-dashkit-id="child"]').waitFor();
+    const saved = page.locator('[data-qa="saved-config"]');
+    const before = await saved.textContent();
+    const boxY = () =>
+        page
+            .locator('[data-dashkit-id="box"]')
+            .evaluate((element) => (element as NativeElement).gridstackNode.y);
+    await hoverPalette(page);
+    await expect(page.locator('[data-dashkit-id="__dropping-elem__"]')).toHaveCount(1);
+    assert.equal(await boxY(), 2);
+    const hovers = await page.locator('[data-qa="hover-count"]').textContent();
+    // Release without another dragover after React commits the parent's hover feedback.
+    await page.mouse.up();
+    await expect(page.locator('[data-qa="drop-count"]')).toHaveText('1');
+    assert.equal(await saved.textContent(), before);
+    assert(
+        Number(await page.locator('[data-qa="drop-hover-count"]').textContent()) >= Number(hovers),
+    );
+    assert.equal(await boxY(), 2);
+    await page.getByRole('button', {name: 'Cancel drop'}).click();
+    await expect(page.locator('[data-dashkit-id="__dropping-elem__"]')).toHaveCount(0);
+    assert.equal(await saved.textContent(), before);
+    assert.equal(await boxY(), 0);
+
+    await hoverPalette(page);
+    await page.mouse.up();
+    await expect(page.locator('[data-qa="drop-count"]')).toHaveText('2');
+    await page.getByRole('button', {name: 'Apply drop'}).click();
+    await expect
+        .poll(async () => (JSON.parse(checked(await saved.textContent())) as Config).items.length)
+        .toBe(2);
+    assert.equal(await boxY(), 2);
+    await expect(page.locator('[data-qa="change-count"]')).toHaveText('0');
+    evidence.push({
+        check: 'callback rerender retains current onDrop, cancel restores neighbors, next drop saves',
+    });
+});
+
+test('native palette uses the current admission callback after parent hover feedback', async ({
+    page,
+    evidence,
+}) => {
+    await page.goto(
+        storyUrl('tests-gridstack--palette-document', {
+            rerenderOnHover: true,
+            rejectAfterHover: true,
+        }),
+    );
+    await page.locator('[data-dashkit-id="child"]').waitFor();
+    const before = await page.locator('[data-qa="saved-config"]').textContent();
+    await page
+        .locator('.grid-stack')
+        .first()
+        .evaluate((element) => {
+            element.addEventListener('dragover', () => {
+                if (element.querySelector('[data-dashkit-id="__dropping-elem__"]')) {
+                    element.setAttribute('data-admitted-preview', 'true');
+                }
+            });
+        });
+    await hoverPalette(page);
+    const root = checked(await page.locator('.grid-stack').first().boundingBox());
+    await page.mouse.move(root.x + 146, root.y + 5);
+    await page.mouse.move(root.x + 146, root.y + 5);
+    await expect(page.locator('[data-dashkit-id="__dropping-elem__"]')).toHaveCount(0);
+    await expect(page.locator('.grid-stack').first()).toHaveAttribute(
+        'data-admitted-preview',
+        'true',
+    );
+    assert(Number(await page.locator('[data-qa="hover-count"]').textContent()) > 1);
+    await page.mouse.up();
+    await expect(page.locator('[data-qa="drop-count"]')).toHaveText('0');
+    assert.equal(await page.locator('[data-qa="saved-config"]').textContent(), before);
+    assert.equal(
+        await page
+            .locator('[data-dashkit-id="box"]')
+            .evaluate((element) => (element as NativeElement).gridstackNode.y),
+        0,
+    );
+    evidence.push({
+        check: 'changed admission closure vetoes next hover and restores displaced neighbor',
+    });
+});
 
 test('native palette admission distinguishes sibling containers in one zone', async ({
     page,
@@ -194,6 +301,8 @@ test('native palette keeps displaced subtree through pending drop, cancel and co
     await drop();
     await expect(page.getByRole('button', {name: 'Apply drop'})).toBeEnabled();
     const pendingBox = await position('box');
+    await expect(host('__dropping-elem__')).toHaveCount(1);
+    assert.deepEqual(pendingBox, {x: 4, y: 2, w: 4, h: 4});
     evidence.push({check: 'pending public drop', box: pendingBox, saved: await saved()});
     await page.getByRole('button', {name: 'Apply drop'}).click();
     await expect.poll(async () => (await saved()).items.length).toBe(2);

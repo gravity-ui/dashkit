@@ -36,7 +36,15 @@ const groups: DashKitGroup[] = [
     },
 ];
 
-export function PaletteDocument({admission = false}: {admission?: boolean}) {
+export function PaletteDocument({
+    admission = false,
+    rerenderOnHover = false,
+    rejectAfterHover = false,
+}: {
+    admission?: boolean;
+    rerenderOnHover?: boolean;
+    rejectAfterHover?: boolean;
+}) {
     const [config, setConfig] = React.useState<Config>(
         admission
             ? {
@@ -94,20 +102,25 @@ export function PaletteDocument({admission = false}: {admission?: boolean}) {
     const [pending, setPending] = React.useState<ItemDropProps>();
     const [drops, setDrops] = React.useState(0);
     const [changes, setChanges] = React.useState(0);
+    const [hovers, setHovers] = React.useState(0);
+    const [dropHovers, setDropHovers] = React.useState(0);
     const admissionTarget = React.useRef<HTMLSpanElement>(null);
     return (
         <DashKitDnDWrapper
-            onDropDragOver={
-                admission
-                    ? (item) => {
-                          admissionTarget.current?.setAttribute(
-                              'data-container-id',
-                              item.containerId || '',
-                          );
-                          return item.containerId === 'allowed';
-                      }
-                    : undefined
-            }
+            onDropDragOver={(item) => {
+                if (rerenderOnHover) {
+                    setHovers((count) => count + 1);
+                    return !rejectAfterHover || hovers === 0;
+                }
+                if (admission) {
+                    admissionTarget.current?.setAttribute(
+                        'data-container-id',
+                        item.containerId || '',
+                    );
+                    return item.containerId === 'allowed';
+                }
+                return true;
+            }}
         >
             <div style={{paddingTop: 100}}>
                 <ActionPanel items={[{id: 'add', icon: '+', title: 'Add', dragProps: {type}}]} />
@@ -147,10 +160,12 @@ export function PaletteDocument({admission = false}: {admission?: boolean}) {
                     <DashKitGridStack
                         config={config}
                         groups={groups}
+                        context={rerenderOnHover ? {hovers} : undefined}
                         editMode
                         onDrop={(drop) => {
                             setPending(drop);
                             setDrops((count) => count + 1);
+                            setDropHovers(hovers);
                         }}
                         onChange={({config: next}) => {
                             setConfig(next);
@@ -161,6 +176,8 @@ export function PaletteDocument({admission = false}: {admission?: boolean}) {
                 <pre data-qa="saved-config">{JSON.stringify(config)}</pre>
                 <span data-qa="drop-count">{drops}</span>
                 <span data-qa="change-count">{changes}</span>
+                <span data-qa="hover-count">{hovers}</span>
+                <span data-qa="drop-hover-count">{dropHovers}</span>
                 {admission && <span ref={admissionTarget} data-qa="admission-target" />}
             </div>
         </DashKitDnDWrapper>
