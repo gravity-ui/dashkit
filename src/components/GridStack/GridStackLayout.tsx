@@ -74,6 +74,10 @@ const position = (id: string, node: GridStackNode): ConfigLayout => ({
     h: requireValue(node.h, 'node.h'),
 });
 
+const hasInvertedConstraints = ({minW, maxW, minH, maxH}: Partial<WidgetLayout>) =>
+    (minW !== undefined && maxW !== undefined && minW > maxW) ||
+    (minH !== undefined && maxH !== undefined && minH > maxH);
+
 const gridDepth = ({grid}: GridRecord) => {
     let depth = 0;
     for (let parent = grid.parentGridNode; parent; parent = parent.grid?.parentGridNode) {
@@ -920,14 +924,7 @@ class GridStackCanvas extends React.PureComponent {
         }
         const visible = this.active || visibleGeometry(position(id, node), source.geometry);
         const constraints = this.convertConstraints(this.active?.oldItem || node, source, target);
-        if (
-            (constraints.minW !== undefined &&
-                constraints.maxW !== undefined &&
-                constraints.minW > constraints.maxW) ||
-            (constraints.minH !== undefined &&
-                constraints.maxH !== undefined &&
-                constraints.minH > constraints.maxH)
-        ) {
+        if (hasInvertedConstraints(constraints)) {
             return undefined;
         }
         return {
@@ -1265,6 +1262,10 @@ class GridStackCanvas extends React.PureComponent {
                   ...this.convertConstraints(raw, source, record),
               }
             : undefined;
+        if (defaults && hasInvertedConstraints(defaults)) {
+            this.clearPreview();
+            return;
+        }
         const {layout, containers} = this.readDocument();
         const sizes = this.context.onDropDragOver(
             event as unknown as Parameters<DashKitCtxShape['onDropDragOver']>[0],

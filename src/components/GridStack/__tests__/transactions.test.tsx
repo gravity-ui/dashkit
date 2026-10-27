@@ -200,6 +200,134 @@ test.each(['width', 'height'] as const)(
     },
 );
 
+// Critical: yes. Palette adds must not persist geometry outside converted plugin constraints.
+test.each(['width', 'height'] as const)(
+    'public palette rejects inverted converted %s bounds and admits the next valid item',
+    (axis) => {
+        const measured = jest
+            .spyOn(HTMLElement.prototype, 'clientWidth', 'get')
+            .mockImplementation(function (this: HTMLElement) {
+                return this.closest('[data-dashkit-id="box"]') ? 300 : 640;
+            });
+        const paletteType = `palette-converted-${axis}`;
+        DashKitGridStack.registerPlugins({
+            type: paletteType,
+            defaultLayout: {
+                w: 3,
+                h: 3,
+                minW: axis === 'width' ? 3 : 1,
+                maxW: axis === 'width' ? 3 : 5,
+                minH: axis === 'height' ? 3 : 1,
+                maxH: axis === 'height' ? 3 : 5,
+            },
+            renderer: (props, ref) => <Plugin {...props} ref={ref} />,
+        });
+        const validType = `${paletteType}-valid`;
+        DashKitGridStack.registerPlugins({
+            type: validType,
+            defaultLayout: {w: 3, h: 3, minW: 1, maxW: 5, minH: 1, maxH: 5},
+            renderer: (props, ref) => <Plugin {...props} ref={ref} />,
+        });
+        const onDrop = jest.fn();
+        const onChange = jest.fn();
+        const document: Config = {
+            ...config,
+            items: [],
+            layout: [],
+            containers: [
+                {
+                    ...box,
+                    w: 30,
+                    h: 20,
+                    padding: [0, 0, 0, 0],
+                    gap: [0, 0],
+                    grid: {cols: 32, rowHeight: 20, compactType: null},
+                },
+            ],
+        };
+        const view = render(
+            <DashKitDnDWrapper>
+                <div>
+                    <ActionPanel
+                        items={[
+                            {
+                                id: 'invalid',
+                                icon: '+',
+                                title: 'Invalid',
+                                dragProps: {type: paletteType},
+                            },
+                            {
+                                id: 'valid',
+                                icon: '+',
+                                title: 'Valid',
+                                dragProps: {type: validType},
+                            },
+                        ]}
+                    />
+                    <DashKitGridStack
+                        config={document}
+                        editMode
+                        groups={[
+                            {
+                                gridProperties: () => ({
+                                    width: 640,
+                                    cols: 64,
+                                    rowHeight: 10,
+                                    margin: [0, 0],
+                                    containerPadding: [0, 0],
+                                    compactType: null,
+                                }),
+                            },
+                        ]}
+                        onDrop={onDrop}
+                        onChange={onChange}
+                    />
+                </div>
+            </DashKitDnDWrapper>,
+        );
+        const target = requireValue(
+            view.container.querySelector<HTMLElement>('[data-dashkit-id="box"] .grid-stack'),
+            'nested grid',
+        );
+        jest.spyOn(target, 'getBoundingClientRect').mockReturnValue({
+            left: 0,
+            top: 0,
+            right: 300,
+            bottom: 200,
+            width: 300,
+            height: 200,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+        });
+        const over = () => {
+            const event = new Event('dragover', {bubbles: true, cancelable: true});
+            Object.assign(event, {clientX: 0, clientY: 0});
+            fireEvent(target, event);
+        };
+        fireEvent.dragStart(view.getByRole('button', {name: '+ Invalid'}), {
+            dataTransfer: {setDragImage: jest.fn()},
+        });
+        over();
+        expect(view.container.querySelector('[data-dashkit-id="__dropping-elem__"]')).toBeNull();
+        fireEvent.drop(target);
+        expect(onDrop).not.toHaveBeenCalled();
+        fireEvent.dragEnd(window);
+
+        fireEvent.dragStart(view.getByRole('button', {name: '+ Valid'}), {
+            dataTransfer: {setDragImage: jest.fn()},
+        });
+        over();
+        expect(target.querySelector('[data-dashkit-id="__dropping-elem__"]')).not.toBeNull();
+        fireEvent.drop(target);
+        expect(onDrop).toHaveBeenCalledTimes(1);
+        expect(onDrop.mock.calls[0][0].itemLayout).toMatchObject({containerId: 'box', w: 3, h: 2});
+        expect(onChange).not.toHaveBeenCalled();
+        view.unmount();
+        measured.mockRestore();
+    },
+);
+
 // Critical: yes. A move must not reset a plugin's state/ref or lose saved document membership.
 // Critical: yes. A valid subtree must reach native fit checks in destination units, not source pixels.
 test('native bounded droppable accepts fitting container units and rejects an oversized subtree', () => {
