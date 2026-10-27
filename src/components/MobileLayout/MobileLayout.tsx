@@ -32,6 +32,7 @@ export default class MobileLayout extends React.PureComponent<
     sortedLayoutItems: Record<string, ReturnType<typeof getSortedConfigItems>> | null = null;
 
     _memoLayout = this.context.layout;
+    _memoConfigItems = this.context.configItems;
     _memoForwardedPluginRef: Array<(refObject: PluginRef) => void> = [];
     _memoAdjustWidgetLayout: Record<string, (props: {needSetDefault?: boolean}) => void> = {};
 
@@ -105,11 +106,16 @@ export default class MobileLayout extends React.PureComponent<
     }
 
     getSortedLayoutItems() {
-        if (this.sortedLayoutItems && this.context.layout === this._memoLayout) {
+        if (
+            this.sortedLayoutItems &&
+            this.context.layout === this._memoLayout &&
+            this.context.configItems === this._memoConfigItems
+        ) {
             return this.sortedLayoutItems;
         }
 
         this._memoLayout = this.context.layout;
+        this._memoConfigItems = this.context.configItems;
 
         const hasOrderId = Boolean(this.context.configItems.find((item) => item.orderId));
 
