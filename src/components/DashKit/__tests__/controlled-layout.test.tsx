@@ -416,3 +416,89 @@ describe.each([
         expect(savedConfig.layout).toEqual([{i: 'item1', x: 1, y: 0, w: 2, h: 2}]);
     });
 });
+
+// Critical: yes. Empty legacy containers must not turn a saved edit into a nested dashboard.
+describe.each([
+    ['legacy', TestComponent],
+    ['gridstack', withContext(ContextCapture, gridStackLayoutAdapter)],
+] as const)('%s optional containers layout version', (_engine, Component) => {
+    const nestedContainers: NonNullable<Config['containers']> = [
+        {
+            id: 'box',
+            x: 4,
+            y: 0,
+            w: 4,
+            h: 4,
+            padding: [0, 0, 0, 0],
+            gap: [0, 0],
+            grid: {cols: 4, rowHeight: 10, compactType: null},
+        },
+    ];
+    it.each<{
+        name: string;
+        containers?: Config['containers'];
+        version?: 2;
+        expectedVersion?: 2;
+    }>([
+        {name: 'absent', containers: undefined, version: undefined},
+        {name: 'empty legacy', containers: [], version: undefined},
+        {name: 'empty nested', containers: [], version: 2, expectedVersion: 2},
+        {name: 'versioned without containers', version: 2, expectedVersion: 2},
+        {name: 'nonempty nested', containers: nestedContainers, expectedVersion: 2},
+    ])('preserves $name after layoutChange', ({containers, version, expectedVersion}) => {
+        const onChange = jest.fn();
+        const config: Config = {
+            ...createConfig(0),
+            ...(containers === undefined ? {} : {containers}),
+            ...(version === 2 ? {layoutVersion: version} : {}),
+        };
+        const props = createProps({config, emitDashKitEvent: jest.fn(), onChange});
+        const view = render(<Component {...props} />);
+
+        act(() => captured.layoutChange([{...config.layout[0], x: 1}]));
+
+        const savedConfig: Config = onChange.mock.calls[0][0].config;
+        expect(savedConfig.containers).toEqual(containers);
+        expect('containers' in savedConfig).toBe(containers !== undefined);
+        expect(savedConfig.layout).toEqual([{...config.layout[0], x: 1}]);
+        if (expectedVersion === undefined) {
+            expect(() =>
+                new DashKit({
+                    ...DashKit.defaultProps,
+                    config: savedConfig,
+                } as ConstructorParameters<typeof DashKit>[0]).render(),
+            ).not.toThrow();
+        }
+        expect(savedConfig.layoutVersion).toBe(expectedVersion);
+        act(() => captured.onItemStateAndParamsChange('item1', {state: {clicked: true}}));
+        expect(onChange.mock.calls[1][0].config.layoutVersion).toBe(expectedVersion);
+        expect(onChange.mock.calls[1][0].config.containers).toEqual(containers);
+        view.unmount();
+    });
+
+    it.each([undefined, 2] as const)(
+        'retains an emptied container baseline before acknowledgment, initial version %s',
+        (layoutVersion) => {
+            const onChange = jest.fn();
+            const config: Config = {
+                ...createConfig(0),
+                containers: nestedContainers,
+                layoutVersion,
+            };
+            const props = createProps({config, emitDashKitEvent: jest.fn(), onChange});
+            const view = render(<Component {...props} />);
+
+            act(() => captured.layoutChange([{...config.layout[0], x: 1}], []));
+            act(() => captured.layoutChange([{...config.layout[0], x: 2}]));
+            act(() => captured.onItemStateAndParamsChange('item1', {state: {clicked: true}}));
+
+            expect(onChange).toHaveBeenCalledTimes(3);
+            for (const [change] of onChange.mock.calls) {
+                expect(change.config.containers).toEqual([]);
+                expect(change.config.layoutVersion).toBe(2);
+            }
+            expect(onChange.mock.calls[2][0].config.layout).toEqual([{...config.layout[0], x: 2}]);
+            view.unmount();
+        },
+    );
+});

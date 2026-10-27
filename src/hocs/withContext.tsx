@@ -217,8 +217,9 @@ function useMemoStateContext(
             const baselineConfig = {
                 ...props.config,
                 layout: layoutAdapter.serializeLayout(getBaselineLayout()),
-                ...(baselineContainers.current
-                    ? {containers: baselineContainers.current, layoutVersion: 2 as const}
+                ...(baselineContainers.current ? {containers: baselineContainers.current} : {}),
+                ...(baselineContainers.current?.length || props.config.containers?.length
+                    ? {layoutVersion: 2 as const}
                     : {}),
             };
 
@@ -229,7 +230,9 @@ function useMemoStateContext(
 
             if (nextContainers !== undefined) {
                 newConfig.containers = nextContainers;
-                newConfig.layoutVersion = 2;
+                if (nextContainers.length) {
+                    newConfig.layoutVersion = 2;
+                }
             }
             emitDashKitChangeEvent({
                 config: baselineConfig,
@@ -274,8 +277,9 @@ function useMemoStateContext(
         () => ({
             ...props.config,
             layout: getOuterLayout(),
-            ...(baselineContainers.current
-                ? {containers: baselineContainers.current, layoutVersion: 2 as const}
+            ...(baselineContainers.current ? {containers: baselineContainers.current} : {}),
+            ...(baselineContainers.current?.length || props.config.containers?.length
+                ? {layoutVersion: 2 as const}
                 : {}),
         }),
         [props.config, getOuterLayout],
