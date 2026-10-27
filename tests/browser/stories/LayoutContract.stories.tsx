@@ -130,6 +130,7 @@ function Contract({
     const [editing, setEditing] = React.useState(true);
     const [events, setEvents] = React.useState(0);
     const [northWest, setNorthWest] = React.useState(false);
+    const [handleLabel, setHandleLabel] = React.useState('old');
     let activeGroups: DashKitGroup[] = bounded ? boundedGroups : groups;
     if (customResize) {
         activeGroups = [
@@ -143,6 +144,7 @@ function Contract({
                     compactType: null,
                     autoSize: false,
                     allowOverlap: true,
+                    noOverlay: handleLabel === 'old',
                     resizeHandles: northWest ? ['nw'] : ['se'],
                     resizeHandle: (direction, ref?: React.Ref<HTMLSpanElement>) => (
                         <span
@@ -150,7 +152,7 @@ function Contract({
                             className={`react-resizable-handle react-resizable-handle-${direction}`}
                             data-qa="custom-resize"
                         >
-                            {direction}
+                            {direction} {handleLabel}
                         </span>
                     ),
                 }),
@@ -164,6 +166,7 @@ function Contract({
                 Restore
             </button>
             <button onClick={() => setNorthWest(true)}>Use northwest handles</button>
+            <button onClick={() => setHandleLabel('new')}>Update handle renderer</button>
             <span data-qa="event-count">Events: {events}</span>
             <div data-qa="canvas" style={{width: bounded ? 600 : 640, height: 400}}>
                 <Component

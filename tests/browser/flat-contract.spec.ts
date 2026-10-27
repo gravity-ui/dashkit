@@ -221,27 +221,67 @@ for (const engine of ['legacy', 'gridstack']) {
 
 // Critical: no. Dynamic public resize controls must remain mounted on native targets.
 for (const engine of ['legacy', 'gridstack']) {
-    test(`[${engine}] common custom resize controls survive direction change`, async ({
+    test(`[${engine}] common custom resize controls survive renderer and direction changes`, async ({
         page,
         evidence,
     }) => {
         await page.goto(storyUrl('resize-controls', {engine}));
-        await expect(page.locator('[data-qa="custom-resize"]')).toHaveText(['se', 'se']);
+        await expect(page.locator('[data-qa="custom-resize"]')).toHaveText(['se old', 'se old']);
+        await expect(page.locator('.dashkit-grid-item__overlay')).toHaveCount(0);
         const before = await page.locator('[data-qa="saved-config"]').textContent();
         const identities = await page
             .locator('[data-widget-id]')
             .evaluateAll((elements) =>
                 elements.map((el) => el.getAttribute('data-widget-instance')),
             );
+        await page.getByRole('button', {name: 'Update handle renderer', exact: true}).click();
+        await expect(page.locator('[data-qa="custom-resize"]')).toHaveText(['se new', 'se new']);
+        await expect(page.locator('.dashkit-grid-item__overlay')).toHaveCount(2);
+        assert.equal(await page.locator('[data-qa="saved-config"]').textContent(), before);
+        await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 0');
+        const southeast = checked(
+            await page.locator('[data-qa="custom-resize"]').last().boundingBox(),
+        );
+        await page.mouse.move(
+            southeast.x + southeast.width / 2,
+            southeast.y + southeast.height / 2,
+        );
+        await page.mouse.down();
+        await page.mouse.move(
+            southeast.x + southeast.width / 2 + 20,
+            southeast.y + southeast.height / 2 + 20,
+            {steps: 1},
+        );
+        await page.mouse.up();
+        await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 1');
+        const initial = JSON.parse(checked(before)) as Config;
+        assert.deepEqual(
+            (
+                JSON.parse(
+                    checked(await page.locator('[data-qa="saved-config"]').textContent()),
+                ) as Config
+            ).layout,
+            [initial.layout[0], {...initial.layout[1], w: 200, h: 140}],
+        );
+        assert.deepEqual(
+            await page
+                .locator('[data-widget-id]')
+                .evaluateAll((elements) =>
+                    elements.map((el) => el.getAttribute('data-widget-instance')),
+                ),
+            identities,
+        );
+        await page.getByRole('button', {name: 'Restore', exact: true}).click();
+        assert.equal(await page.locator('[data-qa="saved-config"]').textContent(), before);
         await page.getByRole('button', {name: 'Use northwest handles', exact: true}).click();
         evidence.push({
             engine,
             controls: await page.locator('[data-qa="custom-resize"]').allTextContents(),
             nativeTargets: await page.locator('.ui-resizable-nw').count(),
         });
-        await expect(page.locator('[data-qa="custom-resize"]')).toHaveText(['nw', 'nw']);
+        await expect(page.locator('[data-qa="custom-resize"]')).toHaveText(['nw new', 'nw new']);
         assert.equal(await page.locator('[data-qa="saved-config"]').textContent(), before);
-        await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 0');
+        await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 1');
         const handle = checked(
             await page.locator('[data-qa="custom-resize"]').first().boundingBox(),
         );
@@ -251,11 +291,10 @@ for (const engine of ['legacy', 'gridstack']) {
         await page.mouse.down();
         await page.mouse.move(x - 20, y - 20, {steps: 1});
         await page.mouse.up();
-        await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 1');
+        await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 2');
         const resized = JSON.parse(
             checked(await page.locator('[data-qa="saved-config"]').textContent()),
         ) as Config;
-        const initial = JSON.parse(checked(before)) as Config;
         assert.deepEqual(resized.layout, [
             {...initial.layout[0], x: 20, y: 20, w: 180, h: 120},
             initial.layout[1],
