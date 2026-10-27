@@ -91,6 +91,7 @@ class GridStackCanvas extends React.PureComponent {
     private plugins = new Map<string, PluginRef>();
     private autoHeightItems = new Set<string>();
     private pluginCallbacks = new Map<string, (value: PluginRef) => void>();
+    private autoheightWidgets = new Set<string>();
     private observer?: ResizeObserver;
     private syncing = false;
     private appliedContext?: DashKitCtxShape;
@@ -711,6 +712,24 @@ class GridStackCanvas extends React.PureComponent {
                     this.pluginCallbacks.delete(id);
                 }
             });
+            // Saved geometry restores verbatim; only autoheight reflows its visual neighbors.
+            const autoheightWidgets = new Set(this.context.adjustedLayoutIds);
+            this.grids.forEach(({grid}) => {
+                const engine = grid.engine as DashKitEngine;
+                engine.restoring = false;
+                const adjusted = engine.nodes.filter((node) => {
+                    const id = requireValue(node.id, 'autoheight widget id');
+                    // Previous IDs keep the reset's final reflow before adjustment ends.
+                    return autoheightWidgets.has(id) || this.autoheightWidgets.has(id);
+                });
+                if (adjusted.length) {
+                    adjusted
+                        .sort((a, b) => a.y - b.y || a.x - b.x)
+                        .forEach((node) => engine._fixCollisions(node));
+                    engine._packNodes();
+                }
+            });
+            this.autoheightWidgets = autoheightWidgets;
             [...this.grids]
                 .sort(([, a], [, b]) => gridDepth(b) - gridDepth(a))
                 .forEach(([key, record]) => {
@@ -889,11 +908,50 @@ class GridStackCanvas extends React.PureComponent {
         return result;
     }
 
+    private convertedDropSize(
+        id: string,
+        node: GridStackNode,
+        source: GridRecord | undefined,
+        target: GridRecord,
+        container: boolean,
+    ): (Partial<WidgetLayout> & {w: number; h: number}) | undefined {
+        if (!source || source === target) {
+            return {w: requireValue(node.w, 'node.w'), h: requireValue(node.h, 'node.h')};
+        }
+        const visible = this.active || visibleGeometry(position(id, node), source.geometry);
+        const constraints = this.convertConstraints(this.active?.oldItem || node, source, target);
+        if (
+            (constraints.minW !== undefined &&
+                constraints.maxW !== undefined &&
+                constraints.minW > constraints.maxW) ||
+            (constraints.minH !== undefined &&
+                constraints.maxH !== undefined &&
+                constraints.minH > constraints.maxH)
+        ) {
+            return undefined;
+        }
+        return {
+            w: Math.min(
+                container ? Infinity : target.geometry.cols,
+                Math.max(
+                    1,
+                    Math.round((visible.width + target.geometry.gapX) / target.geometry.stepX),
+                ),
+            ),
+            h: Math.max(
+                1,
+                Math.round((visible.height + target.geometry.gapY) / target.geometry.stepY),
+            ),
+            ...constraints,
+        };
+    }
+
     private accept(key: string, el: GridItemHTMLElement) {
         if (!this.context.editMode) {
             return false;
         }
         const id = el.dataset.dashkitId;
+        const host = this.hosts.get(id as string);
         const {containers = []} = this.context;
         const container = containers.find((entry) => entry.id === id);
         if (
@@ -907,36 +965,22 @@ class GridStackCanvas extends React.PureComponent {
         const record = this.grids.get(key);
         const item = this.context.configItems.find((entry) => entry.id === id);
         const node = el.gridstackNode;
-        if (!record || !node || (!item && !container)) {
+        if (!record || !node || (!item && !container) || host?.el !== el) {
             return false;
         }
-        const source = this.grids.get(
-            this.active?.sourceKey || this.hosts.get(requireValue(id, 'widget id'))?.key || '',
-        );
-        let converted;
-        if (source && source !== record) {
-            const visible =
-                this.active ||
-                visibleGeometry(position(requireValue(id, 'widget id'), node), source.geometry);
-            converted = {
-                w: Math.min(
-                    container ? Infinity : record.geometry.cols,
-                    Math.max(
-                        1,
-                        Math.round((visible.width + record.geometry.gapX) / record.geometry.stepX),
-                    ),
-                ),
-                h: Math.max(
-                    1,
-                    Math.round((visible.height + record.geometry.gapY) / record.geometry.stepY),
-                ),
-                ...this.convertConstraints(this.active?.oldItem || node, source, record),
-            };
-        } else {
-            converted = {w: requireValue(node.w, 'node.w'), h: requireValue(node.h, 'node.h')};
-        }
+        const source = this.grids.get(this.active?.sourceKey || host.key);
         const engine = record.grid.engine as DashKitEngine;
         engine.dropSize = undefined;
+        const converted = this.convertedDropSize(
+            requireValue(id, 'widget id'),
+            node,
+            source,
+            record,
+            Boolean(container),
+        );
+        if (!converted) {
+            return false;
+        }
         if (container) {
             const {minW = 1, minH = 1} = this.minimumContainer(container.id, record) || {};
             converted.w = Math.max(converted.w, minW);

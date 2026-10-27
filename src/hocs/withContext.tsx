@@ -783,6 +783,7 @@ function useMemoStateContext(
 
             layout: resultLayout,
             containers: temporaryLayout?.containers ?? containers,
+            adjustedLayoutIds: Object.keys(adjustedLayouts.current),
             temporaryLayout,
             layoutChange: onLayoutChange,
             memorizeOriginalLayout,
