@@ -1,4 +1,6 @@
+/** @jest-environment jsdom */
 import type {Config, GridStackContainer} from '../../../shared';
+import {DashKitGridStack} from '../DashKitGridStack';
 import {validateConfig, validateGrid} from '../document';
 import {getGridGeometry, getGridStackLayoutRects, visibleGeometry} from '../geometry';
 
@@ -42,6 +44,62 @@ test.each([
     expect(() => validateConfig({...config, containers: [entry as GridStackContainer]})).toThrow(
         error,
     );
+});
+
+// Existing flat widget and selector IDs may match root group names.
+test.each(['__default', 'widget-panel', 'parent-panel', 'groups-panel'])(
+    'accepts widget and selector ID %s in the root group namespace',
+    (id) => {
+        const groups = ['widget-panel', 'parent-panel', 'groups-panel'].map((groupId) => ({
+            id: groupId,
+        }));
+        const widget = {
+            ...config,
+            containers: undefined,
+            items: [{...config.items[0], id}],
+            layout: [{...config.layout[0], i: id, containerId: undefined}],
+        };
+        const selector = {
+            ...config,
+            containers: undefined,
+            items: [{...config.items[0], data: {group: [{id, namespace: 'default'}]}}],
+            layout: [{...config.layout[0], containerId: undefined}],
+        };
+
+        expect(() => validateConfig(widget, groups)).not.toThrow();
+        expect(() => validateConfig(selector, groups)).not.toThrow();
+        DashKitGridStack.reloadPlugins({
+            type: 'test',
+            renderer: () => null,
+            defaultLayout: {w: 2, h: 2},
+        });
+        for (const existing of [widget, selector]) {
+            const next = DashKitGridStack.setItem({
+                config: existing,
+                item: {type: 'test', data: {}},
+                groups,
+            });
+            expect(next.items).toEqual(expect.arrayContaining(existing.items));
+            expect(next.layout).toEqual(expect.arrayContaining(existing.layout));
+        }
+        expect(() => validateConfig({...config, containers: [{...container, id}]}, groups)).toThrow(
+            `duplicate or reserved id "${id}"`,
+        );
+    },
+);
+
+test('keeps widget, selector and container IDs unique and temporary ID reserved', () => {
+    const selector = {
+        ...config,
+        items: [{...config.items[0], data: {group: [{id: 'box', namespace: 'default'}]}}],
+    };
+    expect(() => validateConfig(selector)).toThrow('duplicate or reserved id "box"');
+    expect(() =>
+        validateConfig({...config, items: [{...config.items[0], id: '__dropping-elem__'}]}),
+    ).toThrow('duplicate or reserved id "__dropping-elem__"');
+    expect(() =>
+        validateConfig({...config, containers: [{...container, id: '__dropping-elem__'}]}),
+    ).toThrow('duplicate or reserved id "__dropping-elem__"');
 });
 
 test('gap and padding produce independent visible geometry', () => {

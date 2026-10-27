@@ -281,6 +281,35 @@ test('legacy static entry points reject incoming nested membership while new ref
     ]);
 });
 
+// Plugin defaults must be checked before legacy addItem can persist or erase membership.
+test.each([Infinity, 0])('legacy setItem rejects nested y=%s, accepts flat override', (y) => {
+    const nestedType = `${type}-legacy-default-${y}`;
+    DashKit.reloadPlugins({
+        type: nestedType,
+        renderer: () => null,
+        defaultLayout: {w: 1, h: 1, y, containerId: 'box'},
+    });
+    const flat = {...config, containers: undefined};
+    const item = {type: nestedType, data: {}};
+    const before = JSON.stringify({flat, item});
+
+    expect(() => DashKit.setItem({config: flat, item})).toThrow(
+        'requires @gravity-ui/dashkit/gridstack',
+    );
+    expect(JSON.stringify({flat, item})).toBe(before);
+
+    const override = {
+        type: nestedType,
+        data: {},
+        layout: {x: 0, y, w: 1, h: 1, containerId: undefined},
+    };
+    const beforeOverride = {...override, layout: {...override.layout}};
+    const next = DashKit.setItem({config: flat, item: override});
+    expect(next.layout[0].containerId).toBeUndefined();
+    expect(override).toStrictEqual(beforeOverride);
+    expect(JSON.stringify({flat, item})).toBe(before);
+});
+
 // Critical: yes. Static admission must not generate a saved child beyond its physical parent.
 test.each([undefined, 2, 100])(
     'nested static admission respects physical and configured maxRows %s',

@@ -40,13 +40,14 @@ export class DashKitEngine extends EngineBase {
     declare nodes: EngineNode[];
     mode: EngineMode = {};
     restoring = false;
-    dropSize?: {w: number; h: number};
+    dropSize?: GridStackNode & {id: string; w: number; h: number};
 
     nodeBoundFix(nodeInput: GridStackNode, resizing?: boolean) {
         const node = nodeInput;
         if (this.restoring) {
             return this;
         }
+        this.consumeDropSize(node);
         if (resizing) {
             super.nodeBoundFix(node, resizing);
         } else {
@@ -236,8 +237,10 @@ export class DashKitEngine extends EngineBase {
 
     willItFit(nodeInput: GridStackNode & {w: number; h: number}) {
         const node = nodeInput;
-        const input = this.dropSize ? {...node, ...this.dropSize} : node;
-        this.dropSize = undefined;
+        const input =
+            this.dropSize && (!node.id || node.id === this.dropSize.id)
+                ? {...node, ...this.dropSize}
+                : node;
         if (
             input.w > this.column ||
             (this.maxRow && input.h > this.maxRow) ||
@@ -266,5 +269,12 @@ export class DashKitEngine extends EngineBase {
             (node as EngineNode)._willFitPos = Utils.copyPos({}, candidate);
         }
         return fits;
+    }
+
+    private consumeDropSize(node: GridStackNode) {
+        if (this.dropSize && node.id === this.dropSize.id) {
+            Object.assign(node, this.dropSize);
+            this.dropSize = undefined;
+        }
     }
 }

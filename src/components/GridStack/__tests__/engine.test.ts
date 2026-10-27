@@ -116,6 +116,21 @@ test('nowrap fit excludes the existing preview from both width budget and simula
     expect(engine.willItFit({id: 'another', w: 1, h: 1})).toBe(false);
 });
 
+test('converted native drop survives admission, clone bounds and preview fit', () => {
+    const engine = new DashKitEngine({column: 12, maxRow: 10, float: true});
+    engine.mode = {compactType: null};
+    engine.addNode({id: 'occupied', x: 0, y: 5, w: 12, h: 5});
+    const source = {id: 'moving', x: 0, y: 0, w: 10, h: 10};
+    engine.dropSize = {id: 'moving', w: 10, h: 4};
+    expect(engine.willItFit({w: source.w, h: source.h})).toBe(true);
+    const preview = {...source};
+    engine.nodeBoundFix(preview);
+    expect(engine.willItFit(preview)).toBe(true);
+    expect(preview).toMatchObject({w: 10, h: 4});
+    expect(source).toEqual({id: 'moving', x: 0, y: 0, w: 10, h: 10});
+    expect(nodes(engine)).toEqual([{id: 'occupied', x: 0, y: 5, w: 12, h: 5}]);
+});
+
 // Critical: yes. Packing must not silently rewrite an allowed overlapping gesture before save.
 test.each([null, 'vertical', 'horizontal', 'horizontal-nowrap'] as const)(
     'public engine move respects overlap with %s compaction',
