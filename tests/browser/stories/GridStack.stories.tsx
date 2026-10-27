@@ -3,6 +3,7 @@ import React from 'react';
 import type {Meta, StoryFn} from '@storybook/react';
 import {createPortal} from 'react-dom';
 
+import {ActionPanel} from '../../../src/components/ActionPanel/ActionPanel';
 import {DashKit} from '../../../src/components/DashKit/DashKit';
 import type {DashKitLayoutRef} from '../../../src/components/DashKit/DashKitBase';
 import {DashKitDnDWrapper} from '../../../src/components/DashKitDnDWrapper/DashKitDnDWrapper';
@@ -10,6 +11,8 @@ import {requireValue} from '../../../src/components/GridStack/invariants';
 import type {GridStackConfig} from '../../../src/gridstack';
 import {DashKitGridStack} from '../../../src/gridstack';
 import type {DashKitGroup, PluginWidgetProps} from '../../../src/typings';
+
+import {PreviewOverlap as PreviewOverlapFixture} from './PreviewOverlap';
 
 const type = 'gridstack-contract-widget';
 class Widget extends React.Component<PluginWidgetProps> {
@@ -187,7 +190,7 @@ function Contract({
     });
     const [scale, setScale] = React.useState(1);
     const [editing, setEditing] = React.useState(!dashboard);
-
+    const [allowPalette, setAllowPalette] = React.useState(true);
     const [silent, setSilent] = React.useState(false);
     const [focused, setFocused] = React.useState<string | null>(null);
     const [events, setEvents] = React.useState(0);
@@ -203,7 +206,7 @@ function Contract({
     >([]);
     const [states, setStates] = React.useState({});
     const [meta, setMeta] = React.useState<unknown[]>([]);
-
+    const [drops, setDrops] = React.useState(0);
     const ref = React.useRef<(DashKitLayoutRef & Pick<DashKit, 'on'>) | null>(null);
     const lastConfig = React.useRef(config);
     const previous = React.useRef(config);
@@ -319,6 +322,7 @@ function Contract({
     return (
         <DashKitDnDWrapper
             onDropDragOver={(item) =>
+                allowPalette &&
                 !(occupied && item.parent === 'right' && config.items.some(({id}) => id === 'c'))
             }
         >
@@ -384,7 +388,9 @@ function Contract({
                     >
                         Reverse layers
                     </button>
-
+                    <button onClick={() => setAllowPalette((value) => !value)}>
+                        Palette allowed: {String(allowPalette)}
+                    </button>
                     {(mode === 'budget' || mode === 'horizontal') && (
                         <>
                             <button
@@ -437,6 +443,19 @@ function Contract({
                         Read refs
                     </button>
                     <span data-qa="event-count">Events: {events}</span>
+                    <ActionPanel
+                        items={[
+                            {
+                                id: 'palette',
+                                icon: '+',
+                                title: 'Widget',
+                                dragProps:
+                                    mode === 'budget' || mode === 'horizontal'
+                                        ? {type: 'gridstack-budget-widget', layout: {w: 4, h: 2}}
+                                        : {type, layout: {w: 100, h: 80}},
+                            },
+                        ]}
+                    />
                 </div>
                 <div
                     ref={canvas}
@@ -496,12 +515,28 @@ function Contract({
                                 placeholder: event.placeholder,
                             })
                         }
+                        onDrop={({itemLayout, newLayout, containers, commit, dragProps}) => {
+                            setDrops((count) => count + 1);
+                            const next = Component.setItem({
+                                config: {
+                                    ...lastConfig.current,
+                                    ...(containers ? {containers} : {}),
+                                },
+                                item: {type: dragProps.type, data: {}, layout: itemLayout},
+                                options: {updateLayout: newLayout},
+                                groups,
+                            });
+                            setConfig(next);
+                            lastConfig.current = next;
+                            commit();
+                        }}
                     />
                 </div>
                 <span data-qa="focused-item">{focused || ''}</span>
                 <pre data-qa="callback-log">{JSON.stringify(callbacks.current)}</pre>
                 <pre data-qa="saved-config">{JSON.stringify(lastConfig.current)}</pre>
                 <pre data-qa="meta">{JSON.stringify(meta)}</pre>
+                <span data-qa="drop-count">{drops}</span>
             </div>
         </DashKitDnDWrapper>
     );
@@ -722,7 +757,8 @@ export const BoundedSubtrees: StoryFn = () => {
             },
         ],
     });
-
+    const [allowPalette, setAllowPalette] = React.useState(true);
+    const [drops, setDrops] = React.useState(0);
     const previous = React.useRef(config);
     const [events, setEvents] = React.useState(0);
     const [meta, setMeta] = React.useState<unknown[]>([]);
@@ -761,8 +797,21 @@ export const BoundedSubtrees: StoryFn = () => {
         [],
     );
     return (
-        <DashKitDnDWrapper>
+        <DashKitDnDWrapper onDropDragOver={() => allowPalette}>
             <div style={{width: 640}}>
+                <button onClick={() => setAllowPalette((value) => !value)}>
+                    Palette allowed: {String(allowPalette)}
+                </button>
+                <ActionPanel
+                    items={[
+                        {
+                            id: 'palette',
+                            icon: '+',
+                            title: 'Widget',
+                            dragProps: {type: 'gridstack-budget-widget', layout: {w: 4, h: 2}},
+                        },
+                    ]}
+                />
                 <button onClick={() => setConfig(previous.current)}>Undo subtree</button>
                 <button
                     onClick={async () =>
@@ -781,6 +830,18 @@ export const BoundedSubtrees: StoryFn = () => {
                     config={config}
                     groups={groups}
                     editMode
+                    onDrop={({itemLayout, newLayout, containers, commit, dragProps}) => {
+                        const next = DashKitGridStack.setItem({
+                            config: {...config, ...(containers ? {containers} : {})},
+                            item: {type: dragProps.type, data: {}, layout: itemLayout},
+                            options: {updateLayout: newLayout},
+                            groups,
+                        });
+                        previous.current = config;
+                        setConfig(next);
+                        setDrops((count) => count + 1);
+                        commit();
+                    }}
                     onChange={({config: next}) => {
                         previous.current = config;
                         setConfig(next);
@@ -789,6 +850,7 @@ export const BoundedSubtrees: StoryFn = () => {
                 />
                 <pre data-qa="saved-config">{JSON.stringify(config)}</pre>
                 <pre data-qa="meta">{JSON.stringify(meta)}</pre>
+                <span data-qa="drop-count">{drops}</span>
             </div>
         </DashKitDnDWrapper>
     );
@@ -830,7 +892,7 @@ export const NestedBounds: StoryFn = () => {
     });
     const previous = React.useRef(config);
     const [events, setEvents] = React.useState(0);
-
+    const [drops, setDrops] = React.useState(0);
     const [hidden, setHidden] = React.useState(false);
     const groups = React.useMemo<DashKitGroup[]>(
         () => [
@@ -891,11 +953,40 @@ export const NestedBounds: StoryFn = () => {
                 >
                     Fractional child
                 </button>
-
+                {[6, 18].map((height) => (
+                    <button
+                        key={height}
+                        onClick={() =>
+                            setConfig((value) => ({
+                                ...value,
+                                items: [],
+                                layout: [],
+                                containers: requireValue(value.containers, 'saved containers').map(
+                                    (container) => ({
+                                        ...container,
+                                        h: 36 + height,
+                                    }),
+                                ),
+                            }))
+                        }
+                    >
+                        Empty content {height}
+                    </button>
+                ))}
                 <button onClick={() => setConfig(previous.current)}>Restore</button>
                 <button onClick={() => setHidden((value) => !value)}>Toggle hidden</button>
                 <span data-qa="event-count">Events: {events}</span>
-
+                <span data-qa="drop-count">{drops}</span>
+                <ActionPanel
+                    items={[
+                        {
+                            id: 'palette',
+                            icon: '+',
+                            title: 'Widget',
+                            dragProps: {type: 'gridstack-budget-widget', layout: {w: 64, h: 48}},
+                        },
+                    ]}
+                />
                 <div style={{height: 400, display: hidden ? 'none' : undefined}}>
                     <DashKitGridStack
                         config={config}
@@ -906,6 +997,19 @@ export const NestedBounds: StoryFn = () => {
                             setConfig(next);
                             setEvents((count) => count + 1);
                         }}
+                        onDrop={({itemLayout, newLayout, containers, commit, dragProps}) => {
+                            previous.current = config;
+                            setConfig(
+                                DashKitGridStack.setItem({
+                                    config: {...config, ...(containers ? {containers} : {})},
+                                    groups,
+                                    item: {type: dragProps.type, data: {}, layout: itemLayout},
+                                    options: {updateLayout: newLayout},
+                                }),
+                            );
+                            setDrops((count) => count + 1);
+                            commit();
+                        }}
                     />
                 </div>
                 <pre data-qa="saved-config">{JSON.stringify(config)}</pre>
@@ -913,3 +1017,10 @@ export const NestedBounds: StoryFn = () => {
         </DashKitDnDWrapper>
     );
 };
+
+export const PreviewOverlap: StoryFn<typeof PreviewOverlapFixture> = (args) => (
+    <PreviewOverlapFixture {...args} />
+);
+PreviewOverlap.args = {nested: false, allowOverlap: false, compactType: null};
+
+export {PaletteDocument} from './PaletteDocument';

@@ -130,5 +130,130 @@ for (const legacy of [false, true]) {
                 horizontal,
             });
         });
+
+        for (const paletteY of legacy ? [5] : [5, 30]) {
+            test(`finite nowrap rejects unavailable palette space and commits valid drops at row pointer ${paletteY}`, async ({
+                page,
+                evidence,
+            }) => {
+                const {frames, snapshot} = boundary(page);
+                await page.goto(storyUrl('tests-gridstack--finite-nowrap'));
+                await page.locator('[data-widget-id="b"]').waitFor();
+                const full = await snapshot();
+                const fullHandle = await page
+                    .locator(
+                        ':is([data-dashkit-id="a"], [data-qa="dashkit-grid-item"]:has([data-widget-id="a"])) :is(.ui-resizable-se, .react-resizable-handle-se)',
+                    )
+                    .boundingBox();
+                const fx = checked(fullHandle).x + checked(fullHandle).width / 2,
+                    fy = checked(fullHandle).y + checked(fullHandle).height / 2;
+                await page.mouse.move(fx, fy);
+                await page.mouse.down();
+                await page.mouse.move(fx + 5, fy);
+                await page.mouse.move(fx + 108, fy, {steps: 8});
+                await page.mouse.up();
+                await frames();
+                assert.deepEqual((await snapshot()).config, full.config);
+                assert.equal((await snapshot()).events, full.events);
+                await page
+                    .getByRole('button', {name: '+ Widget', exact: true})
+                    .dragTo(page.locator('.grid-stack, .react-grid-layout').first(), {
+                        targetPosition: {x: 450, y: paletteY},
+                    });
+                const noSpace = await snapshot();
+                assert.deepEqual(noSpace.config, full.config);
+                assert.equal(noSpace.events, full.events);
+                assert.equal(
+                    await page
+                        .locator('[data-dashkit-id="__dropping-elem__"], .react-grid-item.dropping')
+                        .count(),
+                    0,
+                );
+                await page.getByRole('button', {name: 'Remove b', exact: true}).click();
+                await frames();
+                await page
+                    .getByRole('button', {name: 'Palette allowed: true', exact: true})
+                    .click();
+                const available = await snapshot();
+                await page
+                    .getByRole('button', {name: '+ Widget', exact: true})
+                    .dragTo(page.locator('.grid-stack, .react-grid-layout').first(), {
+                        targetPosition: {x: 450, y: paletteY},
+                    });
+                assert.deepEqual((await snapshot()).config, available.config);
+                assert.equal(
+                    await page
+                        .locator('[data-dashkit-id="__dropping-elem__"], .react-grid-item.dropping')
+                        .count(),
+                    0,
+                );
+                await page
+                    .getByRole('button', {name: 'Palette allowed: false', exact: true})
+                    .click();
+                const source = await page
+                    .getByRole('button', {name: '+ Widget', exact: true})
+                    .boundingBox();
+                const root = await page
+                    .locator('.grid-stack, .react-grid-layout')
+                    .first()
+                    .boundingBox();
+                await page.mouse.move(
+                    checked(source).x + checked(source).width / 2,
+                    checked(source).y + checked(source).height / 2,
+                );
+                await page.mouse.down();
+                await page.mouse.move(checked(root).x + 450, checked(root).y + paletteY, {
+                    steps: 12,
+                });
+                await page.mouse.move(checked(root).x + 460, checked(root).y + paletteY);
+                await frames();
+                await page
+                    .locator('[data-dashkit-id="__dropping-elem__"], .react-grid-item.dropping')
+                    .waitFor({state: 'visible'});
+                assert.equal(
+                    await page
+                        .locator('[data-dashkit-id="__dropping-elem__"], .react-grid-item.dropping')
+                        .count(),
+                    1,
+                );
+                await page.mouse.move(850, 650, {steps: 8});
+                await page.mouse.up();
+                await frames();
+                assert.equal(
+                    await page
+                        .locator('[data-dashkit-id="__dropping-elem__"], .react-grid-item.dropping')
+                        .count(),
+                    0,
+                );
+                assert.deepEqual((await snapshot()).config, available.config);
+                await page
+                    .getByRole('button', {name: '+ Widget', exact: true})
+                    .dragTo(page.locator('.grid-stack, .react-grid-layout').first(), {
+                        targetPosition: {x: 450, y: paletteY},
+                    });
+                const committed = await snapshot();
+                assert.equal(committed.config.items.length, 2);
+                assert.equal(committed.events, 'Events: 0');
+                assert.equal(await page.locator('[data-qa="drop-count"]').textContent(), '1');
+                assert.equal(
+                    committed.config.layout.reduce((sum, entry) => sum + entry.w, 0),
+                    12,
+                );
+                assert(committed.config.layout.every(({y, h}) => y === 0 && h === 2));
+                assert.equal(
+                    await page
+                        .locator('[data-dashkit-id="__dropping-elem__"], .react-grid-item.dropping')
+                        .count(),
+                    0,
+                );
+                evidence.push({
+                    check: 'finite nowrap native no-space drop, validator false, canceled preview cleanup then valid commit consumes only remaining width',
+                    full,
+                    noSpace,
+                    available,
+                    committed,
+                });
+            });
+        }
     });
 }

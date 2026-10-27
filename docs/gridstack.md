@@ -23,6 +23,20 @@ The synchronous `change` event precedes `onChange`. Calling `event.preventDefaul
 
 `onItemMountChange` and `onItemRender` describe plugin readiness. A layout event does not mean asynchronous content has finished rendering. Automatic widget height remains a visual adjustment; the original saved height is retained until an explicit resize or reset follows the existing DashKit contract. GridStack does not add lazy mount suppression to React plugins.
 
+For palette drops, `onDrop` includes optional `containers` alongside `newLayout` and `itemLayout`. They are one preview snapshot: preserve the container positions when adding the widget, including containers displaced by a root drop. The pending preview retains that snapshot until `commit()` clears it. Calling `commit()` without replacing the controlled configuration cancels the pending addition and restores the prior geometry. Flat callers retain the existing payload and behavior.
+
+```tsx
+onDrop={({newLayout, containers, itemLayout, dragProps, commit}) => {
+  setConfig(DashKitGridStack.setItem({
+    config: {...config, ...(containers ? {containers} : {})},
+    groups,
+    item: {type: dragProps.type, data: {}, layout: itemLayout},
+    options: {updateLayout: newLayout},
+  }));
+  commit();
+}}
+```
+
 ## Grid settings
 
 `groups` remain runtime zones, with the existing `render` and `gridProperties` functions. The implementation supports vertical, horizontal, horizontal-nowrap and disabled compaction, overlap, collision prevention, size constraints, bounds, resize directions and custom resize handles. The legacy `verticalCompact: false` disables compaction.
@@ -76,7 +90,7 @@ const nested = {
 
 The component validates duplicate/reserved IDs, geometry, padding, gaps, missing membership, cycles and inconsistent root zones before applying a document. Invalid input throws an explanatory error. The measured geometry and snapshot projection also reject nonpositive usable content width/height or children exceeding their container bounds; padding does not silently enlarge a saved container. Remove or move a container's children explicitly before deleting it; removing a nonempty container does not silently delete its subtree. Pass a nested configuration to `DashKitGridStack`; the legacy component explicitly rejects it.
 
-Controlled changes can move widgets between zones and containers while preserving their plugin instance and portal target. Native dragging supports cross-zone and nested transfers, including whole container subtrees. Destinations validate available space and converted size constraints before admission. A release outside the reachable surface commits the last bounded preview; Escape cancels the transaction. External palette drops are not supported by this renderer. Resizing a container respects the extents of its children. Mobile mode traverses the hierarchy and renders each widget once using the existing mobile presentation.
+Controlled changes can move widgets between zones and containers while preserving their plugin instance and portal target. Native dragging supports cross-zone and nested transfers, including whole container subtrees. Destinations validate available space and converted size constraints before admission. A release outside the reachable surface commits the last bounded preview; Escape cancels the transaction. Palette dragging previews collision changes without saving them; rejected or canceled drops restore neighbors and leave the next edit usable. Resizing a container respects the extents of its children. Mobile mode traverses the hierarchy and renders each widget once using the existing mobile presentation.
 
 For snapshots, import `getGridStackLayoutRects` and its rectangle/root-grid types from `@gravity-ui/dashkit/helpers`. `getGridStackLayoutRects(config, rootGrids)` returns widget rectangles in unscaled CSS pixels, accumulating container origins and padding. Supply each root zone's width and effective `gridProperties`; use `__default` for the default zone. It does not mount a grid, mutate a configuration or wait for plugin content.
 

@@ -23,11 +23,13 @@ jest.mock('@gravity-ui/uikit', () => {
 
 import React from 'react';
 
-import {act, render} from '@testing-library/react';
+import {act, fireEvent, render} from '@testing-library/react';
 
 import {DEFAULT_GROUP} from '../../../constants';
 import type {Config, GridStackContainer} from '../../../shared';
 import type {DashKitGroup, PluginWidgetProps} from '../../../typings';
+import {ActionPanel} from '../../ActionPanel/ActionPanel';
+import {DashKitDnDWrapper} from '../../DashKitDnDWrapper/DashKitDnDWrapper';
 import {DashKitGridStack} from '../DashKitGridStack';
 import {requireValue} from '../invariants';
 import {GridStack} from '../runtime';
@@ -211,6 +213,175 @@ test('native final proposal validation rejects overflow before emitting and reta
     expect(view.container.querySelector('[data-identity]')).toBe(plugin);
     view.unmount();
 });
+
+// Critical: yes. Canceling an add must not persist displaced neighbors on the next save.
+test.each([
+    'dragend',
+    'leave',
+    'veto',
+    'fit',
+    'drop-bounds',
+    'drop-error',
+    'controlled',
+    'edit-off',
+] as const)(
+    'palette collision followed by %s restores neighbors before a later saved gesture',
+    async (cancellation) => {
+        const flat: Config = {
+            ...config,
+            containers: undefined,
+            layoutVersion: undefined,
+            items: [config.items[0], {...config.items[0], id: 'b'}],
+            layout: [
+                {i: 'a', x: 0, y: 0, w: 3, h: 2},
+                {i: 'b', x: 8, y: 0, w: 3, h: 2},
+            ],
+        };
+        const onChange = jest.fn();
+        let allowed = true;
+        const groups = [
+            {
+                gridProperties: () => ({
+                    cols: 12,
+                    rowHeight: 18,
+                    margin: [0, 0] as [number, number],
+                    containerPadding: [0, 0] as [number, number],
+                    compactType: null,
+                }),
+            },
+        ];
+        const fixture = (document = flat, editMode = true) => (
+            <DashKitDnDWrapper onDropDragOver={() => allowed}>
+                <div>
+                    <ActionPanel
+                        items={[
+                            {
+                                id: 'add',
+                                icon: '+',
+                                title: 'Add',
+                                dragProps: {type, layout: {w: 3, h: 2}},
+                            },
+                        ]}
+                    />
+                    <DashKitGridStack
+                        config={document}
+                        editMode={editMode}
+                        groups={groups}
+                        onChange={onChange}
+                        onDrop={() => {
+                            if (cancellation === 'drop-error') {
+                                throw new Error('drop rejected');
+                            }
+                        }}
+                    />
+                </div>
+            </DashKitDnDWrapper>
+        );
+        const view = render(fixture());
+        const root = view.container.querySelector('.grid-stack') as HTMLElement & {
+            gridstack: {
+                engine: GridStack['engine'];
+                triggerEvent(event: Event, target: HTMLElement): void;
+            };
+        };
+        const host = view.container.querySelector(
+            '[data-dashkit-id="a"]',
+        ) as import('../runtime').GridItemHTMLElement;
+        const next = view.container.querySelector(
+            '[data-dashkit-id="b"]',
+        ) as import('../runtime').GridItemHTMLElement;
+        const identity = host.querySelector('[data-identity]');
+        jest.spyOn(root, 'getBoundingClientRect').mockReturnValue({
+            left: 0,
+            top: 0,
+            right: 640,
+            bottom: 400,
+            width: 640,
+            height: 400,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+        });
+        const over = (x = 0, y = 0) => {
+            const event = new Event('dragover', {bubbles: true, cancelable: true});
+            Object.assign(event, {clientX: x, clientY: y});
+            fireEvent(root, event);
+        };
+        fireEvent.dragStart(view.getByRole('button', {name: '+ Add'}), {
+            dataTransfer: {setDragImage: jest.fn()},
+        });
+        over();
+        expect(requireValue(host.gridstackNode, 'host.gridstackNode').y).toBe(2);
+        expect(onChange).not.toHaveBeenCalled();
+        let expected = flat.layout[0];
+        if (cancellation === 'dragend') {
+            fireEvent.dragEnd(window);
+        }
+        if (cancellation === 'leave') {
+            const event = new Event('dragleave', {bubbles: true});
+            Object.assign(event, {clientX: -1, clientY: -1, relatedTarget: null});
+            fireEvent(root, event);
+        }
+        if (cancellation === 'veto') {
+            allowed = false;
+            over();
+        }
+        if (cancellation === 'fit') {
+            const fit = jest.spyOn(root.gridstack.engine, 'willItFit').mockReturnValue(false);
+            over();
+            fit.mockRestore();
+        }
+        if (cancellation === 'drop-error') {
+            const errors: string[] = [];
+            const reject = (event: ErrorEvent) => {
+                errors.push(event.message);
+                event.preventDefault();
+            };
+            window.addEventListener('error', reject);
+            fireEvent.drop(root);
+            window.removeEventListener('error', reject);
+            expect(errors).toEqual(['drop rejected']);
+        }
+        if (cancellation === 'drop-bounds') {
+            root.gridstack.engine.maxRow = 1;
+            fireEvent.drop(root);
+        }
+        if (cancellation === 'controlled') {
+            expected = {...expected, x: 1, y: 1};
+            view.rerender(fixture({...flat, layout: [expected, flat.layout[1]]}));
+            fireEvent.dragEnd(window);
+        }
+        if (cancellation === 'edit-off') {
+            view.rerender(fixture(flat, false));
+        }
+        expect(host.gridstackNode).toMatchObject({
+            id: expected.i,
+            x: expected.x,
+            y: expected.y,
+            w: expected.w,
+            h: expected.h,
+        });
+        expect(view.container.querySelectorAll('[data-dashkit-id]')).toHaveLength(2);
+        expect(host.querySelector('[data-identity]')).toBe(identity);
+        expect(onChange).not.toHaveBeenCalled();
+        if (cancellation === 'edit-off') {
+            view.rerender(fixture());
+        }
+        await act(async () => {
+            root.gridstack.triggerEvent(new Event('dragstart'), next);
+            root.gridstack.engine.moveNodeCheck(
+                requireValue(next.gridstackNode, 'next.gridstackNode'),
+                {x: 7, y: 0},
+            );
+            root.gridstack.triggerEvent(new Event('dragstop'), next);
+            await Promise.resolve();
+        });
+        expect(onChange).toHaveBeenCalledTimes(1);
+        expect(onChange.mock.calls[0][0].config.layout[0]).toMatchObject(expected);
+        expect(onChange.mock.calls[0][0].config.layout[1]).toMatchObject({i: 'b', x: 7, y: 0});
+        view.unmount();
+    },
+);
 
 // Critical: yes. Child-grid columns must not shrink an unrelated saved root widget.
 test.each([2, 20])(

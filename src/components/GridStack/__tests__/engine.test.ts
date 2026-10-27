@@ -102,6 +102,20 @@ test('finite nowrap fit rejects a second row even when vertical bounds have room
     ]);
 });
 
+// Critical: yes. Repeated native palette motion must keep a fitting preview instead of flickering/rejecting it.
+test('nowrap fit excludes the existing preview from both width budget and simulation', () => {
+    const engine = new DashKitEngine({column: 12, maxRow: 4});
+    engine.mode = {compactType: 'horizontal-nowrap'};
+    engine.addNode({id: 'saved', x: 0, y: 0, w: 8, h: 2});
+    engine.addNode({id: 'preview', x: 8, y: 0, w: 4, h: 2});
+    const before = nodes(engine);
+    for (let motion = 0; motion < 3; motion++) {
+        expect(engine.willItFit({id: 'preview', x: 8, y: 0, w: 4, h: 2})).toBe(true);
+    }
+    expect(nodes(engine)).toEqual(before);
+    expect(engine.willItFit({id: 'another', w: 1, h: 1})).toBe(false);
+});
+
 // Critical: yes. Packing must not silently rewrite an allowed overlapping gesture before save.
 test.each([null, 'vertical', 'horizontal', 'horizontal-nowrap'] as const)(
     'public engine move respects overlap with %s compaction',

@@ -581,7 +581,7 @@ function useMemoStateContext(
     }, [dragPropsContext, props.registerManager]);
 
     const onDropDragOver = React.useCallback<DashKitCtxShape['onDropDragOver']>(
-        (_e, group, gridProps, groupLayout, sharedItem) => {
+        (_e, group, gridProps, groupLayout, sharedItem, defaultsOverride) => {
             if (temporaryLayout) {
                 resetTemporaryLayout();
                 return false;
@@ -603,7 +603,7 @@ function useMemoStateContext(
                     : {h, w};
             } else if (dragOverPlugin) {
                 dragItemType = dragOverPlugin.type;
-                defaultLayout = dragOverPlugin.defaultLayout;
+                defaultLayout = {...dragOverPlugin.defaultLayout, ...defaultsOverride};
             } else {
                 return false;
             }
@@ -633,7 +633,7 @@ function useMemoStateContext(
             const {
                 h = defaultLayout?.h || DEFAULT_WIDGET_HEIGHT,
                 w = defaultLayout?.w || DEFAULT_WIDGET_WIDTH,
-            } = dragPropsContext?.layout || {};
+            } = defaultsOverride || dragPropsContext?.layout || {};
 
             const itemLayout = {
                 h: maxH ? Math.min(h, maxH) : h,
@@ -668,13 +668,14 @@ function useMemoStateContext(
 
     const onDropProp = props.onDrop;
     const onDrop = React.useCallback<DashKitCtxShape['onDrop']>(
-        (newLayout, item) => {
+        (newLayout, item, _event, nextContainers) => {
             if (!dragPropsContext) {
                 return;
             }
 
             setTemporaryLayout({
                 data: [...newLayout, item],
+                ...(nextContainers !== undefined ? {containers: nextContainers} : {}),
                 dragProps: dragPropsContext,
             });
 
@@ -687,6 +688,7 @@ function useMemoStateContext(
 
                         return memo;
                     }, []),
+                    ...(nextContainers !== undefined ? {containers: nextContainers} : {}),
                     itemLayout: pick(item, CONFIG_LAYOUT_FIELDS),
                     commit: resetTemporaryLayout,
                     dragProps: dragPropsContext,
@@ -722,7 +724,7 @@ function useMemoStateContext(
             forwardedMetaRef: props.forwardedMetaRef,
 
             layout: resultLayout,
-            containers,
+            containers: temporaryLayout?.containers ?? containers,
             temporaryLayout,
             layoutChange: onLayoutChange,
             memorizeOriginalLayout,
@@ -739,6 +741,7 @@ function useMemoStateContext(
             onDropDragOver,
             outerDnDEnable,
             dragOverPlugin,
+            dragProps: dragPropsContext,
 
             onItemFocus: props.onItemFocus,
             onItemBlur: props.onItemBlur,
@@ -782,6 +785,7 @@ function useMemoStateContext(
             props.draggableHandleClassName,
             outerDnDEnable,
             dragOverPlugin,
+            dragPropsContext,
 
             props.onItemFocus,
             props.onItemBlur,
