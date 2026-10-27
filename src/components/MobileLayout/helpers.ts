@@ -32,6 +32,7 @@ export const getSortedConfigItems = (
     hasOrderId: boolean,
 ) => {
     const sortComparator = getWidgetsSortComparator(hasOrderId);
+    const layoutById = new Map(config.layout.map((entry) => [entry.i, entry]));
 
     const containers = config.containers;
     if (containers?.length) {
@@ -65,6 +66,6 @@ export const getSortedConfigItems = (
     }
 
     return configItems
-        .map((item, index) => Object.assign({}, item, config.layout[index]))
+        .map((item) => Object.assign({}, item, layoutById.get(item.id)))
         .sort(sortComparator);
 };

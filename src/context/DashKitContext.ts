@@ -56,6 +56,7 @@ export type DashKitCtxShape = DashkitPropsPassedToCtx & {
     configItems: ConfigItem[];
     layout: ConfigLayout[];
     containers?: GridStackContainer[];
+    adjustedLayoutIds: string[];
     layoutChange: (layout: ConfigLayout[], containers?: GridStackContainer[]) => void;
     temporaryLayout: TemporaryLayout | null;
     memorizeOriginalLayout: (
