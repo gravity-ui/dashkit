@@ -7,6 +7,46 @@ import type {Config} from '../../src/shared';
 import {checked, dropPalette, storyUrl, test} from './fixtures';
 import type {NativeElement} from './types';
 
+test('native palette admission distinguishes sibling containers in one zone', async ({
+    page,
+    evidence,
+}) => {
+    await page.goto(storyUrl('tests-gridstack--palette-admission'));
+    const source = page.getByRole('button', {name: '+ Add', exact: true});
+    const saved = async (): Promise<Config> =>
+        JSON.parse(checked(await page.locator('[data-qa="saved-config"]').textContent()));
+    const before = await saved();
+    const blocked = page.locator('[data-dashkit-id="blocked"] .grid-stack');
+    const allowed = page.locator('[data-dashkit-id="allowed"] .grid-stack');
+    await blocked.waitFor();
+    await source.dragTo(blocked, {targetPosition: {x: 100, y: 100}});
+    await expect(page.locator('[data-qa="admission-target"]')).toHaveAttribute(
+        'data-container-id',
+        'blocked',
+    );
+    await expect(page.locator('[data-dashkit-id="__dropping-elem__"]')).toHaveCount(0);
+    await expect(page.locator('[data-qa="drop-count"]')).toHaveText('0');
+    assert.deepEqual(await saved(), before);
+
+    await dropPalette(page, source, allowed, {x: 100, y: 100});
+    await expect(page.locator('[data-qa="admission-target"]')).toHaveAttribute(
+        'data-container-id',
+        'allowed',
+    );
+    await expect(page.locator('[data-qa="drop-count"]')).toHaveText('1');
+    assert.deepEqual(await saved(), before, 'pending drop must not save');
+    await page.getByRole('button', {name: 'Apply drop'}).click();
+    await expect.poll(async () => (await saved()).items.length).toBe(1);
+    const after = await saved();
+    assert.equal(after.layout[0].containerId, 'allowed');
+    assert.equal(after.layout[0].parent, undefined);
+    evidence.push({
+        check: 'sibling container admission gates preview and saved membership',
+        before,
+        after,
+    });
+});
+
 // Critical: yes. Native container displacement must survive public controlled palette saves.
 // Widget-only payload checks miss overlapping saved containers and lost descendant geometry.
 test('native palette keeps displaced subtree through pending drop, cancel and controlled apply', async ({

@@ -36,44 +36,79 @@ const groups: DashKitGroup[] = [
     },
 ];
 
-export function PaletteDocument() {
-    const [config, setConfig] = React.useState<Config>({
-        salt: 'palette',
-        counter: 1,
-        aliases: {},
-        connections: [],
-        layoutVersion: 2,
-        items: [{id: 'child', type, namespace: 'default', data: {}}],
-        layout: [{i: 'child', containerId: 'inner', x: 1, y: 0, w: 1, h: 1}],
-        containers: [
-            {
-                id: 'box',
-                x: 4,
-                y: 0,
-                w: 4,
-                h: 4,
-                padding: [0, 0, 0, 0],
-                gap: [0, 0],
-                grid: {cols: 4, rowHeight: 40, compactType: null},
-            },
-            {
-                id: 'inner',
-                containerId: 'box',
-                x: 1,
-                y: 1,
-                w: 2,
-                h: 2,
-                padding: [0, 0, 0, 0],
-                gap: [0, 0],
-                grid: {cols: 2, rowHeight: 40, compactType: null},
-            },
-        ],
-    });
+export function PaletteDocument({admission = false}: {admission?: boolean}) {
+    const [config, setConfig] = React.useState<Config>(
+        admission
+            ? {
+                  salt: 'palette',
+                  counter: 1,
+                  aliases: {},
+                  connections: [],
+                  layoutVersion: 2,
+                  items: [],
+                  layout: [],
+                  containers: ['blocked', 'allowed'].map((id, index) => ({
+                      id,
+                      x: index * 6,
+                      y: 0,
+                      w: 5,
+                      h: 4,
+                      padding: [0, 0, 0, 0],
+                      gap: [0, 0],
+                      grid: {cols: 5, rowHeight: 40, compactType: null},
+                  })),
+              }
+            : {
+                  salt: 'palette',
+                  counter: 1,
+                  aliases: {},
+                  connections: [],
+                  layoutVersion: 2,
+                  items: [{id: 'child', type, namespace: 'default', data: {}}],
+                  layout: [{i: 'child', containerId: 'inner', x: 1, y: 0, w: 1, h: 1}],
+                  containers: [
+                      {
+                          id: 'box',
+                          x: 4,
+                          y: 0,
+                          w: 4,
+                          h: 4,
+                          padding: [0, 0, 0, 0],
+                          gap: [0, 0],
+                          grid: {cols: 4, rowHeight: 40, compactType: null},
+                      },
+                      {
+                          id: 'inner',
+                          containerId: 'box',
+                          x: 1,
+                          y: 1,
+                          w: 2,
+                          h: 2,
+                          padding: [0, 0, 0, 0],
+                          gap: [0, 0],
+                          grid: {cols: 2, rowHeight: 40, compactType: null},
+                      },
+                  ],
+              },
+    );
     const [pending, setPending] = React.useState<ItemDropProps>();
     const [drops, setDrops] = React.useState(0);
     const [changes, setChanges] = React.useState(0);
+    const admissionTarget = React.useRef<HTMLSpanElement>(null);
     return (
-        <DashKitDnDWrapper>
+        <DashKitDnDWrapper
+            onDropDragOver={
+                admission
+                    ? (item) => {
+                          admissionTarget.current?.setAttribute(
+                              'data-container-id',
+                              item.containerId || '',
+                          );
+                          return item.containerId === 'allowed';
+                      }
+                    : undefined
+            }
+        >
             <div style={{paddingTop: 100}}>
                 <ActionPanel items={[{id: 'add', icon: '+', title: 'Add', dragProps: {type}}]} />
                 <button
@@ -126,6 +161,7 @@ export function PaletteDocument() {
                 <pre data-qa="saved-config">{JSON.stringify(config)}</pre>
                 <span data-qa="drop-count">{drops}</span>
                 <span data-qa="change-count">{changes}</span>
+                {admission && <span ref={admissionTarget} data-qa="admission-target" />}
             </div>
         </DashKitDnDWrapper>
     );

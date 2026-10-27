@@ -1184,6 +1184,7 @@ class GridStackCanvas extends React.PureComponent {
             ),
             undefined,
             defaults,
+            record.containerId,
         );
         if (sizes === false) {
             this.clearPreview();

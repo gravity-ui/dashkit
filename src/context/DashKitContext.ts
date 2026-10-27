@@ -93,6 +93,7 @@ export type DashKitCtxShape = DashkitPropsPassedToCtx & {
         groupLayout: ConfigLayout[],
         sharedItem?: DraggedOverItem,
         defaultsOverride?: Partial<import('../typings').WidgetLayout>,
+        containerId?: string,
     ) => {w?: number; h?: number} | false | undefined;
     outerDnDEnable: boolean;
     dragOverPlugin: null | RegisterManagerPlugin;

@@ -585,7 +585,7 @@ function useMemoStateContext(
     }, [dragPropsContext, props.registerManager]);
 
     const onDropDragOver = React.useCallback<DashKitCtxShape['onDropDragOver']>(
-        (_e, group, gridProps, groupLayout, sharedItem, defaultsOverride) => {
+        (_e, group, gridProps, groupLayout, sharedItem, defaultsOverride, containerId) => {
             if (temporaryLayout) {
                 resetTemporaryLayout();
                 return false;
@@ -650,6 +650,7 @@ function useMemoStateContext(
                         ...sharedItem,
                         ...itemLayout,
                         parent: group,
+                        ...(containerId ? {containerId} : {}),
                         type: dragItemType,
                     },
                     sharedItem ?? null,
