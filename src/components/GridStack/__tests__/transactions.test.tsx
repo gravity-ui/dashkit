@@ -685,6 +685,50 @@ test('palette newLayout keeps saved autoheight while pending nodes keep visual h
     });
 });
 
+// Critical: yes. An unresolved add cannot leak collision displacement into native saves.
+test.each(['drag', 'resize'])(
+    'pending palette drop blocks native %s and next gesture works after cancel',
+    async (gesture) => {
+        const f = paletteTransaction();
+        f.start();
+        f.over();
+        f.drop();
+        expect(f.host('a').gridstackNode?.y).toBe(2);
+        const next = f.host('b');
+        const grid = f.root.gridstack;
+        // Exercise the native event seam as well as the DD enablement boundary.
+        await act(async () => {
+            grid.triggerEvent(new Event(`${gesture}start`), next);
+            grid.triggerEvent(new Event(`${gesture}stop`), next);
+            await Promise.resolve();
+        });
+        expect(f.onChange).not.toHaveBeenCalled();
+        expect(f.onDragStart).not.toHaveBeenCalled();
+        expect(f.onResizeStart).not.toHaveBeenCalled();
+        expect(grid.opts.disableDrag).toBe(true);
+        expect(grid.opts.disableResize).toBe(true);
+        act(() => f.onDrop.mock.calls[0][0].commit());
+        expect(f.host('a').gridstackNode?.y).toBe(0);
+        expect(grid.opts.disableDrag).toBeFalsy();
+        expect(grid.opts.disableResize).toBeFalsy();
+        await act(async () => {
+            grid.triggerEvent(new Event(`${gesture}start`), next);
+            grid.engine.moveNodeCheck(
+                requireValue(next.gridstackNode, 'node'),
+                gesture === 'drag' ? {x: 7} : {h: 3, resizing: true},
+            );
+            grid.triggerEvent(new Event(`${gesture}stop`), next);
+            await Promise.resolve();
+        });
+        expect(f.onChange).toHaveBeenCalledTimes(1);
+        expect(f.onChange.mock.calls[0][0].config.layout[0]).toEqual(f.flat.layout[0]);
+        expect(f.onChange.mock.calls[0][0].config.layout[1]).toMatchObject(
+            gesture === 'drag' ? {x: 7} : {h: 3},
+        );
+        f.view.unmount();
+    },
+);
+
 // Critical: yes. A late async completion cannot cancel a newer user's pending addition.
 test.each(['older-first', 'newer-first'])(
     'palette commits own their pending snapshot in %s order',

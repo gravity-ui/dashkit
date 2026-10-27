@@ -422,7 +422,14 @@ class GridStackCanvas extends React.PureComponent {
     }
     private syncDragHandle(id: string) {
         const host = this.hosts.get(id);
-        if (!host || !this.mounted || host.container || this.active || this.preview) {
+        if (
+            !host ||
+            !this.mounted ||
+            host.container ||
+            this.active ||
+            this.preview ||
+            this.context.temporaryLayout
+        ) {
             return;
         }
         const custom = this.context.draggableHandleClassName;
@@ -773,8 +780,10 @@ class GridStackCanvas extends React.PureComponent {
         record.grid.margin(`0 ${gapX}px ${gapY}px 0`);
         const handles = (properties.resizeHandles || ['se']).join(',');
         record.grid.opts.resizable = {...record.grid.opts.resizable, handles};
-        const canMove = properties.isDraggable ?? this.context.editMode;
+        const canMove =
+            !this.context.temporaryLayout && (properties.isDraggable ?? this.context.editMode);
         const canResize =
+            !this.context.temporaryLayout &&
             (properties.isResizable ?? this.context.editMode) &&
             properties.resizeHandles?.length !== 0;
         if (Boolean(record.grid.opts.disableDrag) !== !canMove) {
@@ -961,6 +970,9 @@ class GridStackCanvas extends React.PureComponent {
         return accepted;
     }
     private start(event: Event, el: GridItemHTMLElement) {
+        if (this.context.temporaryLayout) {
+            return;
+        }
         this.clearPreview();
         for (const {grid} of this.grids.values()) {
             (grid.engine as DashKitEngine).dropSize = undefined;
