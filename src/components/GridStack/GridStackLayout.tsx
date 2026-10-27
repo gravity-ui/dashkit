@@ -258,7 +258,12 @@ class GridStackCanvas extends React.PureComponent {
             </div>
         );
     }
-    getItemsMeta = () => this.context.getItemsMeta([...this.plugins.values()]);
+    getItemsMeta = () =>
+        this.context.getItemsMeta(
+            this.context.configItems
+                .map(({id}) => this.plugins.get(id))
+                .filter((ref): ref is PluginRef => ref !== undefined),
+        );
     reloadItems = ({targetIds, force}: {targetIds?: string[]; force?: boolean} = {}) => {
         const {settings, editMode} = this.context;
         const interval = Number(settings.autoupdateInterval) * 1000;
