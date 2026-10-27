@@ -409,6 +409,9 @@ function useMemoStateContext(
             });
             setVisualLayout(enrichedPropsLayout);
             setExternalLayoutRevision((r) => r + 1);
+        } else if (!layoutAdapter.optimistic) {
+            // Controlled renderers receive saved geometry only when the host acknowledges it.
+            setVisualLayout(enrichedPropsLayout);
         }
     }
 
