@@ -238,14 +238,25 @@ function useMemoStateContext(
                 emitDashKitEvent: props.emitDashKitEvent,
             });
 
-            internalBaselineLayoutRef.current = newConfig.layout;
+            // Compare acknowledgments with the defaults in effect when this edit was saved.
+            internalBaselineLayoutRef.current = enrichLayoutWithDefaults(
+                newConfig,
+                props.registerManager,
+            );
             baselineContainers.current = nextContainers;
             if (layoutAdapter.optimistic) {
                 setVisualLayout(currentInnerLayout);
                 setContainers(nextContainers);
             }
         },
-        [getBaselineLayout, props.config, layoutAdapter, props.emitDashKitEvent, onChange],
+        [
+            getBaselineLayout,
+            props.config,
+            props.registerManager,
+            layoutAdapter,
+            props.emitDashKitEvent,
+            onChange,
+        ],
     );
 
     const getLayoutItem = React.useCallback(
@@ -437,6 +448,9 @@ function useMemoStateContext(
             });
             setVisualLayout(enrichedPropsLayout);
             setExternalLayoutRevision((r) => r + 1);
+        } else if (!layoutAdapter.optimistic) {
+            // Controlled renderers receive saved geometry only when the host acknowledges it.
+            setVisualLayout(enrichedPropsLayout);
         }
     }
 

@@ -95,6 +95,10 @@ class Widget extends React.Component<PluginWidgetProps> {
                 >
                     No-op {this.props.id}
                 </button>
+                <output data-layout={this.props.id}>{JSON.stringify(this.props.layout)}</output>
+                <output data-context-layout={this.props.id}>
+                    {JSON.stringify(this.context.layout)}
+                </output>
                 <output data-params={this.props.id}>{JSON.stringify(this.props.params)}</output>
                 <output data-state={this.props.id}>{JSON.stringify(this.props.state)}</output>
                 {this.props.data.group?.map((selector) => (
@@ -264,6 +268,51 @@ describe.each(LAYOUT_ENGINES)('[%s] common flat DashKit contract', (_engine, Com
         });
     };
 
+    // Critical: yes. Idle acknowledgment must deliver saved geometry to plugin props and context.
+    test.each(['same', 'clone'] as const)(
+        '%s idle acknowledgment delivers moved and resized layout',
+        async (acknowledgment) => {
+            const original = JSON.stringify(config);
+            const onChange = jest.fn();
+            const view = render(
+                <Component config={config} groups={groups} editMode onChange={onChange} />,
+            );
+            const acknowledge = (expected: {x: number; y: number; w: number; h: number}) => {
+                const saved: Config = onChange.mock.calls.at(-1)[0].config;
+                const before = JSON.stringify(saved);
+                const accepted = acknowledgment === 'same' ? saved : JSON.parse(before);
+                view.rerender(
+                    <Component config={accepted} groups={groups} editMode onChange={onChange} />,
+                );
+                expect(saved.layout[0]).toMatchObject(expected);
+                expect(geometry(view.container, 'a')).toEqual(expected);
+                for (const selector of ['data-layout', 'data-context-layout']) {
+                    expect(rects(jsonOutput(view.container, `[${selector}="a"]`))).toEqual(
+                        rects(saved.layout),
+                    );
+                }
+                expect(JSON.stringify(saved)).toBe(before);
+                expect(JSON.stringify(accepted)).toBe(before);
+                expect(JSON.stringify(config)).toBe(original);
+            };
+            await drag(view.container, 'a', 50);
+            acknowledge({x: 1, y: 0, w: 2, h: 2});
+            expect(onChange).toHaveBeenCalledTimes(1);
+            const handle = view.container.querySelector(
+                '[data-qa="dashkit-grid-item"] .react-resizable-handle-se, [data-dashkit-id="a"] > .ui-resizable-se',
+            );
+            assert(handle);
+            fireEvent.mouseDown(handle, {button: 0, clientX: 150, clientY: 40, buttons: 1});
+            fireEvent.mouseMove(document, {clientX: 200, clientY: 60, buttons: 1});
+            fireEvent.mouseUp(document, {clientX: 200, clientY: 60});
+            await act(async () => {
+                await Promise.resolve();
+            });
+            acknowledge({x: 1, y: 0, w: 3, h: 3});
+            expect(onChange).toHaveBeenCalledTimes(2);
+        },
+    );
+
     // Critical: yes. Wrong propagation after save/restore silently changes chart data.
     // Unlike helper tests, this checks delivered plugin output after UI actions on each renderer.
     test('multi-selector queue, aliases, ignores, namespaces and tabs survive gesture and controlled restore', async () => {
@@ -417,7 +466,10 @@ describe.each(LAYOUT_ENGINES)('[%s] common flat DashKit contract', (_engine, Com
                 {id: 'a', groupItemId: 'year'},
             ],
         });
-        const beforeGesture = {config: currentDocument, itemsStateAndParams: currentState};
+        const beforeGesture = {
+            config: currentDocument,
+            itemsStateAndParams: JSON.parse(JSON.stringify(currentState)),
+        };
         const outputs = ['a', 'b', 'other', 'ignored'].map(params);
         changed.mockClear();
         await drag(view.container, 'b', 50);
