@@ -29,10 +29,11 @@ import React from 'react';
 
 import {act, render} from '@testing-library/react';
 
-import {DashKitContext, DashkitOverlayControlsContext} from '../../../context';
+import {TEMPORARY_ITEM_ID} from '../../../constants/common';
+import {DashKitContext, DashKitDnDContext, DashkitOverlayControlsContext} from '../../../context';
 import type {DashKitCtxShape, OverlayControlsCtxShape} from '../../../context';
 import {type DashKitWithContextProps, withContext} from '../../../hocs/withContext';
-import type {Config} from '../../../shared';
+import type {Config, ItemDropProps} from '../../../shared';
 import {RegisterManager} from '../../../utils';
 import {gridStackLayoutAdapter} from '../../GridStack/layout-adapter';
 import {DashKit, _emitSymbol} from '../DashKit';
@@ -498,6 +499,203 @@ describe.each([
                 expect(change.config.layoutVersion).toBe(2);
             }
             expect(onChange.mock.calls[2][0].config.layout).toEqual([{...config.layout[0], x: 2}]);
+            view.unmount();
+        },
+    );
+});
+
+// Critical: yes. Apply must render saved container geometry under supported StrictMode roots.
+describe.each([
+    ['legacy', TestComponent],
+    ['gridstack', withContext(ContextCapture, gridStackLayoutAdapter)],
+] as const)('%s StrictMode controlled containers', (_engine, Component) => {
+    const containers: NonNullable<Config['containers']> = [
+        {
+            id: 'box',
+            x: 0,
+            y: 0,
+            w: 4,
+            h: 4,
+            padding: [0, 0, 0, 0],
+            gap: [0, 0],
+            grid: {cols: 4, rowHeight: 10, compactType: null},
+        },
+        {
+            id: 'inside',
+            containerId: 'box',
+            x: 0,
+            y: 0,
+            w: 4,
+            h: 4,
+            padding: [0, 0, 0, 0],
+            gap: [0, 0],
+            grid: {cols: 4, rowHeight: 10, compactType: null},
+        },
+    ];
+    const config: Config = {
+        ...createConfig(0),
+        layoutVersion: 2,
+        layout: [{...createConfig(0).layout[0], containerId: 'inside'}],
+        containers,
+    };
+    beforeEach(() => {
+        layoutEffectAction = undefined;
+    });
+
+    it('applies an external container revision before the next edit', () => {
+        const onChange = jest.fn();
+        const props = createProps({config, emitDashKitEvent: jest.fn(), onChange});
+        const view = render(
+            <React.StrictMode>
+                <Component {...props} />
+            </React.StrictMode>,
+        );
+        const external: Config = {
+            ...config,
+            containers: containers.map((container) => ({
+                ...container,
+                y: container.id === 'box' ? 2 : 0,
+            })),
+        };
+
+        view.rerender(
+            <React.StrictMode>
+                <Component {...props} config={external} />
+            </React.StrictMode>,
+        );
+
+        expect(captured.config.containers).toEqual(external.containers);
+        expect(captured.containers).toEqual(external.containers);
+        expect(captured.externalLayoutRevision).toBe(1);
+        expect(onChange).not.toHaveBeenCalled();
+        act(() => captured.layoutChange([{...config.layout[0], x: 1}]));
+        const saved: Config = onChange.mock.calls[0][0].config;
+        expect(saved.containers).toEqual(external.containers);
+        view.rerender(
+            <React.StrictMode>
+                <Component {...props} config={saved} />
+            </React.StrictMode>,
+        );
+        expect(captured.containers).toEqual(saved.containers);
+        expect(captured.layout[0].x).toBe(1);
+        expect(captured.externalLayoutRevision).toBe(1);
+        view.unmount();
+    });
+
+    it('uses the latest external baseline from a callback retained by a child effect', () => {
+        const onChange = jest.fn();
+        const props = createProps({config, emitDashKitEvent: jest.fn(), onChange});
+        const fixture = (document: Config) => (
+            <React.StrictMode>
+                <Component {...props} config={document} />
+            </React.StrictMode>
+        );
+        const view = render(fixture(config));
+        let retainedChange = captured.onItemStateAndParamsChange;
+        layoutEffectAction = (context) => {
+            layoutEffectAction = undefined;
+            retainedChange = context.onItemStateAndParamsChange;
+        };
+        view.rerender(
+            fixture({
+                ...config,
+                containers: containers.map((box) => ({...box, x: box.id === 'box' ? 1 : 0})),
+            }),
+        );
+        const latest = {
+            ...config,
+            containers: containers.map((box) => ({...box, x: box.id === 'box' ? 2 : 0})),
+        };
+        view.rerender(fixture(latest));
+
+        act(() => retainedChange('item1', {state: {clicked: true}}));
+        expect(onChange.mock.calls[0][0].config.containers).toEqual(latest.containers);
+        view.unmount();
+    });
+
+    it('retains the newest child-effect container edit through the parent commit', () => {
+        const onChange = jest.fn();
+        const props = createProps({config, emitDashKitEvent: jest.fn(), onChange});
+        const fixture = (document: Config) => (
+            <React.StrictMode>
+                <Component {...props} config={document} />
+            </React.StrictMode>
+        );
+        const view = render(fixture(config));
+        const external: Config = {
+            ...config,
+            containers: containers.map((container) => ({
+                ...container,
+                y: container.id === 'box' ? 2 : 0,
+            })),
+        };
+        let observedContainers: Config['containers'];
+        layoutEffectAction = (context) => {
+            layoutEffectAction = undefined;
+            observedContainers = context.containers;
+            context.layoutChange([{...config.layout[0], x: 1}]);
+            // Reusing the original array is still a newer committed edit.
+            context.layoutChange([{...config.layout[0], x: 2}], config.containers);
+        };
+
+        view.rerender(fixture(external));
+        expect(observedContainers).toEqual(external.containers);
+        expect(onChange.mock.calls[0][0].config.containers).toEqual(external.containers);
+        act(() => captured.onItemStateAndParamsChange('item1', {state: {clicked: true}}));
+        expect(onChange.mock.calls[2][0].config).toMatchObject({
+            layout: [{...config.layout[0], x: 2}],
+            containers: config.containers,
+        });
+        view.unmount();
+    });
+
+    it.each(['cancel', 'apply'] as const)(
+        'restores the controlled baseline after pending drop %s',
+        (action) => {
+            const props = createProps({config, emitDashKitEvent: jest.fn()});
+            const onDrop = jest.fn();
+            const dragContext = {
+                dragProps: {type: PLUGIN_TYPE},
+                dragImagePreview: null,
+                onDragStart: jest.fn(),
+                onDragEnd: jest.fn(),
+            };
+            const fixture = (document: Config) => (
+                <React.StrictMode>
+                    <DashKitDnDContext.Provider value={dragContext}>
+                        <Component {...props} config={document} onDrop={onDrop} />
+                    </DashKitDnDContext.Provider>
+                </React.StrictMode>
+            );
+            const view = render(fixture(config));
+            const pendingContainers = containers.map((container) => ({
+                ...container,
+                y: container.id === 'box' ? 2 : 0,
+            }));
+            act(() =>
+                captured.onDrop(config.layout, {i: TEMPORARY_ITEM_ID, x: 4, y: 0, w: 2, h: 2}),
+            );
+            expect(captured.containers).toEqual(config.containers);
+            expect(captured.config.containers).toEqual(config.containers);
+            expect(props.onChange).not.toHaveBeenCalled();
+            const drop: ItemDropProps = onDrop.mock.calls[0][0];
+            if (action === 'apply') {
+                view.rerender(
+                    fixture({
+                        ...config,
+                        containers: pendingContainers,
+                        items: [...config.items, {...config.items[0], id: 'item2'}],
+                        layout: [...drop.newLayout, {...drop.itemLayout, i: 'item2'}],
+                    }),
+                );
+                expect(captured.configItems.map(({id}) => id)).toEqual(['item1', 'item2']);
+            }
+            act(() => drop.commit());
+            expect(captured.temporaryLayout).toBeNull();
+            expect(captured.containers).toEqual(
+                action === 'apply' ? pendingContainers : config.containers,
+            );
+            expect(props.onChange).not.toHaveBeenCalled();
             view.unmount();
         },
     );

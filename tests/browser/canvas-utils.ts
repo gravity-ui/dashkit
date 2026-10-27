@@ -60,6 +60,12 @@ export function canvas(page: Page, legacy = false) {
         await page.mouse.down();
         await page.mouse.move(x + Math.sign(dx) * initialStep, y + Math.sign(dy) * initialStep);
         // Let controlled React layouts commit each motion before calculating the next delta.
+        await page.evaluate(
+            () =>
+                new Promise<void>((resolve) =>
+                    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+                ),
+        );
         for (let step = 1; step <= 8; step++) {
             await page.mouse.move(x + (dx * step) / 8, y + (dy * step) / 8);
             await page.evaluate(
