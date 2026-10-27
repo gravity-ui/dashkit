@@ -5,6 +5,11 @@ import {GridStack, Utils} from './runtime';
 import type {DDElementHost, GridItemHTMLElement, GridStackNode, GridStackOptions} from './runtime';
 
 type Transform = {xScale: number; yScale: number; xOffset: number; yOffset: number};
+type NativeDraggable = {
+    dragTransform: Transform;
+    dragOffset?: {offsetX: number; offsetTop: number};
+    helperContainment?: HTMLElement;
+};
 type UI = {position: {left: number; top: number}; size?: {width: number; height: number}};
 type NativeInternals = {
     dragTransform: Transform;
@@ -199,45 +204,90 @@ export class DashKitNativeGrid extends NativeBase {
     refreshScale(el: GridItemHTMLElement) {
         const props = this.properties?.();
         const scale = props?.transformScaleRef?.current ?? props?.transformScale;
-        if (scale === undefined) {
-            return;
-        }
-        if (!Number.isFinite(scale) || scale <= 0) {
+        if (scale !== undefined && (!Number.isFinite(scale) || scale <= 0)) {
             throw new Error('DashKitGridStack: transformScale must be finite and positive');
         }
-        const reciprocal = 1 / scale;
-        this.dragTransform.xScale = this.dragTransform.yScale = reciprocal;
+        const gridTransform =
+            scale === undefined
+                ? Utils.getValuesFromTransformedElement(this.el)
+                : {
+                      xScale: 1 / scale,
+                      yScale: 1 / scale,
+                      xOffset: this.dragTransform.xOffset,
+                      yOffset: this.dragTransform.yOffset,
+                  };
+        const {xScale, yScale} = gridTransform;
+        if (!Number.isFinite(xScale) || xScale <= 0 || !Number.isFinite(yScale) || yScale <= 0) {
+            throw new Error('DashKitGridStack: transformScale must be finite and positive');
+        }
+        this.dragTransform.xScale = xScale;
+        this.dragTransform.yScale = yScale;
+        if (scale === undefined) {
+            this.dragTransform.xOffset = gridTransform.xOffset;
+            this.dragTransform.yOffset = gridTransform.yOffset;
+        }
         const element = el as GridItemHTMLElement & {
             ddElement?: {
-                ddDraggable?: {
-                    dragTransform: Transform;
-                    dragOffset?: {offsetX: number; offsetTop: number};
-                    helperContainment?: HTMLElement;
-                };
+                ddDraggable?: NativeDraggable;
                 ddResizable?: {rectScale: {x: number; y: number}};
             };
         };
         if (element.ddElement?.ddDraggable) {
-            const drag = element.ddElement.ddDraggable;
-            const previous = drag.dragTransform;
-            if (drag.dragOffset && drag.helperContainment && previous.xScale !== reciprocal) {
-                const current = Utils.getValuesFromTransformedElement(drag.helperContainment);
-                // Keep the original unscaled grab point when zoom changes during a drag.
-                drag.dragOffset.offsetX =
-                    ((drag.dragOffset.offsetX + previous.xOffset) * previous.xScale) / reciprocal -
-                    current.xOffset;
-                drag.dragOffset.offsetTop =
-                    ((drag.dragOffset.offsetTop + previous.yOffset) * previous.yScale) /
-                        reciprocal -
-                    current.yOffset;
-                previous.xOffset = current.xOffset;
-                previous.yOffset = current.yOffset;
-            }
-            previous.xScale = previous.yScale = reciprocal;
+            this.refreshDraggableScale(element.ddElement.ddDraggable, scale, xScale, yScale);
         }
         if (element.ddElement?.ddResizable) {
-            element.ddElement.ddResizable.rectScale = {x: reciprocal, y: reciprocal};
+            const resizeTransform =
+                scale === undefined && el.parentElement
+                    ? Utils.getValuesFromTransformedElement(el.parentElement)
+                    : undefined;
+            element.ddElement.ddResizable.rectScale = {
+                x: resizeTransform?.xScale ?? xScale,
+                y: resizeTransform?.yScale ?? yScale,
+            };
         }
+    }
+
+    private refreshDraggableScale(
+        drag: NativeDraggable,
+        scale: number | undefined,
+        xScale: number,
+        yScale: number,
+    ) {
+        const previous = drag.dragTransform;
+        const current =
+            scale === undefined && drag.helperContainment
+                ? Utils.getValuesFromTransformedElement(drag.helperContainment)
+                : undefined;
+        const dragXScale = current?.xScale ?? xScale;
+        const dragYScale = current?.yScale ?? yScale;
+        if (
+            !Number.isFinite(dragXScale) ||
+            dragXScale <= 0 ||
+            !Number.isFinite(dragYScale) ||
+            dragYScale <= 0
+        ) {
+            throw new Error('DashKitGridStack: transformScale must be finite and positive');
+        }
+        const offset = drag.dragOffset;
+        if (
+            offset &&
+            drag.helperContainment &&
+            (previous.xScale !== dragXScale || previous.yScale !== dragYScale)
+        ) {
+            const transform =
+                current ?? Utils.getValuesFromTransformedElement(drag.helperContainment);
+            // Keep the original unscaled grab point when zoom changes during a drag.
+            offset.offsetX =
+                ((offset.offsetX + previous.xOffset) * previous.xScale) / dragXScale -
+                transform.xOffset;
+            offset.offsetTop =
+                ((offset.offsetTop + previous.yOffset) * previous.yScale) / dragYScale -
+                transform.yOffset;
+            previous.xOffset = transform.xOffset;
+            previous.yOffset = transform.yOffset;
+        }
+        previous.xScale = dragXScale;
+        previous.yScale = dragYScale;
     }
 
     private boundDrag(elInput: GridItemHTMLElement, ui: UI): UI {
