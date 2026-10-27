@@ -158,6 +158,9 @@ class GridStackCanvas extends React.PureComponent {
                 [...this.grids].every(([key, record]) => {
                     const properties = this.getProperties(key);
                     return (
+                        (record.containerId ||
+                            (this.roots.get(key) === record.wrapper &&
+                                record.wrapper.firstElementChild === record.root)) &&
                         isEqual(record.properties, properties) &&
                         isEqual(
                             record.geometry,

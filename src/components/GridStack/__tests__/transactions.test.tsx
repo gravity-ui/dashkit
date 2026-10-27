@@ -214,6 +214,69 @@ test('native final proposal validation rejects overflow before emitting and reta
     view.unmount();
 });
 
+// Critical: yes. A metadata-driven root remount must keep saved widgets attached.
+test('palette preview cancels and reattaches saved widgets after a group root remount', () => {
+    const flat: Config = {...config, containers: undefined, layoutVersion: undefined};
+    const groups: DashKitGroup[] = [
+        {
+            gridProperties: () => ({width: 640}),
+            render: (_id, children, props) => (
+                <section key={props.context.version}>{children}</section>
+            ),
+        },
+    ];
+    const onChange = jest.fn();
+    const fixture = (version: number) => (
+        <DashKitDnDWrapper>
+            <div>
+                <ActionPanel items={[{id: 'add', icon: '+', title: 'Add', dragProps: {type}}]} />
+                <DashKitGridStack
+                    config={flat}
+                    context={{version}}
+                    editMode
+                    groups={groups}
+                    onChange={onChange}
+                />
+            </div>
+        </DashKitDnDWrapper>
+    );
+    const view = render(fixture(0));
+    const oldRoot = view.container.querySelector('.grid-stack') as HTMLElement & {
+        gridstack?: GridStack;
+    };
+    const widget = view.container.querySelector('[data-identity]');
+    jest.spyOn(oldRoot, 'getBoundingClientRect').mockReturnValue({
+        left: 0,
+        top: 0,
+        right: 640,
+        bottom: 400,
+        width: 640,
+        height: 400,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+    });
+    fireEvent.dragStart(view.getByRole('button', {name: '+ Add'}), {
+        dataTransfer: {setDragImage: jest.fn()},
+    });
+    const over = new Event('dragover', {bubbles: true, cancelable: true});
+    Object.assign(over, {clientX: 0, clientY: 0});
+    fireEvent(oldRoot, over);
+    expect(view.container.querySelector('[data-dashkit-id="__dropping-elem__"]')).not.toBeNull();
+
+    view.rerender(fixture(1));
+    const newRoot = view.container.querySelector('.grid-stack') as HTMLElement & {
+        gridstack?: GridStack;
+    };
+    expect(newRoot).not.toBe(oldRoot);
+    expect(oldRoot.gridstack).toBeUndefined();
+    expect(newRoot.gridstack).toBeDefined();
+    expect(view.container.querySelector('[data-identity]')).toBe(widget);
+    expect(view.container.querySelector('[data-dashkit-id="__dropping-elem__"]')).toBeNull();
+    expect(onChange).not.toHaveBeenCalled();
+    view.unmount();
+});
+
 // Critical: yes. Canceling an add must not persist displaced neighbors on the next save.
 test.each([
     'dragend',
