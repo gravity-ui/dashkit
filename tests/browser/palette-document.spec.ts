@@ -47,6 +47,100 @@ test('native palette admission distinguishes sibling containers in one zone', as
     });
 });
 
+test('native palette preventCollision rejects occupied drop and keeps valid preview', async ({
+    page,
+    evidence,
+}) => {
+    await page.goto(storyUrl('tests-gridstack--collision'));
+    const source = page.getByRole('button', {name: '+ Widget', exact: true});
+    const root = page.locator('.grid-stack').first();
+    const preview = root.locator('[data-dashkit-id="__dropping-elem__"]');
+    const saved = async (): Promise<Config> =>
+        JSON.parse(checked(await page.locator('[data-qa="saved-config"]').textContent()));
+    const positions = () =>
+        root.evaluate((element) =>
+            ['a', 'b'].map((id) => {
+                const node = element.querySelector<NativeElement>(
+                    `[data-dashkit-id="${id}"]`,
+                )?.gridstackNode;
+                if (!node) {
+                    throw new Error(`Missing native node ${id}`);
+                }
+                const {x, y, w, h} = node;
+                return {id, x, y, w, h};
+            }),
+        );
+    await root.waitFor();
+    const before = await saved();
+    const beforePositions = await positions();
+
+    await root.evaluate((element) => {
+        element.addEventListener('dragover', () => {
+            const nodes = ['a', 'b'].map((id) => {
+                const node = element.querySelector<NativeElement>(
+                    `[data-dashkit-id="${id}"]`,
+                )?.gridstackNode;
+                if (!node) {
+                    throw new Error(`Missing native node ${id}`);
+                }
+                const {x, y, w, h} = node;
+                return {id, x, y, w, h};
+            });
+            element.setAttribute(
+                'data-occupied-hover',
+                JSON.stringify({
+                    nodes,
+                    preview: element.querySelectorAll('[data-dashkit-id="__dropping-elem__"]')
+                        .length,
+                }),
+            );
+        });
+    });
+    await source.dragTo(root, {targetPosition: {x: 100, y: 100}});
+    const occupied = JSON.parse(checked(await root.getAttribute('data-occupied-hover')));
+    assert.deepEqual(occupied, {nodes: beforePositions, preview: 0});
+    await expect(preview).toHaveCount(0);
+    await expect(page.locator('[data-qa="drop-count"]')).toHaveText('0');
+    assert.deepEqual(await saved(), before);
+    assert.deepEqual(await positions(), beforePositions);
+
+    await root.evaluate((element) => {
+        const counts: number[] = [];
+        let repeated = false;
+        element.addEventListener('dragover', (event) => {
+            const count = element.querySelectorAll('[data-dashkit-id="__dropping-elem__"]').length;
+            counts.push(count);
+            element.setAttribute('data-preview-counts', JSON.stringify(counts));
+            if (count === 1 && !repeated) {
+                repeated = true;
+                const {clientX, clientY} = event as DragEvent;
+                element.dispatchEvent(
+                    new DragEvent('dragover', {
+                        bubbles: true,
+                        cancelable: true,
+                        clientX,
+                        clientY,
+                    }),
+                );
+            }
+        });
+    });
+    await source.dragTo(root, {targetPosition: {x: 500, y: 200}});
+    const counts = JSON.parse(checked(await root.getAttribute('data-preview-counts'))) as number[];
+    assert(counts.some((count, index) => count === 1 && counts[index + 1] === 1));
+
+    await expect(page.locator('[data-qa="drop-count"]')).toHaveText('1');
+    const after = await saved();
+    assert.equal(after.items.length, before.items.length + 1);
+    assert.deepEqual(after.layout.slice(0, 2), before.layout);
+    assert.deepEqual(await positions(), beforePositions);
+    evidence.push({
+        check: 'occupied palette rejected; repeated valid hover and one saved drop',
+        before,
+        after,
+    });
+});
+
 // Critical: yes. Native container displacement must survive public controlled palette saves.
 // Widget-only payload checks miss overlapping saved containers and lost descendant geometry.
 test('native palette keeps displaced subtree through pending drop, cancel and controlled apply', async ({

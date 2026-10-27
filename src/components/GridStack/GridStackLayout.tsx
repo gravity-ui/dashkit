@@ -1210,9 +1210,18 @@ class GridStackCanvas extends React.PureComponent {
         if (this.hosts.get(TEMPORARY_ITEM_ID)?.key !== getGridKey(entry)) {
             this.clearPreview();
         }
-        if (!record.grid.engine.willItFit({id: entry.i, ...entry})) {
+        const engine = record.grid.engine as DashKitEngine;
+        if (!engine.willItFit({id: entry.i, ...entry})) {
             this.clearPreview();
             return;
+        }
+        if (engine.mode.preventCollision) {
+            const bounded = {...entry};
+            engine.nodeBoundFix(bounded);
+            if (engine.collideAll(bounded, bounded).some(({id}) => id !== TEMPORARY_ITEM_ID)) {
+                this.clearPreview();
+                return;
+            }
         }
         this.preview = {
             id: TEMPORARY_ITEM_ID,
