@@ -47,10 +47,7 @@ export class DashKitEngine extends EngineBase {
         if (this.restoring) {
             return this;
         }
-        if (this.dropSize && node.id === this.dropSize.id) {
-            Object.assign(node, this.dropSize);
-            this.dropSize = undefined;
-        }
+        this.consumeDropSize(node);
         if (resizing) {
             super.nodeBoundFix(node, resizing);
         } else {
@@ -272,5 +269,12 @@ export class DashKitEngine extends EngineBase {
             (node as EngineNode)._willFitPos = Utils.copyPos({}, candidate);
         }
         return fits;
+    }
+
+    private consumeDropSize(node: GridStackNode) {
+        if (this.dropSize && node.id === this.dropSize.id) {
+            Object.assign(node, this.dropSize);
+            this.dropSize = undefined;
+        }
     }
 }
