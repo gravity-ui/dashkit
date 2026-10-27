@@ -114,9 +114,8 @@ export default class MobileLayout extends React.PureComponent<
         if (
             this.sortedLayoutItems &&
             this.context.layout === this._memoLayout &&
-            (!nested ||
-                (this.context.config.containers === this._memoContainers &&
-                    this.context.configItems === this._memoItems))
+            this.context.configItems === this._memoItems &&
+            (!nested || this.context.config.containers === this._memoContainers)
         ) {
             return this.sortedLayoutItems;
         }

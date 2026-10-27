@@ -103,6 +103,7 @@ function Contract({
     occupied = false,
     mode,
     legacy = false,
+    initialCssScale = false,
 }: {
     legacy?: boolean;
     nested?: boolean;
@@ -110,6 +111,7 @@ function Contract({
     dashboard?: boolean;
     occupied?: boolean;
     mode?: 'collision' | 'nowrap' | 'custom' | 'edges' | 'scalar' | 'budget' | 'horizontal';
+    initialCssScale?: boolean;
 }) {
     const Component = legacy ? DashKit : DashKitGridStack;
     const canvasWidth = zones ? 320 : 640;
@@ -189,7 +191,8 @@ function Contract({
         }
         return initial;
     });
-    const [scale, setScale] = React.useState(1);
+    const [scale, setScale] = React.useState(initialCssScale ? 0.5 : 1);
+    const [explicitScale, setExplicitScale] = React.useState(!initialCssScale);
     const [editing, setEditing] = React.useState(!dashboard);
     const [allowPalette, setAllowPalette] = React.useState(true);
     const [silent, setSilent] = React.useState(false);
@@ -288,7 +291,7 @@ function Contract({
                             | 'se'
                         )[],
                         transformScaleRef: mode === 'scalar' ? undefined : scaleRef,
-                        transformScale: mode === 'scalar' ? scale : undefined,
+                        transformScale: mode === 'scalar' && explicitScale ? scale : undefined,
                         ...(mode === 'custom'
                             ? {
                                   resizeHandle: (
@@ -318,7 +321,7 @@ function Contract({
                     };
                 },
             })),
-        [zones, dashboard, mode, scale, occupied],
+        [zones, dashboard, mode, scale, explicitScale, occupied],
     );
     return (
         <DashKitDnDWrapper
@@ -353,10 +356,34 @@ function Contract({
                     )}
                     <button onClick={() => setEditing((value) => !value)}>Toggle edit</button>
                     <input aria-label="Keyboard probe" style={{width: 60}} />
-                    <button onClick={() => setScale((value) => (value === 1 ? 0.5 : 1))}>
+                    <button
+                        onClick={() => {
+                            setExplicitScale(true);
+                            setScale((value) => (value === 1 ? 0.5 : 1));
+                        }}
+                    >
                         Toggle zoom
                     </button>
-                    <button onClick={() => setScale(2)}>Zoom2</button>
+                    <button
+                        onClick={() => {
+                            setExplicitScale(true);
+                            setScale(2);
+                        }}
+                    >
+                        Zoom2
+                    </button>
+                    {mode === 'scalar' && (
+                        <>
+                            <button
+                                onClick={() => {
+                                    setExplicitScale(false);
+                                    setScale(1);
+                                }}
+                            >
+                                Clear zoom
+                            </button>
+                        </>
+                    )}
                     <button
                         onClick={() => {
                             scaleRef.current = 2;
@@ -571,6 +598,9 @@ export const HorizontalPacking: StoryFn<typeof Contract> = (args) => (
 );
 
 export const ScalarZoom: StoryFn<typeof Contract> = (args) => <Contract {...args} mode="scalar" />;
+export const ImplicitCssZoom: StoryFn<typeof Contract> = (args) => (
+    <Contract {...args} mode="scalar" initialCssScale />
+);
 
 export const HeightCompatibility: StoryFn = () => {
     const document: GridStackConfig = {

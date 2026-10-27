@@ -671,3 +671,124 @@ for (const legacy of [false, true]) {
         });
     });
 }
+
+for (const transition of ['Clear zoom', 'Toggle zoom']) {
+    test(`native scalar ${transition} follows held pointer and keeps next drag stable`, async ({
+        page,
+        evidence,
+    }) => {
+        const {state, widget, layout, drag} = canvas(page);
+        await page.goto(fixtureUrl('tests-gridstack--scalar-zoom'));
+        await page.locator('[data-widget-id="a"]').waitFor();
+        await page.getByRole('button', {name: 'Toggle zoom'}).click();
+        const before = await state();
+        const rect = checked(widget(before, 'a')).rect;
+        const start = {x: rect.left + 15, y: rect.top + 30};
+        await page.mouse.move(start.x, start.y);
+        await page.mouse.down();
+        await page.mouse.move(start.x + 10, start.y + 10);
+        await page.evaluate((buttonName) => {
+            const button = [...document.querySelectorAll('button')].find(
+                (candidate) => candidate.textContent === buttonName,
+            );
+            if (!button) {
+                throw new Error('Missing scale transition button');
+            }
+            button.click();
+        }, transition);
+        await page.waitForFunction(
+            () =>
+                document.querySelector<HTMLElement>('[data-qa="contract-canvas"]')?.style
+                    .transform === 'scale(1)',
+        );
+        const pointer = {x: start.x + 45, y: start.y + 35};
+        await page.mouse.move(pointer.x - 5, pointer.y - 5);
+        await page.evaluate(
+            () =>
+                new Promise<void>((resolve) =>
+                    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+                ),
+        );
+        await page.mouse.move(pointer.x, pointer.y);
+        await page.evaluate(
+            () =>
+                new Promise<void>((resolve) =>
+                    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+                ),
+        );
+        const held = checked(widget(await state(), 'a')).rect;
+        evidence.push({check: `${transition} during held pointer`, before, held, pointer});
+        near(pointer.x - held.left, 30);
+        near(pointer.y - held.top, 60);
+        await page.mouse.up();
+        const after = await state();
+        assert.equal(after.events, 'Events: 1');
+        assert.equal(checked(widget(after, 'a')).instance, checked(widget(before, 'a')).instance);
+        near(
+            checked(layout(after, 'a')).x,
+            checked(widget(after, 'a')).rect.left - after.root.left,
+        );
+        near(checked(layout(after, 'a')).y, checked(widget(after, 'a')).rect.top - after.root.top);
+        const next = checked(widget(after, 'a')).rect;
+        await drag(next.left + 30, next.top + 60, 20, 20);
+        const final = await state();
+        assert.equal(final.events, 'Events: 2');
+        near(checked(layout(final, 'a')).x - checked(layout(after, 'a')).x, 20);
+        near(checked(layout(final, 'a')).y - checked(layout(after, 'a')).y, 20);
+        assert.equal(checked(widget(final, 'a')).instance, checked(widget(before, 'a')).instance);
+    });
+}
+
+test('native scalar absent prop retains DOM CSS scale', async ({page, evidence}) => {
+    const {state, widget, layout, drag} = canvas(page);
+    await page.goto(fixtureUrl('tests-gridstack--implicit-css-zoom'));
+    await page.locator('[data-widget-id="a"]').waitFor();
+    const before = await state();
+    const rect = checked(widget(before, 'a')).rect;
+    near(rect.width, 80);
+    await drag(rect.left + 15, rect.top + 30, 25, 25);
+    const after = await state();
+    assert.equal(checked(layout(after, 'a')).x - checked(layout(before, 'a')).x, 50);
+    assert.equal(checked(layout(after, 'a')).y - checked(layout(before, 'a')).y, 50);
+    assert.equal(after.events, 'Events: 1');
+    assert.equal(checked(widget(after, 'a')).instance, checked(widget(before, 'a')).instance);
+    evidence.push({check: 'DOM-derived half scale with absent scalar prop', before, after});
+});
+
+test('native scalar removal during resize saves unscaled size', async ({page, evidence}) => {
+    const {state, widget, layout} = canvas(page);
+    await page.goto(fixtureUrl('tests-gridstack--scalar-zoom'));
+    await page.locator('[data-widget-id="b"]').waitFor();
+    await page.getByRole('button', {name: 'Toggle zoom'}).click();
+    const before = await state();
+    const handle = checked(
+        await page.locator('[data-dashkit-id="b"] .ui-resizable-se').boundingBox(),
+    );
+    const start = {x: handle.x + handle.width / 2, y: handle.y + handle.height / 2};
+    await page.mouse.move(start.x, start.y);
+    await page.mouse.down();
+    await page.mouse.move(start.x + 10, start.y + 10);
+    await page.evaluate(() => {
+        const button = [...document.querySelectorAll('button')].find(
+            (candidate) => candidate.textContent === 'Clear zoom',
+        );
+        if (!button) {
+            throw new Error('Missing Clear zoom button');
+        }
+        button.click();
+    });
+    await page.waitForFunction(
+        () =>
+            document.querySelector<HTMLElement>('[data-qa="contract-canvas"]')?.style.transform ===
+            'scale(1)',
+    );
+    await page.mouse.move(start.x + 35, start.y + 35);
+    await page.mouse.up();
+    const after = await state();
+    const resized = checked(widget(after, 'b')).rect;
+    near(checked(layout(after, 'b')).w, resized.width);
+    near(checked(layout(after, 'b')).h, resized.height);
+    assert.equal(after.events, 'Events: 1');
+    assert.equal(checked(widget(after, 'b')).instance, checked(widget(before, 'b')).instance);
+    evidence.push({check: 'clear scalar scale during resize', before, after});
+});

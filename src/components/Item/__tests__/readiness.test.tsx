@@ -18,6 +18,7 @@ import {PluginText} from '../../../plugins/Text/Text';
 import type {ConfigItem} from '../../../shared';
 import type {PluginWidgetProps} from '../../../typings';
 import {RegisterManager} from '../../../utils/register-manager';
+import MobileLayout from '../../MobileLayout/MobileLayout';
 import Item from '../Item';
 
 function createContext(item: ConfigItem, registerManager: RegisterManager): DashKitCtxShape {
@@ -52,16 +53,30 @@ function createContext(item: ConfigItem, registerManager: RegisterManager): Dash
 test('only the latest live async load marks the current item ready', () => {
     const completions: Array<() => void> = [];
     class AsyncPlugin extends React.Component<PluginWidgetProps> {
+        private generation = 0;
+
         componentDidMount() {
-            completions.push(this.props.onBeforeLoad());
+            completions.push(this.startLoad());
         }
         componentDidUpdate(previous: PluginWidgetProps) {
             if (previous.data !== this.props.data) {
-                completions.push(this.props.onBeforeLoad());
+                completions.push(this.startLoad());
             }
+        }
+        componentWillUnmount() {
+            this.generation++;
         }
         render() {
             return <span>{this.props.data.text as string}</span>;
+        }
+        startLoad() {
+            const generation = ++this.generation;
+            const complete = this.props.onBeforeLoad();
+            return () => {
+                if (generation === this.generation) {
+                    complete();
+                }
+            };
         }
     }
     const registerManager = new RegisterManager();
@@ -129,6 +144,149 @@ test('only the latest live async load marks the current item ready', () => {
     expect(mounted).toHaveBeenLastCalledWith(latest, {isAsync: true, isMounted: false});
 });
 
+// Critical: yes. Render-only acquisitions must not suppress a real request's completion.
+test('functional plugin rerender does not suppress its live request', () => {
+    let completeRequest!: () => void;
+    function AsyncPlugin(props: PluginWidgetProps) {
+        const {onBeforeLoad} = props;
+        onBeforeLoad();
+        React.useEffect(() => {
+            completeRequest = onBeforeLoad();
+        }, [onBeforeLoad]);
+        return <span>{props.data.text as string}</span>;
+    }
+    const registerManager = new RegisterManager();
+    registerManager.registerPlugin({
+        type: 'functional-async',
+        renderer: (props) => <AsyncPlugin {...props} />,
+    });
+    const item: ConfigItem = {
+        id: 'async',
+        type: 'functional-async',
+        namespace: 'default',
+        data: {text: 'initial'},
+    };
+    const context = createContext(item, registerManager);
+    const ready = jest.fn();
+    const fixture = (current: ConfigItem) => (
+        <DashKitContext.Provider value={context}>
+            <Item
+                id={current.id}
+                item={current}
+                layout={context.layout}
+                shouldItemUpdate
+                adjustWidgetLayout={jest.fn()}
+                onItemRender={ready}
+            />
+        </DashKitContext.Provider>
+    );
+    const view = render(fixture(item));
+    expect(ready).not.toHaveBeenCalled();
+    view.rerender(fixture({...item, data: {text: 'rerendered'}}));
+    act(() => completeRequest());
+    expect(ready).toHaveBeenCalledTimes(1);
+    expect(ready).toHaveBeenCalledWith(expect.objectContaining({data: {text: 'rerendered'}}));
+});
+
+// Critical: yes. Item identity and unmount still reject callbacks retained by external plugins.
+test('completion from previous item id or unmounted item stays silent', () => {
+    const completions: Array<() => void> = [];
+    const registerManager = new RegisterManager();
+    registerManager.registerPlugin({
+        type: 'identity-async',
+        renderer: (props) => {
+            completions.push(props.onBeforeLoad());
+            return <span>{props.id}</span>;
+        },
+    });
+    const item: ConfigItem = {
+        id: 'old',
+        type: 'identity-async',
+        namespace: 'default',
+        data: {},
+    };
+    const context = createContext(item, registerManager);
+    const ready = jest.fn();
+    const fixture = (current: ConfigItem) => (
+        <DashKitContext.Provider value={context}>
+            <Item
+                id={current.id}
+                item={current}
+                layout={context.layout}
+                shouldItemUpdate
+                adjustWidgetLayout={jest.fn()}
+                onItemRender={ready}
+            />
+        </DashKitContext.Provider>
+    );
+    const view = render(fixture(item));
+    const replacement = {...item, id: 'new'};
+    view.rerender(fixture(replacement));
+    act(() => completions[0]());
+    expect(ready).not.toHaveBeenCalled();
+    act(() => completions[1]());
+    expect(ready).toHaveBeenCalledTimes(1);
+    expect(ready).toHaveBeenCalledWith(replacement);
+    view.unmount();
+    act(() => completions[1]());
+    expect(ready).toHaveBeenCalledTimes(1);
+});
+
+test('mobile layout updates same-id type with unchanged layout reference', () => {
+    let completeOld!: () => void;
+    const registerManager = new RegisterManager();
+    registerManager.registerPlugin({
+        type: 'mobile-async',
+        renderer: (props) => {
+            completeOld = props.onBeforeLoad();
+            return <span>Mobile pending</span>;
+        },
+    });
+    registerManager.registerPlugin({
+        type: 'mobile-sync',
+        renderer: () => <span>Mobile ready</span>,
+    });
+    const item: ConfigItem = {
+        id: 'async',
+        type: 'mobile-async',
+        namespace: 'default',
+        data: {},
+    };
+    const context = createContext(item, registerManager);
+    const ready = jest.fn();
+    const mounted = jest.fn();
+    const fixture = (current: ConfigItem) => (
+        <DashKitContext.Provider
+            value={{
+                ...context,
+                config: {...context.config, items: [current]},
+                configItems: [current],
+                onItemRender: ready,
+                onItemMountChange: mounted,
+            }}
+        >
+            <MobileLayout />
+        </DashKitContext.Provider>
+    );
+    const view = render(fixture(item));
+    expect(ready).not.toHaveBeenCalled();
+    const replacement = {...item, type: 'mobile-sync'};
+    view.rerender(fixture(replacement));
+    expect(view.getByText('Mobile ready')).toBeTruthy();
+    expect(ready).toHaveBeenCalledTimes(1);
+    expect(ready).toHaveBeenCalledWith(expect.objectContaining(replacement));
+    act(() => completeOld());
+    expect(ready).toHaveBeenCalledTimes(1);
+    expect(mounted).toHaveBeenCalledWith(expect.objectContaining(item), {
+        isAsync: true,
+        isMounted: false,
+    });
+    expect(mounted).toHaveBeenCalledWith(expect.objectContaining(replacement), {
+        isAsync: false,
+        isMounted: true,
+    });
+});
+
 // Critical: yes. Regression: retained readiness callbacks stop reporting post-processing/style changes.
 // Impact: unfinished preview/export. Unique protection: real Text and its wrapper acquire separately.
 test.each(['success', 'failure'] as const)(
@@ -148,14 +306,25 @@ test.each(['success', 'failure'] as const)(
         const latest = pending();
         let retainedCompletion!: () => void;
         function TextWrapper(props: PluginWidgetProps) {
+            const {onBeforeLoad} = props;
             const completionRef = React.useRef<(() => void) | undefined>(undefined);
-            if (!completionRef.current) {
-                completionRef.current = props.onBeforeLoad();
-            }
-            retainedCompletion = completionRef.current;
+            const pendingRef = React.useRef(false);
+            React.useEffect(() => {
+                completionRef.current = onBeforeLoad();
+                retainedCompletion = completionRef.current;
+            }, [onBeforeLoad]);
             const handleBeforeLoad = () => {
-                const complete = props.onBeforeLoad();
-                return () => complete();
+                pendingRef.current = true;
+                const complete = onBeforeLoad();
+                return () => {
+                    pendingRef.current = false;
+                    complete();
+                };
+            };
+            const notify = () => {
+                if (!pendingRef.current) {
+                    completionRef.current?.();
+                }
             };
             return (
                 <>
@@ -171,8 +340,8 @@ test.each(['success', 'failure'] as const)(
                         onBeforeLoad={handleBeforeLoad}
                         onBeforeRender={() => () => {}}
                     />
-                    <button onClick={() => completionRef.current?.()}>Post-process</button>
-                    <button onClick={() => completionRef.current?.()}>Style changed</button>
+                    <button onClick={notify}>Post-process</button>
+                    <button onClick={notify}>Style changed</button>
                 </>
             );
         }
