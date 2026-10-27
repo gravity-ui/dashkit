@@ -1,4 +1,6 @@
+/** @jest-environment jsdom */
 import type {Config, GridStackContainer} from '../../../shared';
+import {DashKitGridStack} from '../DashKitGridStack';
 import {validateConfig, validateGrid} from '../document';
 import {getGridGeometry, getGridStackLayoutRects, visibleGeometry} from '../geometry';
 
@@ -66,6 +68,20 @@ test.each(['__default', 'widget-panel', 'parent-panel', 'groups-panel'])(
 
         expect(() => validateConfig(widget, groups)).not.toThrow();
         expect(() => validateConfig(selector, groups)).not.toThrow();
+        DashKitGridStack.reloadPlugins({
+            type: 'test',
+            renderer: () => null,
+            defaultLayout: {w: 2, h: 2},
+        });
+        for (const existing of [widget, selector]) {
+            const next = DashKitGridStack.setItem({
+                config: existing,
+                item: {type: 'test', data: {}},
+                groups,
+            });
+            expect(next.items).toEqual(expect.arrayContaining(existing.items));
+            expect(next.layout).toEqual(expect.arrayContaining(existing.layout));
+        }
         expect(() => validateConfig({...config, containers: [{...container, id}]}, groups)).toThrow(
             `duplicate or reserved id "${id}"`,
         );
