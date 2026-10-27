@@ -77,17 +77,18 @@ export function PreviewOverlap({
                         editMode
                         groups={groups}
                         onChange={({config: next}) => setConfig(next)}
-                        onDrop={({newLayout, itemLayout, commit}) => {
+                        onDrop={({newLayout, containers, itemLayout, commit}) => {
                             const id = 'added';
                             const order = [...newLayout.map(({i}) => i), id];
                             const layout = Component.reflowLayout({
                                 layout: [{...itemLayout, i: id}, ...newLayout],
-                                containers: config.containers,
+                                containers: containers ?? config.containers,
                                 groups,
                             });
                             layout.sort((a, b) => order.indexOf(a.i) - order.indexOf(b.i));
                             setConfig({
                                 ...config,
+                                ...(containers ? {containers} : {}),
                                 items: [
                                     ...config.items,
                                     {id, type, namespace: 'default', data: {}},

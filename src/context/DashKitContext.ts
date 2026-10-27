@@ -41,6 +41,7 @@ export type DashkitPropsPassedToCtx = Pick<
 
 export type TemporaryLayout = {
     data: ConfigLayout[];
+    containers?: GridStackContainer[];
     dragProps: ItemDragProps;
 };
 
@@ -79,7 +80,12 @@ export type DashKitCtxShape = DashkitPropsPassedToCtx & {
         data: {silentLoading: boolean; noVeil: boolean},
     ) => void;
 
-    onDrop: (newLayout: ConfigLayout[], item: ConfigLayout, e?: MouseEvent) => void;
+    onDrop: (
+        newLayout: ConfigLayout[],
+        item: ConfigLayout,
+        e?: MouseEvent,
+        containers?: GridStackContainer[],
+    ) => void;
     onDropDragOver: (
         e: DragOverEvent,
         group: string | undefined,

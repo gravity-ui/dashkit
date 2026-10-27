@@ -654,13 +654,14 @@ function useMemoStateContext(
 
     const onDropProp = props.onDrop;
     const onDrop = React.useCallback<DashKitCtxShape['onDrop']>(
-        (newLayout, item) => {
+        (newLayout, item, _event, nextContainers) => {
             if (!dragPropsContext) {
                 return;
             }
 
             setTemporaryLayout({
                 data: [...newLayout, item],
+                ...(nextContainers !== undefined ? {containers: nextContainers} : {}),
                 dragProps: dragPropsContext,
             });
 
@@ -673,6 +674,7 @@ function useMemoStateContext(
 
                         return memo;
                     }, []),
+                    ...(nextContainers !== undefined ? {containers: nextContainers} : {}),
                     itemLayout: pick(item, CONFIG_LAYOUT_FIELDS),
                     commit: resetTemporaryLayout,
                     dragProps: dragPropsContext,
@@ -708,7 +710,7 @@ function useMemoStateContext(
             forwardedMetaRef: props.forwardedMetaRef,
 
             layout: resultLayout,
-            containers,
+            containers: temporaryLayout?.containers ?? containers,
             temporaryLayout,
             layoutChange: onLayoutChange,
             memorizeOriginalLayout,

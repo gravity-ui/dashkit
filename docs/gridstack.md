@@ -23,6 +23,20 @@ The synchronous `change` event precedes `onChange`. Calling `event.preventDefaul
 
 `onItemMountChange` and `onItemRender` describe plugin readiness. A layout event does not mean asynchronous content has finished rendering. Automatic widget height remains a visual adjustment; the original saved height is retained until an explicit resize or reset follows the existing DashKit contract. GridStack does not add lazy mount suppression to React plugins.
 
+For palette drops, `onDrop` includes optional `containers` alongside `newLayout` and `itemLayout`. They are one preview snapshot: preserve the container positions when adding the widget, including containers displaced by a root drop. The pending preview retains that snapshot until `commit()` clears it. Calling `commit()` without replacing the controlled configuration cancels the pending addition and restores the prior geometry. Flat callers retain the existing payload and behavior.
+
+```tsx
+onDrop={({newLayout, containers, itemLayout, dragProps, commit}) => {
+  setConfig(DashKitGridStack.setItem({
+    config: {...config, ...(containers ? {containers} : {})},
+    groups,
+    item: {type: dragProps.type, data: {}, layout: itemLayout},
+    options: {updateLayout: newLayout},
+  }));
+  commit();
+}}
+```
+
 ## Grid settings
 
 `groups` remain runtime zones, with the existing `render` and `gridProperties` functions. The implementation supports vertical, horizontal, horizontal-nowrap and disabled compaction, overlap, collision prevention, size constraints, bounds, resize directions and custom resize handles. The legacy `verticalCompact: false` disables compaction.

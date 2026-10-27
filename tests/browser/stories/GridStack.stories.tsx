@@ -515,10 +515,13 @@ function Contract({
                                 placeholder: event.placeholder,
                             })
                         }
-                        onDrop={({itemLayout, newLayout, commit, dragProps}) => {
+                        onDrop={({itemLayout, newLayout, containers, commit, dragProps}) => {
                             setDrops((count) => count + 1);
                             const next = Component.setItem({
-                                config: lastConfig.current,
+                                config: {
+                                    ...lastConfig.current,
+                                    ...(containers ? {containers} : {}),
+                                },
                                 item: {type: dragProps.type, data: {}, layout: itemLayout},
                                 options: {updateLayout: newLayout},
                                 groups,
@@ -827,9 +830,9 @@ export const BoundedSubtrees: StoryFn = () => {
                     config={config}
                     groups={groups}
                     editMode
-                    onDrop={({itemLayout, newLayout, commit, dragProps}) => {
+                    onDrop={({itemLayout, newLayout, containers, commit, dragProps}) => {
                         const next = DashKitGridStack.setItem({
-                            config,
+                            config: {...config, ...(containers ? {containers} : {})},
                             item: {type: dragProps.type, data: {}, layout: itemLayout},
                             options: {updateLayout: newLayout},
                             groups,
@@ -994,11 +997,11 @@ export const NestedBounds: StoryFn = () => {
                             setConfig(next);
                             setEvents((count) => count + 1);
                         }}
-                        onDrop={({itemLayout, newLayout, commit, dragProps}) => {
+                        onDrop={({itemLayout, newLayout, containers, commit, dragProps}) => {
                             previous.current = config;
                             setConfig(
                                 DashKitGridStack.setItem({
-                                    config,
+                                    config: {...config, ...(containers ? {containers} : {})},
                                     groups,
                                     item: {type: dragProps.type, data: {}, layout: itemLayout},
                                     options: {updateLayout: newLayout},
@@ -1019,3 +1022,5 @@ export const PreviewOverlap: StoryFn<typeof PreviewOverlapFixture> = (args) => (
     <PreviewOverlapFixture {...args} />
 );
 PreviewOverlap.args = {nested: false, allowOverlap: false, compactType: null};
+
+export {PaletteDocument} from './PaletteDocument';

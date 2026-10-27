@@ -1249,7 +1249,8 @@ class GridStackCanvas extends React.PureComponent {
             ...this.membership(host),
         };
         try {
-            this.context.onDrop(this.readDocument().layout, item, event as unknown as MouseEvent);
+            const {layout, containers} = this.readDocument();
+            this.context.onDrop(layout, item, event as unknown as MouseEvent, containers);
         } catch (error) {
             this.clearPreview();
             throw error;
