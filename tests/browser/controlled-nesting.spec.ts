@@ -84,5 +84,11 @@ test('public nested example renders saved containers without browser errors', as
     await page.goto('/iframe.html?id=gridstack--nested-containers&viewMode=story');
     await expect(page.locator('[data-qa="dashkit-grid-item"]')).toHaveCount(2);
     await expect(page.locator('[data-dashkit-id="panel"] .grid-stack')).toHaveCount(1);
+    await expect(
+        page.locator('[data-dashkit-id="panel"]').getByText('Native flat layout', {exact: true}),
+    ).toHaveCount(1);
+    await expect(
+        page.locator('[data-dashkit-id="panel"]').getByText('Nested widget', {exact: true}),
+    ).toHaveCount(1);
     evidence.push({check: 'public nested example renders two widgets in one saved container'});
 });
