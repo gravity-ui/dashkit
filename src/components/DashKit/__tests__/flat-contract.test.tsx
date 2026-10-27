@@ -465,7 +465,10 @@ describe.each(LAYOUT_ENGINES)('[%s] common flat DashKit contract', (_engine, Com
                 {id: 'a', groupItemId: 'year'},
             ],
         });
-        const beforeGesture = {config: currentDocument, itemsStateAndParams: currentState};
+        const beforeGesture = {
+            config: currentDocument,
+            itemsStateAndParams: JSON.parse(JSON.stringify(currentState)),
+        };
         const outputs = ['a', 'b', 'other', 'ignored'].map(params);
         changed.mockClear();
         await drag(view.container, 'b', 50);
