@@ -582,6 +582,37 @@ describe.each([
         view.unmount();
     });
 
+    it('uses the latest external baseline from a callback retained by a child effect', () => {
+        const onChange = jest.fn();
+        const props = createProps({config, emitDashKitEvent: jest.fn(), onChange});
+        const fixture = (document: Config) => (
+            <React.StrictMode>
+                <Component {...props} config={document} />
+            </React.StrictMode>
+        );
+        const view = render(fixture(config));
+        let retainedChange = captured.onItemStateAndParamsChange;
+        layoutEffectAction = (context) => {
+            layoutEffectAction = undefined;
+            retainedChange = context.onItemStateAndParamsChange;
+        };
+        view.rerender(
+            fixture({
+                ...config,
+                containers: containers.map((box) => ({...box, x: box.id === 'box' ? 1 : 0})),
+            }),
+        );
+        const latest = {
+            ...config,
+            containers: containers.map((box) => ({...box, x: box.id === 'box' ? 2 : 0})),
+        };
+        view.rerender(fixture(latest));
+
+        act(() => retainedChange('item1', {state: {clicked: true}}));
+        expect(onChange.mock.calls[0][0].config.containers).toEqual(latest.containers);
+        view.unmount();
+    });
+
     it('retains the newest child-effect container edit through the parent commit', () => {
         const onChange = jest.fn();
         const props = createProps({config, emitDashKitEvent: jest.fn(), onChange});

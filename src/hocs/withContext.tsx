@@ -500,6 +500,7 @@ function useMemoStateContext(
                 pendingExternalBaselineContainers.previousBaselineRevision
             ) {
                 baselineContainers.current = pendingExternalBaselineContainers.containers;
+                baselineContainersRevision.current += 1;
             }
             setPendingExternalBaselineContainers(undefined);
         }
