@@ -567,7 +567,7 @@ function useMemoStateContext(
     }, [dragPropsContext, props.registerManager]);
 
     const onDropDragOver = React.useCallback<DashKitCtxShape['onDropDragOver']>(
-        (_e, group, gridProps, groupLayout, sharedItem, defaultsOverride) => {
+        (_e, group, gridProps, groupLayout, sharedItem) => {
             if (temporaryLayout) {
                 resetTemporaryLayout();
                 return false;
@@ -589,7 +589,7 @@ function useMemoStateContext(
                     : {h, w};
             } else if (dragOverPlugin) {
                 dragItemType = dragOverPlugin.type;
-                defaultLayout = {...dragOverPlugin.defaultLayout, ...defaultsOverride};
+                defaultLayout = dragOverPlugin.defaultLayout;
             } else {
                 return false;
             }
@@ -619,7 +619,7 @@ function useMemoStateContext(
             const {
                 h = defaultLayout?.h || DEFAULT_WIDGET_HEIGHT,
                 w = defaultLayout?.w || DEFAULT_WIDGET_WIDTH,
-            } = defaultsOverride || dragPropsContext?.layout || {};
+            } = dragPropsContext?.layout || {};
 
             const itemLayout = {
                 h: maxH ? Math.min(h, maxH) : h,
@@ -725,7 +725,6 @@ function useMemoStateContext(
             onDropDragOver,
             outerDnDEnable,
             dragOverPlugin,
-            dragProps: dragPropsContext,
 
             onItemFocus: props.onItemFocus,
             onItemBlur: props.onItemBlur,
@@ -769,7 +768,6 @@ function useMemoStateContext(
             props.draggableHandleClassName,
             outerDnDEnable,
             dragOverPlugin,
-            dragPropsContext,
 
             props.onItemFocus,
             props.onItemBlur,

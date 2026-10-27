@@ -5,7 +5,7 @@ import type {Config} from '../../src/shared';
 import {boundary, strictLifecycle} from './boundary-utils';
 import {checked, storyUrl, test} from './fixtures';
 import type {NativeElement} from './types';
-test('subtree admission, undo, cancellation and nested palette', async ({page, evidence}) => {
+test('subtree admission, undo and cancellation', async ({page, evidence}) => {
     const {frames, snapshot, sameRects, dragTo} = boundary(page);
     await page.goto(storyUrl('tests-gridstack--bounded-subtrees'));
     await page.locator('[data-widget-id="b"]').waitFor();
@@ -179,50 +179,6 @@ test('subtree admission, undo, cancellation and nested palette', async ({page, e
         rejected,
         nextGesture,
         nextUndo,
-    });
-    const nestedBefore = await snapshot();
-    await page.getByRole('button', {name: 'Palette allowed: true', exact: true}).click();
-    const nestedTarget = page.locator('[data-dashkit-id="target"] .grid-stack');
-    await page
-        .getByRole('button', {name: '+ Widget', exact: true})
-        .dragTo(nestedTarget, {targetPosition: {x: 150, y: 100}});
-    assert.deepEqual((await snapshot()).config, nestedBefore.config);
-    assert.equal(await page.locator('[data-qa="drop-count"]').textContent(), '0');
-    await page.getByRole('button', {name: 'Palette allowed: false', exact: true}).click();
-    const nestedSource = await page
-        .getByRole('button', {name: '+ Widget', exact: true})
-        .boundingBox();
-    const nestedRoot = await nestedTarget.boundingBox();
-    await page.mouse.move(
-        checked(nestedSource).x + checked(nestedSource).width / 2,
-        checked(nestedSource).y + checked(nestedSource).height / 2,
-    );
-    await page.mouse.down();
-    await page.mouse.move(checked(nestedRoot).x + 150, checked(nestedRoot).y + 100, {steps: 12});
-    await page.mouse.move(checked(nestedRoot).x + 160, checked(nestedRoot).y + 100);
-    await frames();
-    await page.locator('[data-dashkit-id="__dropping-elem__"]').waitFor({state: 'visible'});
-    assert.equal(await page.locator('[data-dashkit-id="__dropping-elem__"]').count(), 1);
-    await page.mouse.move(850, 650, {steps: 8});
-    await page.mouse.up();
-    await frames();
-    assert.equal(await page.locator('[data-dashkit-id="__dropping-elem__"]').count(), 0);
-    assert.deepEqual((await snapshot()).config, nestedBefore.config);
-    await page
-        .getByRole('button', {name: '+ Widget', exact: true})
-        .dragTo(nestedTarget, {targetPosition: {x: 150, y: 100}});
-    const nestedCommit = await snapshot();
-    assert.equal(nestedCommit.config.items.length, 3);
-    assert.equal(nestedCommit.events, nestedBefore.events);
-    assert.equal(await page.locator('[data-qa="drop-count"]').textContent(), '1');
-    assert.deepEqual(nestedCommit.config.layout.slice(0, 2), nestedBefore.config.layout);
-    assert.equal(nestedCommit.config.layout[2].containerId, 'target');
-    assert.equal(nestedCommit.config.layout[2].parent, 'right');
-    assert.equal(await page.locator('[data-dashkit-id="__dropping-elem__"]').count(), 0);
-    evidence.push({
-        check: 'nested palette validator false and cancel leave no preview, membership/geometry or callback changes before one valid destination commit',
-        nestedBefore,
-        nestedCommit,
     });
 });
 

@@ -86,11 +86,9 @@ export type DashKitCtxShape = DashkitPropsPassedToCtx & {
         gridProps: ReactGridLayoutProps,
         groupLayout: ConfigLayout[],
         sharedItem?: DraggedOverItem,
-        defaultsOverride?: Partial<import('../typings').WidgetLayout>,
     ) => {w?: number; h?: number} | false | undefined;
     outerDnDEnable: boolean;
     dragOverPlugin: null | RegisterManagerPlugin;
-    dragProps?: ItemDragProps | null;
 };
 
 const DashKitContext = React.createContext<DashKitCtxShape>({} as DashKitCtxShape);
