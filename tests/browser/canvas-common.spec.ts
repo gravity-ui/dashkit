@@ -809,7 +809,7 @@ for (const corner of ['se', 'nw']) {
 }
 
 // Critical: yes. Scaled resize bounds must stop the moving edge and keep its opposite corner fixed.
-for (const scale of [0.5, 1, 2]) {
+for (const scale of [0.5, 1, 2, 1.193467336683417, 0.73]) {
     test(`native corner resize stops at canvas bounds at scale ${scale}`, async ({
         page,
         evidence,
@@ -817,13 +817,13 @@ for (const scale of [0.5, 1, 2]) {
         await page.setViewportSize({width: 2000, height: 1400});
         const {state, widget, layout} = canvas(page);
         for (const corner of ['nw', 'ne', 'sw', 'se']) {
-            await page.goto(fixtureUrl('tests-gridstack--scalar-zoom'));
+            await page.goto(
+                fixtureUrl('tests-gridstack--scalar-zoom', {
+                    initialScale: String(scale),
+                    padded: scale === 1.193467336683417 || scale === 0.73,
+                }),
+            );
             await page.locator('[data-widget-id="b"]').waitFor();
-            if (scale !== 1) {
-                await page
-                    .getByRole('button', {name: scale === 2 ? 'Zoom2' : 'Toggle zoom', exact: true})
-                    .click();
-            }
             const before = await state();
             const old = checked(widget(before, 'b')).rect;
             const handle = checked(
@@ -866,6 +866,14 @@ for (const scale of [0.5, 1, 2]) {
             await page.mouse.move(outside.x, outside.y, {steps: 12});
             const preview = await state();
             check(preview);
+            const placeholder = checked(
+                await page.locator('.grid-stack-placeholder').boundingBox(),
+            );
+            const frame = checked(widget(preview, 'b')).rect;
+            near(placeholder.x, frame.x);
+            near(placeholder.y, frame.y);
+            near(placeholder.width, frame.width);
+            near(placeholder.height, frame.height);
             await page.mouse.move(
                 corner.includes('w') ? 0 : outside.x + 40,
                 corner.includes('n') ? 0 : outside.y + 40,
