@@ -34,7 +34,7 @@ for (const engine of ['legacy', 'gridstack']) {
         const originalIdentities = await identities();
         const widget = page.locator('[data-widget-id="a"]');
         const before = checked(await widget.boundingBox());
-        const drag = async (x: number, y: number, dx: number, dy: number) => {
+        const startDrag = async (x: number, y: number, dx: number, dy: number) => {
             await page.mouse.move(x, y);
             await page.mouse.down();
             await page.mouse.move(x + 5, y + 5);
@@ -416,15 +416,15 @@ for (const engine of ['legacy', 'gridstack']) {
         const widget = page.locator('[data-widget-id="b"]');
         await widget.waitFor();
         const identity = await widget.getAttribute('data-widget-instance');
-        const drag = async (x: number, y: number, dx: number, dy: number) => {
+        const startDrag = async (x: number, y: number, dx: number, dy: number) => {
             await page.mouse.move(x, y);
             await page.mouse.down();
             await page.mouse.move(x + Math.sign(dx) * 5, y + Math.sign(dy) * 5);
             await page.mouse.move(x + dx, y + dy, {steps: 8});
-            await page.mouse.up();
         };
         const initial = checked(await widget.boundingBox());
-        await drag(initial.x + initial.width / 2, initial.y + initial.height - 12, 280, 160);
+        await startDrag(initial.x + initial.width / 2, initial.y + initial.height - 12, 280, 160);
+        await page.mouse.up();
         await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 1');
         const host = page
             .locator(
@@ -435,12 +435,19 @@ for (const engine of ['legacy', 'gridstack']) {
             await host.locator(':is(.ui-resizable-se, .react-resizable-handle-se)').boundingBox(),
         );
         const moved = checked(await widget.boundingBox());
-        await drag(
+        await startDrag(
             corner.x + corner.width / 2,
             corner.y + corner.height / 2,
             moved.x + 5 - corner.x - corner.width / 2,
             moved.y + 5 - corner.y - corner.height / 2,
         );
+        await expect
+            .poll(async () => {
+                const box = checked(await widget.boundingBox());
+                return [box.width, box.height];
+            })
+            .toEqual([20, 20]);
+        await page.mouse.up();
         await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 2');
         const saved = JSON.parse(
             checked(await page.locator('[data-qa="saved-config"]').textContent()),
