@@ -6,6 +6,8 @@ import type {Config} from '../../src/shared';
 
 import {checked, storyUrl} from './fixtures';
 import type {NativeElement} from './types';
+
+type ItemMeta = {id: string; identity: string};
 // Critical: yes. Native edits must preserve saved geometry and a usable editor.
 export function boundary(page: Page) {
     const frames = () =>
@@ -145,23 +147,34 @@ export async function strictLifecycle(page: Page, legacy = false) {
     assert.equal(await page.locator('[data-dashkit-engine]').count(), 0);
     await page.getByRole('button', {name: 'Toggle mount', exact: true}).click();
     await page.locator('[data-widget-id="a"]').waitFor();
+    const strictAfter = await snapshot();
     await page.getByRole('button', {name: 'Read refs', exact: true}).click();
-    await page.waitForFunction(() => {
+    await page.waitForFunction((widgets) => {
         function required<T>(value: T | null | undefined): T {
             if (value === null || value === undefined) {
                 throw new Error('Missing native fixture value');
             }
             return value;
         }
+        const metadata = JSON.parse(
+            required(
+                required(document.querySelector<NativeElement>('[data-qa="meta"]')).textContent,
+            ),
+        ) as ItemMeta[];
         return (
-            JSON.parse(
-                required(
-                    required(document.querySelector<NativeElement>('[data-qa="meta"]')).textContent,
-                ),
-            ).length === 2
+            metadata.length === 2 &&
+            widgets.every(({id, instance}) =>
+                metadata.some((item) => item.id === id && item.identity === instance),
+            )
         );
-    });
-    const strictAfter = await snapshot();
+    }, strictAfter.widgets);
+    const metadata = JSON.parse(
+        checked(await page.locator('[data-qa="meta"]').textContent()),
+    ) as ItemMeta[];
+    assert.deepEqual(
+        Object.fromEntries(metadata.map(({id, identity}) => [id, identity])),
+        Object.fromEntries(strictAfter.widgets.map(({id, instance}) => [id, instance])),
+    );
     assert.equal(await page.locator('[data-widget-id="a"]').count(), 1);
     assert.equal(await page.locator('[data-widget-id="b"]').count(), 1);
     assert.notEqual(
