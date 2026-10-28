@@ -185,7 +185,7 @@ for (const engine of ['legacy', 'gridstack']) {
         const before = checked(await widget.boundingBox());
         const canvas = checked(await page.locator('[data-qa="canvas"]').boundingBox());
         const identity = await widget.getAttribute('data-widget-instance');
-        const drag = async (dx: number, dy: number) => {
+        const boundedDrag = async (dx: number, dy: number) => {
             const box = checked(await widget.boundingBox());
             await page.mouse.move(box.x + 30, box.y + 30);
             await page.mouse.down();
@@ -196,7 +196,7 @@ for (const engine of ['legacy', 'gridstack']) {
             await page.mouse.up();
             return moving;
         };
-        const live = await drag(0, 600);
+        const live = await boundedDrag(0, 600);
         await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 1');
         const moved = await saved();
         const after = checked(await widget.boundingBox());
@@ -209,7 +209,7 @@ for (const engine of ['legacy', 'gridstack']) {
         assert.deepEqual(await saved(), initial);
         await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 1');
         assert.equal(checked(await widget.boundingBox()).y, before.y);
-        await drag(50, 40);
+        await boundedDrag(50, 40);
         await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 2');
         assert.deepEqual((await saved()).layout, [{i: 'a', x: 1, y: 2, w: 2, h: 2}]);
         const resize = async (dx: number, dy: number) => {
