@@ -130,7 +130,10 @@ class GridStackCanvas extends React.PureComponent {
         }
         document.removeEventListener('visibilitychange', this.onVisibilityChange);
         this.observer?.disconnect();
-        this.hosts.forEach((host) => host.dragObserver?.disconnect());
+        for (const host of this.hosts.values()) {
+            host.dragObserver?.disconnect();
+            delete host.dragObserver;
+        }
         [...this.grids.values()].forEach(({grid}) => {
             grid.destroy(false);
         });
