@@ -722,7 +722,10 @@ function useMemoStateContext(
             const snapshot = {
                 // Removing a saved widget copies the snapshot but retains its drop owner.
                 owner: {},
-                data: [...newLayout, item],
+                data: [
+                    ...newLayout,
+                    layoutAdapter.optimistic ? {...item, i: TEMPORARY_ITEM_ID} : item,
+                ],
                 ...(nextContainers !== undefined ? {containers: nextContainers} : {}),
                 dragProps: dragPropsContext,
             };
