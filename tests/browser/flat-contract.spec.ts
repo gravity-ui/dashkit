@@ -432,11 +432,22 @@ for (const engine of ['legacy', 'gridstack']) {
         const widget = page.locator('[data-widget-id="b"]');
         await widget.waitFor();
         const identity = await widget.getAttribute('data-widget-instance');
+        const commitMotion = () =>
+            page.evaluate(
+                () =>
+                    new Promise<void>((resolve) =>
+                        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+                    ),
+            );
         const startDrag = async (x: number, y: number, dx: number, dy: number) => {
             await page.mouse.move(x, y);
             await page.mouse.down();
             await page.mouse.move(x + Math.sign(dx) * 5, y + Math.sign(dy) * 5);
-            await page.mouse.move(x + dx, y + dy, {steps: 8});
+            await commitMotion();
+            for (let step = 1; step <= 8; step++) {
+                await page.mouse.move(x + (dx * step) / 8, y + (dy * step) / 8);
+                await commitMotion();
+            }
         };
         const initial = checked(await widget.boundingBox());
         await startDrag(initial.x + initial.width / 2, initial.y + initial.height - 12, 280, 160);
