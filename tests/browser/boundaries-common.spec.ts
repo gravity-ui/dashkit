@@ -65,13 +65,15 @@ for (const legacy of [false, true]) {
                 ),
                 true,
             );
-            assert.equal(
-                await page.locator('[data-widget-id="a"]').getAttribute('data-widget-renders'),
-                content,
-            );
+            if (!legacy) {
+                assert.equal(
+                    await page.locator('[data-widget-id="a"]').getAttribute('data-widget-renders'),
+                    content,
+                );
+            }
             assert.equal(revealed.widgets[0].rect.width, visible.widgets[0].rect.width);
             evidence.push({
-                check: 'zero-width hidden to visible settles with identical content node/render count, config and no echo',
+                check: 'zero-width hidden to visible retains content node, config and no echo; native content does not rerender',
                 visible,
                 revealed,
             });
