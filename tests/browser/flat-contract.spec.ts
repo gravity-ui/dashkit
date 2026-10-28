@@ -1,10 +1,31 @@
 import assert from 'node:assert/strict';
 
-import {expect} from '@playwright/test';
+import {type Locator, type Page, expect} from '@playwright/test';
 
 import type {Config} from '../../src/shared';
 
 import {checked, storyUrl, test} from './fixtures';
+
+async function drag(
+    page: Page,
+    widget: Locator,
+    x: number,
+    y: number,
+    dx: number,
+    dy: number,
+    dimension: 'x' | 'width',
+) {
+    const before = checked(await widget.boundingBox());
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x + 5, y + 5);
+    // Commit the first position or size before sending the next native delta.
+    await expect
+        .poll(async () => checked(await widget.boundingBox())[dimension])
+        .toBe(before[dimension] + 5);
+    await page.mouse.move(x + dx, y + dy, {steps: 1});
+    await page.mouse.up();
+}
 // Critical: yes. Mounted renderers must save the same native gesture and restore it silently.
 for (const engine of ['legacy']) {
     test(`[${engine}] common flat native drag, resize, restore and identity`, async ({
@@ -34,14 +55,7 @@ for (const engine of ['legacy']) {
         const originalIdentities = await identities();
         const widget = page.locator('[data-widget-id="a"]');
         const before = checked(await widget.boundingBox());
-        const drag = async (x: number, y: number, dx: number, dy: number) => {
-            await page.mouse.move(x, y);
-            await page.mouse.down();
-            await page.mouse.move(x + 5, y + 5);
-            await page.mouse.move(x + dx, y + dy, {steps: 1});
-            await page.mouse.up();
-        };
-        await drag(before.x + 30, before.y + 60, 45, 35);
+        await drag(page, widget, before.x + 30, before.y + 60, 45, 35, 'x');
         await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 1');
         const moved = await saved();
         assert.deepEqual(moved.layout, [{...original.layout[0], x: 85, y: 75}, original.layout[1]]);
@@ -58,7 +72,15 @@ for (const engine of ['legacy']) {
             )
             .boundingBox();
         assert(corner);
-        await drag(corner.x + corner.width / 2, corner.y + corner.height / 2, 25, 25);
+        await drag(
+            page,
+            page.locator('[data-widget-id="b"]'),
+            corner.x + corner.width / 2,
+            corner.y + corner.height / 2,
+            25,
+            25,
+            'width',
+        );
         await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 2');
         const resized = await saved();
         assert.deepEqual(resized.layout, [
@@ -122,13 +144,7 @@ for (const engine of ['legacy']) {
         await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 0');
         await page.getByRole('button', {name: 'Toggle edit', exact: true}).click();
         const grown = checked(await widget.boundingBox());
-        await page.mouse.move(grown.x + 30, grown.y + 70);
-        await page.mouse.down();
-        await page.mouse.move(grown.x + 35, grown.y + 75);
-        // Commit the first drag position before sending the next native delta.
-        await expect.poll(async () => checked(await widget.boundingBox()).x).toBe(grown.x + 5);
-        await page.mouse.move(grown.x + 65, grown.y + 90, {steps: 1});
-        await page.mouse.up();
+        await drag(page, widget, grown.x + 30, grown.y + 70, 35, 20, 'x');
         await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 1');
         const moved = await saved();
         assert.deepEqual(moved.layout, [initial.layout[0], {...initial.layout[1], x: 155, y: 100}]);
