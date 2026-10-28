@@ -34,7 +34,7 @@ for (const engine of ['legacy', 'gridstack']) {
         const originalIdentities = await identities();
         const widget = page.locator('[data-widget-id="a"]');
         const before = checked(await widget.boundingBox());
-        const startDrag = async (x: number, y: number, dx: number, dy: number) => {
+        const drag = async (x: number, y: number, dx: number, dy: number) => {
             await page.mouse.move(x, y);
             await page.mouse.down();
             await page.mouse.move(x + 5, y + 5);
