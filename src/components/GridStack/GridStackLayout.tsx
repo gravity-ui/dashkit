@@ -1267,9 +1267,14 @@ class GridStackCanvas extends React.PureComponent {
                   ...this.convertConstraints(raw, source, record),
               }
             : undefined;
-        if (defaults && hasInvertedConstraints(defaults)) {
-            this.clearPreview();
-            return;
+        if (defaults) {
+            if (hasInvertedConstraints(defaults)) {
+                this.clearPreview();
+                return;
+            }
+            const {minW = 1, maxW = Infinity, minH = 1, maxH = Infinity} = defaults;
+            defaults.w = Math.min(maxW, Math.max(minW, defaults.w));
+            defaults.h = Math.min(maxH, Math.max(minH, defaults.h));
         }
         const {layout, containers} = this.readDocument();
         const sizes = this.context.onDropDragOver(

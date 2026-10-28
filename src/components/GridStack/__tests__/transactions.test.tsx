@@ -202,7 +202,7 @@ test.each(['width', 'height'] as const)(
 
 // Critical: yes. Palette adds must not persist geometry outside converted plugin constraints.
 test.each(['width', 'height'] as const)(
-    'public palette rejects inverted converted %s bounds and admits the next valid item',
+    'public palette rejects inverted converted %s bounds and clamps the next valid item',
     (axis) => {
         const measured = jest
             .spyOn(HTMLElement.prototype, 'clientWidth', 'get')
@@ -225,7 +225,14 @@ test.each(['width', 'height'] as const)(
         const validType = `${paletteType}-valid`;
         DashKitGridStack.registerPlugins({
             type: validType,
-            defaultLayout: {w: 3, h: 3, minW: 1, maxW: 5, minH: 1, maxH: 5},
+            defaultLayout: {
+                w: 3,
+                h: 3,
+                minW: axis === 'width' ? 3 : 1,
+                maxW: axis === 'width' ? 6 : 5,
+                minH: axis === 'height' ? 3 : 1,
+                maxH: axis === 'height' ? 6 : 5,
+            },
             renderer: (props, ref) => <Plugin {...props} ref={ref} />,
         });
         const onDrop = jest.fn();
@@ -241,7 +248,7 @@ test.each(['width', 'height'] as const)(
                     h: 20,
                     padding: [0, 0, 0, 0],
                     gap: [0, 0],
-                    grid: {cols: 32, rowHeight: 20, compactType: null},
+                    grid: {cols: 12, rowHeight: 25, compactType: null},
                 },
             ],
         };
@@ -318,10 +325,21 @@ test.each(['width', 'height'] as const)(
             dataTransfer: {setDragImage: jest.fn()},
         });
         over();
-        expect(target.querySelector('[data-dashkit-id="__dropping-elem__"]')).not.toBeNull();
+        const size = {w: axis === 'width' ? 2 : 1, h: axis === 'height' ? 2 : 1};
+        const preview = requireValue(
+            target.querySelector<GridItemHTMLElement>('[data-dashkit-id="__dropping-elem__"]'),
+            'palette preview',
+        );
+        expect(preview.gridstackNode).toMatchObject(size);
         fireEvent.drop(target);
         expect(onDrop).toHaveBeenCalledTimes(1);
-        expect(onDrop.mock.calls[0][0].itemLayout).toMatchObject({containerId: 'box', w: 3, h: 2});
+        const drop = onDrop.mock.calls[0][0];
+        expect(drop.itemLayout).toMatchObject({containerId: 'box', ...size});
+        const saved = DashKitGridStack.setItem({
+            config: {...document, layout: drop.newLayout, containers: drop.containers},
+            item: {type: validType, data: {}, layout: drop.itemLayout},
+        });
+        expect(saved.layout).toEqual([expect.objectContaining({containerId: 'box', ...size})]);
         expect(onChange).not.toHaveBeenCalled();
         view.unmount();
         measured.mockRestore();
