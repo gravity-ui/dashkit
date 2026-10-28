@@ -405,3 +405,56 @@ test('[gridstack] external value clone cancels active drag without saving it', a
     assert.equal(await page.locator('[data-qa="saved-config"]').textContent(), saved);
     assert.equal(checked(await widget.boundingBox()).x, original.x);
 });
+
+// Critical: yes. Minimum-size widgets must retain public edit controls outside their content box.
+for (const engine of ['legacy', 'gridstack']) {
+    test(`[${engine}] minimum-size widget retains a usable edit control after shrinking`, async ({
+        page,
+        evidence,
+    }) => {
+        await page.goto(storyUrl('flat-contract', {engine}));
+        const widget = page.locator('[data-widget-id="b"]');
+        await widget.waitFor();
+        const identity = await widget.getAttribute('data-widget-instance');
+        const drag = async (x: number, y: number, dx: number, dy: number) => {
+            await page.mouse.move(x, y);
+            await page.mouse.down();
+            await page.mouse.move(x + Math.sign(dx) * 5, y + Math.sign(dy) * 5);
+            await page.mouse.move(x + dx, y + dy, {steps: 8});
+            await page.mouse.up();
+        };
+        const initial = checked(await widget.boundingBox());
+        await drag(initial.x + initial.width / 2, initial.y + initial.height - 12, 280, 160);
+        await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 1');
+        const host = page
+            .locator(
+                ':is([data-dashkit-id="b"], [data-qa="dashkit-grid-item"]:has([data-widget-id="b"]))',
+            )
+            .first();
+        const corner = checked(
+            await host.locator(':is(.ui-resizable-se, .react-resizable-handle-se)').boundingBox(),
+        );
+        const moved = checked(await widget.boundingBox());
+        await drag(
+            corner.x + corner.width / 2,
+            corner.y + corner.height / 2,
+            moved.x + 5 - corner.x - corner.width / 2,
+            moved.y + 5 - corner.y - corner.height / 2,
+        );
+        await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 2');
+        const saved = JSON.parse(
+            checked(await page.locator('[data-qa="saved-config"]').textContent()),
+        ) as Config;
+        const item = checked(saved.layout.find(({i}) => i === 'b'));
+        assert.equal(item.w, 20);
+        assert.equal(item.h, 20);
+        await host.locator('[data-qa="dashkit-overlay-control-settings"]').click({timeout: 2000});
+        await expect(page.locator('[data-qa="edited-item"]')).toHaveText('b');
+        assert.equal(await widget.getAttribute('data-widget-instance'), identity);
+        evidence.push({
+            check: 'real pointer reaches public edit callback at permitted plugin minimum',
+            engine,
+            saved,
+        });
+    });
+}
