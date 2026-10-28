@@ -149,15 +149,25 @@ test('external same-grid item reorder changes native stacking without remounting
     view.unmount();
 });
 
-test('custom plugin handles bind after portal render and update without remount', async () => {
+test('StrictMode custom plugin handles bind after portal render and update without remount', async () => {
     const customType = 'native-custom-handle-regression';
     const bodyDown = jest.fn();
+    const LateHandle = () => {
+        const [visible, setVisible] = React.useState(false);
+        return (
+            <>
+                <button onClick={() => setVisible(true)}>Reveal late handle</button>
+                {visible && <span className="late-handle">Late Handle A</span>}
+            </>
+        );
+    };
     DashKitGridStack.reloadPlugins({
         type: customType,
         defaultLayout: {w: 2, h: 2, minW: 1, minH: 1},
         renderer: (props, ref) => (
             <div>
                 <Plugin {...props} ref={ref} />
+                <LateHandle />
                 {props.data.handleVisible && (
                     <span className="handle-a" key={String(props.data.handleVersion)}>
                         Handle A
@@ -229,17 +239,19 @@ test('custom plugin handles bind after portal render and update without remount'
     ];
     const ref = React.createRef<DashKitGridStack>();
     const fixture = (document: Config, handle?: string, editMode = true) => (
-        <DashKitGridStack
-            ref={ref}
-            config={document}
-            groups={groups}
-            editMode={editMode}
-            draggableHandleClassName={handle}
-            onChange={onChange}
-            onDragStart={onDragStart}
-        />
+        <React.StrictMode>
+            <DashKitGridStack
+                ref={ref}
+                config={document}
+                groups={groups}
+                editMode={editMode}
+                draggableHandleClassName={handle}
+                onChange={onChange}
+                onDragStart={onDragStart}
+            />
+        </React.StrictMode>
     );
-    const view = render(fixture(initial, 'handle-a'));
+    const view = render(fixture(initial, 'late-handle'));
     const host = requireValue(
         view.container.querySelector<GridItemHTMLElement>('[data-dashkit-id="a"]'),
         'custom host',
@@ -267,7 +279,10 @@ test('custom plugin handles bind after portal render and update without remount'
         expect(onDragStart).not.toHaveBeenCalled();
         expect(onChange).not.toHaveBeenCalled();
         expect(host.gridstackNode?.x).toBe(0);
-        await drag(view.getByText('Handle A'));
+        fireEvent.click(view.getByText('Reveal late handle'));
+        await flush();
+        await drag(view.getByText('Late Handle A'));
+        expect(onChange).toHaveBeenCalledTimes(1);
         expect(onChange.mock.calls.at(-1)[0].config.layout[0].x).toBe(1);
         view.rerender(fixture(initial, 'handle-b'));
         await flush();
