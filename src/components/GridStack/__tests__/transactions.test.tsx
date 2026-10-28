@@ -474,110 +474,125 @@ test('native final proposal validation rejects overflow before emitting and reta
 });
 
 // Critical: yes. A metadata-driven root remount must keep saved widgets attached.
-test('palette root remount cancels active preview and retains a pending drop until commit', () => {
-    const flat: Config = {...config, containers: undefined, layoutVersion: undefined};
-    const groups: DashKitGroup[] = [
-        {
-            gridProperties: () => ({width: 640}),
-            render: (_id, children, props) => (
-                <section key={props.context.version}>{children}</section>
-            ),
-        },
-    ];
-    const onChange = jest.fn();
-    const onDrop = jest.fn();
-    const fixture = (version: number) => (
-        <DashKitDnDWrapper>
-            <div>
-                <ActionPanel items={[{id: 'add', icon: '+', title: 'Add', dragProps: {type}}]} />
-                <DashKitGridStack
-                    config={flat}
-                    context={{version}}
-                    editMode
-                    groups={groups}
-                    onChange={onChange}
-                    onDrop={onDrop}
-                />
-            </div>
-        </DashKitDnDWrapper>
-    );
-    const view = render(fixture(0));
-    const oldRoot = view.container.querySelector('.grid-stack') as HTMLElement & {
-        gridstack?: GridStack;
-    };
-    const widget = view.container.querySelector('[data-identity]');
-    jest.spyOn(oldRoot, 'getBoundingClientRect').mockReturnValue({
-        left: 0,
-        top: 0,
-        right: 640,
-        bottom: 400,
-        width: 640,
-        height: 400,
-        x: 0,
-        y: 0,
-        toJSON: () => ({}),
-    });
-    fireEvent.dragStart(view.getByRole('button', {name: '+ Add'}), {
-        dataTransfer: {setDragImage: jest.fn()},
-    });
-    const over = new Event('dragover', {bubbles: true, cancelable: true});
-    Object.assign(over, {clientX: 0, clientY: 0});
-    fireEvent(oldRoot, over);
-    expect(view.container.querySelector('[data-dashkit-id="__dropping-elem__"]')).not.toBeNull();
+test.each([undefined, 'caller-preview-id'])(
+    'palette root remount cancels active preview and retains a pending drop with ID %s until commit',
+    (droppingId) => {
+        const flat: Config = {...config, containers: undefined, layoutVersion: undefined};
+        const groups: DashKitGroup[] = [
+            {
+                gridProperties: () => ({
+                    width: 640,
+                    droppingItem: droppingId ? {i: droppingId, w: 6, h: 4} : undefined,
+                }),
+                render: (_id, children, props) => (
+                    <section key={props.context.version}>{children}</section>
+                ),
+            },
+        ];
+        const onChange = jest.fn();
+        const onDrop = jest.fn();
+        const fixture = (version: number) => (
+            <DashKitDnDWrapper>
+                <div>
+                    <ActionPanel
+                        items={[{id: 'add', icon: '+', title: 'Add', dragProps: {type}}]}
+                    />
+                    <DashKitGridStack
+                        config={flat}
+                        context={{version}}
+                        editMode
+                        groups={groups}
+                        onChange={onChange}
+                        onDrop={onDrop}
+                    />
+                </div>
+            </DashKitDnDWrapper>
+        );
+        const view = render(fixture(0));
+        const oldRoot = view.container.querySelector('.grid-stack') as HTMLElement & {
+            gridstack?: GridStack;
+        };
+        const widget = view.container.querySelector('[data-identity]');
+        jest.spyOn(oldRoot, 'getBoundingClientRect').mockReturnValue({
+            left: 0,
+            top: 0,
+            right: 640,
+            bottom: 400,
+            width: 640,
+            height: 400,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+        });
+        fireEvent.dragStart(view.getByRole('button', {name: '+ Add'}), {
+            dataTransfer: {setDragImage: jest.fn()},
+        });
+        const over = new Event('dragover', {bubbles: true, cancelable: true});
+        Object.assign(over, {clientX: 0, clientY: 0});
+        fireEvent(oldRoot, over);
+        expect(
+            view.container.querySelector('[data-dashkit-id="__dropping-elem__"]'),
+        ).not.toBeNull();
 
-    view.rerender(fixture(1));
-    const newRoot = view.container.querySelector('.grid-stack') as HTMLElement & {
-        gridstack?: GridStack;
-    };
-    expect(newRoot).not.toBe(oldRoot);
-    expect(oldRoot.gridstack).toBeUndefined();
-    expect(newRoot.gridstack).toBeDefined();
-    expect(view.container.querySelector('[data-identity]')).toBe(widget);
-    expect(view.container.querySelector('[data-dashkit-id="__dropping-elem__"]')).toBeNull();
-    expect(onChange).not.toHaveBeenCalled();
+        view.rerender(fixture(1));
+        const newRoot = view.container.querySelector('.grid-stack') as HTMLElement & {
+            gridstack?: GridStack;
+        };
+        expect(newRoot).not.toBe(oldRoot);
+        expect(oldRoot.gridstack).toBeUndefined();
+        expect(newRoot.gridstack).toBeDefined();
+        expect(view.container.querySelector('[data-identity]')).toBe(widget);
+        expect(view.container.querySelector('[data-dashkit-id="__dropping-elem__"]')).toBeNull();
+        expect(onChange).not.toHaveBeenCalled();
 
-    jest.spyOn(newRoot, 'getBoundingClientRect').mockReturnValue(oldRoot.getBoundingClientRect());
-    fireEvent.dragStart(view.getByRole('button', {name: '+ Add'}), {
-        dataTransfer: {setDragImage: jest.fn()},
-    });
-    const pendingOver = new Event('dragover', {bubbles: true, cancelable: true});
-    Object.assign(pendingOver, {clientX: 0, clientY: 0});
-    fireEvent(newRoot, pendingOver);
-    fireEvent.drop(newRoot);
-    expect(onDrop).toHaveBeenCalledTimes(1);
-    const drop = onDrop.mock.calls[0][0];
-    view.rerender(fixture(2));
-    const pendingRoot = requireValue(
-        view.container.querySelector<HTMLElement>('.grid-stack'),
-        'pending root',
-    ) as HTMLElement & {gridstack: GridStack};
-    const pendingHost = requireValue(
-        pendingRoot.querySelector<GridItemHTMLElement>('[data-dashkit-id="__dropping-elem__"]'),
-        'pending placeholder',
-    );
-    expect(pendingRoot).not.toBe(newRoot);
-    const {x, y, w, h} = drop.itemLayout;
-    expect(pendingHost.gridstackNode).toMatchObject({x, y, w, h});
-    const displaced = requireValue(
-        pendingRoot.querySelector<GridItemHTMLElement>('[data-dashkit-id="a"]'),
-        'displaced widget',
-    );
-    const savedPosition = drop.newLayout.find((entry: Config['layout'][number]) => entry.i === 'a');
-    expect(displaced.gridstackNode).toMatchObject({
-        x: savedPosition.x,
-        y: savedPosition.y,
-        w: savedPosition.w,
-        h: savedPosition.h,
-    });
-    expect(pendingRoot.gridstack.opts.disableDrag).toBe(true);
-    expect(view.container.querySelector('[data-identity]')).toBe(widget);
-    act(() => drop.commit());
-    expect(view.container.querySelector('[data-dashkit-id="__dropping-elem__"]')).toBeNull();
-    expect(pendingRoot.gridstack.opts.disableDrag).toBeFalsy();
-    expect(view.container.querySelector('[data-identity]')).toBe(widget);
-    expect(onChange).not.toHaveBeenCalled();
-    view.unmount();
-});
+        jest.spyOn(newRoot, 'getBoundingClientRect').mockReturnValue(
+            oldRoot.getBoundingClientRect(),
+        );
+        fireEvent.dragStart(view.getByRole('button', {name: '+ Add'}), {
+            dataTransfer: {setDragImage: jest.fn()},
+        });
+        const pendingOver = new Event('dragover', {bubbles: true, cancelable: true});
+        Object.assign(pendingOver, {clientX: 0, clientY: 0});
+        fireEvent(newRoot, pendingOver);
+        fireEvent.drop(newRoot);
+        expect(onDrop).toHaveBeenCalledTimes(1);
+        const drop = onDrop.mock.calls[0][0];
+        expect(drop.itemLayout.i).toBe(droppingId || '__dropping-elem__');
+        view.rerender(fixture(2));
+        const pendingRoot = requireValue(
+            view.container.querySelector<HTMLElement>('.grid-stack'),
+            'pending root',
+        ) as HTMLElement & {gridstack: GridStack};
+        const pendingHost = requireValue(
+            pendingRoot.querySelector<GridItemHTMLElement>('[data-dashkit-id="__dropping-elem__"]'),
+            'pending placeholder',
+        );
+        expect(pendingRoot).not.toBe(newRoot);
+        const {x, y, w, h} = drop.itemLayout;
+        expect(pendingHost.gridstackNode).toMatchObject({x, y, w, h});
+        const displaced = requireValue(
+            pendingRoot.querySelector<GridItemHTMLElement>('[data-dashkit-id="a"]'),
+            'displaced widget',
+        );
+        const savedPosition = drop.newLayout.find(
+            (entry: Config['layout'][number]) => entry.i === 'a',
+        );
+        expect(displaced.gridstackNode).toMatchObject({
+            x: savedPosition.x,
+            y: savedPosition.y,
+            w: savedPosition.w,
+            h: savedPosition.h,
+        });
+        expect(pendingRoot.gridstack.opts.disableDrag).toBe(true);
+        expect(view.container.querySelector('[data-identity]')).toBe(widget);
+        act(() => drop.commit());
+        expect(view.container.querySelector('[data-dashkit-id="__dropping-elem__"]')).toBeNull();
+        expect(pendingRoot.gridstack.opts.disableDrag).toBeFalsy();
+        expect(view.container.querySelector('[data-identity]')).toBe(widget);
+        expect(onChange).not.toHaveBeenCalled();
+        view.unmount();
+    },
+);
 
 // Critical: yes. Canceling an add must not persist displaced neighbors on the next save.
 test.each([
