@@ -690,6 +690,10 @@ class GridStackCanvas extends React.PureComponent {
                     this.attach(item.id, entry);
                 }
             });
+            const temporary = temporaryLayout?.data.find(({i}) => i === TEMPORARY_ITEM_ID);
+            if (temporary) {
+                this.attach(TEMPORARY_ITEM_ID, temporary);
+            }
             // Reordering saved items changes overlap stacking without replacing portal targets.
             this.grids.forEach((record, key) => {
                 let next: HTMLElement | null = null;
