@@ -839,3 +839,89 @@ for (const corner of ['se', 'nw']) {
         });
     }
 }
+
+// Critical: yes. Scaled resize bounds must stop the moving edge and keep its opposite corner fixed.
+for (const scale of [0.5, 1, 2]) {
+    test(`native corner resize stops at canvas bounds at scale ${scale}`, async ({
+        page,
+        evidence,
+    }) => {
+        await page.setViewportSize({width: 2000, height: 1400});
+        const {state, widget, layout} = canvas(page);
+        for (const corner of ['nw', 'ne', 'sw', 'se']) {
+            await page.goto(fixtureUrl('tests-gridstack--scalar-zoom'));
+            await page.locator('[data-widget-id="b"]').waitFor();
+            if (scale !== 1) {
+                await page
+                    .getByRole('button', {name: scale === 2 ? 'Zoom2' : 'Toggle zoom', exact: true})
+                    .click();
+            }
+            const before = await state();
+            const old = checked(widget(before, 'b')).rect;
+            const handle = checked(
+                await page.locator(`[data-dashkit-id="b"] .ui-resizable-${corner}`).boundingBox(),
+            );
+            const start = {x: handle.x + handle.width / 2, y: handle.y + handle.height / 2};
+            const outside = {
+                x: corner.includes('w')
+                    ? Math.max(0, before.root.left - 12)
+                    : before.root.right + 40,
+                y: corner.includes('n')
+                    ? Math.max(0, before.root.top - 12)
+                    : before.root.bottom + 40,
+            };
+            const check = (snapshot: Awaited<ReturnType<typeof state>>) => {
+                const next = checked(widget(snapshot, 'b')).rect;
+                near(
+                    corner.includes('w') ? next.right : next.left,
+                    corner.includes('w') ? old.right : old.left,
+                );
+                near(
+                    corner.includes('n') ? next.bottom : next.top,
+                    corner.includes('n') ? old.bottom : old.top,
+                );
+                near(
+                    corner.includes('w') ? next.left : next.right,
+                    corner.includes('w') ? before.root.left : before.root.right,
+                );
+                near(
+                    corner.includes('n') ? next.top : next.bottom,
+                    corner.includes('n') ? before.root.top : before.root.bottom,
+                );
+            };
+            await page.mouse.move(start.x, start.y);
+            await page.mouse.down();
+            await page.mouse.move(
+                start.x + (corner.includes('w') ? -5 : 5),
+                start.y + (corner.includes('n') ? -5 : 5),
+            );
+            await page.mouse.move(outside.x, outside.y, {steps: 12});
+            const preview = await state();
+            check(preview);
+            await page.mouse.move(
+                corner.includes('w') ? 0 : outside.x + 40,
+                corner.includes('n') ? 0 : outside.y + 40,
+                {steps: 4},
+            );
+            check(await state());
+            await page.mouse.up();
+            const after = await state();
+            check(after);
+            const next = checked(widget(after, 'b')).rect;
+            near(next.width / scale, checked(layout(after, 'b')).w);
+            near(next.height / scale, checked(layout(after, 'b')).h);
+            assert.equal(
+                checked(widget(after, 'b')).instance,
+                checked(widget(before, 'b')).instance,
+            );
+            assert.equal(after.events, 'Events: 1');
+            evidence.push({
+                check: `bounded ${corner} resize keeps opposite corner through release`,
+                scale,
+                before,
+                preview,
+                after,
+            });
+        }
+    });
+}

@@ -131,6 +131,7 @@ function Contract({
     const [config, setConfig] = React.useState(bounded ? boundedInitial : initial);
     const [savedConfig, setSavedConfig] = React.useState(config);
     const [editing, setEditing] = React.useState(true);
+    const [edited, setEdited] = React.useState<string | null>(null);
     const [events, setEvents] = React.useState(0);
     const [northWest, setNorthWest] = React.useState(false);
     const [handleLabel, setHandleLabel] = React.useState('old');
@@ -182,11 +183,13 @@ function Contract({
                 </>
             )}
             <span data-qa="event-count">Events: {events}</span>
+            <span data-qa="edited-item">{edited || ''}</span>
             <div data-qa="canvas" style={{width: bounded ? 600 : 640, height: 400}}>
                 <Component
                     config={config}
                     groups={activeGroups}
                     editMode={editing}
+                    onItemEdit={(item) => setEdited(item.id)}
                     onChange={({config: next}) => {
                         setSavedConfig(next);
                         if (!delayedAck) {
