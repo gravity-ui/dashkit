@@ -388,3 +388,58 @@ test.each([
     );
     expect(JSON.stringify(invalid)).toBe(before);
 });
+
+// Critical: no. Mobile metadata must follow current config order even when visual groups do not.
+test.each(['geometry', 'orderId'] as const)(
+    'mobile metadata follows config order after reorder and removal with %s sorting',
+    async (sorting) => {
+        DashKitGridStack.setSettings({isMobile: true});
+        try {
+            const document: Config = {
+                ...config,
+                items: ['a', 'b', 'c', 'd'].map((id, index) => ({
+                    ...config.items[0],
+                    id,
+                    data: {text: id},
+                    orderId: sorting === 'orderId' ? [1, 4, 3, 2][index] : undefined,
+                })),
+                layout: [
+                    {i: 'a', x: 0, y: 2, w: 2, h: 2, parent: 'left'},
+                    {i: 'b', x: 6, y: 0, w: 3, h: 4, parent: 'right'},
+                    {i: 'c', x: 4, y: 0, w: 4, h: 3, parent: 'left'},
+                    {i: 'd', x: 2, y: 3, w: 5, h: 1, parent: 'right'},
+                ],
+            };
+            const groups = [{id: 'right'}, {id: 'left'}];
+            const ref = React.createRef<DashKitGridStack>();
+            const fixture = (saved: Config) => (
+                <DashKitGridStack ref={ref} config={saved} groups={groups} editMode={false} />
+            );
+            const view = render(fixture(document));
+            const plugins = new Map(document.items.map(({id}) => [id, view.getByText(id)]));
+            const metadata = async () =>
+                Promise.all(requireValue(ref.current, 'DashKit ref').getItemsMeta());
+            const expected = (ids: string[]) =>
+                ids.map((id) => ({
+                    identity: Number(plugins.get(id)?.getAttribute('data-identity')),
+                }));
+            expect(await metadata()).toEqual(expected(['a', 'b', 'c', 'd']));
+            view.rerender(fixture({...document, items: [...document.items].reverse()}));
+            expect(await metadata()).toEqual(expected(['d', 'c', 'b', 'a']));
+            view.rerender(
+                fixture({
+                    ...document,
+                    items: [...document.items].reverse().filter(({id}) => id !== 'c'),
+                    layout: document.layout.filter(({i}) => i !== 'c'),
+                }),
+            );
+            expect(await metadata()).toEqual(expected(['d', 'b', 'a']));
+            for (const id of ['a', 'b', 'd']) {
+                expect(view.getByText(id)).toBe(plugins.get(id));
+            }
+            view.unmount();
+        } finally {
+            DashKitGridStack.setSettings({isMobile: false});
+        }
+    },
+);
