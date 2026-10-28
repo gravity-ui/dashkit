@@ -11,6 +11,12 @@ type NativeDraggable = {
     helperContainment?: HTMLElement;
 };
 type NativeResizable = {
+    option: {
+        maxWidth: number;
+        maxWidthMoveLeft: number;
+        maxHeight: number;
+        maxHeightMoveUp: number;
+    };
     rectScale: {x: number; y: number};
     startEvent?: MouseEvent;
     originalRect?: DOMRect;
@@ -53,6 +59,7 @@ export class DashKitNativeGrid extends NativeBase {
     properties?: () => ReactGridLayoutProps;
     onCancel?: () => void;
     private resizeEvent?: MouseEvent;
+    private resizeLimits?: NativeResizable['option'];
 
     cancelDrag() {
         // React owns these portal targets; native cancellation must not delete external subtrees.
@@ -153,6 +160,7 @@ export class DashKitNativeGrid extends NativeBase {
         let ui = uiInput;
         const host = el as GridItemHTMLElement & {
             ddElement?: {
+                ddResizable?: NativeResizable;
                 ddDraggable?: {
                     mouseDownEvent?: MouseEvent;
                     dragOffset?: {offsetX: number; offsetTop: number};
@@ -169,6 +177,8 @@ export class DashKitNativeGrid extends NativeBase {
         super._onStartMoving(el, event, ui, node, width, height);
         if (event.type === 'resizestart') {
             this.resizeEvent = event as MouseEvent;
+            const resize = host.ddElement?.ddResizable;
+            this.resizeLimits = resize ? {...resize.option} : undefined;
         }
         this.refreshScale(el);
         if (drag?.mouseDownEvent && drag.dragOffset) {
@@ -272,6 +282,13 @@ export class DashKitNativeGrid extends NativeBase {
             x: resizeTransform?.xScale ?? xScale,
             y: resizeTransform?.yScale ?? yScale,
         };
+        if (resize.startEvent && this.resizeLimits) {
+            // Native maxima clamp screen pixels; retain layout limits when zoom changes.
+            resize.option.maxWidth = this.resizeLimits.maxWidth / nextScale.x;
+            resize.option.maxWidthMoveLeft = this.resizeLimits.maxWidthMoveLeft / nextScale.x;
+            resize.option.maxHeight = this.resizeLimits.maxHeight / nextScale.y;
+            resize.option.maxHeightMoveUp = this.resizeLimits.maxHeightMoveUp / nextScale.y;
+        }
         if (
             resize.startEvent &&
             resize.originalRect &&
