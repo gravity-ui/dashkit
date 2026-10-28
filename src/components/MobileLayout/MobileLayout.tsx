@@ -28,32 +28,23 @@ export default class MobileLayout extends React.PureComponent<
     static contextType = DashKitContext;
     context!: React.ContextType<typeof DashKitContext>;
 
-    pluginsRefs: PluginRef[] = [];
     sortedLayoutItems: Record<string, ReturnType<typeof getSortedConfigItems>> | null = null;
 
     _memoLayout = this.context.layout;
     _memoConfigItems = this.context.configItems;
-    _memoForwardedPluginRef: Array<(refObject: PluginRef) => void> = [];
+    _memoForwardedPluginRef = new Map<string, (refObject: PluginRef) => void>();
     _memoAdjustWidgetLayout: Record<string, (props: {needSetDefault?: boolean}) => void> = {};
 
     state: MobileLayoutState = {
         itemsWithActiveAutoheight: {},
     };
 
-    render() {
-        const {
-            config,
-            layout,
-            groups = [{id: DEFAULT_GROUP}],
-            context,
-            editMode,
-            configItems,
-        } = this.context;
+    private plugins = new Map<string, PluginRef>();
 
-        this.pluginsRefs.length = configItems.length;
+    render() {
+        const {config, layout, groups = [{id: DEFAULT_GROUP}], context, editMode} = this.context;
 
         const sortedItems = this.getSortedLayoutItems();
-        let indexOffset = 0;
 
         return (
             <div className={b()}>
@@ -61,7 +52,7 @@ export default class MobileLayout extends React.PureComponent<
                     const groupId = group.id || DEFAULT_GROUP;
                     const items = sortedItems[groupId] || [];
 
-                    const children = items.map((item, index) => {
+                    const children = items.map((item) => {
                         const isItemWithActiveAutoheight =
                             item.id in this.state.itemsWithActiveAutoheight;
 
@@ -76,17 +67,13 @@ export default class MobileLayout extends React.PureComponent<
                                     layout={layout}
                                     shouldItemUpdate={false}
                                     adjustWidgetLayout={this.getMemoAdjustWidgetLayout(item.id)}
-                                    forwardedPluginRef={this.getMemoForwardRefCallback(
-                                        indexOffset + index,
-                                    )}
+                                    forwardedPluginRef={this.getMemoForwardRefCallback(item.id)}
                                     onItemMountChange={this.context.onItemMountChange}
                                     onItemRender={this.context.onItemRender}
                                 />
                             </div>
                         );
                     });
-
-                    indexOffset += items.length;
 
                     if (group.render) {
                         return group.render(groupId, children, {
@@ -103,6 +90,12 @@ export default class MobileLayout extends React.PureComponent<
                 })}
             </div>
         );
+    }
+
+    get pluginsRefs() {
+        return this.context.configItems
+            .map(({id}) => this.plugins.get(id))
+            .filter((ref): ref is PluginRef => ref !== undefined);
     }
 
     getSortedLayoutItems() {
@@ -127,14 +120,18 @@ export default class MobileLayout extends React.PureComponent<
         return this.sortedLayoutItems;
     }
 
-    getMemoForwardRefCallback(refIndex: number) {
-        if (!this._memoForwardedPluginRef[refIndex]) {
-            this._memoForwardedPluginRef[refIndex] = (pluginRef: PluginRef) => {
-                this.pluginsRefs[refIndex] = pluginRef;
-            };
+    getMemoForwardRefCallback(id: string) {
+        if (!this._memoForwardedPluginRef.has(id)) {
+            this._memoForwardedPluginRef.set(id, (pluginRef: PluginRef) => {
+                if (pluginRef) {
+                    this.plugins.set(id, pluginRef);
+                } else {
+                    this.plugins.delete(id);
+                }
+            });
         }
 
-        return this._memoForwardedPluginRef[refIndex];
+        return this._memoForwardedPluginRef.get(id);
     }
 
     adjustWidgetLayout(id: string, {needSetDefault}: {needSetDefault?: boolean}) {
