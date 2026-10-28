@@ -17,7 +17,7 @@
         position: relative;
     }
 
-    &__host > .grid-stack-item-content {
+    &__host.grid-stack-item > .grid-stack-item-content {
         overflow: visible;
     }
 
