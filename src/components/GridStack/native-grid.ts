@@ -180,7 +180,8 @@ export class DashKitNativeGrid extends NativeBase {
             const resize = host.ddElement?.ddResizable;
             this.resizeLimits = resize ? {...resize.option} : undefined;
         }
-        this.refreshScale(el);
+        // Native start already captured the widget rectangle before its transform was cleared.
+        this.refreshScale(el, event.type !== 'resizestart');
         if (drag?.mouseDownEvent && drag.dragOffset) {
             const pointer = event as MouseEvent;
             // Native dragging anchors at the first move; retain the grab point from mousedown.
@@ -227,7 +228,7 @@ export class DashKitNativeGrid extends NativeBase {
         super._dragOrResize(el, event, ui, node, width, height);
     }
 
-    refreshScale(el: GridItemHTMLElement) {
+    refreshScale(el: GridItemHTMLElement, rebaseResize = true) {
         const props = this.properties?.();
         const scale = props?.transformScaleRef?.current ?? props?.transformScale;
         if (scale !== undefined && (!Number.isFinite(scale) || scale <= 0)) {
@@ -262,7 +263,14 @@ export class DashKitNativeGrid extends NativeBase {
             this.refreshDraggableScale(element.ddElement.ddDraggable, scale, xScale, yScale);
         }
         if (element.ddElement?.ddResizable) {
-            this.refreshResizableScale(el, element.ddElement.ddResizable, scale, xScale, yScale);
+            this.refreshResizableScale(
+                el,
+                element.ddElement.ddResizable,
+                scale,
+                xScale,
+                yScale,
+                rebaseResize,
+            );
         }
     }
 
@@ -272,6 +280,7 @@ export class DashKitNativeGrid extends NativeBase {
         scale: number | undefined,
         xScale: number,
         yScale: number,
+        rebaseResize: boolean,
     ) {
         const resize = resizeInput;
         const resizeTransform =
@@ -290,6 +299,7 @@ export class DashKitNativeGrid extends NativeBase {
             resize.option.maxHeightMoveUp = this.resizeLimits.maxHeightMoveUp / nextScale.y;
         }
         if (
+            rebaseResize &&
             resize.startEvent &&
             resize.originalRect &&
             (resize.rectScale.x !== nextScale.x || resize.rectScale.y !== nextScale.y)

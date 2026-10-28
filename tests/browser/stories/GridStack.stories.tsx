@@ -104,6 +104,8 @@ function Contract({
     mode,
     legacy = false,
     initialCssScale = false,
+    initialScale = 1,
+    padded = false,
 }: {
     legacy?: boolean;
     nested?: boolean;
@@ -112,6 +114,8 @@ function Contract({
     occupied?: boolean;
     mode?: 'collision' | 'nowrap' | 'custom' | 'edges' | 'scalar' | 'budget' | 'horizontal';
     initialCssScale?: boolean;
+    initialScale?: number;
+    padded?: boolean;
 }) {
     const Component = legacy ? DashKit : DashKitGridStack;
     const canvasWidth = zones ? 320 : 640;
@@ -191,7 +195,7 @@ function Contract({
         }
         return initial;
     });
-    const [scale, setScale] = React.useState(initialCssScale ? 0.5 : 1);
+    const [scale, setScale] = React.useState(initialCssScale ? 0.5 : initialScale);
     const [explicitScale, setExplicitScale] = React.useState(!initialCssScale);
     const [editing, setEditing] = React.useState(!dashboard);
     const [allowPalette, setAllowPalette] = React.useState(true);
@@ -491,8 +495,9 @@ function Contract({
                     style={{
                         transform: `scale(${scale})`,
                         transformOrigin: 'top left',
-                        width: dashboard ? '100%' : canvasWidth,
-                        height: zones ? 800 : 400,
+                        width: dashboard ? '100%' : canvasWidth + (padded ? 40 : 0),
+                        height: (zones ? 800 : 400) + (padded ? 55 : 0),
+                        padding: padded ? '20px 20px 35px' : undefined,
                         outline: '1px solid #666',
                     }}
                 >
@@ -598,6 +603,7 @@ export const HorizontalPacking: StoryFn<typeof Contract> = (args) => (
 );
 
 export const ScalarZoom: StoryFn<typeof Contract> = (args) => <Contract {...args} mode="scalar" />;
+ScalarZoom.args = {initialScale: 1, padded: false};
 export const ImplicitCssZoom: StoryFn<typeof Contract> = (args) => (
     <Contract {...args} mode="scalar" initialCssScale />
 );
