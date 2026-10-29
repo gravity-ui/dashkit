@@ -722,9 +722,13 @@ class GridStackCanvas extends React.PureComponent {
                 (grid.engine as DashKitEngine).restoring = true;
             });
             const pending = [...containers];
+            const placedContainers = new Set<string>();
             for (let pass = 0; pending.length && pass <= containers.length; pass++) {
                 for (let index = pending.length - 1; index >= 0; index--) {
                     const container = pending[index];
+                    if (container.containerId && !placedContainers.has(container.containerId)) {
+                        continue;
+                    }
                     const host = this.attach(container.id, container, true);
                     if (!host) {
                         continue;
@@ -748,6 +752,7 @@ class GridStackCanvas extends React.PureComponent {
                     host.content.style.padding = container.padding
                         .map((value) => `${value}px`)
                         .join(' ');
+                    placedContainers.add(container.id);
                     pending.splice(index, 1);
                 }
             }
@@ -970,6 +975,7 @@ class GridStackCanvas extends React.PureComponent {
         entry: Partial<WidgetLayout>,
         source: GridRecord,
         target: GridRecord,
+        forAdmission = false,
     ) {
         const result: Partial<WidgetLayout> = {};
         for (const key of ['minW', 'maxW', 'minH', 'maxH'] as const) {
@@ -984,7 +990,9 @@ class GridStackCanvas extends React.PureComponent {
             const units =
                 (pixels + (horizontal ? target.geometry.gapX : target.geometry.gapY)) /
                 (horizontal ? target.geometry.stepX : target.geometry.stepY);
-            result[key] = Math.max(1, key.startsWith('min') ? Math.ceil(units) : Math.floor(units));
+            const rounded = key.startsWith('min') ? Math.ceil(units) : Math.floor(units);
+            // Admission needs raw maxima; native GridStack treats zero maxima as unbounded.
+            result[key] = forAdmission && key.startsWith('max') ? rounded : Math.max(1, rounded);
         }
         return result;
     }
@@ -1000,8 +1008,16 @@ class GridStackCanvas extends React.PureComponent {
             return {w: requireValue(node.w, 'node.w'), h: requireValue(node.h, 'node.h')};
         }
         const visible = this.active || visibleGeometry(position(id, node), source.geometry);
-        const constraints = this.convertConstraints(this.active?.oldItem || node, source, target);
-        if (hasInvertedConstraints(constraints)) {
+        const constraints = this.convertConstraints(
+            this.active?.oldItem || node,
+            source,
+            target,
+            true,
+        );
+        if (
+            (constraints.maxW !== undefined && (constraints.minW ?? 1) > constraints.maxW) ||
+            (constraints.maxH !== undefined && (constraints.minH ?? 1) > constraints.maxH)
+        ) {
             return undefined;
         }
         return {
