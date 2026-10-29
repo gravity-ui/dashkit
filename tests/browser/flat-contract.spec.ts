@@ -76,6 +76,10 @@ async function drag(
         .poll(async () => checked(await widget.boundingBox())[dimension])
         .toBe(before[dimension] + 5);
     await page.mouse.move(x + dx, y + dy, {steps: 1});
+    // Settled gestures release only after the final native update commits.
+    await expect
+        .poll(async () => checked(await widget.boundingBox())[dimension])
+        .toBe(before[dimension] + dx);
     await page.mouse.up();
 }
 // Critical: yes. Mounted renderers must save the same native gesture and restore it silently.
