@@ -421,7 +421,13 @@ for (const engine of ['legacy', 'gridstack']) {
                 await page.mouse.move(box.x + 25, box.y + 30);
                 await page.mouse.down();
                 await page.mouse.move(box.x + 30, box.y + 30);
+                await expect
+                    .poll(async () => checked(await widget.boundingBox()).x)
+                    .toBe(box.x + 5);
                 await page.mouse.move(box.x + 75, box.y + 30);
+                await expect
+                    .poll(async () => checked(await widget.boundingBox()).x)
+                    .toBe(box.x + 50);
             };
             await startDrag();
             await page.mouse.up();
@@ -462,7 +468,9 @@ test('[gridstack] external value clone cancels active drag without saving it', a
         await page.mouse.move(box.x + 25, box.y + 30);
         await page.mouse.down();
         await page.mouse.move(box.x + 30, box.y + 30);
+        await expect.poll(async () => checked(await widget.boundingBox()).x).toBe(box.x + 5);
         await page.mouse.move(box.x + 75, box.y + 30);
+        await expect.poll(async () => checked(await widget.boundingBox()).x).toBe(box.x + 50);
     };
     await startDrag();
     await page.mouse.up();
