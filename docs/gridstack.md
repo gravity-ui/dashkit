@@ -98,3 +98,5 @@ npm run test:browser
 Playwright writes traces and failure screenshots to `test-results/` and its HTML report to `playwright-report/` (both ignored). `npm test` runs engine-independent helpers once, the same mounted flat contract for legacy and GridStack, and separate engine-specific suites. Separate native suites cover contained nesting, controlled cancellation and restoration, bounds, portal identity and StrictMode cleanup. The common flat browser contract runs with the same assertions for both renderers.
 
 The native CDP touch transport check runs in Chromium; other native gesture and common public contracts run in Chromium, Firefox and WebKit.
+
+Container geometry bounds admission and native edits. Container content keeps visible overflow so overlays and resize handles remain reachable.
