@@ -274,6 +274,9 @@ export class DashKitEngine extends EngineBase {
             .filter((entry) => !input.id || entry.id !== input.id)
             .map((entry) => ({...entry, el: undefined, grid: undefined}));
         const candidate = {...input, _id: undefined, el: undefined, grid: undefined};
+        if (this.maxRow && candidate.y !== undefined) {
+            candidate.y = Math.max(0, Math.min(candidate.y, this.maxRow - candidate.h));
+        }
         if (this.mode.allowOverlap && candidate.x === undefined) {
             candidate.x = candidate.y = 0;
         }
