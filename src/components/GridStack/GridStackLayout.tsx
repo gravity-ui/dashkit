@@ -108,12 +108,6 @@ class GridStackCanvas extends React.PureComponent {
             } finally {
                 this.syncing = false;
             }
-            const host = this.hosts.get(this.active.id);
-            if (host?.el.gridstackNode) {
-                host.key = getGridKey(
-                    this.context.layout.find(({i}) => i === this.active?.id) || {},
-                );
-            }
             this.sync();
         }
         if (!this.active && this.appliedContext !== this.context) {
