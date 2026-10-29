@@ -896,6 +896,7 @@ class GridStackCanvas extends React.PureComponent {
         entry: Partial<WidgetLayout>,
         source: GridRecord,
         target: GridRecord,
+        forAdmission = false,
     ) {
         const result: Partial<WidgetLayout> = {};
         for (const key of ['minW', 'maxW', 'minH', 'maxH'] as const) {
@@ -910,7 +911,9 @@ class GridStackCanvas extends React.PureComponent {
             const units =
                 (pixels + (horizontal ? target.geometry.gapX : target.geometry.gapY)) /
                 (horizontal ? target.geometry.stepX : target.geometry.stepY);
-            result[key] = Math.max(1, key.startsWith('min') ? Math.ceil(units) : Math.floor(units));
+            const rounded = key.startsWith('min') ? Math.ceil(units) : Math.floor(units);
+            // Admission needs raw maxima; native GridStack treats zero maxima as unbounded.
+            result[key] = forAdmission && key.startsWith('max') ? rounded : Math.max(1, rounded);
         }
         return result;
     }
@@ -926,14 +929,15 @@ class GridStackCanvas extends React.PureComponent {
             return {w: requireValue(node.w, 'node.w'), h: requireValue(node.h, 'node.h')};
         }
         const visible = this.active || visibleGeometry(position(id, node), source.geometry);
-        const constraints = this.convertConstraints(this.active?.oldItem || node, source, target);
+        const constraints = this.convertConstraints(
+            this.active?.oldItem || node,
+            source,
+            target,
+            true,
+        );
         if (
-            (constraints.minW !== undefined &&
-                constraints.maxW !== undefined &&
-                constraints.minW > constraints.maxW) ||
-            (constraints.minH !== undefined &&
-                constraints.maxH !== undefined &&
-                constraints.minH > constraints.maxH)
+            (constraints.maxW !== undefined && (constraints.minW ?? 1) > constraints.maxW) ||
+            (constraints.maxH !== undefined && (constraints.minH ?? 1) > constraints.maxH)
         ) {
             return undefined;
         }

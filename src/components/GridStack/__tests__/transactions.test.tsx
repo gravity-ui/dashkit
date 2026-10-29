@@ -331,6 +331,190 @@ test.each(['width', 'height'] as const)(
     },
 );
 
+// Critical: no. Requested regression: a destination cell must not exceed the configured maximum.
+test.each([
+    ['width', 1],
+    ['height', 1],
+    ['width', undefined],
+    ['height', undefined],
+] as const)(
+    'native admission rejects a subcell %s maximum with minimum %s without mutation',
+    async (axis, minimum) => {
+        const onChange = jest.fn();
+        const groups: DashKitGroup[] = ['source', 'target'].map((id) => ({
+            id,
+            render: (key, children) => (
+                <section key={key} data-zone={id}>
+                    {children}
+                </section>
+            ),
+            gridProperties: () => ({
+                width: 600,
+                cols: id === 'source' ? 60 : 6,
+                rowHeight: id === 'source' ? 10 : 100,
+                margin: [0, 0],
+                containerPadding: [0, 0],
+                compactType: null,
+            }),
+        }));
+        const invalid = {
+            i: 'a',
+            parent: 'source',
+            x: 0,
+            y: 0,
+            w: 1,
+            h: 1,
+            minW: minimum,
+            minH: minimum,
+            maxW: axis === 'width' ? 1 : 10,
+            maxH: axis === 'height' ? 1 : 10,
+        };
+        const valid = {...invalid, i: 'b', x: 10, w: 10, h: 10, maxW: 10, maxH: 10};
+        const document: Config = {
+            ...config,
+            containers: [],
+            items: [config.items[0], {...config.items[0], id: 'b'}],
+            layout: [invalid, valid],
+        };
+        const before = JSON.stringify(document);
+        const view = render(
+            <DashKitGridStack config={document} editMode groups={groups} onChange={onChange} />,
+        );
+        const invalidHost = requireValue(
+            view.container.querySelector<GridItemHTMLElement>('[data-dashkit-id="a"]'),
+            'invalid host',
+        );
+        const validHost = requireValue(
+            view.container.querySelector<GridItemHTMLElement>('[data-dashkit-id="b"]'),
+            'valid host',
+        );
+        const source = requireValue(invalidHost.gridstackNode?.grid, 'source grid') as GridStack & {
+            triggerEvent(event: Event, target: HTMLElement): void;
+        };
+        const target = view.container.querySelector(
+            '[data-zone="target"] .grid-stack',
+        ) as HTMLElement & {
+            gridstack: GridStack;
+            ddElement: {ddDroppable: {option: {accept(el: Element): boolean}}};
+        };
+        const engine = target.gridstack.engine as GridStack['engine'] & {dropSize?: unknown};
+        const accept = target.ddElement.ddDroppable.option.accept;
+        const fit = jest.spyOn(engine, 'willItFit');
+        const savedSource = source.save(false);
+        const savedTarget = target.gridstack.save(false);
+        try {
+            expect(accept(validHost)).toBe(true);
+            expect(engine.dropSize).toMatchObject({w: 1, h: 1, maxW: 1, maxH: 1});
+            fit.mockClear();
+            expect(accept(invalidHost)).toBe(false);
+            expect(fit).not.toHaveBeenCalled();
+            expect(engine.dropSize).toBeUndefined();
+            expect(source.save(false)).toEqual(savedSource);
+            expect(target.gridstack.save(false)).toEqual(savedTarget);
+            expect(JSON.stringify(document)).toBe(before);
+            expect(onChange).not.toHaveBeenCalled();
+            await act(async () => {
+                source.triggerEvent(new Event('dragstart'), validHost);
+                expect(accept(validHost)).toBe(true);
+                const node = requireValue(validHost.gridstackNode, 'valid node');
+                source.engine.removeNode(node);
+                target.appendChild(validHost);
+                node.grid = target.gridstack;
+                node.x = 1;
+                target.gridstack.engine.addNode(node);
+                source.triggerEvent(new Event('dragstop'), validHost);
+                await Promise.resolve();
+            });
+            expect(onChange).toHaveBeenCalledTimes(1);
+            expect(onChange.mock.calls[0][0].config.layout).toEqual([
+                {i: 'a', parent: 'source', x: 0, y: 0, w: 1, h: 1},
+                {i: 'b', parent: 'target', x: 1, y: 0, w: 1, h: 1},
+            ]);
+            expect(JSON.stringify(document)).toBe(before);
+        } finally {
+            view.unmount();
+            fit.mockRestore();
+        }
+    },
+);
+
+// Critical: no. Requested regression: zero converted maxima must not remove native resize caps.
+test.each(['width', 'height'] as const)(
+    'nested subcell %s maximum retains the native resize cap',
+    async (axis) => {
+        const groups: DashKitGroup[] = [
+            {
+                id: DEFAULT_GROUP,
+                gridProperties: () => ({
+                    width: 600,
+                    cols: 60,
+                    rowHeight: 10,
+                    margin: [0, 0],
+                    containerPadding: [0, 0],
+                    compactType: null,
+                }),
+            },
+        ];
+        const nested: Config = {
+            ...config,
+            containers: [
+                {
+                    ...box,
+                    w: 60,
+                    h: 60,
+                    padding: [0, 0, 0, 0],
+                    gap: [0, 0],
+                    grid: {cols: 6, rowHeight: 100, compactType: null},
+                },
+            ],
+            layout: [
+                {
+                    i: 'a',
+                    containerId: 'box',
+                    x: 0,
+                    y: 0,
+                    w: 1,
+                    h: 1,
+                    ...(axis === 'width' ? {maxW: 1} : {maxH: 1}),
+                },
+            ],
+        };
+        const before = JSON.stringify(nested);
+        const onChange = jest.fn();
+        const view = render(
+            <DashKitGridStack config={nested} groups={groups} editMode onChange={onChange} />,
+        );
+        try {
+            const host = requireValue(
+                view.container.querySelector<GridItemHTMLElement>('[data-dashkit-id="a"]'),
+                'nested host',
+            );
+            const node = requireValue(host.gridstackNode, 'nested node');
+            const grid = requireValue(node.grid, 'nested grid') as GridStack & {
+                triggerEvent(event: Event, target: HTMLElement): void;
+            };
+            const saved = grid.save(false);
+            await act(async () => {
+                grid.triggerEvent(new Event('resizestart'), host);
+                grid.engine.moveNodeCheck(node, {
+                    w: axis === 'width' ? 3 : 1,
+                    h: axis === 'height' ? 3 : 1,
+                    resizing: true,
+                });
+                grid.triggerEvent(new Event('resizestop'), host);
+                await Promise.resolve();
+            });
+            expect(node).toMatchObject({w: 1, h: 1});
+            expect(axis === 'width' ? node.maxW : node.maxH).toBe(1);
+            expect(grid.save(false)).toEqual(saved);
+            expect(onChange).not.toHaveBeenCalled();
+            expect(JSON.stringify(nested)).toBe(before);
+        } finally {
+            view.unmount();
+        }
+    },
+);
+
 // Critical: yes. A move must not reset a plugin's state/ref or lose saved document membership.
 // Critical: yes. A valid subtree must reach native fit checks in destination units, not source pixels.
 test('native bounded droppable accepts fitting container units and rejects an oversized subtree', () => {
