@@ -2,9 +2,61 @@ import assert from 'node:assert/strict';
 
 import {type Locator, type Page, expect} from '@playwright/test';
 
+import type {GridItemHTMLElement} from '../../src/components/GridStack/runtime';
 import type {Config} from '../../src/shared';
 
 import {checked, storyUrl, test} from './fixtures';
+
+// Critical: yes. A controlled zone transfer must leave the next edit with the destination engine.
+test('[gridstack] active controlled zone transfer preserves native ownership and the next edit', async ({
+    page,
+    evidence,
+}) => {
+    await page.goto(storyUrl('active-zone-transfer'));
+    const widget = page.locator('[data-widget-id="a"]');
+    await widget.waitFor();
+    const saved = async () =>
+        JSON.parse(checked(await page.locator('[data-qa="saved-config"]').textContent())) as Config;
+    const initial = await saved();
+    const identity = await widget.getAttribute('data-widget-instance');
+    const before = checked(await widget.boundingBox());
+    await page.mouse.move(before.x + 30, before.y + 30);
+    await page.mouse.down();
+    await page.mouse.move(before.x + 80, before.y + 30);
+    await expect.poll(async () => checked(await widget.boundingBox()).x).toBe(before.x + 50);
+    await page
+        .getByRole('button', {name: 'Transfer to destination', exact: true})
+        .dispatchEvent('click');
+    await page.mouse.up();
+    const transferred = {
+        ...initial,
+        layout: initial.layout.map((entry) => ({...entry, parent: 'destination'})),
+    };
+    assert.deepEqual(await saved(), transferred);
+    await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 0');
+    const host = page.locator('[data-dashkit-id="a"]');
+    const ownership = await host.evaluate((el: GridItemHTMLElement) => ({
+        ownsParent: el.gridstackNode?.grid?.el === el.parentElement,
+        registered: el.gridstackNode?.grid?.engine.nodes.includes(el.gridstackNode),
+    }));
+    // A single native delta reaches b directly, without an intermediate accepted position.
+    const moved = checked(await widget.boundingBox());
+    await page.mouse.move(moved.x + 30, moved.y + 30);
+    await page.mouse.down();
+    await page.mouse.move(moved.x + 230, moved.y + 30);
+    await page.mouse.up();
+    evidence.push({initial, transferred, ownership, afterCollision: await saved()});
+    assert.deepEqual(ownership, {ownsParent: true, registered: true});
+    assert.deepEqual(await saved(), transferred);
+    assert.deepEqual(checked(await widget.boundingBox()), moved);
+    await drag(page, widget, moved.x + 30, moved.y + 30, 50, 40, 'x');
+    await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 1');
+    assert.deepEqual((await saved()).layout, [
+        {...transferred.layout[0], x: 1, y: 2},
+        transferred.layout[1],
+    ]);
+    assert.equal(await widget.getAttribute('data-widget-instance'), identity);
+});
 
 async function drag(
     page: Page,
