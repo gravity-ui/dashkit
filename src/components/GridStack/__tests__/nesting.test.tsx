@@ -83,6 +83,7 @@ function Probe() {
     return null;
 }
 const ContextProbe = withContext(Probe, gridStackLayoutAdapter);
+let measuredWidth = 640;
 beforeAll(() => {
     DashKitGridStack.reloadPlugins({
         type,
@@ -91,13 +92,57 @@ beforeAll(() => {
     });
     Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
         configurable: true,
-        get: () => 640,
+        get: () => measuredWidth,
     });
     Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
         configurable: true,
         get: () => 400,
     });
 });
+
+// Critical: yes. A transient narrow viewport must not unmount a valid saved dashboard.
+test('measured narrow container defers projection and recovers without changing saved membership', () => {
+    const narrow = {...config, containers: [{...box, w: 2}], layout: []};
+    const groups: DashKitGroup[] = [{gridProperties: () => ({cols: 12, rowHeight: 18})}];
+    measuredWidth = 1200;
+    const view = render(<DashKitGridStack config={narrow} groups={groups} editMode />);
+    try {
+        measuredWidth = 100;
+        expect(() =>
+            view.rerender(<DashKitGridStack config={{...narrow}} groups={groups} editMode />),
+        ).not.toThrow();
+        measuredWidth = 1200;
+        view.rerender(<DashKitGridStack config={{...narrow}} groups={groups} editMode />);
+        expect(view.container.querySelector('[data-dashkit-id="box"]')).not.toBeNull();
+    } finally {
+        measuredWidth = 640;
+        view.unmount();
+    }
+});
+
+// Critical: yes. Plugin defaults must not write document membership during a parameter edit.
+test.each([DashKit, DashKitGridStack])(
+    'plugin default membership is ignored by %p',
+    (Component) => {
+        const defaultType = 'default-membership';
+        DashKitGridStack.reloadPlugins({
+            type: defaultType,
+            defaultLayout: {w: 6, h: 4, containerId: 'missing'},
+            renderer: (props, ref) => <Plugin {...props} ref={ref} />,
+        });
+        const onChange = jest.fn();
+        const root = {
+            ...config,
+            items: [{...config.items[0], type: defaultType}],
+            containers: undefined,
+            layoutVersion: undefined,
+        };
+        const view = render(<Component config={root} onChange={onChange} editMode />);
+        fireEvent.click(view.getByText('retained'));
+        expect(onChange.mock.calls[0][0].config.layout[0].containerId).toBeUndefined();
+        view.unmount();
+    },
+);
 
 // Critical: yes. A move must not reset a plugin's state/ref or lose saved document membership.
 test('controlled reparent preserves the portal target, widget instance and metadata ref', async () => {

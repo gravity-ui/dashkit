@@ -691,7 +691,7 @@ function useMemoStateContext(
                         ...sharedItem,
                         ...itemLayout,
                         parent: group,
-                        ...(containerId ? {containerId} : {}),
+                        containerId,
                         type: dragItemType,
                     },
                     sharedItem ?? null,

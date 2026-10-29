@@ -214,3 +214,16 @@ test.each([1, 2])('nowrap moves retain subunit saved width with minW %s', (minW)
     ).toBe(false);
     expect(node).toMatchObject({x: 11.5, y: 0, w: 0.5, h: 0.5});
 });
+
+// Critical: yes. Finite row bounds must not hide a collision by clamping a pushed neighbour.
+test('finite fit and move simulate collision overflow before rejecting atomically', () => {
+    const engine = new DashKitEngine({column: 6, maxRow: 8, float: true});
+    engine.mode = {compactType: null};
+    const a = engine.addNode({id: 'a', x: 0, y: 0, w: 6, h: 4});
+    engine.addNode({id: 'b', x: 0, y: 4, w: 6, h: 4});
+    const before = nodes(engine);
+    expect(engine.willItFit({id: 'incoming', x: 0, y: 4, w: 6, h: 4})).toBe(false);
+    expect(engine.moveNodeCheck(a as (typeof engine.nodes)[number], {x: 0, y: 4})).toBe(false);
+    expect(engine.maxRow).toBe(8);
+    expect(nodes(engine)).toEqual(before);
+});

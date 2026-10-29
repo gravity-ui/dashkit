@@ -281,8 +281,8 @@ test('legacy static entry points reject incoming nested membership while new ref
     ]);
 });
 
-// Plugin defaults must be checked before legacy addItem can persist or erase membership.
-test.each([Infinity, 0])('legacy setItem rejects nested y=%s, accepts flat override', (y) => {
+// Plugin defaults must never become membership; explicit nested additions still require GridStack.
+test.each([Infinity, 0])('legacy setItem ignores default membership with y=%s', (y) => {
     const nestedType = `${type}-legacy-default-${y}`;
     DashKit.reloadPlugins({
         type: nestedType,
@@ -293,9 +293,13 @@ test.each([Infinity, 0])('legacy setItem rejects nested y=%s, accepts flat overr
     const item = {type: nestedType, data: {}};
     const before = JSON.stringify({flat, item});
 
-    expect(() => DashKit.setItem({config: flat, item})).toThrow(
-        'requires @gravity-ui/dashkit/gridstack',
-    );
+    expect(DashKit.setItem({config: flat, item}).layout[0].containerId).toBeUndefined();
+    expect(() =>
+        DashKit.setItem({
+            config: flat,
+            item: {...item, layout: {x: 0, y, w: 1, h: 1, containerId: 'box'}},
+        }),
+    ).toThrow('requires @gravity-ui/dashkit/gridstack');
     expect(JSON.stringify({flat, item})).toBe(before);
 
     const override = {

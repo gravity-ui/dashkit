@@ -218,8 +218,22 @@ export class DashKitEngine extends EngineBase {
             return false;
         }
         const before = this.nodes.map((entry) => ({...entry}));
-        const moved = this.moveNode(node, {...options, pack: true});
-        if (this.maxRow && this.getRow() > this.maxRow) {
+        const {maxRow} = this;
+        let moved: boolean;
+        this.maxRow = 0;
+        try {
+            moved = this.moveNode(node, {
+                ...options,
+                x: next.x,
+                y: next.y,
+                w: next.w,
+                h: next.h,
+                pack: true,
+            });
+        } finally {
+            this.maxRow = maxRow;
+        }
+        if (maxRow && this.getRow() > maxRow) {
             before.forEach((entry) =>
                 Object.assign(
                     requireValue(
@@ -254,7 +268,7 @@ export class DashKitEngine extends EngineBase {
         ) {
             return false;
         }
-        const clone = new DashKitEngine({column: this.column, maxRow: this.maxRow, float: true});
+        const clone = new DashKitEngine({column: this.column, float: true});
         clone.mode = this.mode;
         clone.nodes = this.nodes
             .filter((entry) => !input.id || entry.id !== input.id)

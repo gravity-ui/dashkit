@@ -1,7 +1,7 @@
 import type {ReactGridLayoutProps} from '../../typings';
 
 import {requireValue} from './invariants';
-import {GridStack, Utils} from './runtime';
+import {DDManager, GridStack, Utils} from './runtime';
 import type {DDElementHost, GridItemHTMLElement, GridStackNode, GridStackOptions} from './runtime';
 
 type Transform = {xScale: number; yScale: number; xOffset: number; yOffset: number};
@@ -30,6 +30,7 @@ type NativeInternals = {
     dragTransform: Transform;
     placeholder: GridItemHTMLElement;
     _extraDragRow?: number;
+    _leave(el: GridItemHTMLElement, helper?: GridItemHTMLElement): void;
     _updateContainerHeight(): GridStack;
     _writePosAttr(el: GridItemHTMLElement, node: GridStackNode): GridStack;
     _onStartMoving(
@@ -60,10 +61,55 @@ export class DashKitNativeGrid extends NativeBase {
     onCancel?: () => void;
     private resizeEvent?: MouseEvent;
     private resizeLimits?: NativeResizable['option'];
+    private motionEvent?: Pick<MouseEvent, 'clientX' | 'clientY'>;
+
+    constructor(root: HTMLElement, options: GridStackOptions) {
+        super(root, options);
+        const target = (root as DDElementHost).ddElement?.ddDroppable as
+            | (NonNullable<NonNullable<DDElementHost['ddElement']>['ddDroppable']> & {
+                  _mouseEnter(event: MouseEvent): void;
+              })
+            | undefined;
+        if (target) {
+            const enter = target._mouseEnter.bind(target);
+            target.disable();
+            target._mouseEnter = (event) => {
+                // GridStack synthesizes parent entry on nested leave even beyond the parent bounds.
+                const rect = root.getBoundingClientRect();
+                if (
+                    event.clientX >= rect.left &&
+                    event.clientX < rect.right &&
+                    event.clientY >= rect.top &&
+                    event.clientY < rect.bottom
+                ) {
+                    enter(event);
+                }
+            };
+            target.enable();
+        }
+    }
 
     cancelDrag() {
         // React owns these portal targets; native cancellation must not delete external subtrees.
         this.onCancel?.();
+    }
+
+    hasPreview() {
+        return this.placeholder.parentElement === this.el;
+    }
+
+    _leave(el: GridItemHTMLElement, helper?: GridItemHTMLElement) {
+        // A newly accepted grid calls _leave again after owning DDManager.dropElement.
+        const next = DDManager.dropElement;
+        if (this.properties?.().isBounded && this.hasPreview() && (!next || next.el === this.el)) {
+            return;
+        }
+        super._leave(el, helper);
+    }
+
+    refreshMotionScale(el: GridItemHTMLElement, event: Event, resize: boolean) {
+        this.refreshScale(el, true, resize);
+        this.motionEvent = (event as TouchEvent).touches?.[0] || (event as MouseEvent);
     }
 
     _updateContainerHeight() {
@@ -181,7 +227,7 @@ export class DashKitNativeGrid extends NativeBase {
             this.resizeLimits = resize ? {...resize.option} : undefined;
         }
         // Native start already captured the widget rectangle before its transform was cleared.
-        this.refreshScale(el, event.type !== 'resizestart');
+        this.refreshScale(el, event.type !== 'resizestart', event.type === 'resizestart');
         if (drag?.mouseDownEvent && drag.dragOffset) {
             const pointer = event as MouseEvent;
             // Native dragging anchors at the first move; retain the grab point from mousedown.
@@ -210,7 +256,15 @@ export class DashKitNativeGrid extends NativeBase {
     ) {
         let ui = uiInput;
         const node = nodeInput;
-        this.refreshScale(el);
+        if (event.type === 'drag' && el.gridstackNode !== node) {
+            return;
+        }
+        const pointer = event as MouseEvent;
+        const motion = this.motionEvent;
+        this.motionEvent = undefined;
+        if (!motion || motion.clientX !== pointer.clientX || motion.clientY !== pointer.clientY) {
+            this.refreshScale(el, true, event.type === 'resize');
+        }
         if (event.type === 'resize') {
             this.resizeEvent = event as MouseEvent;
         }
@@ -228,7 +282,7 @@ export class DashKitNativeGrid extends NativeBase {
         super._dragOrResize(el, event, ui, node, width, height);
     }
 
-    refreshScale(el: GridItemHTMLElement, rebaseResize = true) {
+    refreshScale(el: GridItemHTMLElement, rebaseResize = true, resize = false) {
         const props = this.properties?.();
         const scale = props?.transformScaleRef?.current ?? props?.transformScale;
         if (scale !== undefined && (!Number.isFinite(scale) || scale <= 0)) {
@@ -259,10 +313,10 @@ export class DashKitNativeGrid extends NativeBase {
                 ddResizable?: NativeResizable;
             };
         };
-        if (element.ddElement?.ddDraggable) {
+        if (!resize && element.ddElement?.ddDraggable) {
             this.refreshDraggableScale(element.ddElement.ddDraggable, scale, xScale, yScale);
         }
-        if (element.ddElement?.ddResizable) {
+        if (resize && element.ddElement?.ddResizable) {
             this.refreshResizableScale(
                 el,
                 element.ddElement.ddResizable,

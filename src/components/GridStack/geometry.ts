@@ -39,6 +39,8 @@ export function getContainerMaxRows(container: GridStackContainer, parent: React
 }
 
 export type GridStackLayoutRect = {x: number; y: number; width: number; height: number};
+// Measured widths can be transient; explicit snapshot projection remains strict.
+export class GridStackWidthError extends Error {}
 export type GridStackRootGrids = Record<
     string,
     {width: number; gridProperties: ReactGridLayoutProps}
@@ -73,13 +75,17 @@ export function getGridStackLayoutRects(config: Config, rootGrids: GridStackRoot
     ) => {
         if (
             parent.width !== undefined &&
-            (rect.width <= 0 ||
-                rect.height <= 0 ||
+            (rect.height <= 0 ||
                 rect.left + rect.width > parent.width + 1e-7 ||
                 rect.top + rect.height >
                     requireValue(parent.height, 'parent content height') + 1e-7)
         ) {
             throw new Error(`DashKitGridStack: child "${id}" exceeds its container content bounds`);
+        }
+        if (parent.width !== undefined && rect.width <= 0) {
+            throw new GridStackWidthError(
+                `DashKitGridStack: child "${id}" exceeds its container content bounds`,
+            );
         }
     };
     const pending = [...(config.containers || [])];
@@ -96,8 +102,13 @@ export function getGridStackLayoutRects(config: Config, rootGrids: GridStackRoot
             const [top, right, bottom, left] = container.padding;
             const width = rect.width - left - right;
             const height = rect.height - top - bottom;
-            if (width <= 0 || height <= 0) {
+            if (height <= 0) {
                 throw new Error(
+                    `DashKitGridStack: padding exceeds container "${container.id}" usable width or height`,
+                );
+            }
+            if (width <= 0) {
+                throw new GridStackWidthError(
                     `DashKitGridStack: padding exceeds container "${container.id}" usable width or height`,
                 );
             }
@@ -107,7 +118,7 @@ export function getGridStackLayoutRects(config: Config, rootGrids: GridStackRoot
                 containerPadding: [0, 0],
             });
             if (geometry.stepX <= 0) {
-                throw new Error(
+                throw new GridStackWidthError(
                     `DashKitGridStack: padding exceeds container "${container.id}" width`,
                 );
             }
