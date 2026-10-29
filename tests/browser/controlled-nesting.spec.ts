@@ -52,11 +52,22 @@ test('custom handles retain child ownership and container padding remains dragga
     await drag(resize.x + resize.width / 2, resize.y + resize.height / 2, 20, 15);
     await expect(page.locator('[data-qa="nesting-events"]')).toHaveText('2');
     await expect(page.locator('[data-qa="nested-focus"]')).toHaveText('');
+    const final = await saved();
+    assert.deepEqual(final.containers, [
+        {...checked(original.containers)[0], x: 20, y: 15, w: 420, h: 295},
+    ]);
+    assert.deepEqual(final.layout, original.layout);
+    assert.deepEqual(checked(await page.locator('[data-dashkit-id="panel"]').boundingBox()), {
+        x: panel.x + 20,
+        y: panel.y + 15,
+        width: 420,
+        height: 295,
+    });
     evidence.push({
         check: 'custom child handle, ancestor padding and focus ownership',
         original,
         moved,
-        final: await saved(),
+        final,
     });
 });
 
