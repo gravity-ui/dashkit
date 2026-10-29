@@ -215,3 +215,53 @@ ResizeControls.args = {engine: 'legacy', customResize: true};
 
 export const DelayedAcknowledgment: StoryFn<typeof Contract> = (args) => <Contract {...args} />;
 DelayedAcknowledgment.args = {engine: 'legacy', bounded: true, delayedAck: true};
+
+function ControlledTransfer() {
+    const initialConfig: Config = {
+        ...initial,
+        items: initial.items.map((item) => ({...item, type: boundedType})),
+        layout: [
+            {i: 'a', x: 0, y: 0, w: 2, h: 2, parent: 'source'},
+            {i: 'b', x: 4, y: 0, w: 2, h: 2, parent: 'destination'},
+        ],
+    };
+    const [config, setConfig] = React.useState(initialConfig);
+    const [events, setEvents] = React.useState(0);
+    return (
+        <div>
+            <button
+                onClick={() =>
+                    setConfig({
+                        ...initialConfig,
+                        layout: initialConfig.layout.map((entry) => ({
+                            ...entry,
+                            parent: 'destination',
+                        })),
+                    })
+                }
+            >
+                Transfer to destination
+            </button>
+            <span data-qa="event-count">Events: {events}</span>
+            <div style={{width: 600}}>
+                <DashKitGridStack
+                    config={config}
+                    editMode
+                    groups={['source', 'destination'].map((id) => ({
+                        id,
+                        gridProperties: () => ({
+                            ...boundedGroups[0].gridProperties?.({}),
+                            preventCollision: true,
+                        }),
+                    }))}
+                    onChange={({config: next}) => {
+                        setConfig(next);
+                        setEvents((count) => count + 1);
+                    }}
+                />
+            </div>
+            <pre data-qa="saved-config">{JSON.stringify(config)}</pre>
+        </div>
+    );
+}
+export const ActiveZoneTransfer: StoryFn = () => <ControlledTransfer />;
