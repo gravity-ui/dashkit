@@ -28,6 +28,7 @@ import {act, render} from '@testing-library/react';
 import {DEFAULT_GROUP} from '../../../constants';
 import type {Config, GridStackContainer} from '../../../shared';
 import type {DashKitGroup, PluginWidgetProps} from '../../../typings';
+import {DashKitDnDWrapper} from '../../DashKitDnDWrapper/DashKitDnDWrapper';
 import {DashKitGridStack} from '../DashKitGridStack';
 import {requireValue} from '../invariants';
 import {GridStack} from '../runtime';
@@ -84,6 +85,138 @@ beforeAll(() => {
         get: () => 400,
     });
 });
+
+// Critical: yes. Moving a full nowrap subtree must preserve its children and honor destination admission.
+test.each([1, 2])(
+    'native nowrap subtree move checks each child once with %s children',
+    async (count) => {
+        const groups: DashKitGroup[] = ['left', 'right'].map((id) => ({
+            id,
+            render: (key, children) => (
+                <section key={key} data-zone={id}>
+                    {children}
+                </section>
+            ),
+            gridProperties: () => ({
+                cols: 12,
+                rowHeight: 20,
+                margin: [0, 0],
+                containerPadding: [0, 0],
+                compactType: null,
+            }),
+        }));
+        const childType = 'nowrap-subtree-child';
+        DashKitGridStack.reloadPlugins({
+            type: childType,
+            defaultLayout: {w: 6, h: 2, minW: 1},
+            renderer: (props, ref) => <Plugin {...props} ref={ref} />,
+        });
+        const nested: Config = {
+            ...config,
+            items: Array.from({length: count}, (_, index) => ({
+                ...config.items[0],
+                type: childType,
+                id: `child-${index}`,
+            })),
+            layout: Array.from({length: count}, (_, index) => ({
+                i: `child-${index}`,
+                parent: 'left',
+                containerId: 'box',
+                x: (index * 6) / count,
+                y: 0,
+                w: 6 / count,
+                h: 2,
+            })),
+            containers: [
+                {
+                    ...box,
+                    parent: 'left',
+                    w: 6,
+                    h: 6,
+                    padding: [0, 0, 0, 0],
+                    gap: [0, 0],
+                    grid: {cols: 6, rowHeight: 20, compactType: 'horizontal-nowrap'},
+                },
+            ],
+        };
+        const before = JSON.stringify(nested);
+        const onChange = jest.fn();
+        let veto = false;
+        const admission = jest.fn(() => !veto);
+        const measured = jest
+            .spyOn(HTMLElement.prototype, 'clientWidth', 'get')
+            .mockImplementation(function (this: HTMLElement) {
+                return this.closest('[data-dashkit-id="box"]') ? 320 : 640;
+            });
+        const view = render(
+            <DashKitDnDWrapper onDropDragOver={admission}>
+                <DashKitGridStack config={nested} groups={groups} editMode onChange={onChange} />
+            </DashKitDnDWrapper>,
+        );
+        try {
+            const host = requireValue(
+                view.container.querySelector<GridItemHTMLElement>('[data-dashkit-id="box"]'),
+                'container host',
+            );
+            const plugins = [...host.querySelectorAll('[data-identity]')];
+            expect(plugins).toHaveLength(count);
+            const node = requireValue(host.gridstackNode, 'container node');
+            const source = requireValue(node.grid, 'source grid') as GridStack & {
+                triggerEvent(event: Event, target: HTMLElement): void;
+            };
+            const target = requireValue(
+                view.container.querySelector<HTMLElement>('[data-zone="right"] .grid-stack'),
+                'destination grid',
+            ) as HTMLElement & {
+                gridstack: GridStack;
+                ddElement: {ddDroppable: {option: {accept(el: Element): boolean}}};
+            };
+            const accept = target.ddElement.ddDroppable.option.accept;
+            expect(accept(host)).toBe(true);
+            expect(admission).toHaveBeenCalledTimes(count);
+            for (let index = 0; index < count; index++) {
+                expect(admission.mock.calls[index]).toEqual([
+                    expect.objectContaining({
+                        ...nested.layout[index],
+                        parent: 'right',
+                        type: childType,
+                    }),
+                    expect.objectContaining({...nested.layout[index], type: childType}),
+                ]);
+            }
+            veto = true;
+            admission.mockClear();
+            expect(accept(host)).toBe(false);
+            expect(admission).toHaveBeenCalledTimes(1);
+            expect(onChange).not.toHaveBeenCalled();
+            veto = false;
+            expect(accept(host)).toBe(true);
+            await act(async () => {
+                source.triggerEvent(new Event('dragstart'), host);
+                source.engine.removeNode(node);
+                target.appendChild(host);
+                node.grid = target.gridstack;
+                target.gridstack.engine.addNode(node);
+                source.triggerEvent(new Event('dragstop'), host);
+                await Promise.resolve();
+            });
+            expect(onChange).toHaveBeenCalledTimes(1);
+            expect(onChange.mock.calls[0][0].config.layout).toEqual(
+                nested.layout.map((entry) => ({...entry, parent: 'right'})),
+            );
+            expect(onChange.mock.calls[0][0].config.containers).toEqual(
+                nested.containers?.map((entry) => ({...entry, parent: 'right'})),
+            );
+            plugins.forEach((plugin, index) => {
+                expect(host.querySelectorAll('[data-identity]')[index]).toBe(plugin);
+            });
+            expect(JSON.stringify(nested)).toBe(before);
+        } finally {
+            view.unmount();
+            measured.mockRestore();
+        }
+    },
+);
 
 // Critical: yes. Two dashboard instances may use the same saved widget ID.
 test('native admission rejects a foreign instance host with the same widget ID', () => {
