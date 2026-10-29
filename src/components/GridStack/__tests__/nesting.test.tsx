@@ -175,6 +175,68 @@ test('controlled reparent preserves the portal target, widget instance and metad
     unmount();
 });
 
+// Critical: yes. Valid controlled hierarchy swaps must not crash or remount widget state.
+test.each([
+    {order: 'inner-first', ids: ['inner', 'outer']},
+    {order: 'outer-first', ids: ['outer', 'inner']},
+])('controlled hierarchy swap preserves widget identity with $order descriptors', async ({ids}) => {
+    const document = (rootId: string): Config => ({
+        ...config,
+        containers: ids.map((id) => ({
+            ...box,
+            id,
+            w: id === rootId ? 12 : 6,
+            h: id === rootId ? 10 : 6,
+            padding: [0, 0, 0, 0],
+            gap: [0, 0],
+            ...(id === rootId ? {} : {containerId: rootId}),
+        })),
+        layout: [{...config.layout[0], w: 3, h: 2, containerId: 'outer'}],
+    });
+    const initial = document('outer');
+    const swapped = document('inner');
+    for (const candidate of [initial, swapped]) {
+        expect(() => validateConfig(candidate)).not.toThrow();
+        expect(() =>
+            getGridStackLayoutRects(candidate, {
+                [DEFAULT_GROUP]: {width: 640, gridProperties: {cols: 12, rowHeight: 18}},
+            }),
+        ).not.toThrow();
+    }
+    const ref = React.createRef<DashKitGridStack>();
+    const onChange = jest.fn();
+    const view = render(
+        <DashKitGridStack ref={ref} config={initial} editMode onChange={onChange} />,
+    );
+    const widget = view.getByText('retained');
+    const target = widget.parentElement;
+    const meta = await Promise.all(requireValue(ref.current, 'DashKit ref').getItemsMeta());
+    const outer = requireValue(
+        view.container.querySelector('[data-dashkit-id="outer"]'),
+        'outer host',
+    );
+    const inner = requireValue(
+        view.container.querySelector('[data-dashkit-id="inner"]'),
+        'inner host',
+    );
+    expect(outer.contains(inner)).toBe(true);
+    for (const candidate of [swapped, initial]) {
+        view.rerender(
+            <DashKitGridStack ref={ref} config={candidate} editMode onChange={onChange} />,
+        );
+        expect(outer.contains(inner)).toBe(candidate === initial);
+        expect(inner.contains(outer)).toBe(candidate === swapped);
+        expect(outer.contains(widget)).toBe(true);
+        expect(view.getByText('retained')).toBe(widget);
+        expect(widget.parentElement).toBe(target);
+        expect(await Promise.all(requireValue(ref.current, 'DashKit ref').getItemsMeta())).toEqual(
+            meta,
+        );
+    }
+    expect(onChange).not.toHaveBeenCalled();
+    view.unmount();
+});
+
 test('global-only layout and static promotion preserve document geometry and metadata', () => {
     const promoted = DashKitGridStack.setItem({
         config,
