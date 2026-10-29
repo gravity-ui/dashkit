@@ -40,10 +40,36 @@ export default class MobileLayout extends React.PureComponent<
         itemsWithActiveAutoheight: {},
     };
 
-    private plugins = new Map<string, PluginRef>();
+    private _pluginsRefs = new Map<string, PluginRef>();
+
+    componentDidUpdate() {
+        const itemIds = new Set(this.context.configItems.map(({id}) => id));
+        for (const id of this._memoForwardedPluginRef.keys()) {
+            if (!itemIds.has(id)) {
+                this._memoForwardedPluginRef.delete(id);
+                this._pluginsRefs.delete(id);
+                delete this._memoAdjustWidgetLayout[id];
+            }
+        }
+    }
+
+    componentWillUnmount() {
+        this._memoForwardedPluginRef.clear();
+        this._pluginsRefs.clear();
+        this._memoAdjustWidgetLayout = {};
+    }
 
     render() {
-        const {config, layout, groups = [{id: DEFAULT_GROUP}], context, editMode} = this.context;
+        const {
+            config,
+            layout,
+            groups = [{id: DEFAULT_GROUP}],
+            context,
+            editMode,
+            configItems,
+        } = this.context;
+
+        const configItemsById = Object.fromEntries(configItems.map((item) => [item.id, item]));
 
         const sortedItems = this.getSortedLayoutItems();
 
@@ -67,7 +93,7 @@ export default class MobileLayout extends React.PureComponent<
                             >
                                 <Item
                                     id={item.id}
-                                    item={item}
+                                    item={configItemsById[item.id]}
                                     layout={layout}
                                     shouldItemUpdate={false}
                                     adjustWidgetLayout={this.getMemoAdjustWidgetLayout(item.id)}
@@ -96,10 +122,8 @@ export default class MobileLayout extends React.PureComponent<
         );
     }
 
-    get pluginsRefs() {
-        return this.context.configItems
-            .map(({id}) => this.plugins.get(id))
-            .filter((ref): ref is PluginRef => ref !== undefined);
+    get pluginsRefs(): PluginRef[] {
+        return this.context.configItems.map(({id}) => this._pluginsRefs.get(id) ?? null);
     }
 
     getSortedLayoutItems() {
@@ -128,17 +152,19 @@ export default class MobileLayout extends React.PureComponent<
     }
 
     getMemoForwardRefCallback(id: string) {
-        if (!this._memoForwardedPluginRef.has(id)) {
-            this._memoForwardedPluginRef.set(id, (pluginRef: PluginRef) => {
+        let callback = this._memoForwardedPluginRef.get(id);
+        if (!callback) {
+            callback = (pluginRef: PluginRef) => {
                 if (pluginRef) {
-                    this.plugins.set(id, pluginRef);
+                    this._pluginsRefs.set(id, pluginRef);
                 } else {
-                    this.plugins.delete(id);
+                    this._pluginsRefs.delete(id);
                 }
-            });
+            };
+            this._memoForwardedPluginRef.set(id, callback);
         }
 
-        return this._memoForwardedPluginRef.get(id);
+        return callback;
     }
 
     adjustWidgetLayout(id: string, {needSetDefault}: {needSetDefault?: boolean}) {
