@@ -1118,7 +1118,8 @@ class GridStackCanvas extends React.PureComponent {
                     ].filter(
                         (entry) =>
                             getGridKey(entry) === (container ? `container:${containerId}` : key) &&
-                            entry.i !== TEMPORARY_ITEM_ID,
+                            entry.i !== TEMPORARY_ITEM_ID &&
+                            (!container || entry.i !== candidate.id),
                     ),
                     {type: candidate.type, ...entry, ...(container ? {} : converted)},
                     undefined,
