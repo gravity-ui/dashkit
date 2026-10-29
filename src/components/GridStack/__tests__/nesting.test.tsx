@@ -448,10 +448,151 @@ test.each([
     },
 );
 
+// Critical: yes. Autoheight must preserve the last valid visual layout when siblings cannot fit.
+test.each([
+    {compactType: null, siblingHeight: 2, shrunkHeight: 5},
+    {compactType: 'vertical' as const, siblingHeight: 2, shrunkHeight: 5},
+    {compactType: null, siblingHeight: 1, shrunkHeight: 4},
+    {compactType: 'vertical' as const, siblingHeight: 1, shrunkHeight: 4},
+])(
+    'nested autoheight rejects sibling overflow and retains valid reflow: %j',
+    ({compactType, siblingHeight, shrunkHeight}) => {
+        let widget: PluginWidgetProps | undefined;
+        const autoType = 'nested-autoheight-siblings';
+        DashKitGridStack.reloadPlugins({
+            type: autoType,
+            defaultLayout: {w: 2, h: 2, minH: 1},
+            renderer: (props) => {
+                if (props.id === 'a') {
+                    widget = props;
+                }
+                return (
+                    <button onClick={() => props.onStateAndParamsChange({state: {clicked: true}})}>
+                        {props.id}
+                    </button>
+                );
+            },
+        });
+        const nested: Config = {
+            ...config,
+            items: ['a', 'b'].map((id) => ({id, type: autoType, namespace: 'default', data: {}})),
+            containers: [
+                {
+                    ...box,
+                    h: 6,
+                    padding: [0, 0, 0, 0],
+                    gap: [0, 0],
+                    grid: {...box.grid, compactType},
+                },
+            ],
+            layout: [
+                {i: 'a', x: 0, y: 0, w: 2, h: 2, containerId: 'box'},
+                {i: 'b', x: 0, y: 3, w: 2, h: siblingHeight, containerId: 'box'},
+            ],
+        };
+        const before = JSON.stringify(nested);
+        const onChange = jest.fn();
+        const groups: DashKitGroup[] = [
+            {
+                gridProperties: () => ({
+                    cols: 12,
+                    rowHeight: 18,
+                    margin: [0, 0],
+                    containerPadding: [0, 0],
+                    compactType: null,
+                }),
+            },
+        ];
+        const fixture = (document = nested) => (
+            <DashKitGridStack config={document} groups={groups} editMode onChange={onChange} />
+        );
+        const view = render(fixture());
+        const visual = () =>
+            ['a', 'b', 'box'].map((id) => {
+                const host = requireValue(
+                    view.container.querySelector(`[data-dashkit-id="${id}"]`),
+                    'host',
+                ) as GridItemHTMLElement;
+                const {x, y, w, h} = requireValue(host.gridstackNode, 'native node');
+                return {x, y, w, h};
+            });
+        const adjust = (h: number) => {
+            const props = requireValue(widget, 'plugin props');
+            props.adjustWidgetLayout({
+                widgetId: 'a',
+                adjustedWidgetLayout: {
+                    ...requireValue(
+                        props.layout.find(({i}) => i === 'a'),
+                        'layout',
+                    ),
+                    h,
+                    minH: h,
+                    maxH: h,
+                },
+            });
+        };
+        const original = visual();
+        act(() => adjust(20));
+        expect(visual()).toEqual(original);
+        const validHeight = 6 - siblingHeight;
+        act(() => adjust(validHeight));
+        const valid = [
+            {...original[0], h: validHeight},
+            {...original[1], y: validHeight},
+            original[2],
+        ];
+        expect(visual()).toEqual(valid);
+        act(() => adjust(20));
+        expect(visual()).toEqual(valid);
+        expect(requireValue(widget, 'plugin props').layout[0]).toMatchObject({
+            h: validHeight,
+            minH: validHeight,
+            maxH: validHeight,
+        });
+        view.rerender(
+            fixture({
+                ...nested,
+                containers: [
+                    {...requireValue(nested.containers, 'containers')[0], h: shrunkHeight},
+                ],
+            }),
+        );
+        expect(visual()).toEqual([
+            original[0],
+            {...original[1], y: compactType === null ? 3 : 2},
+            {...original[2], h: shrunkHeight},
+        ]);
+        view.rerender(fixture());
+        act(() => adjust(validHeight));
+        expect(visual()).toEqual(valid);
+        expect(onChange).not.toHaveBeenCalled();
+        fireEvent.click(view.getByText('a'));
+        expect(onChange).toHaveBeenCalledTimes(1);
+        expect(onChange.mock.calls[0][0].config.layout).toEqual(nested.layout);
+        expect(onChange.mock.calls[0][0].config.containers).toEqual(nested.containers);
+        act(() =>
+            requireValue(widget, 'plugin props').adjustWidgetLayout({
+                widgetId: 'a',
+                needSetDefault: true,
+            }),
+        );
+        expect(visual()).toEqual([
+            original[0],
+            {...original[1], y: compactType === null ? 3 : 2},
+            original[2],
+        ]);
+        expect(JSON.stringify(nested)).toBe(before);
+        view.unmount();
+    },
+);
+
 test('statics retain container membership and reject nonempty or unknown removal', () => {
-    expect(() =>
-        DashKitGridStack.removeItem({config, id: 'box', itemsStateAndParams: {}}),
-    ).not.toThrow();
+    const itemsStateAndParams = {a: {state: {retained: true}, params: {key: 'value'}}};
+    const before = JSON.stringify({config, itemsStateAndParams});
+    const removed = DashKitGridStack.removeItem({config, id: 'box', itemsStateAndParams});
+    expect(removed.config).toEqual({...config, containers: []});
+    expect(removed.itemsStateAndParams).toEqual(itemsStateAndParams);
+    expect(JSON.stringify({config, itemsStateAndParams})).toBe(before);
     const nested = {...config, layout: [{...config.layout[0], containerId: 'box'}]};
     expect(() =>
         DashKitGridStack.removeItem({config: nested, id: 'box', itemsStateAndParams: {}}),
