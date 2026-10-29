@@ -39,9 +39,9 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
     static contextType = DashKitContext;
     context!: DashKitCtxShape;
 
-    pluginsRefs: Array<PluginRef>;
+    private _pluginsRefs = new Map<string, PluginRef>();
 
-    private _memoForwardedPluginRef: Array<(pluginRef: PluginRef) => void> = [];
+    private _memoForwardedPluginRef = new Map<string, (pluginRef: PluginRef) => void>();
     private _memoGroupsProps: Record<string, Partial<ReactGridLayoutProps>> = {};
     private _memoGroupsLayouts: Record<string, MemoGroupLayout> = {};
     private _memoCallbacksForGroups: Record<string, GroupCallbacks> = {};
@@ -66,7 +66,6 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
 
     constructor(props: GridLayoutProps, context: DashKitCtxShape) {
         super(props, context);
-        this.pluginsRefs = [];
         this.state = {
             isDragging: false,
             isDraggedOut: false,
@@ -82,6 +81,13 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
     }
 
     componentDidUpdate() {
+        const itemIds = new Set(this.context.configItems.map(({id}) => id));
+        for (const id of this._memoForwardedPluginRef.keys()) {
+            if (!itemIds.has(id)) {
+                this._memoForwardedPluginRef.delete(id);
+                this._pluginsRefs.delete(id);
+            }
+        }
         clearTimeout(this._timeout);
         this.reloadItems();
     }
@@ -94,7 +100,8 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
         this._memoGroupsProps = {};
         this._memoGroupsLayouts = {};
         this._memoGroupsItems = {};
-        this._memoForwardedPluginRef = [];
+        this._memoForwardedPluginRef.clear();
+        this._pluginsRefs.clear();
     }
 
     onVisibilityChange = () => {
@@ -129,6 +136,10 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
             adjustedWidgetLayout,
         );
     };
+
+    get pluginsRefs(): PluginRef[] {
+        return this.context.configItems.map(({id}) => this._pluginsRefs.get(id) ?? null);
+    }
 
     getItemsMeta = () => {
         const {getItemsMeta} = this.context;
@@ -237,14 +248,20 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
         };
     };
 
-    getMemoForwardRefCallback = (refIndex: number) => {
-        if (!this._memoForwardedPluginRef[refIndex]) {
-            this._memoForwardedPluginRef[refIndex] = (pluginRef: PluginRef) => {
-                this.pluginsRefs[refIndex] = pluginRef;
+    getMemoForwardRefCallback = (id: string) => {
+        let callback = this._memoForwardedPluginRef.get(id);
+        if (!callback) {
+            callback = (pluginRef: PluginRef) => {
+                if (pluginRef) {
+                    this._pluginsRefs.set(id, pluginRef);
+                } else {
+                    this._pluginsRefs.delete(id);
+                }
             };
+            this._memoForwardedPluginRef.set(id, callback);
         }
 
-        return this._memoForwardedPluginRef[refIndex];
+        return callback;
     };
 
     mergeGroupsLayout(
@@ -803,7 +820,6 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
         group: string,
         renderLayout: ConfigLayout[],
         renderItems: ConfigItem[],
-        offset = 0,
         groupGridProperties?: (props: ReactGridLayoutProps) => ReactGridLayoutProps,
     ) {
         const {registerManager} = this.context;
@@ -847,7 +863,6 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
                 key={`group_${group}`}
                 group={group}
                 renderItems={renderItems}
-                offset={offset}
                 properties={stableProperties}
                 compactType={compactType}
                 callbacks={callbacks}
@@ -868,8 +883,6 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
 
     render() {
         const {config, groups, editMode, context} = this.context;
-
-        this.pluginsRefs.length = this.context.configItems.length;
 
         const defaultRenderLayout: ConfigLayout[] = [];
         const defaultRenderItems: ConfigItem[] = [];
@@ -910,8 +923,6 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
             {},
         );
 
-        let offset = 0;
-
         if (groups) {
             return groups.map((group) => {
                 const id = group.id || DEFAULT_GROUP;
@@ -927,14 +938,7 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
                 }
 
                 const stableItems = this.getMemoGroupItems(id, items);
-                const element = this.renderGroup(
-                    id,
-                    layout,
-                    stableItems,
-                    offset,
-                    group.gridProperties,
-                );
-                offset += stableItems.length;
+                const element = this.renderGroup(id, layout, stableItems, group.gridProperties);
 
                 if (group.render) {
                     const groupContext = {
@@ -952,7 +956,7 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
             });
         } else {
             const stableDefaultItems = this.getMemoGroupItems(DEFAULT_GROUP, defaultRenderItems);
-            return this.renderGroup(DEFAULT_GROUP, defaultRenderLayout, stableDefaultItems, offset);
+            return this.renderGroup(DEFAULT_GROUP, defaultRenderLayout, stableDefaultItems);
         }
     }
 }
