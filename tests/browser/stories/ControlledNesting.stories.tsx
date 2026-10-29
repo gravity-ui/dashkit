@@ -17,6 +17,7 @@ class Widget extends React.Component<PluginWidgetProps> {
                 style={{width: '100%', height: '100%', background: '#dcecff'}}
             >
                 {this.props.id}
+                <span className="nested-drag-handle">Move {this.props.id}</span>
             </div>
         );
     }
@@ -65,9 +66,10 @@ const groups: DashKitGroup[] = [
         }),
     },
 ];
-function ControlledNesting() {
+function ControlledNesting({customHandle = false}: {customHandle?: boolean}) {
     const [config, setConfig] = React.useState(initial);
     const [events, setEvents] = React.useState(0);
+    const [focused, setFocused] = React.useState('');
     return (
         <div>
             <button onClick={() => setConfig(initial)}>Restore nested</button>
@@ -82,11 +84,16 @@ function ControlledNesting() {
                 Reparent to root
             </button>
             <span data-qa="nesting-events">{events}</span>
+            <span data-qa="nested-focus">{focused}</span>
             <div style={{width: 640}}>
                 <DashKitGridStack
                     config={config}
                     groups={groups}
                     editMode
+                    focusable
+                    noOverlay={customHandle}
+                    onItemFocus={(item) => setFocused(item.id)}
+                    draggableHandleClassName={customHandle ? 'nested-drag-handle' : undefined}
                     onChange={({config: next}) => {
                         setConfig(next);
                         setEvents((count) => count + 1);
@@ -99,3 +106,4 @@ function ControlledNesting() {
 }
 export default {title: 'Tests/Controlled Nesting', component: ControlledNesting} as Meta;
 export const Contained: StoryFn = () => <ControlledNesting />;
+export const CustomHandles: StoryFn = () => <ControlledNesting customHandle />;
