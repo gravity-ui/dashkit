@@ -1431,6 +1431,7 @@ class GridStackCanvas extends React.PureComponent {
                 return;
             }
         }
+        const before = this.renderKey();
         this.preview = {
             id: TEMPORARY_ITEM_ID,
             type: this.context.dragOverPlugin.type,
@@ -1444,7 +1445,9 @@ class GridStackCanvas extends React.PureComponent {
                 entry,
             );
         }
-        this.forceUpdate();
+        if (before !== this.renderKey()) {
+            this.forceUpdate();
+        }
     };
     private paletteEntry(
         record: GridRecord,
@@ -1483,7 +1486,11 @@ class GridStackCanvas extends React.PureComponent {
         const visible = visibleGeometry(entry, record.geometry);
         return {
             x: (rect.width / scaleX - visible.width) / record.geometry.stepX,
-            y: (rect.height / scaleY - visible.height) / record.geometry.stepY,
+            y:
+                record.properties.autoSize === false ||
+                record.properties.style?.height !== undefined
+                    ? (rect.height / scaleY - visible.height) / record.geometry.stepY
+                    : Infinity,
         };
     }
     private paletteDrop = (event: DragEvent) => {
@@ -1529,14 +1536,9 @@ class GridStackCanvas extends React.PureComponent {
     };
     private paletteLeave = (event: DragEvent) => {
         const root = event.currentTarget as HTMLElement;
-        const rect = root.getBoundingClientRect();
         // WebKit can emit a null relatedTarget when the preview appears beneath the pointer.
-        const inside =
-            event.clientX >= rect.left &&
-            event.clientX < rect.right &&
-            event.clientY >= rect.top &&
-            event.clientY < rect.bottom;
-        if (!inside && !root.contains(event.relatedTarget as Node | null)) {
+        const over = document.elementFromPoint(event.clientX, event.clientY);
+        if (!over || !root.contains(over)) {
             this.clearPreview();
         }
     };

@@ -1120,6 +1120,11 @@ export const PaletteDocument: StoryFn<typeof PaletteDocumentFixture> = (args) =>
     <PaletteDocumentFixture {...args} />
 );
 PaletteDocument.args = {
+    autoHeight: false,
+    empty: false,
+    callerId: false,
+    overlay: false,
+    native: false,
     admission: false,
     rerenderOnHover: false,
     rejectAfterHover: false,

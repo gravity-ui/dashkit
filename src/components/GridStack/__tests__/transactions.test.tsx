@@ -703,7 +703,20 @@ test.each([
         if (cancellation === 'leave') {
             const event = new Event('dragleave', {bubbles: true});
             Object.assign(event, {clientX: -1, clientY: -1, relatedTarget: null});
-            fireEvent(root, event);
+            const descriptor = Object.getOwnPropertyDescriptor(document, 'elementFromPoint');
+            Object.defineProperty(document, 'elementFromPoint', {
+                configurable: true,
+                value: () => null,
+            });
+            try {
+                fireEvent(root, event);
+            } finally {
+                if (descriptor) {
+                    Object.defineProperty(document, 'elementFromPoint', descriptor);
+                } else {
+                    Reflect.deleteProperty(document, 'elementFromPoint');
+                }
+            }
         }
         if (cancellation === 'veto') {
             allowed = false;
@@ -903,6 +916,7 @@ function paletteTransaction({
                                 compactType: null,
                                 maxRows: 100,
                                 isBounded: bounded,
+                                autoSize: !bounded,
                             }),
                         },
                     ]}

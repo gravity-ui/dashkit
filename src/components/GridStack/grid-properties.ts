@@ -35,6 +35,7 @@ export function getGridProperties(
             transformScale: zone.transformScale,
             transformScaleRef: zone.transformScaleRef,
             noOverlay: zone.noOverlay,
+            droppingItem: zone.droppingItem,
             autoSize: false,
             ...container.grid,
             width: undefined,
