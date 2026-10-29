@@ -28,17 +28,35 @@ export default class MobileLayout extends React.PureComponent<
     static contextType = DashKitContext;
     context!: React.ContextType<typeof DashKitContext>;
 
-    pluginsRefs: PluginRef[] = [];
     sortedLayoutItems: Record<string, ReturnType<typeof getSortedConfigItems>> | null = null;
 
     _memoLayout = this.context.layout;
     _memoConfigItems = this.context.configItems;
-    _memoForwardedPluginRef: Array<(refObject: PluginRef) => void> = [];
+    _memoForwardedPluginRef = new Map<string, (refObject: PluginRef) => void>();
     _memoAdjustWidgetLayout: Record<string, (props: {needSetDefault?: boolean}) => void> = {};
 
     state: MobileLayoutState = {
         itemsWithActiveAutoheight: {},
     };
+
+    private _pluginsRefs = new Map<string, PluginRef>();
+
+    componentDidUpdate() {
+        const itemIds = new Set(this.context.configItems.map(({id}) => id));
+        for (const id of this._memoForwardedPluginRef.keys()) {
+            if (!itemIds.has(id)) {
+                this._memoForwardedPluginRef.delete(id);
+                this._pluginsRefs.delete(id);
+                delete this._memoAdjustWidgetLayout[id];
+            }
+        }
+    }
+
+    componentWillUnmount() {
+        this._memoForwardedPluginRef.clear();
+        this._pluginsRefs.clear();
+        this._memoAdjustWidgetLayout = {};
+    }
 
     render() {
         const {
@@ -50,10 +68,9 @@ export default class MobileLayout extends React.PureComponent<
             configItems,
         } = this.context;
 
-        this.pluginsRefs.length = configItems.length;
+        const configItemsById = Object.fromEntries(configItems.map((item) => [item.id, item]));
 
         const sortedItems = this.getSortedLayoutItems();
-        let indexOffset = 0;
 
         return (
             <div className={b()}>
@@ -61,7 +78,7 @@ export default class MobileLayout extends React.PureComponent<
                     const groupId = group.id || DEFAULT_GROUP;
                     const items = sortedItems[groupId] || [];
 
-                    const children = items.map((item, index) => {
+                    const children = items.map((item) => {
                         const isItemWithActiveAutoheight =
                             item.id in this.state.itemsWithActiveAutoheight;
 
@@ -72,21 +89,17 @@ export default class MobileLayout extends React.PureComponent<
                             >
                                 <Item
                                     id={item.id}
-                                    item={item}
+                                    item={configItemsById[item.id]}
                                     layout={layout}
                                     shouldItemUpdate={false}
                                     adjustWidgetLayout={this.getMemoAdjustWidgetLayout(item.id)}
-                                    forwardedPluginRef={this.getMemoForwardRefCallback(
-                                        indexOffset + index,
-                                    )}
+                                    forwardedPluginRef={this.getMemoForwardRefCallback(item.id)}
                                     onItemMountChange={this.context.onItemMountChange}
                                     onItemRender={this.context.onItemRender}
                                 />
                             </div>
                         );
                     });
-
-                    indexOffset += items.length;
 
                     if (group.render) {
                         return group.render(groupId, children, {
@@ -103,6 +116,10 @@ export default class MobileLayout extends React.PureComponent<
                 })}
             </div>
         );
+    }
+
+    get pluginsRefs(): PluginRef[] {
+        return this.context.configItems.map(({id}) => this._pluginsRefs.get(id) ?? null);
     }
 
     getSortedLayoutItems() {
@@ -127,14 +144,20 @@ export default class MobileLayout extends React.PureComponent<
         return this.sortedLayoutItems;
     }
 
-    getMemoForwardRefCallback(refIndex: number) {
-        if (!this._memoForwardedPluginRef[refIndex]) {
-            this._memoForwardedPluginRef[refIndex] = (pluginRef: PluginRef) => {
-                this.pluginsRefs[refIndex] = pluginRef;
+    getMemoForwardRefCallback(id: string) {
+        let callback = this._memoForwardedPluginRef.get(id);
+        if (!callback) {
+            callback = (pluginRef: PluginRef) => {
+                if (pluginRef) {
+                    this._pluginsRefs.set(id, pluginRef);
+                } else {
+                    this._pluginsRefs.delete(id);
+                }
             };
+            this._memoForwardedPluginRef.set(id, callback);
         }
 
-        return this._memoForwardedPluginRef[refIndex];
+        return callback;
     }
 
     adjustWidgetLayout(id: string, {needSetDefault}: {needSetDefault?: boolean}) {
