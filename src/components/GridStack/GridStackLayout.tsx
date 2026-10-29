@@ -658,9 +658,13 @@ class GridStackCanvas extends React.PureComponent {
                 (grid.engine as DashKitEngine).restoring = true;
             });
             const pending = [...containers];
+            const placedContainers = new Set<string>();
             for (let pass = 0; pending.length && pass <= containers.length; pass++) {
                 for (let index = pending.length - 1; index >= 0; index--) {
                     const container = pending[index];
+                    if (container.containerId && !placedContainers.has(container.containerId)) {
+                        continue;
+                    }
                     const host = this.attach(container.id, container, true);
                     if (!host) {
                         continue;
@@ -684,6 +688,7 @@ class GridStackCanvas extends React.PureComponent {
                     host.content.style.padding = container.padding
                         .map((value) => `${value}px`)
                         .join(' ');
+                    placedContainers.add(container.id);
                     pending.splice(index, 1);
                 }
             }
