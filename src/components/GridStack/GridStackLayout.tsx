@@ -29,7 +29,12 @@ import {
     validateGrid,
 } from './document';
 import {DashKitEngine} from './engine';
-import {getGridGeometry, getGridStackLayoutRects, visibleGeometry} from './geometry';
+import {
+    GridStackWidthError,
+    getGridGeometry,
+    getGridStackLayoutRects,
+    visibleGeometry,
+} from './geometry';
 import {getGridProperties} from './grid-properties';
 import {requireValue} from './invariants';
 import {DashKitNativeGrid} from './native-grid';
@@ -374,11 +379,11 @@ class GridStackCanvas extends React.PureComponent {
     }
     private syncDragHandle(id: string) {
         const host = this.hosts.get(id);
-        if (!host || !this.mounted || host.container || this.active) {
+        if (!host || !this.mounted || this.active) {
             return;
         }
-        const custom = this.context.draggableHandleClassName;
-        if (!custom && !host.dragObserver) {
+        const custom = host.container ? undefined : this.context.draggableHandleClassName;
+        if (!custom && !host.dragObserver && !host.container) {
             return;
         }
         const grid = this.grids.get(host.key)?.grid;
@@ -416,6 +421,17 @@ class GridStackCanvas extends React.PureComponent {
         el.dataset.dashkitId = id;
         const content = document.createElement('div');
         content.className = 'grid-stack-item-content';
+        if (container) {
+            // Descendant handles and widget bodies must never start an ancestor drag.
+            const ownSurface = (event: Event) => {
+                if ((event.target as Element).closest('.grid-stack-item') !== el) {
+                    event.stopImmediatePropagation();
+                }
+            };
+            for (const type of ['mousedown', 'touchstart', 'pointerdown']) {
+                content.addEventListener(type, ownSurface);
+            }
+        }
         el.appendChild(content);
         const host = {el, content, key, container};
         this.hosts.set(id, host);
@@ -474,7 +490,7 @@ class GridStackCanvas extends React.PureComponent {
         }
         return host;
     }
-    private validateGeometry(config: Config) {
+    private validateGeometry(config: Config, measured = false) {
         const rootGrids = Object.fromEntries(
             [...this.roots]
                 .map(([key, wrapper]) => {
@@ -497,26 +513,35 @@ class GridStackCanvas extends React.PureComponent {
                 })
                 .filter(([, {width}]) => width > 0),
         );
-        if (config.containers?.length && Object.keys(rootGrids).length) {
-            getGridStackLayoutRects(
-                {
-                    ...config,
-                    layout: config.layout.filter((entry) =>
-                        Object.prototype.hasOwnProperty.call(
-                            rootGrids,
-                            entry.parent || DEFAULT_GROUP,
+        for (const [id, root] of Object.entries(rootGrids)) {
+            if (!config.containers?.some((entry) => (entry.parent || DEFAULT_GROUP) === id)) {
+                continue;
+            }
+            try {
+                getGridStackLayoutRects(
+                    {
+                        ...config,
+                        layout: config.layout.filter(
+                            (entry) => (entry.parent || DEFAULT_GROUP) === id,
                         ),
-                    ),
-                    containers: config.containers.filter((entry) =>
-                        Object.prototype.hasOwnProperty.call(
-                            rootGrids,
-                            entry.parent || DEFAULT_GROUP,
+                        containers: config.containers.filter(
+                            (entry) => (entry.parent || DEFAULT_GROUP) === id,
                         ),
-                    ),
-                },
-                rootGrids,
-            );
+                    },
+                    {[id]: root},
+                );
+            } catch (error) {
+                if (
+                    measured &&
+                    root.gridProperties.width === undefined &&
+                    error instanceof GridStackWidthError
+                ) {
+                    return false;
+                }
+                throw error;
+            }
         }
+        return true;
     }
     private sync = () => {
         if (this.syncing || !this.mounted) {
@@ -524,7 +549,9 @@ class GridStackCanvas extends React.PureComponent {
         }
         // Validate new saved input before clipping its temporary visual layout.
         if (this.autoHeightItems.size && this.context.config !== this.appliedContext?.config) {
-            this.validateGeometry(this.context.config);
+            if (!this.validateGeometry(this.context.config, true)) {
+                return;
+            }
         }
         for (const widgetId of this.autoHeightItems) {
             const entry: WidgetLayout | undefined = this.context.layout.find(
@@ -542,11 +569,18 @@ class GridStackCanvas extends React.PureComponent {
                 }
             }
         }
-        this.validateGeometry({
-            ...this.context.config,
-            layout: this.context.layout,
-            containers: this.context.containers,
-        });
+        if (
+            !this.validateGeometry(
+                {
+                    ...this.context.config,
+                    layout: this.context.layout,
+                    containers: this.context.containers,
+                },
+                true,
+            )
+        ) {
+            return;
+        }
         this.syncing = true;
         const {configItems, layout, containers = []} = this.context;
         const before = this.renderKey();
@@ -974,7 +1008,7 @@ class GridStackCanvas extends React.PureComponent {
             width: visible.width,
             height: visible.height,
         };
-        if (this.context.focusable) {
+        if (this.context.focusable && !host.container) {
             host.content
                 .querySelector<HTMLElement>('.dashkit-grid-item')
                 ?.focus({preventScroll: true});

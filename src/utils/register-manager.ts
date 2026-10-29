@@ -47,6 +47,8 @@ export class RegisterManager {
 
     reloadPlugin(plugin: Plugin) {
         const {type, defaultLayout = {}, ...item} = plugin;
+        // Container membership belongs to the saved document, never plugin defaults.
+        const {containerId: _containerId, ...geometry} = defaultLayout;
 
         if (typeof plugin.renderer !== 'function') {
             throw new Error('DashKit.registerPlugins: renderer должна быть функцией');
@@ -55,7 +57,7 @@ export class RegisterManager {
         this._items[type] = {
             ...item,
             type,
-            defaultLayout: {...this._defaultLayout, ...defaultLayout},
+            defaultLayout: {...this._defaultLayout, ...geometry},
         };
     }
 
