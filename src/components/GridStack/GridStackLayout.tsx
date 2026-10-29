@@ -246,9 +246,10 @@ class GridStackCanvas extends React.PureComponent {
                 this.lastReload = Date.now();
             }
             this.context.reloadItems(
-                [...this.plugins.entries()]
-                    .filter(([id]) => !targetIds || targetIds.includes(id))
-                    .map(([, plugin]) => plugin),
+                this.context.configItems
+                    .filter(({id}) => !targetIds || targetIds.includes(id))
+                    .map(({id}) => this.plugins.get(id))
+                    .filter((ref): ref is PluginRef => ref !== undefined),
                 {silentLoading: Boolean(settings.silentLoading), noVeil: true},
             );
         }

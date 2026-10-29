@@ -72,6 +72,51 @@ beforeAll(() => {
     });
 });
 
+// Critical: yes. Reloads must address current widgets in config order after removal and reorder.
+test('desktop metadata and reload follow config order after removal, reorder and re-add', async () => {
+    const reload = jest.fn();
+    class Reloadable extends React.Component<PluginWidgetProps> {
+        render = () => <span>{this.props.id}</span>;
+        getMeta = () => Promise.resolve(this.props.id);
+        reload = (options: unknown) => reload(this.props.id, options);
+    }
+    const reloadType = 'native-reload-order';
+    DashKitGridStack.reloadPlugins({
+        type: reloadType,
+        defaultLayout: {w: 2, h: 2},
+        renderer: (props, ref) => <Reloadable {...props} ref={ref} />,
+    });
+    const document: Config = {
+        ...config,
+        items: ['a', 'b', 'c'].map((id) => ({...config.items[0], id, type: reloadType})),
+        layout: ['a', 'b', 'c'].map((i, index) => ({i, x: index * 3, y: 0, w: 2, h: 2})),
+    };
+    const ref = React.createRef<DashKitGridStack>();
+    const fixture = (saved: Config) => <DashKitGridStack ref={ref} config={saved} editMode />;
+    const view = render(fixture(document));
+    const check = async (ids: string[]) => {
+        const current = requireValue(ref.current, 'DashKit ref');
+        expect(await Promise.all(current.getItemsMeta())).toEqual(ids);
+        reload.mockClear();
+        current.reloadItems({force: true});
+        expect(reload.mock.calls.map(([id]) => id)).toEqual(ids);
+    };
+    await check(['a', 'b', 'c']);
+    view.rerender(
+        fixture({
+            ...document,
+            items: document.items.slice(1).reverse(),
+            layout: document.layout.slice(1),
+        }),
+    );
+    await check(['c', 'b']);
+    reload.mockClear();
+    requireValue(ref.current, 'DashKit ref').reloadItems({force: true, targetIds: ['a', 'c']});
+    expect(reload.mock.calls.map(([id]) => id)).toEqual(['c']);
+    view.rerender(fixture(document));
+    await check(['a', 'b', 'c']);
+});
+
 test('StrictMode mount/unmount cleans native DD and retains one live metadata ref', async () => {
     const ref = React.createRef<DashKitGridStack>();
     const view = render(
