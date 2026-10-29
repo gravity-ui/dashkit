@@ -213,3 +213,13 @@ test('finite fit and move simulate collision overflow before rejecting atomicall
     expect(engine.maxRow).toBe(8);
     expect(nodes(engine)).toEqual(before);
 });
+
+// Critical: yes. Admission must clamp the incoming node while leaving pushed neighbours free to expose overflow.
+test('finite fit bounds the incoming candidate before unbounded collision simulation', () => {
+    const engine = new DashKitEngine({column: 5, maxRow: 4, float: true});
+    engine.mode = {compactType: null};
+    const candidate = {id: 'incoming', x: 2, y: 3, w: 3, h: 2};
+    expect(engine.willItFit(candidate)).toBe(true);
+    expect(candidate).toMatchObject({_willFitPos: {x: 2, y: 2, w: 3, h: 2}});
+    expect(engine.nodes).toEqual([]);
+});
