@@ -89,11 +89,9 @@ export function prepareItem(
             return (
                 this.props.item !== nextProps.item ||
                 this.props.layout !== nextProps.layout ||
-                this.props.gridLayout !== nextProps.gridLayout ||
+                !isEqual(this.props.gridLayout, nextProps.gridLayout) ||
                 this.props.adjustWidgetLayout !== nextProps.adjustWidgetLayout ||
                 this.props.forwardedPluginRef !== nextProps.forwardedPluginRef ||
-                this.props.onItemRender !== nextProps.onItemRender ||
-                this.props.onItemMountChange !== nextProps.onItemMountChange ||
                 this.props.isPlaceholder !== nextProps.isPlaceholder ||
                 ctx.itemsParams[id] !== nextContext.itemsParams[id] ||
                 ctx.itemsState[id] !== nextContext.itemsState[id] ||
@@ -104,8 +102,7 @@ export function prepareItem(
         }
 
         render() {
-            const {item, isPlaceholder, forwardedPluginRef, onItemMountChange, onItemRender} =
-                this.props;
+            const {item, isPlaceholder, forwardedPluginRef} = this.props;
             const {registerManager} = this.context;
 
             return (
@@ -116,12 +113,17 @@ export function prepareItem(
                     registerManager={registerManager}
                     plugin={registerManager.getItem(item.type)}
                     isPlaceholder={isPlaceholder}
-                    onItemMountChange={onItemMountChange}
-                    onItemRender={onItemRender}
+                    onItemMountChange={this._onItemMountChange}
+                    onItemRender={this._onItemRender}
                     item={item}
                 />
             );
         }
+
+        _onItemRender: ItemProps['onItemRender'] = (item) => this.props.onItemRender?.(item);
+
+        _onItemMountChange: ItemProps['onItemMountChange'] = (item, state) =>
+            this.props.onItemMountChange?.(item, state);
 
         _onStateAndParamsChange: PluginWidgetProps['onStateAndParamsChange'] = (
             stateAndParams,
