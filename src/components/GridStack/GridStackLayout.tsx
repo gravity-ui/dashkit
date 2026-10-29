@@ -91,6 +91,21 @@ const gridDepth = ({grid}: GridRecord) => {
     return depth;
 };
 
+const reflowAutoheight = (engine: DashKitEngine, ids: Set<string>) => {
+    const adjusted = engine.nodes.filter((node) =>
+        ids.has(requireValue(node.id, 'autoheight widget id')),
+    );
+    if (!adjusted.length) {
+        return true;
+    }
+    adjusted.sort((a, b) => a.y - b.y || a.x - b.x).forEach((node) => engine._fixCollisions(node));
+    engine._packNodes();
+    return (
+        (!engine.maxRow || engine.getRow() <= engine.maxRow) &&
+        !engine.nodes.some((node) => engine.collide(node))
+    );
+};
+
 class GridStackCanvas extends React.PureComponent {
     static contextType = DashKitContext;
     declare context: DashKitCtxShape;
@@ -800,19 +815,21 @@ class GridStackCanvas extends React.PureComponent {
             });
             // Saved geometry restores verbatim; only autoheight reflows its visual neighbors.
             const autoheightWidgets = new Set(this.context.adjustedLayoutIds);
-            this.grids.forEach(({grid}) => {
+            this.grids.forEach(({grid, containerId}) => {
                 const engine = grid.engine as DashKitEngine;
                 engine.restoring = false;
-                const adjusted = engine.nodes.filter((node) => {
-                    const id = requireValue(node.id, 'autoheight widget id');
-                    // Previous IDs keep the reset's final reflow before adjustment ends.
-                    return autoheightWidgets.has(id) || this.autoheightWidgets.has(id);
-                });
-                if (adjusted.length) {
-                    adjusted
-                        .sort((a, b) => a.y - b.y || a.x - b.x)
-                        .forEach((node) => engine._fixCollisions(node));
-                    engine._packNodes();
+                // Previous IDs keep the reset's final reflow before adjustment ends.
+                const fits = reflowAutoheight(
+                    engine,
+                    new Set([...autoheightWidgets, ...this.autoheightWidgets]),
+                );
+                // A controlled parent shrink can invalidate an accepted visual adjustment.
+                if (containerId && !fits) {
+                    autoheightWidgets.forEach((widgetId) => {
+                        if (engine.nodes.some(({id}) => id === widgetId)) {
+                            this.adjustWidgetLayout({widgetId, needSetDefault: true});
+                        }
+                    });
                 }
             });
             this.autoheightWidgets = autoheightWidgets;
@@ -1600,7 +1617,9 @@ class GridStackCanvas extends React.PureComponent {
             this.autoHeightItems.delete(widgetId);
             this.context.revertToOriginalLayout(widgetId);
         } else if (adjustedWidgetLayout) {
-            const entry = this.context.layout.find(({i}) => i === widgetId);
+            const entry: WidgetLayout | undefined = this.context.layout.find(
+                ({i}) => i === widgetId,
+            );
             if (entry) {
                 const adjusted = {...adjustedWidgetLayout};
                 if (entry.containerId) {
@@ -1615,6 +1634,45 @@ class GridStackCanvas extends React.PureComponent {
                     }
                     if (adjusted.maxH !== undefined) {
                         adjusted.maxH = Math.min(adjusted.maxH, remaining);
+                    }
+                    const engine = requireValue(
+                        this.grids.get(getGridKey(entry)),
+                        'containing grid',
+                    ).grid.engine as DashKitEngine;
+                    const proposal = new DashKitEngine({
+                        column: engine.column,
+                        maxRow: remaining + entry.y,
+                        float: true,
+                        nodes: engine.nodes.map((node) => {
+                            const saved =
+                                this.context.layout.find(({i}) => i === node.id) ||
+                                this.context.containers?.find(({id}) => id === node.id);
+                            return {
+                                ...node,
+                                ...(saved ? {x: saved.x, y: saved.y, w: saved.w, h: saved.h} : {}),
+                                ...(node.id === widgetId ? adjusted : {}),
+                                el: undefined,
+                                grid: undefined,
+                                subGrid: undefined,
+                            };
+                        }),
+                    });
+                    proposal.mode = engine.mode;
+                    // A bounded reflow can clamp a sibling into overlap instead of overflowing.
+                    if (
+                        !reflowAutoheight(
+                            proposal,
+                            new Set([
+                                ...this.context.adjustedLayoutIds,
+                                ...this.autoheightWidgets,
+                                widgetId,
+                            ]),
+                        )
+                    ) {
+                        if (Math.max(entry.h, entry.minH ?? 0, entry.maxH ?? 0) > remaining) {
+                            this.adjustWidgetLayout({widgetId, needSetDefault: true});
+                        }
+                        return;
                     }
                 }
                 this.autoHeightItems.add(widgetId);

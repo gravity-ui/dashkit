@@ -80,14 +80,39 @@ for (const mode of ['bounded', 'nested', 'nowrap', 'fractional', 'occupied', 'su
                 assert((await saved()).layout.every((item) => item.parent === 'right'));
             } else {
                 // A rejected target must leave the React portal host and following source gesture usable.
+                const beforeRecovery = await saved();
+                const eventsBeforeRecovery = Number(
+                    checked(await page.locator('[data-qa="review-events"]').textContent()),
+                );
                 const current = checked(await host.boundingBox());
                 await page.mouse.move(current.x + 30, current.y + 30);
                 await page.mouse.down();
                 await page.mouse.move(current.x + 35, current.y + 35);
                 await page.mouse.move(current.x + 80, current.y + 70, {steps: 8});
                 await page.mouse.up();
-                await expect(page.locator('[data-qa="review-events"]')).not.toHaveText('0');
+                await expect(page.locator('[data-qa="review-events"]')).toHaveText(
+                    String(eventsBeforeRecovery + 1),
+                );
+                const recovered = await saved();
+                assert.deepEqual(recovered, {
+                    ...beforeRecovery,
+                    layout: beforeRecovery.layout.map((entry) =>
+                        entry.i === 'a'
+                            ? {
+                                  ...entry,
+                                  x: Math.min(12 - entry.w, entry.x + 1),
+                                  y: entry.y + 2,
+                              }
+                            : entry,
+                    ),
+                });
                 await expect(widget).toHaveCount(1);
+                evidence.push({
+                    check: 'nowrap recovery commits a fresh gesture',
+                    beforeRecovery,
+                    eventsBeforeRecovery,
+                    recovered,
+                });
             }
         } else {
             await expect(page.locator('[data-qa="review-events"]')).toHaveText('1');
