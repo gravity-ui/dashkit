@@ -174,6 +174,15 @@ test('toggling the opt-in preserves the widget instance and default rendering re
     expect(view.getByText('Clicks 1')).toBe(button);
 });
 
+// Critical: no. Grid-only prop changes need independent coverage from callback invalidation.
+test('gridLayout-only changes reach an isolated widget with stable callbacks', () => {
+    const {context, renderer, fixture, view, current} = mountItem(true);
+    const gridLayout = {cols: 24};
+    view.rerender(fixture(context, {gridLayout}));
+    expect(renderer).toHaveBeenCalledTimes(2);
+    expect(current().gridLayout).toEqual(gridLayout);
+});
+
 test('own settings, context, grid and callbacks remain live with isolation enabled', () => {
     const {context, renderer, fixture, view, current} = mountItem(true);
     let next = {...context, context: {label: 'changed'}};
