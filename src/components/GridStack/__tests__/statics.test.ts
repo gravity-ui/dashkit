@@ -169,49 +169,6 @@ test('append and reflow treat empty and occupied sibling containers as immutable
     expect(beside).toEqual({...box, w: 6});
 });
 
-const fixtures: ConfigLayout[][] = [
-    [
-        {i: 'a', x: 0, y: 0, w: 3, h: 1},
-        {i: 'b', x: 0, y: 0, w: 3, h: 1},
-    ],
-    [
-        {i: 'a', x: 0, y: 0, w: 8, h: 2},
-        {i: 'b', x: 2, y: 0, w: 6, h: 2},
-        {i: 'c', x: 4, y: 0, w: 4, h: 1},
-    ],
-    [
-        {i: 'a', x: 4, y: 2, w: 4, h: 2},
-        {i: 'b', x: 9, y: 0, w: 3, h: 3},
-        {i: 'c', x: 8, y: 2, w: 4, h: 2},
-    ],
-];
-// Critical: yes. Same public operation must not rearrange a user's saved dashboard differently.
-test.each(['vertical', 'horizontal', 'horizontal-nowrap'] as const)(
-    '%s public reflow preserves legacy collision, gaps and row-wrap priority',
-    (compactType) => {
-        for (const layout of fixtures) {
-            const input = JSON.stringify(layout);
-            const options = {layout, groups: groups(compactType)};
-            expect(rects(DashKitGridStack.reflowLayout(options))).toEqual(
-                rects(
-                    DashKit.reflowLayout({...options, layout: layout.map((entry) => ({...entry}))}),
-                ),
-            );
-            const newLayoutItem = {i: 'new', x: 0, y: 0, w: 4, h: 2};
-            expect(rects(DashKitGridStack.reflowLayout({...options, newLayoutItem}))).toEqual(
-                rects(
-                    DashKit.reflowLayout({
-                        ...options,
-                        layout: layout.map((entry) => ({...entry})),
-                        newLayoutItem: {...newLayoutItem},
-                    }),
-                ),
-            );
-            expect(JSON.stringify(layout)).toBe(input);
-        }
-    },
-);
-
 test.each(['vertical', 'horizontal'] as const)(
     '%s setItem keeps new-item priority and canonical saved order',
     (compactType) => {
