@@ -79,6 +79,10 @@ const position = (id: string, node: GridStackNode): ConfigLayout => ({
     h: requireValue(node.h, 'node.h'),
 });
 
+const hasInvertedConstraints = ({minW, maxW, minH, maxH}: Partial<WidgetLayout>) =>
+    (minW !== undefined && maxW !== undefined && minW > maxW) ||
+    (minH !== undefined && maxH !== undefined && minH > maxH);
+
 const gridDepth = ({grid}: GridRecord) => {
     let depth = 0;
     for (let parent = grid.parentGridNode; parent; parent = parent.grid?.parentGridNode) {
@@ -116,6 +120,7 @@ class GridStackCanvas extends React.PureComponent {
     private syncing = false;
     private appliedContext?: DashKitCtxShape;
     private active?: Gesture;
+    private preview?: ConfigItem;
     private finishQueued = false;
     private timer?: ReturnType<typeof setTimeout>;
     private lastReload = 0;
@@ -127,13 +132,14 @@ class GridStackCanvas extends React.PureComponent {
         const Observer =
             typeof ResizeObserver === 'function' ? ResizeObserver : ResizeObserverPolyfill;
         this.observer = new Observer(() => {
-            if (!this.active) {
+            if (!this.active && !this.preview) {
                 this.sync();
             }
         });
         this.sync();
         this.reloadItems();
         document.addEventListener('visibilitychange', this.onVisibilityChange);
+        window.addEventListener('dragend', this.clearPreview);
         window.addEventListener('mouseup', this.preparePointerStop, true);
         window.addEventListener('mouseup', this.finishPointer);
         window.addEventListener('touchend', this.preparePointerStop, true);
@@ -165,18 +171,55 @@ class GridStackCanvas extends React.PureComponent {
             this.sync();
         }
         if (!this.active && this.appliedContext !== this.context) {
-            this.sync();
+            const previous = this.appliedContext;
+            if (
+                this.preview &&
+                previous?.config === this.context.config &&
+                previous.externalLayoutRevision === this.context.externalLayoutRevision &&
+                previous.layout === this.context.layout &&
+                previous.containers === this.context.containers &&
+                previous.temporaryLayout === this.context.temporaryLayout &&
+                previous.dragProps === this.context.dragProps &&
+                previous.dragOverPlugin === this.context.dragOverPlugin &&
+                previous.editMode === this.context.editMode &&
+                previous.groups === this.context.groups &&
+                previous.draggableHandleClassName === this.context.draggableHandleClassName &&
+                [...this.grids].every(([key, record]) => {
+                    const properties = this.getProperties(key);
+                    return (
+                        (record.containerId ||
+                            (this.roots.get(key) === record.wrapper &&
+                                record.wrapper.firstElementChild === record.root)) &&
+                        isEqual(record.properties, properties) &&
+                        isEqual(
+                            record.geometry,
+                            getGridGeometry(
+                                properties.width ?? record.wrapper.clientWidth,
+                                properties,
+                            ),
+                        )
+                    );
+                })
+            ) {
+                // Callback/metadata updates must not restore saved positions over a live preview.
+                this.appliedContext = this.context;
+            } else {
+                this.clearPreview();
+                this.sync();
+            }
         }
         clearTimeout(this.timer);
         this.reloadItems();
     }
     componentWillUnmount() {
         this.mounted = false;
+        this.clearPreview();
         clearTimeout(this.timer);
         if (this.frame !== undefined) {
             cancelAnimationFrame(this.frame);
         }
         document.removeEventListener('visibilitychange', this.onVisibilityChange);
+        window.removeEventListener('dragend', this.clearPreview);
         window.removeEventListener('mouseup', this.preparePointerStop, true);
         window.removeEventListener('mouseup', this.finishPointer);
         window.removeEventListener('touchend', this.preparePointerStop, true);
@@ -190,7 +233,10 @@ class GridStackCanvas extends React.PureComponent {
         }
         [...this.grids.values()]
             .sort((a, b) => gridDepth(b) - gridDepth(a))
-            .forEach(({grid}) => {
+            .forEach(({grid, root}) => {
+                root.removeEventListener('dragover', this.paletteOver);
+                root.removeEventListener('drop', this.paletteDrop);
+                root.removeEventListener('dragleave', this.paletteLeave);
                 grid.destroy(false);
             });
         this.grids.clear();
@@ -228,6 +274,17 @@ class GridStackCanvas extends React.PureComponent {
                 return target ? createPortal(handle, target, `${id}:${direction}`) : null;
             });
         });
+        const temporary = this.context.temporaryLayout;
+        const preview =
+            this.preview ||
+            (temporary
+                ? {
+                      id: TEMPORARY_ITEM_ID,
+                      type: temporary.dragProps.type,
+                      namespace: 'default',
+                      data: {},
+                  }
+                : undefined);
         return (
             <div
                 className={`dashkit dashkit-gridstack dashkit_theme_${this.context.registerManager.settings.theme}`}
@@ -286,6 +343,7 @@ class GridStackCanvas extends React.PureComponent {
                 })}
                 {portals}
                 {customHandles}
+                {preview ? this.renderItem(preview, propertiesByGrid, true) : null}
             </div>
         );
     }
@@ -423,11 +481,14 @@ class GridStackCanvas extends React.PureComponent {
             this.finish(event, requireValue(node.el, 'native node element')),
         );
         this.observer?.observe(wrapper);
+        root.addEventListener('dragover', this.paletteOver);
+        root.addEventListener('drop', this.paletteDrop);
+        root.addEventListener('dragleave', this.paletteLeave);
         return record;
     }
     private syncDragHandle(id: string) {
         const host = this.hosts.get(id);
-        if (!host || !this.mounted || this.active) {
+        if (!host || !this.mounted || this.active || this.preview || this.context.temporaryLayout) {
             return;
         }
         const custom = host.container ? undefined : this.context.draggableHandleClassName;
@@ -635,7 +696,7 @@ class GridStackCanvas extends React.PureComponent {
             return;
         }
         this.syncing = true;
-        const {configItems, layout, containers = []} = this.context;
+        const {configItems, layout, containers = [], temporaryLayout} = this.context;
         const before = this.renderKey();
         try {
             const replaced = [...this.grids]
@@ -654,6 +715,9 @@ class GridStackCanvas extends React.PureComponent {
                             (root) => root === record.root || root.contains(record.wrapper),
                         )
                     ) {
+                        record.root.removeEventListener('dragover', this.paletteOver);
+                        record.root.removeEventListener('drop', this.paletteDrop);
+                        record.root.removeEventListener('dragleave', this.paletteLeave);
                         this.observer?.unobserve(record.wrapper);
                         record.grid.destroy(false);
                         if (record.containerId) {
@@ -707,12 +771,17 @@ class GridStackCanvas extends React.PureComponent {
                     pending.splice(index, 1);
                 }
             }
+            const activeLayout = temporaryLayout?.data || layout;
             configItems.forEach((item) => {
-                const entry = layout.find(({i}) => i === item.id);
+                const entry = activeLayout.find(({i}) => i === item.id);
                 if (entry) {
                     this.attach(item.id, entry);
                 }
             });
+            const temporary = temporaryLayout?.data.find(({i}) => i === TEMPORARY_ITEM_ID);
+            if (temporary) {
+                this.attach(TEMPORARY_ITEM_ID, temporary);
+            }
             // Reordering saved items changes overlap stacking without replacing portal targets.
             this.grids.forEach((record, key) => {
                 let next: HTMLElement | null = null;
@@ -730,6 +799,9 @@ class GridStackCanvas extends React.PureComponent {
                 ...configItems.map(({id}) => id),
                 ...containers.map(({id}) => id),
             ]);
+            if (temporaryLayout || this.preview) {
+                retained.add(TEMPORARY_ITEM_ID);
+            }
             this.hosts.forEach((host, id) => {
                 if (!retained.has(id)) {
                     host.dragObserver?.disconnect();
@@ -830,8 +902,10 @@ class GridStackCanvas extends React.PureComponent {
         record.grid.margin(`0 ${gapX}px ${gapY}px 0`);
         const handles = (properties.resizeHandles || ['se']).join(',');
         record.grid.opts.resizable = {...record.grid.opts.resizable, handles};
-        const canMove = properties.isDraggable ?? this.context.editMode;
+        const canMove =
+            !this.context.temporaryLayout && (properties.isDraggable ?? this.context.editMode);
         const canResize =
+            !this.context.temporaryLayout &&
             (properties.isResizable ?? this.context.editMode) &&
             properties.resizeHandles?.length !== 0;
         if (Boolean(record.grid.opts.disableDrag) !== !canMove) {
@@ -1090,6 +1164,10 @@ class GridStackCanvas extends React.PureComponent {
         return accepted;
     }
     private start(event: Event, el: GridItemHTMLElement) {
+        if (this.context.temporaryLayout) {
+            return;
+        }
+        this.clearPreview();
         for (const {grid} of this.grids.values()) {
             (grid.engine as DashKitEngine).dropSize = undefined;
         }
@@ -1300,6 +1378,232 @@ class GridStackCanvas extends React.PureComponent {
             return {...geometry, ...this.membership(host)};
         });
     }
+    private paletteOver = (event: DragEvent) => {
+        const record = [...this.grids.values()].find(({root}) => root === event.currentTarget);
+        if (!record || !this.context.dragOverPlugin || !this.context.editMode) {
+            this.clearPreview();
+            return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        const source = this.grids.get(`zone:${record.parent || DEFAULT_GROUP}`) || record;
+        const raw = {
+            ...this.context.dragOverPlugin.defaultLayout,
+            ...this.context.dragProps?.layout,
+        };
+        const defaults = record.containerId
+            ? {
+                  w: Math.max(
+                      1,
+                      Math.round(
+                          ((Number.isFinite(raw.w) ? raw.w : source.geometry.cols) *
+                              source.geometry.stepX -
+                              source.geometry.gapX +
+                              record.geometry.gapX) /
+                              record.geometry.stepX,
+                      ),
+                  ),
+                  h: Math.max(
+                      1,
+                      Math.round(
+                          (raw.h * source.geometry.stepY -
+                              source.geometry.gapY +
+                              record.geometry.gapY) /
+                              record.geometry.stepY,
+                      ),
+                  ),
+                  ...this.convertConstraints(raw, source, record),
+              }
+            : undefined;
+        if (defaults) {
+            if (hasInvertedConstraints(defaults)) {
+                this.clearPreview();
+                return;
+            }
+            const {minW = 1, maxW = Infinity, minH = 1, maxH = Infinity} = defaults;
+            defaults.w = Math.min(maxW, Math.max(minW, defaults.w));
+            defaults.h = Math.min(maxH, Math.max(minH, defaults.h));
+        }
+        const {layout, containers} = this.readDocument();
+        const sizes = this.context.onDropDragOver(
+            event as unknown as Parameters<DashKitCtxShape['onDropDragOver']>[0],
+            record.parent,
+            record.properties,
+            [...layout, ...(containers || []).map(({id, ...entry}) => ({i: id, ...entry}))].filter(
+                (entry) =>
+                    getGridKey(entry) ===
+                        (record.containerId
+                            ? `container:${record.containerId}`
+                            : `zone:${record.parent || DEFAULT_GROUP}`) &&
+                    entry.i !== TEMPORARY_ITEM_ID,
+            ),
+            undefined,
+            defaults,
+            record.containerId,
+        );
+        if (sizes === false) {
+            this.clearPreview();
+            return;
+        }
+        const entry = this.paletteEntry(record, event, sizes);
+        if (!entry) {
+            this.clearPreview();
+            return;
+        }
+        if (this.hosts.get(TEMPORARY_ITEM_ID)?.key !== getGridKey(entry)) {
+            this.clearPreview();
+        }
+        const engine = record.grid.engine as DashKitEngine;
+        if (!engine.willItFit({id: entry.i, ...entry})) {
+            this.clearPreview();
+            return;
+        }
+        if (engine.mode.preventCollision) {
+            const bounded = {...entry};
+            engine.nodeBoundFix(bounded);
+            if (engine.collideAll(bounded, bounded).some(({id}) => id !== TEMPORARY_ITEM_ID)) {
+                this.clearPreview();
+                return;
+            }
+        }
+        const before = this.renderKey();
+        this.preview = {
+            id: TEMPORARY_ITEM_ID,
+            type: this.context.dragOverPlugin.type,
+            namespace: 'default',
+            data: {},
+        };
+        const host = this.attach(TEMPORARY_ITEM_ID, entry);
+        if (host) {
+            record.grid.engine.moveNodeCheck(
+                requireValue(host.el.gridstackNode, 'host native node'),
+                entry,
+            );
+        }
+        if (before !== this.renderKey()) {
+            this.forceUpdate();
+        }
+    };
+    private paletteEntry(
+        record: GridRecord,
+        event: DragEvent,
+        sizes: Exclude<ReturnType<DashKitCtxShape['onDropDragOver']>, false>,
+    ) {
+        const rect = record.root.getBoundingClientRect();
+        const scaleX = record.root.clientWidth ? rect.width / record.root.clientWidth : 1;
+        const scaleY = record.root.clientHeight ? rect.height / record.root.clientHeight : scaleX;
+        const entry: ConfigLayout = {
+            i: TEMPORARY_ITEM_ID,
+            x: Math.max(
+                0,
+                Math.round((event.clientX - rect.left) / scaleX / record.geometry.stepX),
+            ),
+            y: Math.max(0, Math.round((event.clientY - rect.top) / scaleY / record.geometry.stepY)),
+            w: sizes?.w || 3,
+            h: sizes?.h || 3,
+            ...(record.parent ? {parent: record.parent} : {}),
+            ...(record.containerId ? {containerId: record.containerId} : {}),
+        };
+        if (record.properties.isBounded) {
+            const bounds = this.paletteBounds(record, entry);
+            if (bounds.x < 0 || bounds.y < 0) {
+                return undefined;
+            }
+            entry.x = Math.min(entry.x, Math.floor(bounds.x + 1e-7));
+            entry.y = Math.min(entry.y, Math.floor(bounds.y + 1e-7));
+        }
+        return entry;
+    }
+    private paletteBounds(record: GridRecord, entry: ConfigLayout) {
+        const rect = record.root.getBoundingClientRect();
+        const scaleX = record.root.clientWidth ? rect.width / record.root.clientWidth : 1;
+        const scaleY = record.root.clientHeight ? rect.height / record.root.clientHeight : scaleX;
+        const visible = visibleGeometry(entry, record.geometry);
+        return {
+            x: (rect.width / scaleX - visible.width) / record.geometry.stepX,
+            y:
+                record.properties.autoSize === false ||
+                record.properties.style?.height !== undefined
+                    ? (rect.height / scaleY - visible.height) / record.geometry.stepY
+                    : Infinity,
+        };
+    }
+    private paletteDrop = (event: DragEvent) => {
+        if (!this.preview) {
+            return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        const host = requireValue(this.hosts.get(TEMPORARY_ITEM_ID), 'palette preview host');
+        const record = requireValue(this.grids.get(host.key), 'host grid record');
+        const node = requireValue(host.el.gridstackNode, 'host native node');
+        const entry = position(TEMPORARY_ITEM_ID, node);
+        const bounds = record.properties.isBounded ? this.paletteBounds(record, entry) : undefined;
+        if (
+            (bounds && (entry.x > bounds.x + 1e-7 || entry.y > bounds.y + 1e-7)) ||
+            (record.grid.engine.maxRow &&
+                requireValue(node.y, 'node.y') + requireValue(node.h, 'node.h') >
+                    record.grid.engine.maxRow) ||
+            requireValue(node.x, 'node.x') + requireValue(node.w, 'node.w') >
+                record.grid.engine.column
+        ) {
+            this.clearPreview();
+            return;
+        }
+        const item = {
+            ...position(
+                record.properties.droppingItem?.i || TEMPORARY_ITEM_ID,
+                requireValue(host.el.gridstackNode, 'host native node'),
+            ),
+            ...this.membership(host),
+        };
+        const preview = this.preview;
+        try {
+            const {layout, containers} = this.readDocument();
+            // Native listeners can synchronously render the pending controlled drop in React 17.
+            this.preview = undefined;
+            this.context.onDrop(layout, item, event as unknown as MouseEvent, containers);
+        } catch (error) {
+            this.preview = preview;
+            this.clearPreview();
+            throw error;
+        }
+    };
+    private paletteLeave = (event: DragEvent) => {
+        const root = event.currentTarget as HTMLElement;
+        // WebKit can emit a null relatedTarget when the preview appears beneath the pointer.
+        const over = document.elementFromPoint(event.clientX, event.clientY);
+        if (!over || !root.contains(over)) {
+            this.clearPreview();
+        }
+    };
+    private clearPreview = () => {
+        if (!this.preview) {
+            return;
+        }
+        const host = this.hosts.get(TEMPORARY_ITEM_ID);
+        if (host) {
+            const grid = this.grids.get(host.key)?.grid;
+            if (grid) {
+                const engine = grid.engine as DashKitEngine;
+                const restoring = engine.restoring;
+                engine.restoring = true;
+                try {
+                    grid.removeWidget(host.el, false, false);
+                } finally {
+                    engine.restoring = restoring;
+                }
+            }
+            host.el.remove();
+            this.hosts.delete(TEMPORARY_ITEM_ID);
+        }
+        this.preview = undefined;
+        // Reconcile against current saved/temporary edits, never the collision-shifted preview.
+        this.sync();
+        if (this.mounted) {
+            this.forceUpdate();
+        }
+    };
     private adjustWidgetLayout = ({
         widgetId,
         needSetDefault,
@@ -1378,7 +1682,11 @@ class GridStackCanvas extends React.PureComponent {
             }
         }
     };
-    private renderItem(item: ConfigItem, propertiesByGrid: Map<string, ReactGridLayoutProps>) {
+    private renderItem(
+        item: ConfigItem,
+        propertiesByGrid: Map<string, ReactGridLayoutProps>,
+        placeholder = false,
+    ) {
         const host = this.hosts.get(item.id);
         const node = host?.el.gridstackNode || this.context.layout.find(({i}) => i === item.id);
         const record = host && (this.grids.get(host.key) || host.lastRecord);
@@ -1425,6 +1733,7 @@ class GridStackCanvas extends React.PureComponent {
                 layout={this.context.layout}
                 gridLayout={props}
                 isDragging={Boolean(active)}
+                isPlaceholder={placeholder}
                 forwardedPluginRef={this.pluginCallbacks.get(item.id)}
                 adjustWidgetLayout={this.adjustWidgetLayout}
                 noOverlay={props.noOverlay ?? this.context.noOverlay}

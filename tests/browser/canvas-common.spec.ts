@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 
 import {canvas, crossZone, near} from './canvas-utils';
-import {checked, storyUrl as fixtureUrl, test} from './fixtures';
+import {checked, dropPalette, storyUrl as fixtureUrl, test} from './fixtures';
 import type {NativeElement} from './types';
 
 for (const legacy of [false, true]) {
@@ -314,6 +314,38 @@ for (const legacy of [false, true]) {
             assert.deepEqual(layout(after, 'a'), layout(before, 'a'));
             evidence.push({
                 check: 'common drag beyond left/top clamps to origin without disturbing overlap neighbor',
+                before,
+                after,
+            });
+        });
+
+        test('common palette drop preserves existing widgets', async ({page, evidence}) => {
+            const {state, reset} = canvas(page, legacy);
+            const before = await reset();
+            await dropPalette(
+                page,
+                page.getByRole('button', {name: '+ Widget', exact: true}),
+                page.locator('.grid-stack, .react-grid-layout').first(),
+                {x: 450, y: 300},
+            );
+            const after = await state();
+            assert.equal(after.config.items.length, 3);
+            assert.equal(after.config.counter, 2);
+            const added = after.config.layout.find(
+                (entry) => !before.config.layout.some((old) => old.i === entry.i),
+            );
+            assert.deepEqual(
+                {
+                    x: checked(added).x,
+                    y: checked(added).y,
+                    w: checked(added).w,
+                    h: checked(added).h,
+                },
+                {x: 450, y: 300, w: 100, h: 80},
+            );
+            assert.deepEqual(after.config.layout.slice(0, 2), before.config.layout);
+            evidence.push({
+                check: 'common HTML5 palette drop commits geometry and preserves existing widgets',
                 before,
                 after,
             });

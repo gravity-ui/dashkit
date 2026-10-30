@@ -169,7 +169,9 @@ function useMemoStateContext(
     }, [pendingExternalBaselineLayout]);
 
     const [externalLayoutRevision, setExternalLayoutRevision] = React.useState(0);
-    const [temporaryLayout, setTemporaryLayout] = React.useState<TemporaryLayout | null>(null);
+    const [temporaryLayout, setTemporaryLayout] = React.useState<
+        (TemporaryLayout & {owner: object}) | null
+    >(null);
     const resetTemporaryLayout = React.useCallback(
         () => setTemporaryLayout(null),
         [setTemporaryLayout],
@@ -712,37 +714,54 @@ function useMemoStateContext(
 
     const onDropProp = props.onDrop;
     const onDrop = React.useCallback<DashKitCtxShape['onDrop']>(
-        (newLayout, item) => {
+        (newLayout, item, _event, nextContainers) => {
             if (!dragPropsContext) {
                 return;
             }
 
-            setTemporaryLayout({
-                data: [...newLayout, item],
+            const snapshot = {
+                // Removing a saved widget copies the snapshot but retains its drop owner.
+                owner: {},
+                data: [
+                    ...newLayout,
+                    layoutAdapter.optimistic ? {...item, i: TEMPORARY_ITEM_ID} : item,
+                ],
+                ...(nextContainers !== undefined ? {containers: nextContainers} : {}),
                 dragProps: dragPropsContext,
-            });
+            };
+            setTemporaryLayout(snapshot);
+            const commit = () =>
+                setTemporaryLayout((current) =>
+                    current?.owner === snapshot.owner ? null : current,
+                );
 
             try {
                 onDropProp?.({
                     newLayout: newLayout.reduce<ConfigLayout[]>((memo, l) => {
                         if (l.i !== item.i) {
-                            memo.push(pick(l, CONFIG_LAYOUT_FIELDS));
+                            memo.push(
+                                pick(
+                                    {...l, h: originalLayouts.current[l.i]?.h ?? l.h},
+                                    CONFIG_LAYOUT_FIELDS,
+                                ),
+                            );
                         }
 
                         return memo;
                     }, []),
+                    ...(nextContainers !== undefined ? {containers: nextContainers} : {}),
                     itemLayout: pick(item, CONFIG_LAYOUT_FIELDS),
-                    commit: resetTemporaryLayout,
+                    commit,
                     dragProps: dragPropsContext,
                 });
             } catch (error) {
                 if (layoutAdapter.optimistic) {
-                    resetTemporaryLayout();
+                    commit();
                 }
                 throw error;
             }
         },
-        [dragPropsContext, onDropProp, layoutAdapter, setTemporaryLayout, resetTemporaryLayout],
+        [dragPropsContext, onDropProp, layoutAdapter, setTemporaryLayout],
     );
 
     const dashkitContextValue = React.useMemo(
@@ -766,7 +785,7 @@ function useMemoStateContext(
             forwardedMetaRef: props.forwardedMetaRef,
 
             layout: resultLayout,
-            containers,
+            containers: temporaryLayout?.containers ?? containers,
             adjustedLayoutIds: Object.keys(adjustedLayouts.current),
             temporaryLayout,
             layoutChange: onLayoutChange,
@@ -784,6 +803,7 @@ function useMemoStateContext(
             onDropDragOver,
             outerDnDEnable,
             dragOverPlugin,
+            dragProps: dragPropsContext,
 
             onItemFocus: props.onItemFocus,
             onItemBlur: props.onItemBlur,
@@ -827,6 +847,7 @@ function useMemoStateContext(
             props.draggableHandleClassName,
             outerDnDEnable,
             dragOverPlugin,
+            dragPropsContext,
 
             props.onItemFocus,
             props.onItemBlur,
