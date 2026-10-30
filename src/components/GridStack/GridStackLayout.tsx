@@ -1081,7 +1081,6 @@ class GridStackCanvas extends React.PureComponent {
                             (!container || entry.i !== candidate.id),
                     ),
                     {type: candidate.type, ...entry, ...(container ? {} : converted)},
-                    undefined,
                     containerId,
                 ) !== false
             );

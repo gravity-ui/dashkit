@@ -87,7 +87,6 @@ export type DashKitCtxShape = DashkitPropsPassedToCtx & {
         gridProps: ReactGridLayoutProps,
         groupLayout: ConfigLayout[],
         sharedItem?: DraggedOverItem,
-        defaultsOverride?: Partial<import('../typings').WidgetLayout>,
         containerId?: string,
     ) => {w?: number; h?: number} | false | undefined;
     outerDnDEnable: boolean;
