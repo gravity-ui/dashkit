@@ -24,6 +24,7 @@ jest.mock('@gravity-ui/uikit', () => {
 import React from 'react';
 
 import {act, fireEvent, render} from '@testing-library/react';
+import {flushSync} from 'react-dom';
 
 import type {Config} from '../../../shared';
 import type {DashKitGroup, PluginWidgetProps} from '../../../typings';
@@ -151,6 +152,138 @@ test('StrictMode mount/unmount cleans native DD and retains one live metadata re
     expect(grid.gridstack).toBeUndefined();
     expect(GridStack.getDD().isDraggable(host)).toBe(false);
 });
+
+// Critical: yes. Synchronous renderer commits must not destroy DD before native start returns.
+test.each(['drag', 'resize'])(
+    '%s start replacement survives a synchronous renderer commit and the next drag',
+    async (gesture) => {
+        const measure = jest
+            .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+            .mockImplementation(function (this: HTMLElement) {
+                const node = this.closest<GridItemHTMLElement>('[data-dashkit-id]')?.gridstackNode;
+                return new DOMRect(
+                    this.style.position === 'fixed'
+                        ? parseFloat(this.style.left) || 0
+                        : (node?.x || 0) * 50,
+                    this.style.position === 'fixed'
+                        ? parseFloat(this.style.top) || 0
+                        : (node?.y || 0) * 20,
+                    parseFloat(this.style.width) || (node?.w || 12) * 50,
+                    parseFloat(this.style.height) || (node?.h || 20) * 20,
+                );
+            });
+        const initial: Config = {...config, layout: [{i: 'a', x: 0, y: 0, w: 2, h: 2}]};
+        const replacement: Config = {...initial, layout: [{...initial.layout[0], x: 3, y: 3}]};
+        const callbacks: string[] = [];
+        const onChange = jest.fn();
+        const errors: unknown[] = [];
+        const onError = (event: ErrorEvent) => {
+            errors.push(event.error);
+            event.preventDefault();
+        };
+        const groups: DashKitGroup[] = [
+            {
+                gridProperties: () => ({
+                    cols: 12,
+                    width: 600,
+                    rowHeight: 20,
+                    margin: [0, 0],
+                    containerPadding: [0, 0],
+                    compactType: null,
+                    resizeHandles: ['se'],
+                }),
+            },
+        ];
+        function Fixture() {
+            const [saved, setSaved] = React.useState(initial);
+            const replaced = React.useRef(false);
+            const start = () => {
+                callbacks.push('start');
+                if (!replaced.current) {
+                    replaced.current = true;
+                    flushSync(() => setSaved(replacement));
+                }
+            };
+            const stop = () => callbacks.push('stop');
+            return (
+                <>
+                    <DashKitGridStack
+                        config={saved}
+                        groups={groups}
+                        editMode
+                        onDragStart={start}
+                        onResizeStart={start}
+                        onDragStop={stop}
+                        onResizeStop={stop}
+                        onChange={({config: next}) => {
+                            onChange(next);
+                            setSaved(next);
+                        }}
+                    />
+                    <pre data-testid="saved-config">{JSON.stringify(saved)}</pre>
+                </>
+            );
+        }
+        const view = render(<Fixture />);
+        const host = requireValue(
+            view.container.querySelector<GridItemHTMLElement>('[data-dashkit-id="a"]'),
+            'native host',
+        );
+        const plugin = requireValue(host.querySelector('[data-identity]'), 'mounted plugin');
+        const forceUpdate = React.PureComponent.prototype.forceUpdate;
+        // Use real React commits with synchronous delivery, without replacing the mounted class.
+        const synchronousCommit = jest
+            .spyOn(React.PureComponent.prototype, 'forceUpdate')
+            .mockImplementation(function (this: React.Component, callback) {
+                flushSync(() => forceUpdate.call(this, callback));
+            });
+        window.addEventListener('error', onError);
+        try {
+            const target = requireValue(
+                host.querySelector(
+                    gesture === 'resize' ? '.ui-resizable-se' : '.grid-stack-item-content',
+                ),
+                'native gesture target',
+            );
+            fireEvent.mouseDown(target, {button: 0, clientX: 10, clientY: 10, buttons: 1});
+            fireEvent.mouseMove(document, {clientX: 20, clientY: 20, buttons: 1});
+            await act(async () => {
+                await Promise.resolve();
+            });
+            fireEvent.mouseMove(document, {clientX: 90, clientY: 50, buttons: 1});
+            fireEvent.mouseUp(document, {clientX: 90, clientY: 50});
+            expect(errors).toEqual([]);
+            expect(synchronousCommit).toHaveBeenCalled();
+            expect(onChange).not.toHaveBeenCalled();
+            expect(view.getByTestId('saved-config').textContent).toBe(JSON.stringify(replacement));
+            expect(host.gridstackNode).toMatchObject({x: 3, y: 3, w: 2, h: 2});
+            expect(host.gridstackNode?.grid?.el).toBe(host.parentElement);
+            expect(host.querySelector('[data-identity]')).toBe(plugin);
+            expect(callbacks).toEqual(['start', 'stop']);
+
+            const content = requireValue(host.querySelector('.grid-stack-item-content'), 'content');
+            fireEvent.mouseDown(content, {button: 0, clientX: 160, clientY: 70, buttons: 1});
+            fireEvent.mouseMove(document, {clientX: 165, clientY: 75, buttons: 1});
+            fireEvent.mouseMove(document, {clientX: 210, clientY: 90, buttons: 1});
+            fireEvent.mouseUp(document, {clientX: 210, clientY: 90});
+            await act(async () => {
+                await Promise.resolve();
+            });
+            expect(errors).toEqual([]);
+            expect(onChange).toHaveBeenCalledTimes(1);
+            expect(onChange.mock.calls[0][0].layout).toEqual([
+                {...replacement.layout[0], x: 4, y: 4},
+            ]);
+            expect(callbacks).toEqual(['start', 'stop', 'start', 'stop']);
+            expect(host.querySelector('[data-identity]')).toBe(plugin);
+        } finally {
+            synchronousCommit.mockRestore();
+            window.removeEventListener('error', onError);
+            view.unmount();
+            measure.mockRestore();
+        }
+    },
+);
 
 test('new-component item helpers never delegate layout to the legacy compactor', () => {
     const compact = jest.spyOn(legacyGrid, 'compact').mockImplementation(() => {

@@ -75,6 +75,7 @@ class GridStackCanvas extends React.PureComponent {
     private syncing = false;
     private appliedContext?: DashKitCtxShape;
     private active?: Gesture;
+    private starting = false;
     private finishQueued = false;
     private timer?: ReturnType<typeof setTimeout>;
     private lastReload = 0;
@@ -99,16 +100,14 @@ class GridStackCanvas extends React.PureComponent {
             this.active &&
             this.appliedContext?.externalLayoutRevision !== this.context.externalLayoutRevision
         ) {
-            this.active.cancelled = true;
-            // Finish native pointer cleanup before applying the authoritative document.
-            this.syncing = true;
-            try {
-                const el = this.active.element as GridItemHTMLElement;
-                el.gridstackNode?.grid?.prepareDragDrop(el, true);
-            } finally {
-                this.syncing = false;
+            const active = this.active;
+            active.cancelled = true;
+            // GridStack resumes native start after the public callback; keep its DD alive until then.
+            if (this.starting) {
+                Promise.resolve().then(() => this.cancelGesture(active));
+            } else {
+                this.cancelGesture(active);
             }
-            this.sync();
         }
         if (!this.active && this.appliedContext !== this.context) {
             this.sync();
@@ -128,9 +127,27 @@ class GridStackCanvas extends React.PureComponent {
             host.dragObserver?.disconnect();
             delete host.dragObserver;
         }
-        [...this.grids.values()].forEach(({grid}) => {
-            grid.destroy(false);
-        });
+        const active = this.active;
+        if (active) {
+            active.cancelled = true;
+        }
+        const grids = [...this.grids.values()];
+        const destroy = () => {
+            grids.forEach(({grid}) => {
+                if (grid.el?.gridstack === grid) {
+                    const el = active?.element as GridItemHTMLElement | undefined;
+                    if (el && el.gridstackNode?.grid === grid && el.parentElement === grid.el) {
+                        grid.prepareDragDrop(el, true);
+                    }
+                    grid.destroy(false);
+                }
+            });
+        };
+        if (this.starting) {
+            Promise.resolve().then(destroy);
+        } else {
+            destroy();
+        }
         this.grids.clear();
         this.plugins.clear();
     }
@@ -256,6 +273,28 @@ class GridStackCanvas extends React.PureComponent {
         }
     };
     private onVisibilityChange = () => this.reloadItems();
+    private cancelGesture(active: Gesture) {
+        if (!this.mounted || this.active !== active) {
+            return;
+        }
+        // Finish native pointer cleanup before applying the authoritative document.
+        this.syncing = true;
+        try {
+            const el = active.element as GridItemHTMLElement;
+            const grid = this.grids.get(active.sourceKey)?.grid;
+            if (
+                grid &&
+                grid.el?.gridstack === grid &&
+                el.gridstackNode?.grid === grid &&
+                el.parentElement === grid.el
+            ) {
+                grid.prepareDragDrop(el, true);
+            }
+        } finally {
+            this.syncing = false;
+        }
+        this.sync();
+    }
     private getProperties(key: string) {
         return getGridProperties(key, this.context.registerManager.gridLayout, this.context.groups);
     }
@@ -619,19 +658,29 @@ class GridStackCanvas extends React.PureComponent {
             width: visible.width,
             height: visible.height,
         };
-        if (this.context.focusable) {
-            host.content
-                .querySelector<HTMLElement>('.dashkit-grid-item')
-                ?.focus({preventScroll: true});
+        this.starting = true;
+        try {
+            if (this.context.focusable) {
+                host.content
+                    .querySelector<HTMLElement>('.dashkit-grid-item')
+                    ?.focus({preventScroll: true});
+            }
+            this.callback(
+                this.active.resize ? this.context.onResizeStart : this.context.onDragStart,
+                event,
+                el,
+            );
+            if (this.mounted) {
+                this.forceUpdate();
+            }
+        } finally {
+            this.starting = false;
         }
-        this.callback(
-            this.active.resize ? this.context.onResizeStart : this.context.onDragStart,
-            event,
-            el,
-        );
-        this.forceUpdate();
     }
     private move(event: Event, el: GridItemHTMLElement) {
+        if (!this.mounted || this.active?.cancelled) {
+            return;
+        }
         this.callback(this.active?.resize ? this.context.onResize : this.context.onDrag, event, el);
         if (this.frame === undefined) {
             this.frame = requestAnimationFrame(() => {
