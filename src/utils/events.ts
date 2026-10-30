@@ -8,6 +8,7 @@ import type {
     DashKitLayoutPatch,
 } from '../typings';
 
+import {convertEnrichedLayoutToConfigLayout} from './enrichLayoutWithDefaults';
 import {getLayoutPatches} from './get-layout-patches';
 
 // Only fires when layout changes; other config mutations (item ordering, counter) do not trigger this event.
@@ -22,7 +23,12 @@ export function emitDashKitChangeEvent({
     onChange: (data: {config: Config}) => void;
     emitDashKitEvent: <T extends DashKitEventName>(eventName: T, event: DashKitEventMap[T]) => void;
 }) {
-    if (!isEqual(newConfig.layout, config.layout)) {
+    if (
+        !isEqual(
+            convertEnrichedLayoutToConfigLayout(newConfig.layout),
+            convertEnrichedLayoutToConfigLayout(config.layout),
+        )
+    ) {
         let defaultPrevented = false;
         let cachedPatches: DashKitLayoutPatch[] | undefined;
         const event: DashKitChangeEvent = {

@@ -24,7 +24,12 @@ const Item: React.FC<ItemProps> = ({
     const itemRef = React.useRef(item);
     const onItemRenderRef = React.useRef(onItemRender);
     const onItemMountChangeRef = React.useRef(onItemMountChange);
+    const mountedRef = React.useRef(true);
+    const itemIdentityRef = React.useRef({});
 
+    if (itemRef.current.id !== item.id || itemRef.current.type !== item.type) {
+        itemIdentityRef.current = {};
+    }
     itemRef.current = item;
     const {type} = item;
     onItemRenderRef.current = onItemRender;
@@ -33,6 +38,7 @@ const Item: React.FC<ItemProps> = ({
     const isRegisteredType = registerManager.check(type);
 
     React.useLayoutEffect(() => {
+        mountedRef.current = true;
         if (isRegisteredType && !isPlaceholder) {
             onItemMountChangeRef.current?.(itemRef.current, {
                 isAsync: isAsyncItemRef.current,
@@ -44,6 +50,7 @@ const Item: React.FC<ItemProps> = ({
             }
 
             return () => {
+                mountedRef.current = false;
                 onItemMountChangeRef.current?.(itemRef.current, {
                     isAsync: isAsyncItemRef.current,
                     isMounted: false,
@@ -60,8 +67,12 @@ const Item: React.FC<ItemProps> = ({
 
     const onBeforeLoad = React.useCallback(() => {
         isAsyncItemRef.current = true;
-
-        return onLoad;
+        const identity = itemIdentityRef.current;
+        return () => {
+            if (mountedRef.current && identity === itemIdentityRef.current) {
+                onLoad();
+            }
+        };
     }, [onLoad]);
 
     const itemRendererProps = React.useMemo(() => {
