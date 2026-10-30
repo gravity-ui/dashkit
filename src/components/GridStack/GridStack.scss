@@ -1,0 +1,43 @@
+@import 'gridstack/dist/gridstack';
+
+.dashkit-gridstack {
+    min-width: 0;
+    // The gap-inclusive native grid must not increase an ancestor's intrinsic width.
+    contain: inline-size;
+
+    .grid-stack {
+        transition: none;
+    }
+    &__zone {
+        // Group renderers can portal zones outside the contained DashKit root.
+        contain: inline-size;
+        box-sizing: border-box;
+        width: 100%;
+        min-width: 0;
+        position: relative;
+    }
+
+    &__host.grid-stack-item > .grid-stack-item-content {
+        overflow: visible;
+    }
+
+    &__host > .ui-resizable-handle {
+        background-image: none;
+        transform: none;
+    }
+
+    .dashkit-grid-item {
+        width: 100%;
+        height: 100%;
+    }
+
+    .grid-stack-placeholder {
+        pointer-events: none;
+    }
+
+    .grid-stack-placeholder > .placeholder-content {
+        background: var(--dashkit-placeholder-color, var(--g-color-base-brand));
+        opacity: var(--dashkit-placeholder-opacity, 0.1);
+        border-radius: var(--dashkit-grid-item-border-radius, 3px);
+    }
+}
