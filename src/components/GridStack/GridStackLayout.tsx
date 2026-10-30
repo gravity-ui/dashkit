@@ -79,9 +79,8 @@ const position = (id: string, node: GridStackNode): ConfigLayout => ({
     h: requireValue(node.h, 'node.h'),
 });
 
-const hasInvertedConstraints = ({minW, maxW, minH, maxH}: Partial<WidgetLayout>) =>
-    (minW !== undefined && maxW !== undefined && minW > maxW) ||
-    (minH !== undefined && maxH !== undefined && minH > maxH);
+const hasInvertedConstraints = ({minW = 1, maxW, minH = 1, maxH}: Partial<WidgetLayout>) =>
+    (maxW !== undefined && minW > maxW) || (maxH !== undefined && minH > maxH);
 
 const gridDepth = ({grid}: GridRecord) => {
     let depth = 0;
@@ -1412,7 +1411,7 @@ class GridStackCanvas extends React.PureComponent {
                               record.geometry.stepY,
                       ),
                   ),
-                  ...this.convertConstraints(raw, source, record),
+                  ...this.convertConstraints(raw, source, record, true),
               }
             : undefined;
         if (defaults) {

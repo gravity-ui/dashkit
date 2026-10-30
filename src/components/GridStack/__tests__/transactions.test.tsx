@@ -333,24 +333,31 @@ test.each(['width', 'height'] as const)(
 );
 
 // Critical: yes. Palette adds must not persist geometry outside converted plugin constraints.
-test.each(['width', 'height'] as const)(
-    'public palette rejects inverted converted %s bounds and clamps the next valid item',
-    (axis) => {
+test.each([
+    ['width', 3, 3],
+    ['height', 3, 3],
+    ['width', 1, 1],
+    ['height', 1, 1],
+    ['width', undefined, 1],
+    ['height', undefined, 1],
+] as const)(
+    'public palette rejects converted %s bounds with minimum %s and maximum %s and accepts the next valid item',
+    (axis, minimum, maximum) => {
         const measured = jest
             .spyOn(HTMLElement.prototype, 'clientWidth', 'get')
             .mockImplementation(function (this: HTMLElement) {
                 return this.closest('[data-dashkit-id="box"]') ? 300 : 640;
             });
-        const paletteType = `palette-converted-${axis}`;
+        const paletteType = `palette-converted-${axis}-${minimum}-${maximum}`;
         DashKitGridStack.registerPlugins({
             type: paletteType,
             defaultLayout: {
-                w: 3,
-                h: 3,
-                minW: axis === 'width' ? 3 : 1,
-                maxW: axis === 'width' ? 3 : 5,
-                minH: axis === 'height' ? 3 : 1,
-                maxH: axis === 'height' ? 3 : 5,
+                w: maximum,
+                h: maximum,
+                minW: axis === 'width' ? minimum : 1,
+                maxW: axis === 'width' ? maximum : 5,
+                minH: axis === 'height' ? minimum : 1,
+                maxH: axis === 'height' ? maximum : 5,
             },
             renderer: (props, ref) => <Plugin {...props} ref={ref} />,
         });
@@ -360,9 +367,9 @@ test.each(['width', 'height'] as const)(
             defaultLayout: {
                 w: 3,
                 h: 3,
-                minW: axis === 'width' ? 3 : 1,
+                minW: axis === 'width' ? minimum : 1,
                 maxW: axis === 'width' ? 6 : 5,
-                minH: axis === 'height' ? 3 : 1,
+                minH: axis === 'height' ? minimum : 1,
                 maxH: axis === 'height' ? 6 : 5,
             },
             renderer: (props, ref) => <Plugin {...props} ref={ref} />,
@@ -384,6 +391,13 @@ test.each(['width', 'height'] as const)(
                 },
             ],
         };
+        const before = JSON.stringify(document);
+        expect(() =>
+            DashKitGridStack.setItem({
+                config: {...document, containers: []},
+                item: {type: paletteType, data: {}},
+            }),
+        ).not.toThrow();
         const view = render(
             <DashKitDnDWrapper>
                 <div>
@@ -400,6 +414,12 @@ test.each(['width', 'height'] as const)(
                                 icon: '+',
                                 title: 'Valid',
                                 dragProps: {type: validType},
+                            },
+                            {
+                                id: 'override',
+                                icon: '+',
+                                title: 'Override',
+                                dragProps: {type: validType, layout: {w: 6, h: 6}},
                             },
                         ]}
                     />
@@ -457,7 +477,10 @@ test.each(['width', 'height'] as const)(
             dataTransfer: {setDragImage: jest.fn()},
         });
         over();
-        const size = {w: axis === 'width' ? 2 : 1, h: axis === 'height' ? 2 : 1};
+        const size = {
+            w: axis === 'width' && minimum === 3 ? 2 : 1,
+            h: axis === 'height' && minimum === 3 ? 2 : 1,
+        };
         const preview = requireValue(
             target.querySelector<GridItemHTMLElement>('[data-dashkit-id="__dropping-elem__"]'),
             'palette preview',
@@ -472,7 +495,26 @@ test.each(['width', 'height'] as const)(
             item: {type: validType, data: {}, layout: drop.itemLayout},
         });
         expect(saved.layout).toEqual([expect.objectContaining({containerId: 'box', ...size})]);
+        act(() => drop.commit());
+        fireEvent.dragEnd(window);
+
+        fireEvent.dragStart(view.getByRole('button', {name: '+ Override'}), {
+            dataTransfer: {setDragImage: jest.fn()},
+        });
+        over();
+        expect(
+            target.querySelector<GridItemHTMLElement>('[data-dashkit-id="__dropping-elem__"]')
+                ?.gridstackNode,
+        ).toMatchObject({w: 2, h: 2});
+        fireEvent.drop(target);
+        expect(onDrop).toHaveBeenCalledTimes(2);
+        expect(onDrop.mock.calls[1][0].itemLayout).toMatchObject({
+            containerId: 'box',
+            w: 2,
+            h: 2,
+        });
         expect(onChange).not.toHaveBeenCalled();
+        expect(JSON.stringify(document)).toBe(before);
         view.unmount();
         measured.mockRestore();
     },
