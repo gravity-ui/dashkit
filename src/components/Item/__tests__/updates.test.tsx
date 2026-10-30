@@ -69,6 +69,7 @@ function mountItem(isolateItemUpdates?: boolean) {
         layoutChange: jest.fn(),
         temporaryLayout: null,
         memorizeOriginalLayout: jest.fn(),
+        adjustedLayoutIds: [],
         revertToOriginalLayout: jest.fn(),
         itemsState: {[item.id]: {}},
         itemsParams: {[item.id]: {}},
