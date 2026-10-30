@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.5.3](https://github.com/gravity-ui/dashkit/compare/v10.5.2...v10.5.3) (2026-10-30)
+
+
+### Bug Fixes
+
+* preserve DashKit lifecycle and mobile item layouts ([#328](https://github.com/gravity-ui/dashkit/issues/328)) ([b082f0b](https://github.com/gravity-ui/dashkit/commit/b082f0b7e26b731ad1ce11f5240ee319c48f0847))
+
 ## [10.5.2](https://github.com/gravity-ui/dashkit/compare/v10.5.1...v10.5.2) (2026-10-06)
 
 
