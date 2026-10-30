@@ -30,6 +30,30 @@ type PrepareItemProps = {
 export function prepareItem(
     WrappedComponent: React.ComponentType<ItemProps>,
 ): React.ComponentClass<PrepareItemProps> {
+    const MemoizedItem = React.memo(WrappedComponent, (previous, next) => {
+        if (!next.rendererProps.settings.isolateItemUpdates) {
+            return false;
+        }
+        const sameItemProps = Object.entries(next).every(
+            ([key, value]) => key === 'rendererProps' || previous[key as keyof ItemProps] === value,
+        );
+        if (!sameItemProps) {
+            return false;
+        }
+        return Object.entries(next.rendererProps).every(([key, value]) => {
+            const previousValue = previous.rendererProps[key as keyof RendererProps];
+            if (key === 'layout') {
+                return isEqual(
+                    previous.rendererProps.layout.find(({i}) => i === previous.item.id),
+                    next.rendererProps.layout.find(({i}) => i === next.item.id),
+                );
+            }
+            if (key === 'gridLayout' || key === 'params' || key === 'state') {
+                return isEqual(previousValue, value);
+            }
+            return previousValue === value;
+        });
+    });
     return class PrepareItem extends React.Component<PrepareItemProps> {
         static contextType = DashKitContext;
         context!: React.ContextType<typeof DashKitContext>;
@@ -65,6 +89,10 @@ export function prepareItem(
             return (
                 this.props.item !== nextProps.item ||
                 this.props.layout !== nextProps.layout ||
+                !isEqual(this.props.gridLayout, nextProps.gridLayout) ||
+                this.props.adjustWidgetLayout !== nextProps.adjustWidgetLayout ||
+                this.props.forwardedPluginRef !== nextProps.forwardedPluginRef ||
+                this.props.isPlaceholder !== nextProps.isPlaceholder ||
                 ctx.itemsParams[id] !== nextContext.itemsParams[id] ||
                 ctx.itemsState[id] !== nextContext.itemsState[id] ||
                 ctx.editMode !== nextContext.editMode ||
@@ -74,23 +102,28 @@ export function prepareItem(
         }
 
         render() {
-            const {item, isPlaceholder, forwardedPluginRef, onItemMountChange, onItemRender} =
-                this.props;
+            const {item, isPlaceholder, forwardedPluginRef} = this.props;
             const {registerManager} = this.context;
 
             return (
-                <WrappedComponent
+                <MemoizedItem
                     key={item.type}
                     forwardedPluginRef={forwardedPluginRef}
                     rendererProps={this.getRenderProps()}
                     registerManager={registerManager}
+                    plugin={registerManager.getItem(item.type)}
                     isPlaceholder={isPlaceholder}
-                    onItemMountChange={onItemMountChange}
-                    onItemRender={onItemRender}
+                    onItemMountChange={this._onItemMountChange}
+                    onItemRender={this._onItemRender}
                     item={item}
                 />
             );
         }
+
+        _onItemRender: ItemProps['onItemRender'] = (item) => this.props.onItemRender?.(item);
+
+        _onItemMountChange: ItemProps['onItemMountChange'] = (item, state) =>
+            this.props.onItemMountChange?.(item, state);
 
         _onStateAndParamsChange: PluginWidgetProps['onStateAndParamsChange'] = (
             stateAndParams,
