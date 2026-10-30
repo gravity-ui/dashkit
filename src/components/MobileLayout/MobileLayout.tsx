@@ -15,7 +15,7 @@ import './MobileLayout.scss';
 
 const b = cn('dashkit-mobile-layout');
 
-type MobileLayoutProps = {};
+type MobileLayoutProps = {'data-dashkit-engine'?: string};
 
 type MobileLayoutState = {
     itemsWithActiveAutoheight: Record<string, boolean>;
@@ -31,7 +31,8 @@ export default class MobileLayout extends React.PureComponent<
     sortedLayoutItems: Record<string, ReturnType<typeof getSortedConfigItems>> | null = null;
 
     _memoLayout = this.context.layout;
-    _memoConfigItems = this.context.configItems;
+    _memoContainers = this.context.config.containers;
+    _memoItems = this.context.configItems;
     _memoForwardedPluginRef = new Map<string, (refObject: PluginRef) => void>();
     _memoAdjustWidgetLayout: Record<string, (props: {needSetDefault?: boolean}) => void> = {};
 
@@ -73,7 +74,10 @@ export default class MobileLayout extends React.PureComponent<
         const sortedItems = this.getSortedLayoutItems();
 
         return (
-            <div className={b()}>
+            <div
+                className={b()}
+                data-dashkit-engine={this.props['data-dashkit-engine'] || 'legacy'}
+            >
                 {groups.map((group) => {
                     const groupId = group.id || DEFAULT_GROUP;
                     const items = sortedItems[groupId] || [];
@@ -123,16 +127,19 @@ export default class MobileLayout extends React.PureComponent<
     }
 
     getSortedLayoutItems() {
+        const nested = this.context.config.containers?.length || this._memoContainers?.length;
         if (
             this.sortedLayoutItems &&
             this.context.layout === this._memoLayout &&
-            this.context.configItems === this._memoConfigItems
+            this.context.configItems === this._memoItems &&
+            (!nested || this.context.config.containers === this._memoContainers)
         ) {
             return this.sortedLayoutItems;
         }
 
         this._memoLayout = this.context.layout;
-        this._memoConfigItems = this.context.configItems;
+        this._memoContainers = this.context.config.containers;
+        this._memoItems = this.context.configItems;
 
         const hasOrderId = Boolean(this.context.configItems.find((item) => item.orderId));
 

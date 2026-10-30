@@ -2,6 +2,7 @@ import {StringParams} from './common';
 
 export interface AdditionalWidgetLayout {
     parent?: string;
+    containerId?: string;
 }
 
 export interface ConfigLayout extends AdditionalWidgetLayout {
@@ -19,6 +20,7 @@ export const CONFIG_LAYOUT_FIELDS = [
     'x',
     'y',
     'parent',
+    'containerId',
 ] as const satisfies ReadonlyArray<keyof ConfigLayout>;
 export type ConfigLayoutField = (typeof CONFIG_LAYOUT_FIELDS)[number];
 
@@ -86,6 +88,8 @@ export interface ConfigConnection {
 
 export interface Config {
     id?: string;
+    layoutVersion?: 2;
+    containers?: LayoutContainer[];
     salt: string;
     counter: number;
     items: ConfigItem[];
@@ -94,3 +98,20 @@ export interface Config {
     aliases: ConfigAliases;
     connections: ConfigConnection[];
 }
+
+/** Persisted nested layout. Runtime zone render functions remain in DashKitGroup. */
+export type LayoutContainer = Omit<ConfigLayout, 'i'> & {
+    id: string;
+    padding: [number, number, number, number];
+    gap: [number, number];
+    grid: {
+        cols: number;
+        rowHeight: number;
+        compactType: 'vertical' | 'horizontal' | 'horizontal-nowrap' | null;
+        allowOverlap?: boolean;
+        maxRows?: number;
+    };
+};
+
+/** Compatibility name for existing GridStack consumers. */
+export type GridStackContainer = LayoutContainer;
