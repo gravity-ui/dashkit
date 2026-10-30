@@ -624,7 +624,7 @@ function useMemoStateContext(
     }, [dragPropsContext, props.registerManager]);
 
     const onDropDragOver = React.useCallback<DashKitCtxShape['onDropDragOver']>(
-        (_e, group, gridProps, groupLayout, sharedItem) => {
+        (_e, group, gridProps, groupLayout, sharedItem, defaultsOverride, containerId) => {
             if (temporaryLayout) {
                 resetTemporaryLayout();
                 return false;
@@ -636,10 +636,17 @@ function useMemoStateContext(
                 const {type, h, w} = sharedItem;
                 dragItemType = type;
                 const _defaults = props.registerManager.getItem(type);
-                defaultLayout = _defaults ? {..._defaults.defaultLayout, h, w} : {h, w};
+                defaultLayout = _defaults
+                    ? {
+                          ..._defaults.defaultLayout,
+                          ...pick(sharedItem, 'minW', 'minH', 'maxW', 'maxH'),
+                          h,
+                          w,
+                      }
+                    : {h, w};
             } else if (dragOverPlugin) {
                 dragItemType = dragOverPlugin.type;
-                defaultLayout = dragOverPlugin.defaultLayout;
+                defaultLayout = {...dragOverPlugin.defaultLayout, ...defaultsOverride};
             } else {
                 return false;
             }
@@ -669,7 +676,7 @@ function useMemoStateContext(
             const {
                 h = defaultLayout?.h || DEFAULT_WIDGET_HEIGHT,
                 w = defaultLayout?.w || DEFAULT_WIDGET_WIDTH,
-            } = dragPropsContext?.layout || {};
+            } = defaultsOverride || dragPropsContext?.layout || {};
 
             const itemLayout = {
                 h: maxH ? Math.min(h, maxH) : h,
@@ -682,6 +689,7 @@ function useMemoStateContext(
                         ...sharedItem,
                         ...itemLayout,
                         parent: group,
+                        containerId,
                         type: dragItemType,
                     },
                     sharedItem ?? null,
@@ -714,20 +722,27 @@ function useMemoStateContext(
                 dragProps: dragPropsContext,
             });
 
-            onDropProp?.({
-                newLayout: newLayout.reduce<ConfigLayout[]>((memo, l) => {
-                    if (l.i !== item.i) {
-                        memo.push(pick(l, CONFIG_LAYOUT_FIELDS));
-                    }
+            try {
+                onDropProp?.({
+                    newLayout: newLayout.reduce<ConfigLayout[]>((memo, l) => {
+                        if (l.i !== item.i) {
+                            memo.push(pick(l, CONFIG_LAYOUT_FIELDS));
+                        }
 
-                    return memo;
-                }, []),
-                itemLayout: pick(item, CONFIG_LAYOUT_FIELDS),
-                commit: resetTemporaryLayout,
-                dragProps: dragPropsContext,
-            });
+                        return memo;
+                    }, []),
+                    itemLayout: pick(item, CONFIG_LAYOUT_FIELDS),
+                    commit: resetTemporaryLayout,
+                    dragProps: dragPropsContext,
+                });
+            } catch (error) {
+                if (layoutAdapter.optimistic) {
+                    resetTemporaryLayout();
+                }
+                throw error;
+            }
         },
-        [dragPropsContext, onDropProp, setTemporaryLayout, resetTemporaryLayout],
+        [dragPropsContext, onDropProp, layoutAdapter, setTemporaryLayout, resetTemporaryLayout],
     );
 
     const dashkitContextValue = React.useMemo(

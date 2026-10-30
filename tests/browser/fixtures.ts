@@ -17,7 +17,10 @@ export const test = base.extend<{evidence: unknown[]}>({
 });
 
 export function storyUrl(story: string, args: Record<string, string | boolean | null> = {}) {
-    const search = new URLSearchParams({id: `tests-layout-contract--${story}`, viewMode: 'story'});
+    const search = new URLSearchParams({
+        id: story.includes('--') ? story : `tests-layout-contract--${story}`,
+        viewMode: 'story',
+    });
     if (Object.keys(args).length) {
         search.set(
             'args',
