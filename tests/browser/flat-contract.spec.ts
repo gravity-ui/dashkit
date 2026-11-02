@@ -7,6 +7,90 @@ import type {Config} from '../../src/shared';
 
 import {checked, storyUrl, test} from './fixtures';
 
+// Critical: yes. Public start callbacks can synchronously replace config or unmount during native DD start.
+for (const gesture of ['drag', 'resize']) {
+    for (const unmount of [false, true]) {
+        test(`[gridstack] synchronous ${gesture} start ${unmount ? 'unmount' : 'replacement'} preserves native cleanup and next drag`, async ({
+            page,
+            evidence,
+        }) => {
+            await page.goto(storyUrl('synchronous-native-start', {unmount}));
+            const widget = page.locator('[data-widget-id="a"]');
+            await widget.waitFor();
+            const identity = await widget.getAttribute('data-widget-instance');
+            const host = checked(await page.locator('[data-dashkit-id="a"]').elementHandle());
+            const saved = async () =>
+                JSON.parse(
+                    checked(await page.locator('[data-qa="saved-config"]').textContent()),
+                ) as Config;
+            const initial = await saved();
+            const before = checked(await widget.boundingBox());
+            const target =
+                gesture === 'resize'
+                    ? checked(await page.locator('[data-qa="dashkit-resize-se"]').boundingBox())
+                    : {x: before.x + 25, y: before.y + 25, width: 0, height: 0};
+            const x = target.x + target.width / 2;
+            const y = target.y + target.height / 2;
+            await page.mouse.move(x, y);
+            await page.mouse.down();
+            await page.mouse.move(x + 10, y + 10);
+            if (unmount) {
+                await expect(widget).toHaveCount(0);
+                assert.deepEqual(
+                    await host.evaluate((el: GridItemHTMLElement) => ({
+                        node: Boolean(el.gridstackNode),
+                        draggable: Boolean((el as HTMLElement & {ddElement?: unknown}).ddElement),
+                    })),
+                    {node: false, draggable: false},
+                );
+                await page.mouse.move(x + 80, y + 40);
+                await page.mouse.up();
+                assert.deepEqual(await saved(), initial);
+                await expect(page.locator('[data-qa="native-callbacks"]')).toHaveText('["start"]');
+                await page.getByRole('button', {name: 'Remount', exact: true}).click();
+            } else {
+                const replacement = {
+                    ...initial,
+                    layout: [{...initial.layout[0], x: 3, y: 3}],
+                };
+                await expect
+                    .poll(async () => checked(await widget.boundingBox()).x)
+                    .toBe(before.x + 150);
+                await page.mouse.move(x + 80, y + 40);
+                await page.mouse.up();
+                assert.deepEqual(await saved(), replacement);
+                assert.equal(checked(await widget.boundingBox()).x, before.x + 150);
+                assert.equal(checked(await widget.boundingBox()).y, before.y + 60);
+                assert.equal(checked(await widget.boundingBox()).width, before.width);
+                assert.equal(checked(await widget.boundingBox()).height, before.height);
+                assert.equal(await widget.getAttribute('data-widget-instance'), identity);
+                await expect(page.locator('[data-qa="native-callbacks"]')).toHaveText(
+                    '["start","stop"]',
+                );
+            }
+            await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 0');
+            const authoritative = await saved();
+            const next = checked(await widget.boundingBox());
+            await drag(page, widget, next.x + 25, next.y + 25, 50, 20, 'x');
+            await expect(page.locator('[data-qa="event-count"]')).toHaveText('Events: 1');
+            assert.deepEqual((await saved()).layout, [
+                {
+                    ...authoritative.layout[0],
+                    x: authoritative.layout[0].x + 1,
+                    y: authoritative.layout[0].y + 1,
+                },
+            ]);
+            await expect(page.locator('[data-qa="native-callbacks"]')).toHaveText(
+                unmount ? '["start","start","stop"]' : '["start","stop","start","stop"]',
+            );
+            if (!unmount) {
+                assert.equal(await widget.getAttribute('data-widget-instance'), identity);
+            }
+            evidence.push({gesture, unmount, initial, authoritative, saved: await saved()});
+        });
+    }
+}
+
 // Critical: yes. A controlled zone transfer must leave the next edit with the destination engine.
 test('[gridstack] active controlled zone transfer preserves native ownership and the next edit', async ({
     page,

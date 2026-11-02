@@ -32,7 +32,7 @@ import {ActionPanel} from '../../ActionPanel/ActionPanel';
 import {DashKitDnDWrapper} from '../../DashKitDnDWrapper/DashKitDnDWrapper';
 import {DashKitGridStack} from '../DashKitGridStack';
 import {requireValue} from '../invariants';
-import {GridStack} from '../runtime';
+import {DDManager, GridStack} from '../runtime';
 import type {GridItemHTMLElement} from '../runtime';
 
 const type = 'gridstack-mounted-contract';
@@ -215,6 +215,189 @@ test.each([1, 2])(
         } finally {
             view.unmount();
             measured.mockRestore();
+        }
+    },
+);
+
+// Critical: yes. Regression: cross-grid cancellation leaves a ghost node and renames the live widget.
+// Impact: controlled replacement corrupts native editing. Unique protection: native preview ownership changes before DOM reparenting.
+test.each([
+    {destination: 'target', bounded: false},
+    {destination: 'target', bounded: true},
+    {destination: 'source', bounded: false},
+    {destination: 'remove', bounded: false},
+] as const)(
+    'controlled revision during a native destination preview restores $destination (bounded=$bounded)',
+    async ({destination, bounded}) => {
+        const width = jest.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(600);
+        const measure = jest
+            .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+            .mockImplementation(function (this: HTMLElement) {
+                const node = this.closest<GridItemHTMLElement>('[data-dashkit-id]')?.gridstackNode;
+                const offset = this.closest('[data-zone="target"]') ? 1000 : 0;
+                const x =
+                    this.style.position === 'fixed'
+                        ? parseFloat(this.style.left) || 0
+                        : offset + (node?.x || 0) * 50;
+                const y =
+                    this.style.position === 'fixed'
+                        ? parseFloat(this.style.top) || 0
+                        : (node?.y || 0) * 20;
+                return new DOMRect(
+                    x,
+                    y,
+                    parseFloat(this.style.width) || (node?.w || 12) * 50,
+                    parseFloat(this.style.height) || (node?.h || 20) * 20,
+                );
+            });
+        const initial: Config = {
+            ...config,
+            containers: undefined,
+            layoutVersion: undefined,
+            items: [config.items[0], {...config.items[0], id: 'b'}],
+            layout: [
+                {i: 'a', parent: 'source', x: 0, y: 0, w: 2, h: 2},
+                {i: 'b', parent: 'target', x: 8, y: 0, w: 2, h: 2},
+            ],
+        };
+        const replacement: Config = {
+            ...initial,
+            items: destination === 'remove' ? initial.items.slice(1) : initial.items,
+            layout:
+                destination === 'remove'
+                    ? initial.layout.slice(1)
+                    : [{...initial.layout[0], parent: destination, x: 3, y: 3}, initial.layout[1]],
+        };
+        const groups: DashKitGroup[] = ['source', 'target'].map((id) => ({
+            id,
+            render: (key, children) => (
+                <section key={key} data-zone={id}>
+                    {children}
+                </section>
+            ),
+            gridProperties: () => ({
+                cols: 12,
+                width: 600,
+                rowHeight: 20,
+                margin: [0, 0],
+                containerPadding: [0, 0],
+                compactType: null,
+                isBounded: bounded,
+                autoSize: false,
+                style: {height: 400},
+            }),
+        }));
+        const onChange = jest.fn();
+        const ref = React.createRef<DashKitGridStack>();
+        const fixture = (saved: Config) => (
+            <DashKitGridStack
+                ref={ref}
+                config={saved}
+                groups={groups}
+                editMode
+                onChange={onChange}
+            />
+        );
+        const view = render(fixture(initial));
+        try {
+            const host = requireValue(
+                view.container.querySelector<GridItemHTMLElement>('[data-dashkit-id="a"]'),
+                'active host',
+            );
+            const nextHost = requireValue(
+                view.container.querySelector<GridItemHTMLElement>('[data-dashkit-id="b"]'),
+                'next host',
+            );
+            const plugins = [host, nextHost].map((el) =>
+                requireValue(el.querySelector('[data-identity]'), 'mounted plugin'),
+            );
+            const meta = await Promise.all(requireValue(ref.current, 'DashKit ref').getItemsMeta());
+            const sourceRoot = requireValue(
+                host.gridstackNode?.grid?.el,
+                'source root',
+            ) as HTMLElement & {gridstack: GridStack};
+            const targetRoot = requireValue(
+                nextHost.gridstackNode?.grid?.el,
+                'target root',
+            ) as HTMLElement & {gridstack: GridStack};
+            fireEvent.mouseDown(
+                requireValue(host.querySelector('.grid-stack-item-content'), 'drag surface'),
+                {button: 0, clientX: 10, clientY: 10, buttons: 1},
+            );
+            fireEvent.mouseMove(document, {clientX: 20, clientY: 20, buttons: 1});
+            expect(DDManager.dragElement?.el).toBe(host);
+            fireEvent.mouseMove(document, {clientX: 1110, clientY: 20, buttons: 1});
+            fireEvent.mouseEnter(targetRoot, {clientX: 1110, clientY: 20, buttons: 1});
+            expect(host.gridstackNode?.grid).toBe(targetRoot.gridstack);
+            expect(host.parentElement).toBe(sourceRoot);
+            expect(host.gridstackNode?.el).toBe(
+                requireValue(targetRoot.querySelector('.grid-stack-placeholder'), 'target preview'),
+            );
+            view.rerender(fixture(replacement));
+            await act(async () => {
+                await Promise.resolve();
+            });
+            expect(sourceRoot.gridstack.engine.nodes.map(({id}) => id).sort()).toEqual(
+                destination === 'source' ? ['a'] : [],
+            );
+            expect(targetRoot.gridstack.engine.nodes.map(({id}) => id).sort()).toEqual(
+                destination === 'target' ? ['a', 'b'] : ['b'],
+            );
+            expect(view.container.querySelector('.grid-stack-placeholder')).toBeNull();
+            const retained = destination === 'remove' ? [nextHost] : [host, nextHost];
+            for (const el of retained) {
+                expect(
+                    view.container.querySelector(`[data-dashkit-id="${el.dataset.dashkitId}"]`),
+                ).toBe(el);
+                expect(el.gridstackNode?.grid?.el).toBe(el.parentElement);
+                expect(el.gridstackNode?.grid?.engine.nodes).toContain(el.gridstackNode);
+                expect(el.querySelector('[data-identity]')).toBe(plugins[el === host ? 0 : 1]);
+            }
+            expect(
+                await Promise.all(requireValue(ref.current, 'DashKit ref').getItemsMeta()),
+            ).toEqual(destination === 'remove' ? meta.slice(1) : meta);
+            if (destination === 'remove') {
+                expect(view.container.querySelector('[data-dashkit-id="a"]')).toBeNull();
+            } else {
+                expect(host.gridstackNode).toMatchObject({id: 'a', x: 3, y: 3, w: 2, h: 2});
+            }
+            fireEvent.mouseMove(document, {clientX: 1190, clientY: 50, buttons: 1});
+            fireEvent.mouseUp(document, {clientX: 1190, clientY: 50});
+            await act(async () => {
+                await Promise.resolve();
+            });
+            expect(onChange).not.toHaveBeenCalled();
+            const next = destination === 'remove' ? nextHost : host;
+            const saved = requireValue(
+                replacement.layout.find(({i}) => i === next.dataset.dashkitId),
+                'next saved layout',
+            );
+            const x = (saved.parent === 'target' ? 1000 : 0) + saved.x * 50 + 10;
+            const y = saved.y * 20 + 10;
+            fireEvent.mouseDown(
+                requireValue(next.querySelector('.grid-stack-item-content'), 'next drag surface'),
+                {button: 0, clientX: x, clientY: y, buttons: 1},
+            );
+            fireEvent.mouseMove(document, {clientX: x + 5, clientY: y + 5, buttons: 1});
+            fireEvent.mouseMove(document, {clientX: x + 50, clientY: y + 20, buttons: 1});
+            fireEvent.mouseUp(document, {clientX: x + 50, clientY: y + 20});
+            await act(async () => {
+                await Promise.resolve();
+            });
+            expect(onChange).toHaveBeenCalledTimes(1);
+            expect(onChange.mock.calls[0][0].config.layout).toEqual(
+                replacement.layout.map((entry) =>
+                    entry === saved ? {...entry, x: entry.x + 1, y: entry.y + 1} : entry,
+                ),
+            );
+            expect(next.querySelector('[data-identity]')).toBe(plugins[next === host ? 0 : 1]);
+            expect(
+                await Promise.all(requireValue(ref.current, 'DashKit ref').getItemsMeta()),
+            ).toEqual(destination === 'remove' ? meta.slice(1) : meta);
+        } finally {
+            view.unmount();
+            measure.mockRestore();
+            width.mockRestore();
         }
     },
 );

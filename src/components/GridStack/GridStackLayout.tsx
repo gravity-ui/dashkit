@@ -119,6 +119,7 @@ class GridStackCanvas extends React.PureComponent {
     private syncing = false;
     private appliedContext?: DashKitCtxShape;
     private active?: Gesture;
+    private starting = false;
     private preview?: ConfigItem;
     private finishQueued = false;
     private timer?: ReturnType<typeof setTimeout>;
@@ -154,20 +155,14 @@ class GridStackCanvas extends React.PureComponent {
             this.active &&
             this.appliedContext?.externalLayoutRevision !== this.context.externalLayoutRevision
         ) {
-            this.active.cancelled = true;
-            // Finish native pointer cleanup before applying the authoritative document.
-            this.syncing = true;
-            try {
-                const el = this.active.element as GridItemHTMLElement;
-                el.gridstackNode?.grid?.prepareDragDrop(el, true);
-            } finally {
-                this.syncing = false;
+            const active = this.active;
+            active.cancelled = true;
+            // GridStack resumes native start after the public callback; keep its DD alive until then.
+            if (this.starting) {
+                Promise.resolve().then(() => this.cancelGesture(active));
+            } else {
+                this.cancelGesture(active);
             }
-            const host = this.hosts.get(this.active.id);
-            if (host?.el.gridstackNode) {
-                this.membership(host);
-            }
-            this.sync();
         }
         if (!this.active && this.appliedContext !== this.context) {
             const previous = this.appliedContext;
@@ -230,14 +225,32 @@ class GridStackCanvas extends React.PureComponent {
             host.dragObserver?.disconnect();
             delete host.dragObserver;
         }
-        [...this.grids.values()]
-            .sort((a, b) => gridDepth(b) - gridDepth(a))
-            .forEach(({grid, root}) => {
-                root.removeEventListener('dragover', this.paletteOver);
-                root.removeEventListener('drop', this.paletteDrop);
-                root.removeEventListener('dragleave', this.paletteLeave);
-                grid.destroy(false);
+        const active = this.active;
+        if (active) {
+            active.cancelled = true;
+        }
+        const grids = [...this.grids.values()].sort((a, b) => gridDepth(b) - gridDepth(a));
+        for (const {root} of grids) {
+            root.removeEventListener('dragover', this.paletteOver);
+            root.removeEventListener('drop', this.paletteDrop);
+            root.removeEventListener('dragleave', this.paletteLeave);
+        }
+        const destroy = () => {
+            grids.forEach(({grid}) => {
+                if (grid.el?.gridstack === grid) {
+                    const el = active?.element as GridItemHTMLElement | undefined;
+                    if (el && el.gridstackNode?.grid === grid && el.parentElement === grid.el) {
+                        grid.prepareDragDrop(el, true);
+                    }
+                    grid.destroy(false);
+                }
             });
+        };
+        if (this.starting) {
+            Promise.resolve().then(destroy);
+        } else {
+            destroy();
+        }
         this.grids.clear();
         this.plugins.clear();
     }
@@ -413,6 +426,43 @@ class GridStackCanvas extends React.PureComponent {
         }
     };
     private onVisibilityChange = () => this.reloadItems();
+    private cancelGesture(active: Gesture) {
+        if (!this.mounted || this.active !== active) {
+            return;
+        }
+        // Finish native pointer cleanup before applying the authoritative document.
+        this.syncing = true;
+        try {
+            const el = active.element as GridItemHTMLElement;
+            const grid = [...this.grids.values()].find(
+                ({grid: owner}) => owner === el.gridstackNode?.grid,
+            )?.grid;
+            if (
+                this.hosts.get(active.id)?.el === el &&
+                grid &&
+                grid.el?.gridstack === grid &&
+                [...this.grids.values()].some(
+                    ({grid: parent}) =>
+                        parent.el?.gridstack === parent && el.parentElement === parent.el,
+                )
+            ) {
+                if (el.parentElement === grid.el) {
+                    grid.prepareDragDrop(el, true);
+                } else {
+                    // Native transfers own a target placeholder before reparenting the real host.
+                    el.remove();
+                    grid.removeWidget(el, false, false);
+                }
+            }
+        } finally {
+            this.syncing = false;
+        }
+        const host = this.hosts.get(active.id);
+        if (host?.el.gridstackNode) {
+            this.membership(host);
+        }
+        this.sync();
+    }
     private getProperties(key: string) {
         return getGridProperties(
             key,
@@ -1192,19 +1242,29 @@ class GridStackCanvas extends React.PureComponent {
             width: visible.width,
             height: visible.height,
         };
-        if (this.context.focusable && !host.container) {
-            host.content
-                .querySelector<HTMLElement>('.dashkit-grid-item')
-                ?.focus({preventScroll: true});
+        this.starting = true;
+        try {
+            if (this.context.focusable && !host.container) {
+                host.content
+                    .querySelector<HTMLElement>('.dashkit-grid-item')
+                    ?.focus({preventScroll: true});
+            }
+            this.callback(
+                this.active.resize ? this.context.onResizeStart : this.context.onDragStart,
+                event,
+                el,
+            );
+            if (this.mounted) {
+                this.forceUpdate();
+            }
+        } finally {
+            this.starting = false;
         }
-        this.callback(
-            this.active.resize ? this.context.onResizeStart : this.context.onDragStart,
-            event,
-            el,
-        );
-        this.forceUpdate();
     }
     private move(event: Event, el: GridItemHTMLElement) {
+        if (!this.mounted || this.active?.cancelled) {
+            return;
+        }
         this.callback(this.active?.resize ? this.context.onResize : this.context.onDrag, event, el);
         if (this.frame === undefined) {
             this.frame = requestAnimationFrame(() => {
