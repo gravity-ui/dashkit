@@ -283,6 +283,10 @@ export class DashKitNativeGrid extends NativeBase {
     }
 
     refreshScale(el: GridItemHTMLElement, rebaseResize = true, resize = false) {
+        // Public start callbacks can detach the grid before native start resumes.
+        if (!this.el?.isConnected || this.el.gridstack !== this) {
+            return;
+        }
         const props = this.properties?.();
         const scale = props?.transformScaleRef?.current ?? props?.transformScale;
         if (scale !== undefined && (!Number.isFinite(scale) || scale <= 0)) {
