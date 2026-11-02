@@ -1,6 +1,7 @@
 import React from 'react';
 
 import type {Meta, StoryFn} from '@storybook/react';
+import {flushSync} from 'react-dom';
 
 import {DashKit} from '../../../src/components/DashKit/DashKit';
 import {DashKitGridStack} from '../../../src/components/GridStack/DashKitGridStack';
@@ -215,6 +216,60 @@ ResizeControls.args = {engine: 'legacy', customResize: true};
 
 export const DelayedAcknowledgment: StoryFn<typeof Contract> = (args) => <Contract {...args} />;
 DelayedAcknowledgment.args = {engine: 'legacy', bounded: true, delayedAck: true};
+
+function NativeStartUpdate({unmount = false}: {unmount?: boolean}) {
+    const [config, setConfig] = React.useState(boundedInitial);
+    const [mounted, setMounted] = React.useState(true);
+    const [events, setEvents] = React.useState(0);
+    const [callbacks, setCallbacks] = React.useState<string[]>([]);
+    const replaced = React.useRef(false);
+    const onStart = () => {
+        setCallbacks((value) => [...value, 'start']);
+        if (!replaced.current) {
+            replaced.current = true;
+            flushSync(() => {
+                if (unmount) {
+                    setMounted(false);
+                } else {
+                    setConfig({
+                        ...boundedInitial,
+                        layout: [{...boundedInitial.layout[0], x: 3, y: 3}],
+                    });
+                }
+            });
+        }
+    };
+    const onStop = () => setCallbacks((value) => [...value, 'stop']);
+    return (
+        <div>
+            <button onClick={() => setMounted(true)}>Remount</button>
+            <span data-qa="event-count">Events: {events}</span>
+            <pre data-qa="native-callbacks">{JSON.stringify(callbacks)}</pre>
+            <div style={{width: 600, height: 400}}>
+                {mounted && (
+                    <DashKitGridStack
+                        config={config}
+                        groups={boundedGroups}
+                        editMode
+                        onDragStart={onStart}
+                        onResizeStart={onStart}
+                        onDragStop={onStop}
+                        onResizeStop={onStop}
+                        onChange={({config: next}) => {
+                            setConfig(next);
+                            setEvents((value) => value + 1);
+                        }}
+                    />
+                )}
+            </div>
+            <pre data-qa="saved-config">{JSON.stringify(config)}</pre>
+        </div>
+    );
+}
+export const SynchronousNativeStart: StoryFn<typeof NativeStartUpdate> = (args) => (
+    <NativeStartUpdate {...args} />
+);
+SynchronousNativeStart.args = {unmount: false};
 
 function ControlledTransfer() {
     const initialConfig: Config = {
