@@ -85,6 +85,7 @@ export class DashKitGridStack extends DashKitBase {
         validateConfig(config);
         if (item.id) {
             const result = UpdateManager.editItem({item, namespace, config, options});
+            validateConfig(result);
             return result;
         }
         const addition = item as AddConfigItem;
