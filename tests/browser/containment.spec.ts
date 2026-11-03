@@ -377,3 +377,35 @@ test('child drag continues after reparent cancellation and undo', async ({page, 
         pointAfter,
     });
 });
+
+for (const height of [6, 18]) {
+    test(`palette admission respects content height ${height}`, async ({page, evidence}) => {
+        const {frames, state, openBounds} = containment(page);
+        await openBounds();
+        await page.getByRole('button', {name: `Empty content ${height}`, exact: true}).click();
+        await frames();
+        const empty = await state();
+        await page
+            .getByRole('button', {name: '+ Widget', exact: true})
+            .dragTo(page.locator('[data-dashkit-id="panel"] .grid-stack'), {
+                targetPosition: {x: 70, y: height / 2},
+            });
+        await frames();
+        const dropped = await state();
+        if (height === 6) {
+            assert.deepEqual(dropped, empty);
+            assert.equal(await page.locator('[data-qa="drop-count"]').textContent(), '0');
+        } else {
+            assert.equal(dropped.config.items.length, 1);
+            assert.equal(dropped.config.layout[0].containerId, 'panel');
+            assert.equal(dropped.config.layout[0].h, 1);
+            assert.equal(dropped.config.layout[0].y, 0);
+            assert.equal(await page.locator('[data-qa="drop-count"]').textContent(), '1');
+        }
+        assert.equal(await page.locator('[data-dashkit-id="__dropping-elem__"]').count(), 0);
+        evidence.push({
+            check: `native palette content height${height} has ${height === 6 ? 'zero full rows and rejects impossible minimum' : 'one row and admits one bounded child'}`,
+            dropped,
+        });
+    });
+}

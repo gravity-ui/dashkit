@@ -4,7 +4,7 @@
 
 A dashboard grid rendering library.
 
-The opt-in `@gravity-ui/dashkit/gridstack` entry exports `DashKitGridStack` for flat and nested saved layouts using GridStack 12.6.0. It shares plugin registration, controlled updates, refs, readiness and autoheight with DashKit. Native dragging supports transfers between zones and containers, including whole container subtrees; external palette drops are not supported in this stage. See the [GridStack documentation](docs/gridstack.md) for the supported API and [nested document format](docs/gridstack.md#nested-document-format).
+The opt-in `@gravity-ui/dashkit/gridstack` entry exports `DashKitGridStack` for flat and nested saved layouts using GridStack 12.6.0. It shares plugin registration, controlled updates, refs, readiness and autoheight with DashKit. Native dragging supports transfers between zones and containers, including whole container subtrees. External palette drops preview and apply the complete document, including displaced containers. See the [GridStack documentation](docs/gridstack.md) for the supported API, [nested document format](docs/gridstack.md#nested-document-format), and palette drop payload.
 
 ## Installation
 
