@@ -54,6 +54,7 @@ export type DashKitCtxShape = DashkitPropsPassedToCtx & {
     externalLayoutRevision: number;
     configItems: ConfigItem[];
     layout: ConfigLayout[];
+    adjustedLayoutIds: string[];
     layoutChange: (layout: ConfigLayout[]) => void;
     temporaryLayout: TemporaryLayout | null;
     memorizeOriginalLayout: (

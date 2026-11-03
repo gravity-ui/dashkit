@@ -52,6 +52,7 @@ export interface DashKitGroup {
 }
 
 export type ItemManipulationCallback = (eventData: {
+    group?: string;
     layout: Layout[];
     oldItem: Layout;
     newItem: Layout;

@@ -27,6 +27,16 @@
         "types": "./build/cjs/helpers.d.ts",
         "default": "./build/cjs/helpers.js"
       }
+    },
+    "./gridstack": {
+      "import": {
+        "types": "./build/esm/gridstack.d.ts",
+        "default": "./build/esm/gridstack.js"
+      },
+      "require": {
+        "types": "./build/cjs/gridstack.d.ts",
+        "default": "./build/cjs/gridstack.js"
+      }
     }
   },
   "files": [
@@ -49,6 +59,9 @@
       ],
       "helpers": [
         "./build/esm/helpers.d.ts"
+      ],
+      "gridstack": [
+        "./build/esm/gridstack.d.ts"
       ]
     }
   },
@@ -75,6 +88,7 @@
   },
   "dependencies": {
     "@bem-react/classname": "^1.6.0",
+    "gridstack": "12.6.0",
     "hashids": "^2.2.8",
     "immutability-helper": "^3.1.1",
     "prop-types": "^15.8.1",
@@ -89,6 +103,7 @@
     "react-dom": "^16.8.0 || ^17 || ^18 || ^19"
   },
   "devDependencies": {
+    "@babel/plugin-transform-typescript": "7.29.7",
     "@commitlint/cli": "^19.6.1",
     "@commitlint/config-conventional": "^19.6.0",
     "@gravity-ui/eslint-config": "^3.2.0",

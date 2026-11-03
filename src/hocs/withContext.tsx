@@ -73,6 +73,15 @@ type UseMemoStateContextResult = {
     controlsContextValue: OverlayControlsCtxShape;
 };
 
+export interface LayoutStateAdapter {
+    serializeLayout: (layout: ConfigLayout[]) => ConfigLayout[];
+    optimistic: boolean;
+}
+const legacyLayoutAdapter: LayoutStateAdapter = {
+    serializeLayout: (layout) => layout,
+    optimistic: false,
+};
+
 const hasGetMeta = (value: PluginRef): value is {getMeta: () => Promise<any>} => {
     return (
         typeof value === 'object' &&
@@ -93,7 +102,10 @@ const hasReload = (
     );
 };
 
-function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContextResult {
+function useMemoStateContext(
+    props: DashKitWithContextProps,
+    layoutAdapter: LayoutStateAdapter,
+): UseMemoStateContextResult {
     // Since we don't want to store widget parameters with auto-height enabled in the store or server,
     // the actual layout (visible to the user at any moment) will be stored in state.
     // However, to ensure the store gets the layout without considering auto-height widgets,
@@ -189,11 +201,11 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
 
             const baselineConfig = {
                 ...props.config,
-                layout: getBaselineLayout(),
+                layout: layoutAdapter.serializeLayout(getBaselineLayout()),
             };
 
             const newConfig = UpdateManager.updateLayout({
-                layout: currentInnerLayout,
+                layout: layoutAdapter.serializeLayout(currentInnerLayout),
                 config: baselineConfig,
             });
 
@@ -204,9 +216,23 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
                 emitDashKitEvent: props.emitDashKitEvent,
             });
 
-            internalBaselineLayoutRef.current = newConfig.layout;
+            // Compare acknowledgments with the defaults in effect when this edit was saved.
+            internalBaselineLayoutRef.current = enrichLayoutWithDefaults(
+                newConfig,
+                props.registerManager,
+            );
+            if (layoutAdapter.optimistic) {
+                setVisualLayout(currentInnerLayout);
+            }
         },
-        [getBaselineLayout, props.config, props.emitDashKitEvent, onChange],
+        [
+            getBaselineLayout,
+            props.config,
+            props.registerManager,
+            layoutAdapter,
+            props.emitDashKitEvent,
+            onChange,
+        ],
     );
 
     const getLayoutItem = React.useCallback(
@@ -383,6 +409,9 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
             });
             setVisualLayout(enrichedPropsLayout);
             setExternalLayoutRevision((r) => r + 1);
+        } else if (!layoutAdapter.optimistic) {
+            // Controlled renderers receive saved geometry only when the host acknowledges it.
+            setVisualLayout(enrichedPropsLayout);
         }
     }
 
@@ -622,6 +651,7 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
             forwardedMetaRef: props.forwardedMetaRef,
 
             layout: resultLayout,
+            adjustedLayoutIds: Object.keys(adjustedLayouts.current),
             temporaryLayout,
             layoutChange: onLayoutChange,
             memorizeOriginalLayout,
@@ -730,9 +760,15 @@ function useMemoStateContext(props: DashKitWithContextProps): UseMemoStateContex
     return {controlsContextValue, dashkitContextValue};
 }
 
-export function withContext(Component: React.ComponentType) {
+export function withContext(
+    Component: React.ComponentType,
+    layoutAdapter: LayoutStateAdapter = legacyLayoutAdapter,
+) {
     const WithContext = (props: DashKitWithContextProps) => {
-        const {dashkitContextValue, controlsContextValue} = useMemoStateContext(props);
+        const {dashkitContextValue, controlsContextValue} = useMemoStateContext(
+            props,
+            layoutAdapter,
+        );
 
         return (
             <DashKitContext.Provider value={dashkitContextValue}>

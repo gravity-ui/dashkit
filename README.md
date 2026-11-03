@@ -4,6 +4,8 @@
 
 A dashboard grid rendering library.
 
+The opt-in `@gravity-ui/dashkit/gridstack` entry exports `DashKitGridStack` for flat saved layouts using GridStack 12.6.0. It shares plugin registration, controlled updates, refs, readiness and autoheight with DashKit; nested documents, palette drops and native transfers between zones are not supported in this stage.
+
 ## Installation
 
 ```bash
