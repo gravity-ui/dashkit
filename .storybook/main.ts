@@ -5,7 +5,12 @@ const config: StorybookConfig = {
         name: '@storybook/react-webpack5',
         options: {fastRefresh: true, legacyRootApi: false},
     },
-    stories: ['../src/**/*.stories.@(ts|tsx)'],
+    stories: [
+        '../src/**/*.stories.@(ts|tsx)',
+        ...(process.env.DASHKIT_TEST_STORIES === '1'
+            ? ['../tests/browser/stories/**/*.stories.@(ts|tsx)']
+            : []),
+    ],
     docs: {
         autodocs: false,
     },

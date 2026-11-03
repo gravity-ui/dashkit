@@ -24,7 +24,7 @@ jobs:
     - name: Lint Files
       run: npm run lint
     - name: Typecheck
-      run: npm run typecheck
+      run: npm run typecheck && npm run typecheck:browser
 
   tests:
     name: Tests (React 19)
@@ -43,6 +43,33 @@ jobs:
       run: npm ci
     - name: Unit Tests
       run: npm run test
+
+  browser_tests:
+    name: Browser Contracts
+    runs-on: ubuntu-24.04
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version-file: '.nvmrc'
+        cache: 'npm'
+    - name: Install Packages
+      run: npm ci
+    - name: Install Browsers
+      run: npx playwright install --with-deps chromium firefox webkit
+    - name: Browser Tests
+      run: npm run test:browser
+    - name: Upload failure artifacts
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: browser-contract-failures
+        path: |
+          playwright-report/
+          test-results/
+        retention-days: 7
 
   # Validate the lower edge of the React peer range. Runs only on
   # release-please PRs so regular PR CI stays fast; failure here blocks
