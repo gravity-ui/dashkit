@@ -13,7 +13,6 @@ import {shallowArrayEqual, shallowObjectEqual} from './utils';
 export interface GroupLayoutProps {
     group: string;
     renderItems: ConfigItem[];
-    offset: number;
 
     // Pre-computed by GridLayout.renderGroup (stable refs via getMemoGroupProps)
     properties: Partial<ReactGridLayoutProps>;
@@ -35,14 +34,13 @@ export interface GroupLayoutProps {
 
     // Stable instance method refs from GridLayout (arrow function class properties)
     adjustWidgetLayout: PluginWidgetProps['adjustWidgetLayout'];
-    getMemoForwardRefCallback: (index: number) => (ref: PluginRef) => void;
+    getMemoForwardRefCallback: (id: string) => (ref: PluginRef) => void;
 }
 
 function groupLayoutPropsAreEqual(prev: GroupLayoutProps, next: GroupLayoutProps): boolean {
     const needRerenderIfChanged =
         prev.group !== next.group ||
         prev.layout !== next.layout ||
-        prev.offset !== next.offset ||
         !shallowArrayEqual(prev.renderItems, next.renderItems) ||
         !shallowObjectEqual(prev.properties, next.properties);
 
@@ -61,7 +59,6 @@ function groupLayoutPropsAreEqual(prev: GroupLayoutProps, next: GroupLayoutProps
 export const GroupLayout = React.memo(function GroupLayout({
     group,
     renderItems,
-    offset,
     properties,
     compactType,
     callbacks,
@@ -96,7 +93,7 @@ export const GroupLayout = React.memo(function GroupLayout({
 
     // Memoize items array; non-source groups have stable false/null drag props so React skips their subtrees.
     const itemElements = React.useMemo(() => {
-        return renderItems.map((item, i) => {
+        return renderItems.map((item) => {
             const keyId = item.id;
 
             const isDragging = editMode && isAnyDragging && keyId === currentDraggingItemId;
@@ -105,7 +102,7 @@ export const GroupLayout = React.memo(function GroupLayout({
             return (
                 <GridItem
                     key={keyId}
-                    forwardedPluginRef={getMemoForwardRefCallback(offset + i)}
+                    forwardedPluginRef={getMemoForwardRefCallback(keyId)}
                     id={keyId}
                     item={item}
                     layout={layout}
@@ -128,7 +125,6 @@ export const GroupLayout = React.memo(function GroupLayout({
         isAnyDragging,
         currentDraggingItemId,
         isAnyDraggedOut,
-        offset,
         layout,
         adjustWidgetLayout,
         resolvedNoOverlay,
