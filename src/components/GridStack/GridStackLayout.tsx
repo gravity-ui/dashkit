@@ -7,7 +7,7 @@ import ResizeObserverPolyfill from 'resize-observer-polyfill';
 import {DEFAULT_GROUP, DRAGGABLE_CANCEL_CLASS_NAME} from '../../constants/common';
 import {DashKitContext} from '../../context';
 import type {DashKitCtxShape} from '../../context';
-import type {ConfigItem, ConfigLayout} from '../../shared';
+import type {Config, ConfigItem, ConfigLayout} from '../../shared';
 import type {
     ItemManipulationCallback,
     PluginRef,
@@ -17,9 +17,14 @@ import type {
 import GridItem from '../GridItem/GridItem';
 import MobileLayout from '../MobileLayout/MobileLayout';
 
-import {getGridKey, validateConfig, validateGrid} from './document';
+import {getGridKey, projectLayoutDocument, validateConfig, validateGrid} from './document';
 import {DashKitEngine} from './engine';
-import {getGridGeometry, visibleGeometry} from './geometry';
+import {
+    GridStackWidthError,
+    getGridGeometry,
+    getGridStackLayoutRects,
+    visibleGeometry,
+} from './geometry';
 import {getGridProperties} from './grid-properties';
 import {requireValue} from './invariants';
 import {DashKitNativeGrid} from './native-grid';
@@ -32,6 +37,7 @@ interface Host {
     el: GridItemHTMLElement;
     content: HTMLElement;
     key: string;
+    container?: boolean;
     lastRecord?: GridRecord;
     dragObserver?: MutationObserver;
 }
@@ -42,6 +48,7 @@ interface GridRecord {
     properties: ReactGridLayoutProps;
     geometry: ReturnType<typeof getGridGeometry>;
     parent?: string;
+    containerId?: string;
 }
 interface Gesture {
     id: string;
@@ -62,6 +69,29 @@ const position = (id: string, node: GridStackNode): ConfigLayout => ({
     h: requireValue(node.h, 'node.h'),
 });
 
+const gridDepth = ({grid}: GridRecord) => {
+    let depth = 0;
+    for (let parent = grid.parentGridNode; parent; parent = parent.grid?.parentGridNode) {
+        depth++;
+    }
+    return depth;
+};
+
+const reflowAutoheight = (engine: DashKitEngine, ids: Set<string>) => {
+    const adjusted = engine.nodes.filter((node) =>
+        ids.has(requireValue(node.id, 'autoheight widget id')),
+    );
+    if (!adjusted.length) {
+        return true;
+    }
+    adjusted.sort((a, b) => a.y - b.y || a.x - b.x).forEach((node) => engine._fixCollisions(node));
+    engine._packNodes();
+    return (
+        (!engine.maxRow || engine.getRow() <= engine.maxRow) &&
+        !engine.nodes.some((node) => engine.collide(node))
+    );
+};
+
 class GridStackCanvas extends React.PureComponent {
     static contextType = DashKitContext;
     declare context: DashKitCtxShape;
@@ -69,6 +99,7 @@ class GridStackCanvas extends React.PureComponent {
     private grids = new Map<string, GridRecord>();
     private hosts = new Map<string, Host>();
     private plugins = new Map<string, PluginRef>();
+    private autoHeightItems = new Set<string>();
     private pluginCallbacks = new Map<string, (value: PluginRef) => void>();
     private autoheightWidgets = new Set<string>();
     private observer?: ResizeObserver;
@@ -131,7 +162,7 @@ class GridStackCanvas extends React.PureComponent {
         if (active) {
             active.cancelled = true;
         }
-        const grids = [...this.grids.values()];
+        const grids = [...this.grids.values()].sort((a, b) => gridDepth(b) - gridDepth(a));
         const destroy = () => {
             grids.forEach(({grid}) => {
                 if (grid.el?.gridstack === grid) {
@@ -160,7 +191,13 @@ class GridStackCanvas extends React.PureComponent {
             context,
         } = this.context;
         const propertiesByGrid = new Map(
-            [...this.grids.keys()].map((key) => [key, this.getProperties(key)]),
+            [...this.grids.keys()]
+                .filter(
+                    (key) =>
+                        !key.startsWith('container:') ||
+                        this.context.containers?.some(({id}) => key === `container:${id}`),
+                )
+                .map((key) => [key, this.getProperties(key)]),
         );
         const portals = configItems.map((item) => this.renderItem(item, propertiesByGrid));
         const customHandles = [...this.hosts].flatMap(([id, host]) => {
@@ -293,10 +330,19 @@ class GridStackCanvas extends React.PureComponent {
         } finally {
             this.syncing = false;
         }
+        const host = this.hosts.get(active.id);
+        if (host?.el.gridstackNode) {
+            this.membership(host);
+        }
         this.sync();
     }
     private getProperties(key: string) {
-        return getGridProperties(key, this.context.registerManager.gridLayout, this.context.groups);
+        return getGridProperties(
+            key,
+            this.context.registerManager.gridLayout,
+            this.context.groups,
+            this.context.containers,
+        );
     }
     private createGrid(key: string, wrapper: HTMLElement, root: HTMLElement) {
         const properties = this.getProperties(key);
@@ -335,9 +381,16 @@ class GridStackCanvas extends React.PureComponent {
             properties,
             geometry: getGridGeometry(0, properties),
         };
-        // Teardown still needs the applied settings after controlled group roots disappear.
+        // Teardown still needs the applied settings after controlled descriptors disappear.
         grid.properties = () => (this.syncing ? record.properties : this.getProperties(key));
-        record.parent = key.slice(5) === DEFAULT_GROUP ? undefined : key.slice(5);
+        if (key.startsWith('container:')) {
+            record.containerId = key.slice(10);
+            record.parent = this.context.containers?.find(
+                ({id}) => id === record.containerId,
+            )?.parent;
+        } else {
+            record.parent = key.slice(5) === DEFAULT_GROUP ? undefined : key.slice(5);
+        }
         this.grids.set(key, record);
         grid.on('dragstart resizestart', (event: Event, el: GridItemHTMLElement) =>
             this.start(event, el),
@@ -354,8 +407,8 @@ class GridStackCanvas extends React.PureComponent {
         if (!host || !this.mounted || this.active) {
             return;
         }
-        const custom = this.context.draggableHandleClassName;
-        if (!custom && !host.dragObserver) {
+        const custom = host.container ? undefined : this.context.draggableHandleClassName;
+        if (!custom && !host.dragObserver && !host.container) {
             return;
         }
         const grid = this.grids.get(host.key)?.grid;
@@ -387,18 +440,29 @@ class GridStackCanvas extends React.PureComponent {
             delete host.dragObserver;
         }
     }
-    private createHost(id: string, key: string): Host {
+    private createHost(id: string, key: string, container = false): Host {
         const el: GridItemHTMLElement = document.createElement('div');
         el.className = 'grid-stack-item react-grid-item dashkit-gridstack__host';
         el.dataset.dashkitId = id;
         const content = document.createElement('div');
         content.className = 'grid-stack-item-content';
+        if (container) {
+            // Descendant handles and widget bodies must never start an ancestor drag.
+            const ownSurface = (event: Event) => {
+                if ((event.target as Element).closest('.grid-stack-item') !== el) {
+                    event.stopImmediatePropagation();
+                }
+            };
+            for (const type of ['mousedown', 'touchstart', 'pointerdown']) {
+                content.addEventListener(type, ownSurface);
+            }
+        }
         el.appendChild(content);
-        const host = {el, content, key};
+        const host = {el, content, key, container};
         this.hosts.set(id, host);
         return host;
     }
-    private attach(id: string, entry: Omit<ConfigLayout, 'i'>) {
+    private attach(id: string, entry: Omit<ConfigLayout, 'i'>, container = false) {
         const key = getGridKey(entry);
         const record = this.grids.get(key);
         const previous = this.hosts.get(id);
@@ -410,23 +474,32 @@ class GridStackCanvas extends React.PureComponent {
             }
             return undefined;
         }
-        const host = previous || this.createHost(id, key);
+        const host = previous || this.createHost(id, key, container);
         host.lastRecord = record;
         if (host.key !== key) {
             this.grids.get(host.key)?.grid.removeWidget(host.el, false, false);
             host.key = key;
         }
         const constraints = entry as Partial<WidgetLayout>;
+        const inheritedConstraints =
+            entry.containerId && !container
+                ? this.convertConstraints(
+                      constraints,
+                      this.grids.get(`zone:${entry.parent || DEFAULT_GROUP}`) || record,
+                      record,
+                  )
+                : constraints;
         const node = {
             id,
             x: entry.x,
             y: entry.y,
             w: entry.w,
             h: entry.h,
-            minW: constraints.minW,
-            minH: constraints.minH,
-            maxW: constraints.maxW,
-            maxH: constraints.maxH,
+            minW: inheritedConstraints.minW,
+            // Autoheight constraints are already expressed in the containing grid units.
+            minH: this.autoHeightItems.has(id) ? constraints.minH : inheritedConstraints.minH,
+            maxW: inheritedConstraints.maxW,
+            maxH: this.autoHeightItems.has(id) ? constraints.maxH : inheritedConstraints.maxH,
         };
         if (host.el.parentElement !== record.root || host.el.gridstackNode?.grid !== record.grid) {
             record.root.appendChild(host.el);
@@ -442,30 +515,125 @@ class GridStackCanvas extends React.PureComponent {
         }
         return host;
     }
+    private validateGeometry(config: Config, measured = false) {
+        const rootGrids = Object.fromEntries(
+            [...this.roots]
+                .map(([key, wrapper]) => {
+                    const gridProperties = this.getProperties(key);
+                    const previous = this.grids.get(key)?.geometry;
+                    return [
+                        key.slice(5),
+                        {
+                            width:
+                                gridProperties.width ??
+                                (wrapper.clientWidth ||
+                                    (previous
+                                        ? previous.stepX * previous.cols +
+                                          2 * previous.paddingX -
+                                          previous.gapX
+                                        : 0)),
+                            gridProperties,
+                        },
+                    ] as const;
+                })
+                .filter(([, {width}]) => width > 0),
+        );
+        for (const [id, root] of Object.entries(rootGrids)) {
+            if (!config.containers?.some((entry) => (entry.parent || DEFAULT_GROUP) === id)) {
+                continue;
+            }
+            try {
+                getGridStackLayoutRects(
+                    {
+                        ...config,
+                        layout: config.layout.filter(
+                            (entry) => (entry.parent || DEFAULT_GROUP) === id,
+                        ),
+                        containers: config.containers.filter(
+                            (entry) => (entry.parent || DEFAULT_GROUP) === id,
+                        ),
+                    },
+                    {[id]: root},
+                );
+            } catch (error) {
+                if (
+                    measured &&
+                    root.gridProperties.width === undefined &&
+                    error instanceof GridStackWidthError
+                ) {
+                    return false;
+                }
+                throw error;
+            }
+        }
+        return true;
+    }
     private sync = () => {
         if (this.syncing || !this.mounted) {
             return;
         }
+        // Validate new saved input before clipping its temporary visual layout.
+        if (this.autoHeightItems.size && this.context.config !== this.appliedContext?.config) {
+            if (!this.validateGeometry(this.context.config, true)) {
+                return;
+            }
+        }
+        for (const widgetId of this.autoHeightItems) {
+            const entry: WidgetLayout | undefined = this.context.layout.find(
+                ({i}) => i === widgetId,
+            );
+            if (entry?.containerId) {
+                const remaining =
+                    requireValue(
+                        this.getProperties(getGridKey(entry)).maxRows,
+                        'containing grid row capacity',
+                    ) - entry.y;
+                if (Math.max(entry.h, entry.minH ?? 0, entry.maxH ?? 0) > remaining) {
+                    this.adjustWidgetLayout({widgetId, adjustedWidgetLayout: entry});
+                    return;
+                }
+            }
+        }
+        if (
+            !this.validateGeometry(
+                {
+                    ...this.context.config,
+                    layout: this.context.layout,
+                    containers: this.context.containers,
+                },
+                true,
+            )
+        ) {
+            return;
+        }
         this.syncing = true;
-        const {configItems, layout} = this.context;
+        const {configItems, layout, containers = []} = this.context;
         const before = this.renderKey();
         try {
             const replaced = [...this.grids]
                 .filter(
                     ([key, record]) =>
-                        this.roots.get(key) !== record.wrapper ||
-                        record.wrapper.firstElementChild !== record.root,
+                        !record.containerId &&
+                        (this.roots.get(key) !== record.wrapper ||
+                            record.wrapper.firstElementChild !== record.root),
                 )
                 .map(([, record]) => record.root);
-            [...this.grids].forEach(([key, record]) => {
-                if (
-                    replaced.some((root) => root === record.root || root.contains(record.wrapper))
-                ) {
-                    this.observer?.unobserve(record.wrapper);
-                    record.grid.destroy(false);
-                    this.grids.delete(key);
-                }
-            });
+            [...this.grids]
+                .sort(([, a], [, b]) => gridDepth(b) - gridDepth(a))
+                .forEach(([key, record]) => {
+                    if (
+                        replaced.some(
+                            (root) => root === record.root || root.contains(record.wrapper),
+                        )
+                    ) {
+                        this.observer?.unobserve(record.wrapper);
+                        record.grid.destroy(false);
+                        if (record.containerId) {
+                            record.wrapper.remove();
+                        }
+                        this.grids.delete(key);
+                    }
+                });
             this.roots.forEach((wrapper, key) => {
                 if (!this.grids.has(key)) {
                     this.createGrid(key, wrapper, wrapper.firstElementChild as HTMLElement);
@@ -476,6 +644,41 @@ class GridStackCanvas extends React.PureComponent {
                 const grid = gridInput;
                 (grid.engine as DashKitEngine).restoring = true;
             });
+            const pending = [...containers];
+            const placedContainers = new Set<string>();
+            for (let pass = 0; pending.length && pass <= containers.length; pass++) {
+                for (let index = pending.length - 1; index >= 0; index--) {
+                    const container = pending[index];
+                    if (container.containerId && !placedContainers.has(container.containerId)) {
+                        continue;
+                    }
+                    const host = this.attach(container.id, container, true);
+                    if (!host) {
+                        continue;
+                    }
+                    host.content.classList.add('dashkit-gridstack__container');
+                    const key = `container:${container.id}`;
+                    if (!this.grids.has(key)) {
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'dashkit-gridstack__zone';
+                        const root = document.createElement('div');
+                        root.className = 'grid-stack react-grid-layout';
+                        wrapper.appendChild(root);
+                        host.content.appendChild(wrapper);
+                        const child = this.createGrid(key, wrapper, root);
+                        this.updateGrid(child, key);
+                        (child.grid.engine as DashKitEngine).restoring = true;
+                    }
+                    const child = requireValue(this.grids.get(key), 'grid record');
+                    child.grid.parentGridNode = host.el.gridstackNode;
+                    requireValue(host.el.gridstackNode, 'host native node').subGrid = child.grid;
+                    host.content.style.padding = container.padding
+                        .map((value) => `${value}px`)
+                        .join(' ');
+                    placedContainers.add(container.id);
+                    pending.splice(index, 1);
+                }
+            }
             const activeLayout = layout;
             configItems.forEach((item) => {
                 const entry = activeLayout.find(({i}) => i === item.id);
@@ -496,38 +699,55 @@ class GridStackCanvas extends React.PureComponent {
                     }
                 });
             });
-            const retained = new Set(configItems.map(({id}) => id));
+            const retained = new Set([
+                ...configItems.map(({id}) => id),
+                ...containers.map(({id}) => id),
+            ]);
             this.hosts.forEach((host, id) => {
                 if (!retained.has(id)) {
                     host.dragObserver?.disconnect();
                     this.grids.get(host.key)?.grid.removeWidget(host.el, false, false);
                     host.el.remove();
                     this.hosts.delete(id);
+                    this.autoHeightItems.delete(id);
                     this.plugins.delete(id);
                     this.pluginCallbacks.delete(id);
                 }
             });
             // Saved geometry restores verbatim; only autoheight reflows its visual neighbors.
             const autoheightWidgets = new Set(this.context.adjustedLayoutIds);
-            this.grids.forEach(({grid}) => {
+            this.grids.forEach(({grid, containerId}) => {
                 const engine = grid.engine as DashKitEngine;
                 engine.restoring = false;
-                const adjusted = engine.nodes.filter((node) => {
-                    const id = requireValue(node.id, 'autoheight widget id');
-                    // Previous IDs keep the reset's final reflow before adjustment ends.
-                    return autoheightWidgets.has(id) || this.autoheightWidgets.has(id);
-                });
-                if (adjusted.length) {
-                    adjusted
-                        .sort((a, b) => a.y - b.y || a.x - b.x)
-                        .forEach((node) => engine._fixCollisions(node));
-                    engine._packNodes();
+                // Previous IDs keep the reset's final reflow before adjustment ends.
+                const fits = reflowAutoheight(
+                    engine,
+                    new Set([...autoheightWidgets, ...this.autoheightWidgets]),
+                );
+                // A controlled parent shrink can invalidate an accepted visual adjustment.
+                if (containerId && !fits) {
+                    autoheightWidgets.forEach((widgetId) => {
+                        if (engine.nodes.some(({id}) => id === widgetId)) {
+                            this.adjustWidgetLayout({widgetId, needSetDefault: true});
+                        }
+                    });
                 }
             });
             this.autoheightWidgets = autoheightWidgets;
-            [...this.grids].forEach(([key, record]) => {
-                this.updateGrid(record, key);
-            });
+            [...this.grids]
+                .sort(([, a], [, b]) => gridDepth(b) - gridDepth(a))
+                .forEach(([key, record]) => {
+                    if (
+                        record.containerId &&
+                        !containers.some(({id}) => id === record.containerId)
+                    ) {
+                        record.grid.destroy(false);
+                        this.observer?.unobserve(record.wrapper);
+                        this.grids.delete(key);
+                        return;
+                    }
+                    this.updateGrid(record, key);
+                });
             this.hosts.forEach((_host, id) => this.syncDragHandle(id));
         } finally {
             this.grids.forEach(({grid: gridInput}) => {
@@ -546,6 +766,11 @@ class GridStackCanvas extends React.PureComponent {
         const properties = this.getProperties(key);
         validateGrid(properties);
         record.properties = properties;
+        if (record.containerId) {
+            record.parent = this.context.containers?.find(
+                ({id}) => id === record.containerId,
+            )?.parent;
+        }
         if (properties.autoSize === false && !properties.style?.height) {
             record.wrapper.style.height = '100%';
         }
@@ -613,8 +838,35 @@ class GridStackCanvas extends React.PureComponent {
                         );
                     }
                 });
+            const min = this.minimumContainer(node.id, record);
+            if (min) {
+                record.grid.update(requireValue(node.el, 'native node element'), min);
+            }
         });
         record.grid.refreshPositions();
+    }
+    private minimumContainer(id: string | undefined, parent: GridRecord) {
+        const container = this.context.containers?.find((entry) => entry.id === id);
+        const child = this.grids.get(`container:${id}`);
+        if (!container || !child) {
+            return undefined;
+        }
+        const entries = [
+            ...this.context.layout.filter((entry) => entry.containerId === id),
+            ...(this.context.containers || []).filter((entry) => entry.containerId === id),
+        ];
+        const right = entries.reduce((max, entry) => Math.max(max, entry.x + entry.w), 0);
+        const bottom = entries.reduce((max, entry) => Math.max(max, entry.y + entry.h), 0);
+        const [top, paddingRight, paddingBottom, left] = container.padding;
+        const minWidth = right * child.geometry.stepX - child.geometry.gapX + left + paddingRight;
+        const minHeight = bottom * child.geometry.stepY - child.geometry.gapY + top + paddingBottom;
+        return {
+            minW: Math.max(1, Math.ceil((minWidth + parent.geometry.gapX) / parent.geometry.stepX)),
+            minH: Math.max(
+                1,
+                Math.ceil((minHeight + parent.geometry.gapY) / parent.geometry.stepY),
+            ),
+        };
     }
     private renderKey() {
         return JSON.stringify(
@@ -635,6 +887,29 @@ class GridStackCanvas extends React.PureComponent {
             }),
         );
     }
+    private convertConstraints(
+        entry: Partial<WidgetLayout>,
+        source: GridRecord,
+        target: GridRecord,
+    ) {
+        const result: Partial<WidgetLayout> = {};
+        for (const key of ['minW', 'maxW', 'minH', 'maxH'] as const) {
+            const value = entry[key];
+            if (value === undefined) {
+                continue;
+            }
+            const horizontal = key.endsWith('W');
+            const pixels =
+                value * (horizontal ? source.geometry.stepX : source.geometry.stepY) -
+                (horizontal ? source.geometry.gapX : source.geometry.gapY);
+            const units =
+                (pixels + (horizontal ? target.geometry.gapX : target.geometry.gapY)) /
+                (horizontal ? target.geometry.stepX : target.geometry.stepY);
+            result[key] = Math.max(1, key.startsWith('min') ? Math.ceil(units) : Math.floor(units));
+        }
+        return result;
+    }
+
     private start(event: Event, el: GridItemHTMLElement) {
         const id = requireValue(el.dataset.dashkitId, 'gesture widget id');
         const node = requireValue(el.gridstackNode, 'gesture native node');
@@ -660,7 +935,7 @@ class GridStackCanvas extends React.PureComponent {
         };
         this.starting = true;
         try {
-            if (this.context.focusable) {
+            if (this.context.focusable && !host.container) {
                 host.content
                     .querySelector<HTMLElement>('.dashkit-grid-item')
                     ?.focus({preventScroll: true});
@@ -705,6 +980,7 @@ class GridStackCanvas extends React.PureComponent {
             ...this.active.oldItem,
             ...position(this.active.id, node),
             parent: destination?.parent,
+            containerId: destination?.containerId,
             minW: node.minW,
             minH: node.minH,
             maxW: node.maxW,
@@ -754,29 +1030,46 @@ class GridStackCanvas extends React.PureComponent {
     private finishGesture(event: Event, el: GridItemHTMLElement) {
         const active = requireValue(this.active, 'active gesture');
         const host = this.hosts.get(active.id);
+        if (host?.el.gridstackNode) {
+            this.membership(host);
+        }
         if (active.cancelled) {
             this.sync();
-        } else {
-            const {layout} = this.readDocument();
-            try {
-                validateConfig({...this.context.config, layout});
-            } catch {
-                this.sync();
-                this.callback(
-                    active.resize ? this.context.onResizeStop : this.context.onDragStop,
-                    event,
-                    el,
-                );
-                return;
-            }
-            this.context.layoutChange(layout);
+            this.callback(
+                active.resize ? this.context.onResizeStop : this.context.onDragStop,
+                event,
+                el,
+            );
+            return;
         }
+        let document: ReturnType<GridStackCanvas['readDocument']>;
+        try {
+            document = this.readDocument();
+            const {layout, containers} = document;
+            const config = {
+                ...this.context.config,
+                layout,
+                ...(containers ? {containers, layoutVersion: 2 as const} : {}),
+            };
+            validateConfig(config, this.context.groups);
+            this.validateGeometry(config);
+        } catch {
+            // A native proposal is rejectable; controlled input still throws before applying it.
+            this.sync();
+            this.callback(
+                active.resize ? this.context.onResizeStop : this.context.onDragStop,
+                event,
+                el,
+            );
+            return;
+        }
+        const {layout, containers} = document;
+        this.context.layoutChange(layout, containers);
         this.callback(
             active.resize ? this.context.onResizeStop : this.context.onDragStop,
             event,
             el,
         );
-        const {layout} = this.readDocument();
         const affected = new Set([active.sourceKey, host?.key]);
         affected.forEach((key) => {
             if (key) {
@@ -788,13 +1081,25 @@ class GridStackCanvas extends React.PureComponent {
             }
         });
     }
+    private membership(hostInput: Host) {
+        const host = hostInput;
+        const key =
+            [...this.grids].find(([, record]) => record.root === host.el.parentElement)?.[0] ||
+            host.key;
+        host.key = key;
+        const record = requireValue(this.grids.get(key), 'grid record');
+        return {parent: record.parent, containerId: record.containerId};
+    }
     private readDocument() {
-        return {
-            layout: this.context.layout.map((entry) => {
-                const node = this.hosts.get(entry.i)?.el.gridstackNode;
-                return node ? {...entry, ...position(entry.i, node)} : {...entry};
-            }),
-        };
+        return projectLayoutDocument(this.context.layout, this.context.containers, (id) => {
+            const host = this.hosts.get(id);
+            const node = host?.el.gridstackNode;
+            if (!host || !node) {
+                return undefined;
+            }
+            const {i: _i, ...geometry} = position(id, node);
+            return {...geometry, ...this.membership(host)};
+        });
     }
     private adjustWidgetLayout = ({
         widgetId,
@@ -806,11 +1111,68 @@ class GridStackCanvas extends React.PureComponent {
         adjustedWidgetLayout?: WidgetLayout;
     }) => {
         if (needSetDefault) {
+            this.autoHeightItems.delete(widgetId);
             this.context.revertToOriginalLayout(widgetId);
         } else if (adjustedWidgetLayout) {
-            const entry = this.context.layout.find(({i}) => i === widgetId);
+            const entry: WidgetLayout | undefined = this.context.layout.find(
+                ({i}) => i === widgetId,
+            );
             if (entry) {
                 const adjusted = {...adjustedWidgetLayout};
+                if (entry.containerId) {
+                    const remaining =
+                        requireValue(
+                            this.getProperties(getGridKey(entry)).maxRows,
+                            'containing grid row capacity',
+                        ) - entry.y;
+                    adjusted.h = Math.min(adjusted.h, remaining);
+                    if (adjusted.minH !== undefined) {
+                        adjusted.minH = Math.min(adjusted.minH, adjusted.h);
+                    }
+                    if (adjusted.maxH !== undefined) {
+                        adjusted.maxH = Math.min(adjusted.maxH, remaining);
+                    }
+                    const engine = requireValue(
+                        this.grids.get(getGridKey(entry)),
+                        'containing grid',
+                    ).grid.engine as DashKitEngine;
+                    const proposal = new DashKitEngine({
+                        column: engine.column,
+                        maxRow: remaining + entry.y,
+                        float: true,
+                        nodes: engine.nodes.map((node) => {
+                            const saved =
+                                this.context.layout.find(({i}) => i === node.id) ||
+                                this.context.containers?.find(({id}) => id === node.id);
+                            return {
+                                ...node,
+                                ...(saved ? {x: saved.x, y: saved.y, w: saved.w, h: saved.h} : {}),
+                                ...(node.id === widgetId ? adjusted : {}),
+                                el: undefined,
+                                grid: undefined,
+                                subGrid: undefined,
+                            };
+                        }),
+                    });
+                    proposal.mode = engine.mode;
+                    // A bounded reflow can clamp a sibling into overlap instead of overflowing.
+                    if (
+                        !reflowAutoheight(
+                            proposal,
+                            new Set([
+                                ...this.context.adjustedLayoutIds,
+                                ...this.autoheightWidgets,
+                                widgetId,
+                            ]),
+                        )
+                    ) {
+                        if (Math.max(entry.h, entry.minH ?? 0, entry.maxH ?? 0) > remaining) {
+                            this.adjustWidgetLayout({widgetId, needSetDefault: true});
+                        }
+                        return;
+                    }
+                }
+                this.autoHeightItems.add(widgetId);
                 if (!isEqual(entry, adjusted)) {
                     this.context.memorizeOriginalLayout(widgetId, {...entry}, adjusted);
                 }

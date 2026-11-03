@@ -11,3 +11,5 @@ export type DashKitGridStackProps = Omit<DashKitProps, 'config' | 'onChange'> & 
         groups?: DashKitProps['groups'];
     }) => void;
 };
+
+export type {GridStackContainer} from '../../shared';
