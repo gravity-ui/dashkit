@@ -10,7 +10,7 @@ export type EngineMode = {
     preventCollision?: boolean;
 };
 
-/** Native packing and bounds preserve DashKit's saved-layout behavior. */
+/** A per-grid engine: the stock maxRow simulators instantiate the stock class. */
 type EngineNode = GridStackNode & {
     x: number;
     y: number;
@@ -40,12 +40,14 @@ export class DashKitEngine extends EngineBase {
     declare nodes: EngineNode[];
     mode: EngineMode = {};
     restoring = false;
+    dropSize?: GridStackNode & {id: string; w: number; h: number};
 
     nodeBoundFix(nodeInput: GridStackNode, resizing?: boolean) {
         const node = nodeInput;
         if (this.restoring) {
             return this;
         }
+        this.consumeDropSize(node);
         if (resizing) {
             super.nodeBoundFix(node, resizing);
         } else {
@@ -216,8 +218,22 @@ export class DashKitEngine extends EngineBase {
             return false;
         }
         const before = this.nodes.map((entry) => ({...entry}));
-        const moved = this.moveNode(node, {...options, pack: true});
-        if (this.maxRow && this.getRow() > this.maxRow) {
+        const {maxRow} = this;
+        let moved: boolean;
+        this.maxRow = 0;
+        try {
+            moved = this.moveNode(node, {
+                ...options,
+                x: next.x,
+                y: next.y,
+                w: next.w,
+                h: next.h,
+                pack: true,
+            });
+        } finally {
+            this.maxRow = maxRow;
+        }
+        if (maxRow && this.getRow() > maxRow) {
             before.forEach((entry) =>
                 Object.assign(
                     requireValue(
@@ -231,5 +247,51 @@ export class DashKitEngine extends EngineBase {
             return false;
         }
         return moved;
+    }
+
+    willItFit(nodeInput: GridStackNode & {w: number; h: number}) {
+        const node = nodeInput;
+        const input =
+            this.dropSize && (!node.id || node.id === this.dropSize.id)
+                ? {...node, ...this.dropSize}
+                : node;
+        if (
+            input.w > this.column ||
+            (this.maxRow && input.h > this.maxRow) ||
+            (this.mode.compactType === 'horizontal-nowrap' &&
+                input.w +
+                    this.nodes.reduce(
+                        (sum, entry) => sum + (input.id && entry.id === input.id ? 0 : entry.w),
+                        0,
+                    ) >
+                    this.column)
+        ) {
+            return false;
+        }
+        const clone = new DashKitEngine({column: this.column, float: true});
+        clone.mode = this.mode;
+        clone.nodes = this.nodes
+            .filter((entry) => !input.id || entry.id !== input.id)
+            .map((entry) => ({...entry, el: undefined, grid: undefined}));
+        const candidate = {...input, _id: undefined, el: undefined, grid: undefined};
+        if (this.maxRow && candidate.y !== undefined) {
+            candidate.y = Math.max(0, Math.min(candidate.y, this.maxRow - candidate.h));
+        }
+        if (this.mode.allowOverlap && candidate.x === undefined) {
+            candidate.x = candidate.y = 0;
+        }
+        clone.addNode(candidate);
+        const fits = !this.maxRow || clone.getRow() <= this.maxRow;
+        if (fits) {
+            (node as EngineNode)._willFitPos = Utils.copyPos({}, candidate);
+        }
+        return fits;
+    }
+
+    private consumeDropSize(node: GridStackNode) {
+        if (this.dropSize && node.id === this.dropSize.id) {
+            Object.assign(node, this.dropSize);
+            this.dropSize = undefined;
+        }
     }
 }

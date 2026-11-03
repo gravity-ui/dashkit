@@ -1,4 +1,4 @@
-export {GridStack, GridStackEngine, Utils} from 'gridstack';
+export {DDManager, GridStack, GridStackEngine, Utils} from 'gridstack';
 export type {
     DDElementHost,
     GridStackNode,

@@ -95,7 +95,7 @@ jobs:
     - name: Show installed React versions
       run: npm ls react react-dom @types/react @types/react-dom || true
     - name: Typecheck
-      run: npm run typecheck
+      run: npm run typecheck && npm run typecheck:browser
     - name: Unit Tests
       run: npm run test
     - name: Build
