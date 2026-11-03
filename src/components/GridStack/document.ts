@@ -1,7 +1,8 @@
 import {DEFAULT_GROUP} from '../../constants/common';
 import {extractIdsFromConfig, getAllConfigItems} from '../../shared';
 import type {Config, ConfigLayout} from '../../shared';
-import type {ReactGridLayoutProps} from '../../typings';
+
+import type {GridProperties} from './grid-properties';
 
 function fail(message: string): never {
     throw new Error(`DashKitGridStack: ${message}`);
@@ -55,14 +56,14 @@ export function validateConfig(config: Config) {
         }
     });
 }
-export function validateGrid(props: ReactGridLayoutProps) {
-    const cols = props.cols ?? 36;
+export function validateGrid(props: GridProperties) {
+    const cols = props.cols;
     if (
         !Number.isInteger(cols) ||
         !positive(cols) ||
-        !positive(props.rowHeight ?? 18) ||
+        !positive(props.rowHeight) ||
         (props.maxRows !== undefined && props.maxRows !== Infinity && !positive(props.maxRows)) ||
-        [...(props.margin || [2, 2]), ...(props.containerPadding || [0, 0])].some(
+        [...props.margin, ...props.containerPadding].some(
             (value) => !Number.isFinite(value) || value < 0,
         )
     ) {
@@ -72,3 +73,5 @@ export function validateGrid(props: ReactGridLayoutProps) {
 
 export const getGridKey = (entry: {parent?: string}) => `zone:${entry.parent || DEFAULT_GROUP}`;
 export const configIds = extractIdsFromConfig;
+
+export const getGroupId = (key: string) => key.slice('zone:'.length);

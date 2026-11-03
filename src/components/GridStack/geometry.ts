@@ -1,11 +1,12 @@
 import type {ConfigLayout} from '../../shared';
-import type {ReactGridLayoutProps} from '../../typings';
 
-export function getGridGeometry(width: number, props: ReactGridLayoutProps) {
-    const [gapX, gapY] = props.margin || [10, 10];
-    const [paddingX, paddingY] = props.containerPadding || props.margin || [10, 10];
-    const cols = props.cols ?? 12;
-    const rowHeight = props.rowHeight ?? 150;
+import type {GridProperties} from './grid-properties';
+
+export function getGridGeometry(width: number, props: GridProperties) {
+    const [gapX, gapY] = props.margin;
+    const [paddingX, paddingY] = props.containerPadding || props.margin;
+    const cols = props.cols;
+    const rowHeight = props.rowHeight;
     const stepX = (width - 2 * paddingX + gapX) / cols;
     const stepY = rowHeight + gapY;
     return {gapX, gapY, paddingX, paddingY, cols, rowHeight, stepX, stepY};

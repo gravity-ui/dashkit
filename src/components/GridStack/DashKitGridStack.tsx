@@ -19,7 +19,7 @@ import {
     validateLayout,
 } from './document';
 import {DashKitEngine} from './engine';
-import {getGridProperties} from './grid-properties';
+import {getEngineMode, getGridProperties} from './grid-properties';
 import {requireValue} from './invariants';
 import {gridStackLayoutAdapter} from './layout-adapter';
 import type {DashKitGridStackProps} from './types';
@@ -43,18 +43,11 @@ export class DashKitGridStack extends DashKitBase {
             const props = getGridProperties(key, registerManager.gridLayout, groups);
             validateGrid(props);
             const engine = new DashKitEngine({
-                column: props.cols || 36,
-                maxRow: props.maxRows,
+                column: props.cols,
+                maxRow: Number.isFinite(props.maxRows) ? props.maxRows : undefined,
                 float: true,
             });
-            engine.mode = {
-                compactType:
-                    props.verticalCompact === false ? null : props.compactType ?? 'vertical',
-                allowOverlap: props.allowOverlap,
-            };
-            if (props.compactType === null) {
-                engine.mode.compactType = null;
-            }
+            engine.mode = getEngineMode(props);
             const entries = result.filter((entry) => getGridKey(entry) === key);
             engine.batchUpdate();
             const prioritized = newLayoutItem
@@ -102,7 +95,7 @@ export class DashKitGridStack extends DashKitBase {
             Boolean(options.updateLayout) ||
             Number.isFinite(layout.y) ||
             props.compactType === 'horizontal-nowrap';
-        layout.w = Number.isFinite(layout.w) ? layout.w : props.cols || 36;
+        layout.w = Number.isFinite(layout.w) ? layout.w : props.cols;
         layout.y = Number.isFinite(layout.y)
             ? layout.y
             : config.layout
@@ -110,7 +103,7 @@ export class DashKitGridStack extends DashKitBase {
                   .reduce((bottom, entry) => Math.max(bottom, entry.y + entry.h), 0);
         if (props.compactType === 'horizontal-nowrap') {
             const available =
-                (props.cols || 36) -
+                props.cols -
                 config.layout
                     .filter((entry) => getGridKey(entry) === getGridKey(layout))
                     .reduce((sum, entry) => sum + entry.w, 0);
@@ -135,7 +128,7 @@ export class DashKitGridStack extends DashKitBase {
         const result = needsReflow
             ? {
                   ...next,
-                  layout: this.reflowLayout({
+                  layout: DashKitGridStack.reflowLayout({
                       layout: next.layout.filter((entry) =>
                           config.layout.some(({i}) => i === entry.i),
                       ),
