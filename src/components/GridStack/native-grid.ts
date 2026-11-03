@@ -35,6 +35,16 @@ export class DashKitNativeGrid extends NativeBase {
     properties?: () => GridProperties;
     onCancel?: () => void;
 
+    constructor(root: HTMLElement, options: GridStackOptions) {
+        super(root, options);
+        document.addEventListener('keydown', this.blockRotation, true);
+    }
+
+    destroy(removeDOM?: boolean) {
+        document.removeEventListener('keydown', this.blockRotation, true);
+        return super.destroy(removeDOM);
+    }
+
     rotate() {
         // DashKit layouts have no rotation; native R would bypass plugin constraints.
         return this;
@@ -190,6 +200,16 @@ export class DashKitNativeGrid extends NativeBase {
             height,
         );
     }
+
+    private blockRotation = (event: KeyboardEvent) => {
+        if (
+            (event.key === 'r' || event.key === 'R') &&
+            this.el.querySelector(':scope > .ui-draggable-dragging')
+        ) {
+            // Native DD also swaps its saved dimensions after rotate(), even when rotate is a no-op.
+            event.stopImmediatePropagation();
+        }
+    };
 
     private boundDrag(elInput: GridItemHTMLElement, ui: UI): UI {
         const el = elInput;
