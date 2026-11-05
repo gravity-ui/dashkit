@@ -18,7 +18,7 @@ function DashKitView() {
     const {registerManager, forwardedMetaRef} = context;
 
     return (
-        <div className={b({theme: registerManager.settings.theme})}>
+        <div className={b({theme: registerManager.settings.theme})} data-dashkit-engine="legacy">
             {registerManager.settings.isMobile ? (
                 <MobileLayout />
             ) : (

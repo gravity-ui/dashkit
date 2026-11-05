@@ -36,6 +36,7 @@ function createContext(item: ConfigItem, registerManager: RegisterManager): Dash
         layoutChange: jest.fn(),
         temporaryLayout: null,
         memorizeOriginalLayout: jest.fn(),
+        adjustedLayoutIds: [],
         revertToOriginalLayout: jest.fn(),
         itemsState: {async: {}},
         itemsParams: {async: {}},
