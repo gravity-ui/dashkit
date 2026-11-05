@@ -215,12 +215,24 @@ export class DashKitEngine extends EngineBase {
         if (node.w === next.w && node.h === next.h && node.x === next.x && node.y === next.y) {
             return false;
         }
-        const before = this.nodes.map((entry) => ({...entry}));
+        const before = new Map<GridStackNode, EngineNode>(
+            this.nodes.map((entry) => [entry, {...entry}]),
+        );
         const moved = this.moveNode(node, {...options, pack: true});
-        // Row bounds can clamp a displaced neighbor in place, leaving a collision without overflow.
+        // Row bounds can leave new overlap without overflow; preserve existing saved intersections.
         if (
             this.maxRow &&
-            (this.getRow() > this.maxRow || this.nodes.some((entry) => this.collide(entry)))
+            (this.getRow() > this.maxRow ||
+                this.nodes.some((entry) =>
+                    this.collideAll(entry).some(
+                        (other) =>
+                            Utils.areaIntercept(entry, other) >
+                            Utils.areaIntercept(
+                                requireValue(before.get(entry), 'previous node'),
+                                requireValue(before.get(other), 'previous collision node'),
+                            ),
+                    ),
+                ))
         ) {
             before.forEach((entry) =>
                 Object.assign(
