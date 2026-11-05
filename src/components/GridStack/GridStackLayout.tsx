@@ -910,7 +910,16 @@ export function GridStackLayout() {
             className={`dashkit dashkit_theme_${context.registerManager.settings.theme}`}
             data-dashkit-engine="gridstack"
         >
-            <MobileLayout ref={mobile} />
+            <DashKitContext.Provider
+                value={{
+                    ...context,
+                    configItems: context.configItems.filter(({id}) =>
+                        context.layout.some(({i}) => i === id),
+                    ),
+                }}
+            >
+                <MobileLayout ref={mobile} />
+            </DashKitContext.Provider>
         </div>
     ) : (
         <GridStackCanvas ref={canvas} />
