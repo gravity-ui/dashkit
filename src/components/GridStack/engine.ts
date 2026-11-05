@@ -217,7 +217,11 @@ export class DashKitEngine extends EngineBase {
         }
         const before = this.nodes.map((entry) => ({...entry}));
         const moved = this.moveNode(node, {...options, pack: true});
-        if (this.maxRow && this.getRow() > this.maxRow) {
+        // Row bounds can clamp a displaced neighbor in place, leaving a collision without overflow.
+        if (
+            this.maxRow &&
+            (this.getRow() > this.maxRow || this.nodes.some((entry) => this.collide(entry)))
+        ) {
             before.forEach((entry) =>
                 Object.assign(
                     requireValue(
