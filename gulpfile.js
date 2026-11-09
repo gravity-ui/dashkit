@@ -90,15 +90,15 @@ task('gridstack-cjs', (done) => {
     }
     fs.copyFileSync(path.join(source, '..', 'LICENSE'), path.join(target, 'LICENSE'));
     const entry = path.join(BUILD_DIR, 'cjs', 'components', 'GridStack', 'runtime.js');
-    fs.writeFileSync(
-        entry,
-        fs
-            .readFileSync(entry, 'utf8')
-            .replace(
-                /require\(["']gridstack["']\)/g,
-                'require("../../gridstack-runtime/gridstack")',
-            ),
+    const original = fs.readFileSync(entry, 'utf8');
+    const patched = original.replace(
+        /require\(["']gridstack["']\)/g,
+        'require("../../gridstack-runtime/gridstack")',
     );
+    if (patched === original) {
+        throw new Error('gridstack-cjs: require("gridstack") not found in runtime.js');
+    }
+    fs.writeFileSync(entry, patched);
     done();
 });
 
