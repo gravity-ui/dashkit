@@ -1,5 +1,21 @@
 # Changelog
 
+## [10.6.0](https://github.com/gravity-ui/dashkit/compare/v10.5.2...v10.6.0) (2026-11-09)
+
+
+### Features
+
+* add an opt-in flat GridStack renderer ([#334](https://github.com/gravity-ui/dashkit/issues/334)) ([a4bdf4b](https://github.com/gravity-ui/dashkit/commit/a4bdf4b8f2b048773e138a34945e14ee099ee041))
+* add GridStack palette previews and document drops ([#337](https://github.com/gravity-ui/dashkit/issues/337)) ([58aa16a](https://github.com/gravity-ui/dashkit/commit/58aa16ad6932a01d99069433f2d55c383f8aed8c))
+* add native GridStack canvas transactions ([#329](https://github.com/gravity-ui/dashkit/issues/329)) ([eca47fd](https://github.com/gravity-ui/dashkit/commit/eca47fd6bfdca8f4f8e4c2655f1620d93f5db89a))
+* isolate widget updates behind an opt-in setting ([#333](https://github.com/gravity-ui/dashkit/issues/333)) ([d7da1c6](https://github.com/gravity-ui/dashkit/commit/d7da1c683fff734b5a5376d944a4adb32f6bdf22))
+* support saved nesting and controlled GridStack layouts ([#335](https://github.com/gravity-ui/dashkit/issues/335)) ([a6dd91d](https://github.com/gravity-ui/dashkit/commit/a6dd91d28cae0d22d3fe0ca19011c7478d919f30))
+
+
+### Bug Fixes
+
+* preserve DashKit lifecycle and mobile item layouts ([#328](https://github.com/gravity-ui/dashkit/issues/328)) ([b082f0b](https://github.com/gravity-ui/dashkit/commit/b082f0b7e26b731ad1ce11f5240ee319c48f0847))
+
 ## [10.5.2](https://github.com/gravity-ui/dashkit/compare/v10.5.1...v10.5.2) (2026-10-06)
 
 
