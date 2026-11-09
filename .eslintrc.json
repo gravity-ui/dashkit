@@ -86,6 +86,14 @@
                     {
                         "name": "es-toolkit/util",
                         "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get': in CommonJS the root and category entries load all of their functions."
+                    },
+                    {
+                        "name": "es-toolkit/fp/iterator",
+                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get': in CommonJS the root and category entries load all of their functions."
+                    },
+                    {
+                        "name": "es-toolkit/util/hash",
+                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get': in CommonJS the root and category entries load all of their functions."
                     }
                 ],
                 "patterns": [
