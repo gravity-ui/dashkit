@@ -1,4 +1,4 @@
-import {ConfigLayout} from './config';
+import {ConfigLayout, GridStackContainer} from './config';
 
 export type Dictionary<T = unknown> = Record<string, T>;
 
@@ -30,4 +30,6 @@ export type ItemDropProps = {
     dragProps: ItemDragProps;
     itemLayout: ConfigLayout;
     newLayout: ConfigLayout[];
+    /** Native palette snapshot; apply with newLayout when adding the item. */
+    containers?: GridStackContainer[];
 };
