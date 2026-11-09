@@ -1,6 +1,6 @@
 import React from 'react';
 
-import isEqual from 'lodash/isEqual';
+import isEqual from 'es-toolkit/compat/isEqual';
 
 import type {DashKitProps} from '../components/DashKit';
 import type {ItemProps, RendererProps} from '../components/Item/types';

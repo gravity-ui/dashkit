@@ -1,6 +1,6 @@
 import React from 'react';
 
-import groupBy from 'lodash/groupBy';
+import groupBy from 'es-toolkit/compat/groupBy';
 
 import type {PluginRef} from 'src/typings';
 

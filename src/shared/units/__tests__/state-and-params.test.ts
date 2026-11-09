@@ -1,4 +1,4 @@
-import omit from 'lodash/omit';
+import omit from 'es-toolkit/compat/omit';
 
 import {META_KEY} from '../../constants';
 import {Config} from '../../types';

@@ -412,6 +412,48 @@ describe('UpdateManager', () => {
                 },
             });
         });
+
+        it('remove the unique params of the item from other items, dotted keys included', () => {
+            const dottedConfig: Config = {
+                salt: '0.1',
+                counter: 3,
+                items: [
+                    {
+                        id: 'a',
+                        data: {},
+                        type: 'control',
+                        namespace: 'default',
+                        defaults: {'region.id': '', shared: ''},
+                    },
+                    {
+                        id: 'b',
+                        data: {},
+                        type: 'widget',
+                        namespace: 'default',
+                        defaults: {shared: ''},
+                    },
+                ],
+                layout: [
+                    {i: 'a', x: 0, y: 0, w: 1, h: 1},
+                    {i: 'b', x: 1, y: 0, w: 1, h: 1},
+                ],
+                aliases: {},
+                connections: [],
+            };
+
+            const {itemsStateAndParams} = UpdateManager.removeItem({
+                id: 'a',
+                config: dottedConfig,
+                itemsStateAndParams: {
+                    a: {params: {'region.id': ['1'], shared: ['2']}},
+                    b: {params: {'region.id': ['1'], shared: ['2'], other: ['3']}},
+                },
+            });
+
+            expect(itemsStateAndParams).toEqual({
+                b: {params: {shared: ['2'], other: ['3']}},
+            });
+        });
     });
 
     describe('changeStateAndParams', () => {

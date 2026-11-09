@@ -1,7 +1,7 @@
 import React from 'react';
 
-import noop from 'lodash/noop';
-import pick from 'lodash/pick';
+import noop from 'es-toolkit/compat/noop';
+import pick from 'es-toolkit/compat/pick';
 
 import {DEFAULT_GROUP, DEFAULT_NAMESPACE} from '../../constants';
 import {DashKitDnDContext} from '../../context';

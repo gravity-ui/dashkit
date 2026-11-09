@@ -11,7 +11,7 @@ import {
     IconProps,
     MenuItemProps,
 } from '@gravity-ui/uikit';
-import noop from 'lodash/noop';
+import noop from 'es-toolkit/compat/noop';
 
 import {
     COPIED_WIDGET_STORE_KEY,

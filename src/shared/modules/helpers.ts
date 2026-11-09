@@ -1,8 +1,8 @@
-import get from 'lodash/get';
-import invert from 'lodash/invert';
-import isEmpty from 'lodash/isEmpty';
-import keyBy from 'lodash/keyBy';
-import pick from 'lodash/pick';
+import get from 'es-toolkit/compat/get';
+import invert from 'es-toolkit/compat/invert';
+import isEmpty from 'es-toolkit/compat/isEmpty';
+import keyBy from 'es-toolkit/compat/keyBy';
+import pick from 'es-toolkit/compat/pick';
 
 import {ACTION_PARAM_PREFIX, CURRENT_VERSION, META_KEY} from '../constants';
 import {

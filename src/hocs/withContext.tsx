@@ -1,7 +1,7 @@
 import React from 'react';
 
-import isEqual from 'lodash/isEqual';
-import pick from 'lodash/pick';
+import isEqual from 'es-toolkit/compat/isEqual';
+import pick from 'es-toolkit/compat/pick';
 
 import type {DashKitProps} from '../components/DashKit';
 import {
