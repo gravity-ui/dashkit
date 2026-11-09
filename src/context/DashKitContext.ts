@@ -87,6 +87,7 @@ export type DashKitCtxShape = DashkitPropsPassedToCtx & {
         gridProps: ReactGridLayoutProps,
         groupLayout: ConfigLayout[],
         sharedItem?: DraggedOverItem,
+        containerId?: string,
     ) => {w?: number; h?: number} | false | undefined;
     outerDnDEnable: boolean;
     dragOverPlugin: null | RegisterManagerPlugin;
