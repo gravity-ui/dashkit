@@ -185,6 +185,34 @@ const config: Config = {
     connections: [],
 };
 
+// A parameter name with a dot must stay a plain key, not become a path
+const dottedConfig: Config = {
+    salt: '0.1',
+    counter: 3,
+    items: [
+        {
+            id: 'a',
+            data: {},
+            type: 'control',
+            namespace: 'default',
+            defaults: {'region.id': '', shared: ''},
+        },
+        {
+            id: 'b',
+            data: {},
+            type: 'widget',
+            namespace: 'default',
+            defaults: {shared: ''},
+        },
+    ],
+    layout: [
+        {i: 'a', x: 0, y: 0, w: 1, h: 1},
+        {i: 'b', x: 1, y: 0, w: 1, h: 1},
+    ],
+    aliases: {},
+    connections: [],
+};
+
 beforeEach(() => {
     jest.spyOn(console, 'warn').mockImplementation(jest.fn());
 });
@@ -413,34 +441,8 @@ describe('UpdateManager', () => {
             });
         });
 
-        it('remove the unique params of the item from other items, dotted keys included', () => {
-            const dottedConfig: Config = {
-                salt: '0.1',
-                counter: 3,
-                items: [
-                    {
-                        id: 'a',
-                        data: {},
-                        type: 'control',
-                        namespace: 'default',
-                        defaults: {'region.id': '', shared: ''},
-                    },
-                    {
-                        id: 'b',
-                        data: {},
-                        type: 'widget',
-                        namespace: 'default',
-                        defaults: {shared: ''},
-                    },
-                ],
-                layout: [
-                    {i: 'a', x: 0, y: 0, w: 1, h: 1},
-                    {i: 'b', x: 1, y: 0, w: 1, h: 1},
-                ],
-                aliases: {},
-                connections: [],
-            };
-
+        it('remove the unique params of the item from other items, dotted keys included (version 1)', () => {
+            // no __meta__ with params: removeItem takes the version 1 path
             const {itemsStateAndParams} = UpdateManager.removeItem({
                 id: 'a',
                 config: dottedConfig,
@@ -476,6 +478,29 @@ describe('UpdateManager', () => {
                     },
                 },
                 __meta__: {queue: [{id: 'L5'}], version: 2},
+            });
+        });
+
+        it('control keeps dotted param keys flat', () => {
+            expect(
+                UpdateManager.changeStateAndParams({
+                    id: 'a',
+                    config: dottedConfig,
+                    itemsStateAndParams: {},
+                    stateAndParams: {
+                        params: {
+                            'region.id': ['1'],
+                            region: ['2'],
+                        },
+                    },
+                }),
+            ).toEqual({
+                a: {
+                    params: {
+                        'region.id': ['1'],
+                    },
+                },
+                __meta__: {queue: [{id: 'a'}], version: 2},
             });
         });
 
