@@ -78,7 +78,8 @@
     "prop-types": "^15.8.1",
     "react-grid-layout": "^1.4.4",
     "react-transition-group": "^4.4.5",
-    "resize-observer-polyfill": "^1.5.1"
+    "resize-observer-polyfill": "^1.5.1",
+    "tslib": "^2.9.1"
   },
   "peerDependencies": {
     "@gravity-ui/icons": "^2.13.0",
