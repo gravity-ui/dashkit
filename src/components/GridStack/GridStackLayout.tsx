@@ -8,16 +8,17 @@ import {DEFAULT_GROUP, DRAGGABLE_CANCEL_CLASS_NAME} from '../../constants/common
 import {DashKitContext} from '../../context';
 import type {DashKitCtxShape} from '../../context';
 import type {Config, ConfigItem, ConfigLayout} from '../../shared';
-import type {
-    ItemManipulationCallback,
-    PluginRef,
-    ReactGridLayoutProps,
-    WidgetLayout,
-} from '../../typings';
+import type {ItemManipulationCallback, PluginRef, WidgetLayout} from '../../typings';
 import GridItem from '../GridItem/GridItem';
 import MobileLayout from '../MobileLayout/MobileLayout';
 
-import {getGridKey, projectLayoutDocument, validateConfig, validateGrid} from './document';
+import {
+    getGridKey,
+    getGroupId,
+    projectLayoutDocument,
+    validateConfig,
+    validateGrid,
+} from './document';
 import {DashKitEngine} from './engine';
 import {
     GridStackWidthError,
@@ -25,10 +26,11 @@ import {
     getGridStackLayoutRects,
     visibleGeometry,
 } from './geometry';
-import {getGridProperties} from './grid-properties';
+import {getEngineMode, getGridProperties} from './grid-properties';
+import type {GridProperties} from './grid-properties';
 import {requireValue} from './invariants';
 import {DashKitNativeGrid} from './native-grid';
-import {GridStack} from './runtime';
+import {GRIDSTACK_VERSION, GridStack} from './runtime';
 import type {GridItemHTMLElement, GridStackNode, GridStackOptions} from './runtime';
 
 import './GridStack.scss';
@@ -45,7 +47,7 @@ interface GridRecord {
     grid: DashKitNativeGrid;
     wrapper: HTMLElement;
     root: HTMLElement;
-    properties: ReactGridLayoutProps;
+    properties: GridProperties;
     geometry: ReturnType<typeof getGridGeometry>;
     parent?: string;
     containerId?: string;
@@ -227,7 +229,7 @@ class GridStackCanvas extends React.PureComponent {
                         : undefined
                 }
                 data-dashkit-engine="gridstack"
-                data-dashkit-engine-version="12.6.0"
+                data-dashkit-engine-version={GRIDSTACK_VERSION}
             >
                 {groups.map((group) => {
                     const id = group.id || DEFAULT_GROUP;
@@ -348,8 +350,8 @@ class GridStackCanvas extends React.PureComponent {
         const properties = this.getProperties(key);
         validateGrid(properties);
         const options: GridStackOptions = {
-            column: properties.cols || 36,
-            cellHeight: (properties.rowHeight ?? 18) + (properties.margin?.[1] ?? 2),
+            column: properties.cols,
+            cellHeight: properties.rowHeight + properties.margin[1],
             margin: 0,
             float: true,
             animate: false,
@@ -389,7 +391,7 @@ class GridStackCanvas extends React.PureComponent {
                 ({id}) => id === record.containerId,
             )?.parent;
         } else {
-            record.parent = key.slice(5) === DEFAULT_GROUP ? undefined : key.slice(5);
+            record.parent = getGroupId(key) === DEFAULT_GROUP ? undefined : getGroupId(key);
         }
         this.grids.set(key, record);
         grid.on('dragstart resizestart', (event: Event, el: GridItemHTMLElement) =>
@@ -700,7 +702,7 @@ class GridStackCanvas extends React.PureComponent {
                 });
             });
             const retained = new Set([
-                ...configItems.map(({id}) => id),
+                ...configItems.filter(({id}) => layout.some(({i}) => i === id)).map(({id}) => id),
                 ...containers.map(({id}) => id),
             ]);
             this.hosts.forEach((host, id) => {
@@ -714,7 +716,7 @@ class GridStackCanvas extends React.PureComponent {
                     this.pluginCallbacks.delete(id);
                 }
             });
-            // Saved geometry restores verbatim; only autoheight reflows its visual neighbors.
+            // Restore packing must match gestures so unrelated widgets do not jump on the next edit.
             const autoheightWidgets = new Set(this.context.adjustedLayoutIds);
             this.grids.forEach(({grid, containerId}) => {
                 const engine = grid.engine as DashKitEngine;
@@ -732,6 +734,7 @@ class GridStackCanvas extends React.PureComponent {
                         }
                     });
                 }
+                engine._packNodes();
             });
             this.autoheightWidgets = autoheightWidgets;
             [...this.grids]
@@ -785,14 +788,8 @@ class GridStackCanvas extends React.PureComponent {
         record.root.style.top = `${paddingY}px`;
         record.root.style.width = `${Math.max(0, width - 2 * paddingX + gapX)}px`;
         const engine = record.grid.engine as DashKitEngine;
-        const compactType =
-            properties.compactType === undefined ? 'vertical' : properties.compactType;
-        engine.mode = {
-            compactType: properties.verticalCompact === false ? null : compactType,
-            allowOverlap: properties.allowOverlap,
-            preventCollision: properties.preventCollision,
-        };
-        engine.column = properties.cols || 36;
+        engine.mode = getEngineMode(properties);
+        engine.column = properties.cols;
         engine.maxRow = Number.isFinite(properties.maxRows)
             ? requireValue(properties.maxRows, 'properties.maxRows')
             : 0;
@@ -883,6 +880,7 @@ class GridStackCanvas extends React.PureComponent {
                     node?.h,
                     record?.geometry,
                     handles,
+                    host.el.querySelectorAll('.ui-resizable-handle').length,
                 ];
             }),
         );
@@ -993,7 +991,7 @@ class GridStackCanvas extends React.PureComponent {
                 ? {...position(this.active.id, node), placeholder: true}
                 : null;
         const data = {
-            group: key.startsWith('zone:') ? key.slice(5) : record?.parent || DEFAULT_GROUP,
+            group: key.startsWith('zone:') ? getGroupId(key) : record?.parent || DEFAULT_GROUP,
             layout: this.readDocument()
                 .layout.filter((entry) => getGridKey(entry) === key)
                 .map((entry) => ({
@@ -1179,11 +1177,7 @@ class GridStackCanvas extends React.PureComponent {
             }
         }
     };
-    private renderItem(
-        item: ConfigItem,
-        propertiesByGrid: Map<string, ReactGridLayoutProps>,
-        placeholder = false,
-    ) {
+    private renderItem(item: ConfigItem, propertiesByGrid: Map<string, GridProperties>) {
         const host = this.hosts.get(item.id);
         const node = host?.el.gridstackNode || this.context.layout.find(({i}) => i === item.id);
         const record = host && (this.grids.get(host.key) || host.lastRecord);
@@ -1230,7 +1224,7 @@ class GridStackCanvas extends React.PureComponent {
                 layout={this.context.layout}
                 gridLayout={props}
                 isDragging={Boolean(active)}
-                isPlaceholder={placeholder}
+                isPlaceholder={false}
                 forwardedPluginRef={this.pluginCallbacks.get(item.id)}
                 adjustWidgetLayout={this.adjustWidgetLayout}
                 noOverlay={props.noOverlay ?? this.context.noOverlay}
@@ -1246,12 +1240,12 @@ class GridStackCanvas extends React.PureComponent {
                 }}
                 onItemMountChange={this.context.onItemMountChange}
                 onItemRender={this.context.onItemRender}
-                data-dashkit-grid-cols={String(props.cols || 36)}
+                data-dashkit-grid-cols={String(props.cols)}
                 data-dashkit-grid-x={String(node.x)}
                 data-dashkit-grid-y={String(node.y)}
                 data-dashkit-grid-w={String(node.w)}
                 data-dashkit-grid-h={String(node.h)}
-                data-dashkit-grid-row-height={String(props.rowHeight ?? 18)}
+                data-dashkit-grid-row-height={String(props.rowHeight)}
                 data-dashkit-grid-margin-x={String(record.geometry.gapX)}
                 data-dashkit-grid-margin-y={String(record.geometry.gapY)}
                 data-dashkit-grid-padding-x={String(record.geometry.paddingX)}
@@ -1280,7 +1274,21 @@ export function GridStackLayout() {
         [context],
     );
     return context.registerManager.settings.isMobile ? (
-        <MobileLayout ref={mobile} data-dashkit-engine="gridstack" />
+        <div
+            className={`dashkit dashkit_theme_${context.registerManager.settings.theme}`}
+            data-dashkit-engine="gridstack"
+        >
+            <DashKitContext.Provider
+                value={{
+                    ...context,
+                    configItems: context.configItems.filter(({id}) =>
+                        context.layout.some(({i}) => i === id),
+                    ),
+                }}
+            >
+                <MobileLayout ref={mobile} />
+            </DashKitContext.Provider>
+        </div>
     ) : (
         <GridStackCanvas ref={canvas} />
     );

@@ -1,5 +1,4 @@
-import type {ReactGridLayoutProps} from '../../typings';
-
+import type {GridProperties} from './grid-properties';
 import {requireValue} from './invariants';
 import {GridStack, Utils} from './runtime';
 import type {DDElementHost, GridItemHTMLElement, GridStackNode, GridStackOptions} from './runtime';
@@ -33,8 +32,23 @@ const NativeBase = GridStack as unknown as new (
 
 /** Keep DashKit transform options at the native DOM boundary, outside React's portal subtree. */
 export class DashKitNativeGrid extends NativeBase {
-    properties?: () => ReactGridLayoutProps;
+    properties?: () => GridProperties;
     onCancel?: () => void;
+
+    constructor(root: HTMLElement, options: GridStackOptions) {
+        super(root, options);
+        document.addEventListener('keydown', this.blockRotation, true);
+    }
+
+    destroy(removeDOM?: boolean) {
+        document.removeEventListener('keydown', this.blockRotation, true);
+        return super.destroy(removeDOM);
+    }
+
+    rotate() {
+        // DashKit layouts have no rotation; native R would bypass plugin constraints.
+        return this;
+    }
 
     cancelDrag() {
         // React owns these portal targets; native cancellation must not delete external subtrees.
@@ -52,7 +66,7 @@ export class DashKitNativeGrid extends NativeBase {
                     Math.max(max, requireValue(node.y, 'node.y') + requireValue(node.h, 'node.h')),
                 0,
             );
-            const paddingY = props.containerPadding?.[1] ?? 0;
+            const paddingY = props.containerPadding[1];
             const fixed = props.autoSize === false || props.style?.height !== undefined;
             const wrapper = this.el.parentElement;
             // Read the fixed canvas before writing heights; GridStack's default height is replaced here.
@@ -62,12 +76,12 @@ export class DashKitNativeGrid extends NativeBase {
                 String(this.getRow() + (this._extraDragRow || 0)),
             );
             if (wrapper && !fixed) {
-                wrapper.style.height = `${bottom ? Math.max(0, bottom * this.getCellHeight(true) - (props.margin?.[1] ?? 2) + 2 * paddingY) : 0}px`;
+                wrapper.style.height = `${bottom ? Math.max(0, bottom * this.getCellHeight(true) - props.margin[1] + 2 * paddingY) : 0}px`;
             }
             this.el.style.minHeight = '';
             this.el.style.height = fixed
                 ? `${Math.max(0, fixedHeight - 2 * paddingY)}px`
-                : `${Math.max(0, bottom * this.getCellHeight(true) - (props.margin?.[1] ?? 2))}px`;
+                : `${Math.max(0, bottom * this.getCellHeight(true) - props.margin[1])}px`;
         }
         return this;
     }
@@ -107,6 +121,9 @@ export class DashKitNativeGrid extends NativeBase {
                 !el.classList.contains('ui-resizable-resizing')) ||
             el.classList.contains('grid-stack-placeholder')
         ) {
+            // Native defaults clamp sub-cell dimensions to one cell.
+            el.style.width = `calc(${node.w} * var(--gs-column-width))`;
+            el.style.height = `calc(${node.h} * var(--gs-cell-height))`;
             if (this.properties?.().useCSSTransforms === false) {
                 el.style.transform = '';
             } else {
@@ -183,6 +200,16 @@ export class DashKitNativeGrid extends NativeBase {
             height,
         );
     }
+
+    private blockRotation = (event: KeyboardEvent) => {
+        if (
+            (event.key === 'r' || event.key === 'R') &&
+            this.el.querySelector(':scope > .ui-draggable-dragging')
+        ) {
+            // Native DD also swaps its saved dimensions after rotate(), even when rotate is a no-op.
+            event.stopImmediatePropagation();
+        }
+    };
 
     private boundDrag(elInput: GridItemHTMLElement, ui: UI): UI {
         const el = elInput;

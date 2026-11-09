@@ -3,8 +3,12 @@ import type {GridStackContainer} from '../../shared';
 import type {DashKitGroup, ReactGridLayoutProps} from '../../typings';
 
 import {getGridKey} from './document';
+import type {EngineMode} from './engine';
 import {getContainerMaxRows} from './geometry';
 import {requireValue} from './invariants';
+
+export type GridProperties = ReactGridLayoutProps &
+    Required<Pick<ReactGridLayoutProps, 'cols' | 'rowHeight' | 'margin' | 'containerPadding'>>;
 
 // Static edits and mounted grids must resolve the same geometry and inherited interactions.
 export function getGridProperties(
@@ -12,7 +16,7 @@ export function getGridProperties(
     defaults: ReactGridLayoutProps,
     groups?: DashKitGroup[],
     containers?: GridStackContainer[],
-): ReactGridLayoutProps {
+): GridProperties {
     if (key.startsWith('container:')) {
         const container = requireValue(
             containers?.find(({id}) => key === `container:${id}`),
@@ -57,5 +61,14 @@ export function getGridProperties(
         rowHeight: properties.rowHeight ?? 150,
         margin: properties.margin || [10, 10],
         containerPadding: properties.containerPadding || properties.margin || [10, 10],
+    };
+}
+
+export function getEngineMode(properties: ReactGridLayoutProps): EngineMode {
+    const compactType = properties.compactType === undefined ? 'vertical' : properties.compactType;
+    return {
+        compactType: properties.verticalCompact === false ? null : compactType,
+        allowOverlap: properties.allowOverlap,
+        preventCollision: properties.preventCollision,
     };
 }

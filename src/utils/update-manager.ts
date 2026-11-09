@@ -116,7 +116,7 @@ function removeItemVersion1({id, config, itemsStateAndParams}: RemoveItemArg) {
             ? {items: {$splice: [[itemIndex, 1]]}}
             : {globalItems: {$splice: [[globalItemIndex, 1]]}}),
         layout: {
-            $set: config.layout.filter((item) => item.i !== id),
+            $set: config.layout.filter((entry) => entry.i !== id),
         },
         connections: {
             $set: connections,
@@ -622,7 +622,6 @@ export class UpdateManager {
             ? config.globalItems.findIndex((item) => item.id === id)
             : -1;
         const itemIndex = config.items.findIndex((item) => item.id === id);
-        const layoutIndex = config.layout.findIndex((item) => item.i === id);
         const item = config.items[itemIndex] || config.globalItems?.[globalItemIndex];
 
         let itemIds = [id];
@@ -648,7 +647,7 @@ export class UpdateManager {
         return {
             config: update(config, {
                 layout: {
-                    $splice: [[layoutIndex, 1]],
+                    $set: config.layout.filter((entry) => entry.i !== id),
                 },
                 connections: {
                     $set: connections,

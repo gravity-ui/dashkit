@@ -254,12 +254,6 @@ function useMemoStateContext(
                     newConfig.layoutVersion = 2;
                 }
             }
-            emitDashKitChangeEvent({
-                config: baselineConfig,
-                newConfig,
-                onChange,
-                emitDashKitEvent: props.emitDashKitEvent,
-            });
 
             // Compare acknowledgments with the defaults in effect when this edit was saved.
             internalBaselineLayoutRef.current = enrichLayoutWithDefaults(
@@ -272,6 +266,14 @@ function useMemoStateContext(
                 setVisualLayout(currentInnerLayout);
                 setContainers(nextContainers);
             }
+
+            // External handlers can synchronously replace config; finish the internal edit first.
+            emitDashKitChangeEvent({
+                config: baselineConfig,
+                newConfig,
+                onChange,
+                emitDashKitEvent: props.emitDashKitEvent,
+            });
         },
         [
             getBaselineLayout,
