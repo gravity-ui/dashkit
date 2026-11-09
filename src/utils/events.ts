@@ -27,7 +27,8 @@ export function emitDashKitChangeEvent({
         !isEqual(
             convertEnrichedLayoutToConfigLayout(newConfig.layout),
             convertEnrichedLayoutToConfigLayout(config.layout),
-        )
+        ) ||
+        !isEqual(newConfig.containers, config.containers)
     ) {
         let defaultPrevented = false;
         let cachedPatches: DashKitLayoutPatch[] | undefined;
@@ -47,6 +48,11 @@ export function emitDashKitChangeEvent({
                 return defaultPrevented;
             },
         };
+        // Keep getters on the event: downlevel object spread would copy their current values.
+        if (newConfig.containers || config.containers) {
+            event.containers = newConfig.containers;
+            event.previousContainers = config.containers;
+        }
         emitDashKitEvent('change', event);
 
         if (!defaultPrevented) {

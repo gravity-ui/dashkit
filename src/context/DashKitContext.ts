@@ -9,6 +9,7 @@ import type {
     ConfigLayout,
     DraggedOverItem,
     GlobalParams,
+    GridStackContainer,
     ItemDragProps,
     ItemParams,
     ItemState,
@@ -54,8 +55,9 @@ export type DashKitCtxShape = DashkitPropsPassedToCtx & {
     externalLayoutRevision: number;
     configItems: ConfigItem[];
     layout: ConfigLayout[];
+    containers?: GridStackContainer[];
     adjustedLayoutIds: string[];
-    layoutChange: (layout: ConfigLayout[]) => void;
+    layoutChange: (layout: ConfigLayout[], containers?: GridStackContainer[]) => void;
     temporaryLayout: TemporaryLayout | null;
     memorizeOriginalLayout: (
         widgetId: string,

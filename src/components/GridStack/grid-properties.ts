@@ -1,7 +1,11 @@
 import {DEFAULT_GROUP} from '../../constants/common';
+import type {GridStackContainer} from '../../shared';
 import type {DashKitGroup, ReactGridLayoutProps} from '../../typings';
 
+import {getGridKey} from './document';
 import type {EngineMode} from './engine';
+import {getContainerMaxRows} from './geometry';
+import {requireValue} from './invariants';
 
 export type GridProperties = ReactGridLayoutProps &
     Required<Pick<ReactGridLayoutProps, 'cols' | 'rowHeight' | 'margin' | 'containerPadding'>>;
@@ -11,7 +15,43 @@ export function getGridProperties(
     key: string,
     defaults: ReactGridLayoutProps,
     groups?: DashKitGroup[],
+    containers?: GridStackContainer[],
 ): GridProperties {
+    if (key.startsWith('container:')) {
+        const container = requireValue(
+            containers?.find(({id}) => key === `container:${id}`),
+            'container descriptor',
+        );
+        const zone = getGridProperties(
+            `zone:${container.parent || DEFAULT_GROUP}`,
+            defaults,
+            groups,
+        );
+        return {
+            ...defaults,
+            isDraggable: zone.isDraggable,
+            isResizable: zone.isResizable,
+            isBounded: zone.isBounded,
+            preventCollision: zone.preventCollision,
+            resizeHandles: zone.resizeHandles,
+            resizeHandle: zone.resizeHandle,
+            useCSSTransforms: zone.useCSSTransforms,
+            transformScale: zone.transformScale,
+            transformScaleRef: zone.transformScaleRef,
+            noOverlay: zone.noOverlay,
+            autoSize: false,
+            ...container.grid,
+            width: undefined,
+            style: undefined,
+            verticalCompact: undefined,
+            margin: container.gap,
+            containerPadding: [0, 0],
+            maxRows: getContainerMaxRows(
+                container,
+                getGridProperties(getGridKey(container), defaults, groups, containers),
+            ),
+        };
+    }
     const group = groups?.find(({id}) => key === `zone:${id || DEFAULT_GROUP}`);
     const properties = group?.gridProperties ? group.gridProperties({...defaults}) : defaults;
     // A partial group callback retains the legacy renderer's geometry defaults.

@@ -33,5 +33,6 @@ export function convertEnrichedLayoutToConfigLayout(layout: WidgetLayout[]): Con
         x: i.x,
         y: i.y,
         parent: i.parent,
+        ...(i.containerId ? {containerId: i.containerId} : {}),
     }));
 }
