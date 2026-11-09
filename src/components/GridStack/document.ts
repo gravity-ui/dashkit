@@ -137,6 +137,8 @@ export function validateGrid(props: ReactGridLayoutProps) {
 export const getGridKey = (entry: {parent?: string; containerId?: string}) =>
     entry.containerId ? `container:${entry.containerId}` : `zone:${entry.parent || DEFAULT_GROUP}`;
 
+export const getGroupId = (key: string) => key.slice('zone:'.length);
+
 export function configIds(config: Config) {
     return [...extractIdsFromConfig(config), ...(config.containers || []).map(({id}) => id)];
 }

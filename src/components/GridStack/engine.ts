@@ -217,7 +217,9 @@ export class DashKitEngine extends EngineBase {
         if (node.w === next.w && node.h === next.h && node.x === next.x && node.y === next.y) {
             return false;
         }
-        const before = this.nodes.map((entry) => ({...entry}));
+        const before = new Map<GridStackNode, EngineNode>(
+            this.nodes.map((entry) => [entry, {...entry}]),
+        );
         const {maxRow} = this;
         let moved: boolean;
         this.maxRow = 0;
@@ -233,7 +235,21 @@ export class DashKitEngine extends EngineBase {
         } finally {
             this.maxRow = maxRow;
         }
-        if (maxRow && this.getRow() > maxRow) {
+        // Row bounds can leave new overlap without overflow; preserve existing saved intersections.
+        if (
+            maxRow &&
+            (this.getRow() > maxRow ||
+                this.nodes.some((entry) =>
+                    this.collideAll(entry).some(
+                        (other) =>
+                            Utils.areaIntercept(entry, other) >
+                            Utils.areaIntercept(
+                                requireValue(before.get(entry), 'previous node'),
+                                requireValue(before.get(other), 'previous collision node'),
+                            ),
+                    ),
+                ))
+        ) {
             before.forEach((entry) =>
                 Object.assign(
                     requireValue(
