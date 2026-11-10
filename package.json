@@ -70,7 +70,8 @@
     "typecheck": "tsc --noEmit",
     "build-storybook": "sb build -c .storybook -o storybook-static",
     "prepare": "husky install",
-    "prepublishOnly": "npm run lint && npm run test && npm run build"
+    "test:build": "node scripts/check-build.mjs",
+    "prepublishOnly": "npm run lint && npm run test && npm run build && npm run test:build"
   },
   "dependencies": {
     "@bem-react/classname": "^1.6.0",
