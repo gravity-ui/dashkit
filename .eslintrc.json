@@ -24,12 +24,7 @@
                 ],
                 "patterns": [
                     {
-                        "group": [
-                            "lodash",
-                            "es-toolkit/**",
-                            "!es-toolkit/compat",
-                            "!es-toolkit/compat/*"
-                        ],
+                        "group": ["es-toolkit/**", "!es-toolkit/compat", "!es-toolkit/compat/*"],
                         "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get'."
                     }
                 ]
