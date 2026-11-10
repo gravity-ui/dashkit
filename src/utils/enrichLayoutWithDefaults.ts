@@ -1,6 +1,5 @@
-import type {WidgetLayout} from 'src/typings/common';
-
 import {type Config, type ConfigLayout, getAllConfigItems} from '../shared';
+import type {WidgetLayout} from '../typings/common';
 
 import type {RegisterManager} from './register-manager';
 

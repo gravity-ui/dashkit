@@ -2,10 +2,9 @@ import React from 'react';
 
 import groupBy from 'es-toolkit/compat/groupBy';
 
-import type {PluginRef} from 'src/typings';
-
 import {DEFAULT_GROUP} from '../../constants';
 import {DashKitContext} from '../../context';
+import type {PluginRef} from '../../typings';
 import {cn} from '../../utils/cn';
 import Item from '../Item/Item';
 

@@ -2,12 +2,11 @@ import React from 'react';
 
 import type {DragOverEvent} from 'react-grid-layout';
 
-import type {PluginRef, PluginWidgetProps, ReactGridLayoutProps} from 'src/typings';
-
 import {COMPACT_TYPE_HORIZONTAL_NOWRAP, DEFAULT_GROUP, TEMPORARY_ITEM_ID} from '../../constants';
 import type {DashKitCtxShape} from '../../context';
 import {DashKitContext} from '../../context';
 import type {ConfigItem, ConfigLayout, DraggedOverItem} from '../../shared';
+import type {PluginRef, PluginWidgetProps, ReactGridLayoutProps} from '../../typings';
 import {resolveLayoutGroup} from '../../utils';
 import GridItem from '../GridItem/GridItem';
 
