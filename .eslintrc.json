@@ -7,101 +7,30 @@
     ],
     "rules": {
         "curly": "error",
+        // Only es-toolkit/compat/<fn> is allowed. ESLint 8 has no `regex` here, and a gitignore
+        // pattern also blocks everything under it, so the two exact entries go to `paths`.
         "no-restricted-imports": [
             "error",
             {
                 "paths": [
                     {
-                        "name": "lodash",
-                        "message": "Use es-toolkit by function, e.g. import get from 'es-toolkit/compat/get'."
-                    },
-                    {
                         "name": "es-toolkit",
-                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get': in CommonJS the root and category entries load all of their functions."
-                    },
-                    {
-                        "name": "es-toolkit/array",
-                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get': in CommonJS the root and category entries load all of their functions."
-                    },
-                    {
-                        "name": "es-toolkit/bigint",
-                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get': in CommonJS the root and category entries load all of their functions."
+                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get'."
                     },
                     {
                         "name": "es-toolkit/compat",
-                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get': in CommonJS the root and category entries load all of their functions."
-                    },
-                    {
-                        "name": "es-toolkit/error",
-                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get': in CommonJS the root and category entries load all of their functions."
-                    },
-                    {
-                        "name": "es-toolkit/fp",
-                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get': in CommonJS the root and category entries load all of their functions."
-                    },
-                    {
-                        "name": "es-toolkit/function",
-                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get': in CommonJS the root and category entries load all of their functions."
-                    },
-                    {
-                        "name": "es-toolkit/iterator",
-                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get': in CommonJS the root and category entries load all of their functions."
-                    },
-                    {
-                        "name": "es-toolkit/map",
-                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get': in CommonJS the root and category entries load all of their functions."
-                    },
-                    {
-                        "name": "es-toolkit/math",
-                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get': in CommonJS the root and category entries load all of their functions."
-                    },
-                    {
-                        "name": "es-toolkit/object",
-                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get': in CommonJS the root and category entries load all of their functions."
-                    },
-                    {
-                        "name": "es-toolkit/predicate",
-                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get': in CommonJS the root and category entries load all of their functions."
-                    },
-                    {
-                        "name": "es-toolkit/promise",
-                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get': in CommonJS the root and category entries load all of their functions."
-                    },
-                    {
-                        "name": "es-toolkit/query-string",
-                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get': in CommonJS the root and category entries load all of their functions."
-                    },
-                    {
-                        "name": "es-toolkit/server",
-                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get': in CommonJS the root and category entries load all of their functions."
-                    },
-                    {
-                        "name": "es-toolkit/set",
-                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get': in CommonJS the root and category entries load all of their functions."
-                    },
-                    {
-                        "name": "es-toolkit/string",
-                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get': in CommonJS the root and category entries load all of their functions."
-                    },
-                    {
-                        "name": "es-toolkit/util",
-                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get': in CommonJS the root and category entries load all of their functions."
-                    },
-                    {
-                        "name": "es-toolkit/fp/iterator",
-                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get': in CommonJS the root and category entries load all of their functions."
-                    },
-                    {
-                        "name": "es-toolkit/util/hash",
-                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get': in CommonJS the root and category entries load all of their functions."
+                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get'."
                     }
                 ],
                 "patterns": [
                     {
                         "group": [
-                            "lodash/*"
+                            "lodash",
+                            "es-toolkit/**",
+                            "!es-toolkit/compat",
+                            "!es-toolkit/compat/*"
                         ],
-                        "message": "Use es-toolkit by function, e.g. import get from 'es-toolkit/compat/get'."
+                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get'."
                     }
                 ]
             }
