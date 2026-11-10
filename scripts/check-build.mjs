@@ -7,12 +7,15 @@
 // handled the way bundlers handle them: Node cannot load CSS, and imports JSON only with an import
 // attribute (build/esm/i18n and uikit import it without one). `module.registerHooks` hooks run for
 // both `import` and `require`, so `require.extensions` is not needed.
-// Dependencies are resolved the way bundlers resolve them: a package without an `exports` map
-// is imported through its `module` field, and inside the dependencies a specifier may omit `.js`
-// or name a directory (the uikit 7 ESM build and its dependencies rely on all three). dashkit's own
-// relative specifiers never get these rules; the packages that needed them are printed.
-// ES modules reached through `require` are printed too: CommonJS consumers need require(esm) for
-// them (Node 20.19+ / 22.12+). One of dashkit's own files among them is an error.
+// Dependencies are resolved the way bundlers resolve them: an `import` of a package without an
+// `exports` map follows its `module` field, and a specifier may omit `.js` or name a directory
+// (the uikit 7 ESM build and its dependencies rely on all three). dashkit's own imports get none
+// of this, except the packages in OWN_IMPORTS_THROUGH_MODULE_FIELD. Every run prints what needed
+// these rules.
+// ES modules that the CommonJS build reaches through `require` are printed too: CommonJS
+// consumers need require(esm) for them (Node 20.19+ / 22.12+). One of dashkit's own files among
+// them is an error. The list is best effort; `node --no-experimental-require-module
+// scripts/check-build.mjs` gives the exact answer.
 // `./helpers` must load without a DOM. `.` creates a window focus observer at module level, so it
 // loads under jsdom globals, after the DOM-free entries. Both builds must export the same names.
 //
@@ -25,9 +28,10 @@
 // `react-grid-layout` itself is a dependency).
 import {existsSync, readFileSync, readdirSync, statSync} from 'node:fs';
 import * as nodeModule from 'node:module';
-import {dirname, join, relative, resolve} from 'node:path';
+import {dirname, join, relative, resolve, sep} from 'node:path';
 import {exit, stderr, stdout} from 'node:process';
 import {fileURLToPath, pathToFileURL} from 'node:url';
+import {compileFunction} from 'node:vm';
 
 const {builtinModules, createRequire, registerHooks} = nodeModule;
 
@@ -38,6 +42,7 @@ if (!registerHooks) {
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const BUILD = join(ROOT, 'build');
+const BUILD_URL = `${pathToFileURL(BUILD).href}/`;
 const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
 const DECLARED = new Set([
     ...Object.keys(pkg.dependencies ?? {}),
@@ -51,12 +56,26 @@ const DOM_ENTRIES = new Set(['.']);
 // the `@gravity-ui/uikit` peer. Add one only with the reason it is safe.
 const TYPES_THROUGH_UIKIT = new Map();
 
+// dashkit's own imports that may follow the `module` field, as bundlers do. Without a bundler
+// they fail for the reason given; the run says when an entry is no longer needed.
+const OWN_IMPORTS_THROUGH_MODULE_FIELD = new Map([
+    [
+        '@gravity-ui/icons',
+        'no `exports` map before 2.20.0, and its CommonJS main hides the named exports from Node',
+    ],
+]);
+
 for (const format of ['cjs', 'esm']) {
     if (!existsSync(join(BUILD, format))) {
         stderr.write(`build/${format} is missing: run \`npm run build\` first.\n`);
         exit(1);
     }
 }
+
+const require = createRequire(import.meta.url);
+// Loaded before the hooks are registered, so that jsdom's own modules do not go through them.
+// jsdom comes with jest-environment-jsdom, a devDependency.
+const {JSDOM} = createRequire(require.resolve('jest-environment-jsdom'))('jsdom');
 
 let failed = false;
 
@@ -75,8 +94,15 @@ function isBuiltin(specifier) {
     return specifier.startsWith('node:') || builtinModules.includes(packageName(specifier));
 }
 
-function isDependencyFile(url) {
-    return url !== undefined && url.includes('/node_modules/');
+function isOwnFile(url) {
+    return url !== undefined && url.startsWith(BUILD_URL);
+}
+
+// The package a dependency file belongs to, for the report.
+function packageOfUrl(url) {
+    const marker = '/node_modules/';
+    const index = url.lastIndexOf(marker);
+    return index === -1 ? fileURLToPath(url) : packageName(url.slice(index + marker.length));
 }
 
 function isFile(path) {
@@ -84,29 +110,26 @@ function isFile(path) {
 }
 
 // A path the way bundlers resolve it: the file, the file with `.js`, or a directory through its
-// own `package.json` (`module` before `main`) or its `index.js`. `isModule` marks a file reached
-// through a `module` field: it is ESM whatever the package type says.
-function resolvePath(path, isModule = false) {
+// own `package.json` (`module` before `main`) or its `index.js`.
+function resolvePath(path) {
     if (isFile(path)) {
-        return {path, isModule};
+        return path;
     }
     if (isFile(`${path}.js`)) {
-        return {path: `${path}.js`, isModule};
+        return `${path}.js`;
     }
     const manifest = join(path, 'package.json');
     if (isFile(manifest)) {
         const {module, main} = JSON.parse(readFileSync(manifest, 'utf8'));
-        const resolved =
-            (module && resolvePath(resolve(path, module), true)) ||
-            (main && resolvePath(resolve(path, main), isModule));
-        if (resolved) {
-            return resolved;
+        for (const field of [module, main]) {
+            const target = field && resolve(path, field);
+            const resolved = target && target !== path && resolvePath(target);
+            if (resolved) {
+                return resolved;
+            }
         }
     }
-    if (isFile(join(path, 'index.js'))) {
-        return {path: join(path, 'index.js'), isModule};
-    }
-    return undefined;
+    return isFile(join(path, 'index.js')) ? join(path, 'index.js') : undefined;
 }
 
 // The directory and manifest of an installed package without an `exports` map, as seen from
@@ -122,34 +145,44 @@ function packageWithoutExports(name, parentURL) {
 }
 
 const RESOLUTION_ERRORS = ['ERR_MODULE_NOT_FOUND', 'ERR_UNSUPPORTED_DIR_IMPORT'];
-const resolvedLikeBundlers = new Set();
+// Imported through the `module` field, by dashkit (allow-listed) and by the dependencies.
+const ownThroughModuleField = new Set();
+const dependenciesThroughModuleField = new Set();
+// Dependencies whose files import without `.js` or import a directory.
+const dependenciesWithBundlerPaths = new Set();
 const esmUnderRequire = new Set();
 
-function bundlerResult(resolved, name) {
-    resolvedLikeBundlers.add(name);
-    return {
-        url: pathToFileURL(resolved.path).href,
-        ...(resolved.isModule ? {format: 'module'} : {}),
-        shortCircuit: true,
-    };
+function resolved(path) {
+    return {url: pathToFileURL(path).href, shortCircuit: true};
 }
 
-// Node's rules for dashkit's files. On top of them, as bundlers do: an `import` of a package
-// without an `exports` map follows its `module` field, and inside the dependencies a specifier
-// may omit `.js` or name a directory (the uikit 7 ESM build and its dependencies need both).
 function resolveLikeBundlers(specifier, context, nextResolve) {
+    const {parentURL} = context;
+    const fromDependency = parentURL !== undefined && !isOwnFile(parentURL);
     const isBare =
-        !specifier.startsWith('.') && !specifier.startsWith('/') && !isBuiltin(specifier);
-    const isImport = context.conditions?.includes('import');
-    const fromDependency = isDependencyFile(context.parentURL);
-    if (isBare && isImport && context.parentURL) {
+        !specifier.startsWith('.') &&
+        !specifier.startsWith('/') &&
+        !specifier.startsWith('#') &&
+        !specifier.includes(':') &&
+        !isBuiltin(specifier);
+    if (isBare && parentURL && context.conditions?.includes('import')) {
         const name = packageName(specifier);
-        const found = packageWithoutExports(name, context.parentURL);
-        if (found && (specifier === name ? found.manifest.module : fromDependency)) {
-            const resolved = resolvePath(join(found.directory, specifier.slice(name.length)));
-            if (resolved) {
-                return bundlerResult(resolved, name);
+        const isRoot = specifier === name;
+        const allowed = fromDependency || (isRoot && OWN_IMPORTS_THROUGH_MODULE_FIELD.has(name));
+        const found = allowed ? packageWithoutExports(name, parentURL) : undefined;
+        const path =
+            found && (!isRoot || found.manifest.module)
+                ? resolvePath(join(found.directory, specifier.slice(name.length)))
+                : undefined;
+        if (path) {
+            if (!isRoot) {
+                dependenciesWithBundlerPaths.add(packageOfUrl(parentURL));
+            } else if (fromDependency) {
+                dependenciesThroughModuleField.add(name);
+            } else {
+                ownThroughModuleField.add(name);
             }
+            return resolved(path);
         }
     }
     try {
@@ -158,18 +191,43 @@ function resolveLikeBundlers(specifier, context, nextResolve) {
         if (!fromDependency || isBare || !RESOLUTION_ERRORS.includes(error.code)) {
             throw error;
         }
-        const resolved = resolvePath(resolve(dirname(fileURLToPath(context.parentURL)), specifier));
-        if (!resolved) {
+        const path = resolvePath(resolve(dirname(fileURLToPath(parentURL)), specifier));
+        if (!path) {
             throw error;
         }
-        return bundlerResult(resolved, packageOfUrl(context.parentURL));
+        dependenciesWithBundlerPaths.add(packageOfUrl(parentURL));
+        return resolved(path);
     }
 }
 
-// The package a file of node_modules belongs to, for the report.
-function packageOfUrl(url) {
-    const path = url.slice(url.lastIndexOf('/node_modules/') + '/node_modules/'.length);
-    return packageName(path);
+// The loader passes a `.js` file of a package without `type` on without a format and detects
+// ESM syntax only after the hooks. The same test as Node's: it does not compile as CommonJS
+// because of ESM syntax.
+const ESM_SYNTAX_ERRORS = [
+    'Cannot use import statement outside a module',
+    "Unexpected token 'export'",
+    "Cannot use 'import.meta' outside a module",
+];
+
+function isEsm(url, result) {
+    if (result.format === 'module') {
+        return true;
+    }
+    if (result.format !== undefined || !url.endsWith('.js')) {
+        return false;
+    }
+    try {
+        compileFunction(String(result.source ?? ''), [
+            'exports',
+            'require',
+            'module',
+            '__filename',
+            '__dirname',
+        ]);
+        return false;
+    } catch (error) {
+        return ESM_SYNTAX_ERRORS.some((message) => error.message.includes(message));
+    }
 }
 
 registerHooks({
@@ -184,12 +242,11 @@ registerHooks({
             return {format: 'json', source, shortCircuit: true};
         }
         const result = nextLoad(url, context);
-        // An ES module loaded by `require()`.
-        if (result.format === 'module' && context.conditions?.includes('require')) {
-            if (isDependencyFile(url)) {
-                esmUnderRequire.add(packageOfUrl(url));
-            } else {
+        if (context.conditions?.includes('require') && isEsm(url, result)) {
+            if (isOwnFile(url)) {
                 fail(`build/cjs requires an ES module: ${relative(ROOT, fileURLToPath(url))}`);
+            } else {
+                esmUnderRequire.add(packageOfUrl(url));
             }
         }
         return result;
@@ -197,11 +254,6 @@ registerHooks({
 });
 
 function installDom() {
-    // jsdom comes with jest-environment-jsdom, a devDependency.
-    const requireFromJestEnvironment = createRequire(
-        createRequire(import.meta.url).resolve('jest-environment-jsdom'),
-    );
-    const {JSDOM} = requireFromJestEnvironment('jsdom');
     const {window} = new JSDOM('<!doctype html><html><body></body></html>', {
         pretendToBeVisual: true,
         url: 'http://localhost/',
@@ -245,13 +297,19 @@ function* targets(value) {
     }
 }
 
-for (const target of new Set([...targets(pkg.exports), pkg.main, pkg.module, pkg.types])) {
-    if (target && !existsSync(join(ROOT, target))) {
+const packageTargets = [
+    ...targets(pkg.exports),
+    ...targets(pkg.typesVersions),
+    pkg.main,
+    pkg.module,
+    pkg.types,
+];
+for (const target of new Set(packageTargets)) {
+    if (target && !target.includes('*') && !existsSync(join(ROOT, target))) {
         fail(`package.json points to a missing file: ${target}`);
     }
 }
 
-const require = createRequire(import.meta.url);
 const entries = Object.keys(pkg.exports).filter((entry) => entry !== './package.json');
 const passes = [
     entries.filter((entry) => !DOM_ENTRIES.has(entry)),
@@ -266,9 +324,19 @@ for (const [index, pass] of passes.entries()) {
     }
     for (const entry of pass) {
         const id = entry === '.' ? pkg.name : `${pkg.name}/${entry.slice(2)}`;
-        const cjsFile = require.resolve(id);
-        const esmFile = fileURLToPath(import.meta.resolve(id));
-        if (!cjsFile.startsWith(join(BUILD, 'cjs')) || !esmFile.startsWith(join(BUILD, 'esm'))) {
+        let cjsFile;
+        let esmFile;
+        try {
+            cjsFile = require.resolve(id);
+            esmFile = fileURLToPath(import.meta.resolve(id));
+        } catch (error) {
+            fail(`${id} does not resolve: ${error.code ?? ''} ${error.message}`);
+            continue;
+        }
+        if (
+            !cjsFile.startsWith(join(BUILD, 'cjs') + sep) ||
+            !esmFile.startsWith(join(BUILD, 'esm') + sep)
+        ) {
             fail(
                 `${id}: require resolves to ${relative(ROOT, cjsFile)}, ` +
                     `import to ${relative(ROOT, esmFile)}`,
@@ -290,14 +358,21 @@ for (const [index, pass] of passes.entries()) {
     }
 }
 
-if (resolvedLikeBundlers.size) {
-    stdout.write(`Resolved like a bundler: ${[...resolvedLikeBundlers].sort().join(', ')}\n`);
+function report(label, names) {
+    if (names.size) {
+        stdout.write(`${label}: ${[...names].sort().join(', ')}\n`);
+    }
 }
-if (esmUnderRequire.size) {
-    stdout.write(
-        `ES modules loaded by require(), CommonJS needs require(esm): ${[...esmUnderRequire].sort().join(', ')}\n`,
-    );
+
+report('build/esm imports through the `module` field', ownThroughModuleField);
+for (const name of OWN_IMPORTS_THROUGH_MODULE_FIELD.keys()) {
+    if (!ownThroughModuleField.has(name)) {
+        stdout.write(`OWN_IMPORTS_THROUGH_MODULE_FIELD: ${name} is no longer needed\n`);
+    }
 }
+report('Dependencies imported through the `module` field', dependenciesThroughModuleField);
+report('Dependencies with extensionless or directory imports', dependenciesWithBundlerPaths);
+report('ES modules reached by require(), CommonJS needs require(esm)', esmUnderRequire);
 
 function* files(dir, suffix) {
     for (const item of readdirSync(dir)) {
@@ -345,14 +420,19 @@ function missingFiles(code, file) {
     return missing.length ? `relative import of a missing file: ${missing.join(', ')}` : undefined;
 }
 
+// `react` → `@types/react`; `@scope/name` → `@types/scope__name`.
+function typesPackage(name) {
+    return `@types/${name.startsWith('@') ? name.slice(1).replace('/', '__') : name}`;
+}
+
 function undeclaredPackages(code, file) {
     const isDeclaration = file.endsWith('.d.ts');
     const names = specifiers(code)
         .filter((specifier) => !specifier.startsWith('.') && !isBuiltin(specifier))
         .map(packageName);
     const referenced = [...code.matchAll(REFERENCE_TYPES)]
-        .map(([, name]) => name)
-        .filter((name) => !DECLARED.has(`@types/${name}`));
+        .map(([, name]) => packageName(name))
+        .filter((name) => !DECLARED.has(typesPackage(name)));
     const undeclared = [...new Set([...names, ...referenced])].filter(
         (name) => !DECLARED.has(name) && !(isDeclaration && TYPES_THROUGH_UIKIT.has(name)),
     );
