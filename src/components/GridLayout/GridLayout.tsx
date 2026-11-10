@@ -36,7 +36,7 @@ const hasPluginId = (value: PluginRef): value is {props: {id: string}} => {
 
 export default class GridLayout extends React.PureComponent<GridLayoutProps, GridLayoutState> {
     static contextType = DashKitContext;
-    context!: DashKitCtxShape;
+    declare context: DashKitCtxShape;
 
     pluginsRefs: Array<PluginRef>;
 

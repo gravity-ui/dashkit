@@ -32,7 +32,7 @@ export function prepareItem(
 ): React.ComponentClass<PrepareItemProps> {
     return class PrepareItem extends React.Component<PrepareItemProps> {
         static contextType = DashKitContext;
-        context!: React.ContextType<typeof DashKitContext>;
+        declare context: React.ContextType<typeof DashKitContext>;
 
         _currentRenderProps: RendererProps = {} as RendererProps;
 

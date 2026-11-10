@@ -5,6 +5,7 @@
     "declaration": true,
     "resolveJsonModule": true,
     "outDir": "build/esm",
+    "target": "es2022",
     "jsx": "react",
     "baseUrl": ".",
     "module": "esnext",

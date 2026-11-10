@@ -110,10 +110,9 @@ const getGridItemStyle = ({
 };
 
 class DragOverLayout extends ReactGridLayout {
-    // @ts-expect-error - TypeScript doesn't allow direct property redeclaration in extending classes. We need to narrow the props type from ReactGridLayoutProps to DragOverLayoutProps for type safety in our custom methods
-    props: DragOverLayoutProps;
-    // @ts-expect-error - TypeScript doesn't allow direct property redeclaration in extending classes. State is initialized by parent constructor
-    state: DragOverLayoutState;
+    // Narrowed for our methods; both are set by the RGL constructor and React.
+    declare props: DragOverLayoutProps;
+    declare state: DragOverLayoutState;
 
     parentOnDrag: OnDragMethod;
     parentOnDragStop: OnDragMethod;
