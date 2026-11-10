@@ -1,4 +1,4 @@
-import pick from 'lodash/pick';
+import pick from 'es-toolkit/compat/pick';
 
 import {CONFIG_LAYOUT_FIELDS} from '../shared';
 import type {ConfigLayout} from '../shared';

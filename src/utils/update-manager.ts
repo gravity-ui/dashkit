@@ -1,6 +1,6 @@
+import omit from 'es-toolkit/compat/omit';
+import pick from 'es-toolkit/compat/pick';
 import update, {CustomCommands, Spec, extend} from 'immutability-helper';
-import omit from 'lodash/omit';
-import pick from 'lodash/pick';
 
 import {DEFAULT_GROUP, DEFAULT_NAMESPACE} from '../constants';
 import {

@@ -1,6 +1,6 @@
 import React from 'react';
 
-import isEqual from 'lodash/isEqual';
+import isEqual from 'es-toolkit/compat/isEqual';
 
 export const useDeepEqualMemo = <T extends any>(
     predicate: () => T,

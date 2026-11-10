@@ -6,7 +6,30 @@
         "@gravity-ui/eslint-config/import-order"
     ],
     "rules": {
-        "curly": "error"
+        "curly": "error",
+        // Only es-toolkit/compat/<fn> is allowed. ESLint 8 has no `regex` here, and a gitignore
+        // pattern also blocks everything under it, so the two exact entries go to `paths`.
+        "no-restricted-imports": [
+            "error",
+            {
+                "paths": [
+                    {
+                        "name": "es-toolkit",
+                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get'."
+                    },
+                    {
+                        "name": "es-toolkit/compat",
+                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get'."
+                    }
+                ],
+                "patterns": [
+                    {
+                        "group": ["es-toolkit/**", "!es-toolkit/compat", "!es-toolkit/compat/*"],
+                        "message": "Import es-toolkit functions by path, e.g. import get from 'es-toolkit/compat/get'."
+                    }
+                ]
+            }
+        ]
     },
     "root": true,
     "env": {
