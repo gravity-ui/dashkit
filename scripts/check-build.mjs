@@ -58,12 +58,7 @@ const TYPES_THROUGH_UIKIT = new Map();
 
 // dashkit's own imports that may follow the `module` field, as bundlers do. Without a bundler
 // they fail for the reason given; the run says when an entry is no longer needed.
-const OWN_IMPORTS_THROUGH_MODULE_FIELD = new Map([
-    [
-        '@gravity-ui/icons',
-        'no `exports` map before 2.20.0, and its CommonJS main hides the named exports from Node',
-    ],
-]);
+const OWN_IMPORTS_THROUGH_MODULE_FIELD = new Map();
 
 for (const format of ['cjs', 'esm']) {
     if (!existsSync(join(BUILD, format))) {
