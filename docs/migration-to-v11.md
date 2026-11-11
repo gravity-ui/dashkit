@@ -17,19 +17,25 @@ majors in one bundle are two sets of providers, and DashKit would not see the th
 ## Theme provider
 
 DashKit must be rendered inside the uikit `Provider` or `ThemeProvider`. In edit mode the widget menu now needs
-the theme as soon as it renders. Before, it needed the theme only when the menu was opened.
+the theme as soon as it renders, so without a provider the dashboard throws "useTheme\* hooks must be used within
+ThemeProvider". Before, the menu needed the theme only when it was opened.
 
 ## Widget overlay menu
 
 The menu behind the "…" button of a widget is the uikit 8 `Menu` instead of the legacy `DropdownMenu`. The API of
-DashKit did not change: `overlayMenuItems`, `Settings.menu`, and the `icon`, `className` and `qa` of a custom item
-work as before.
+DashKit did not change: `overlayMenuItems`, `Settings.menu`, and the `title`, `handler`, `visible`, `className` and
+`qa` of a custom item work as before.
 
 What changes is the markup, so check your CSS overrides and tests:
 
 - Items are `button.g-menu-item[role="menuitem"]` inside `.g-menu`. The `.g-dropdown-menu__*` classes and the
   `li > div[role="menuitem"]` structure are gone.
 - `qa` of a custom item is the `data-qa` of that button.
+- `icon` of a custom item is rendered inside `div.g-menu-item__icon`, a 16px box. An `<Icon>` without `size` and an
+  `<svg>` without `width` and `height` get 16px. Items without an icon are indented to line up with the ones that
+  have it.
+- To recolor an item through its `className`, set `--g-list-item-view-text-color`: a plain `color` has the same
+  specificity as the uikit rule, so the order of the stylesheets decides.
 - The "…" button is no longer wrapped in `div.g-dropdown-menu__switcher-wrapper`.
 - The `dashkit_draggable_cancel` class is on `.g-menu` instead of the popup element.
 - Rows follow the uikit 8 heights, see
@@ -62,6 +68,10 @@ The default hover background of an item is `--g-color-base-contrast-light-simple
 - `lodash` is replaced with `es-toolkit`. `es-toolkit`, `tslib` and `@gravity-ui/i18n` are dependencies of DashKit,
   so nothing has to be installed next to it.
 - Unit tests are no longer published in the package.
-- In Node, `require('@gravity-ui/dashkit')` needs `require(esm)` (Node 20.19 or 22.12 and later): uikit 8 brings
-  dependencies that ship only ES modules. Bundlers are not affected. In Jest, transpile `colors-named` and
-  `colors-named-hex` (`transformIgnorePatterns`) if a test renders real uikit components.
+- uikit 8 brings two dependencies that ship only ES modules, `colors-named` and `colors-named-hex`, and they load
+  with any import of `@gravity-ui/uikit`. Bundlers are not affected.
+  - In Jest, a test that imports `@gravity-ui/uikit` or DashKit without mocking uikit fails with "Unexpected token
+    'export'". Let Jest transform these two packages to CommonJS: take them out of `transformIgnorePatterns` and
+    make sure the transformer handles `.js` files of `node_modules` (`babel-jest` does, `ts-jest` does not).
+  - In Node, the CommonJS build needs `require(esm)` for them (Node 20.19 or 22.12 and later). As before, the main
+    entry also needs a DOM; `@gravity-ui/dashkit/helpers` does not.
