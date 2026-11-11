@@ -79,6 +79,10 @@ interface OverlayControlsProps extends OverlayControlsDefaultProps {
     onItemClick?: () => void;
 }
 
+interface OverlayControlsInnerProps extends OverlayControlsProps {
+    t: ReturnType<typeof i18n.useTranslation>['t'];
+}
+
 type PreparedCopyItemOptionsArg = Pick<ConfigItem, 'data' | 'type' | 'defaults' | 'namespace'> & {
     timestamp: number;
     layout: {
@@ -105,7 +109,7 @@ interface OverlayMenuItem {
 
 const DEFAULT_DROPDOWN_MENU = [MenuItems.Copy, MenuItems.Delete];
 
-class OverlayControls extends React.Component<OverlayControlsProps> {
+class OverlayControlsInner extends React.Component<OverlayControlsInnerProps> {
     static contextType = DashkitOverlayControlsContext;
     static defaultProps: OverlayControlsDefaultProps = {
         position: OverlayControlsPosition.TopRight,
@@ -205,13 +209,13 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
             case MenuItems.Copy: {
                 return {
                     action: this.onCopyItem,
-                    text: i18n('label_copy'),
+                    text: this.props.t('label_copy'),
                 };
             }
             case MenuItems.Delete: {
                 return {
                     action: this.onRemoveItem,
-                    text: i18n('label_delete'),
+                    text: this.props.t('label_delete'),
                 };
             }
             case MenuItems.Settings: {
@@ -221,7 +225,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                 }
                 return {
                     action: this.onEditItem,
-                    text: i18n('label_settings'),
+                    text: this.props.t('label_settings'),
                 };
             }
         }
@@ -240,7 +244,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                 key={'control_default'}
                 view={view}
                 size={size}
-                title={i18n('label_settings')}
+                title={this.props.t('label_settings')}
                 pin="round-brick"
                 onClick={this.onEditItem}
                 qa="dashkit-overlay-control-settings"
@@ -288,7 +292,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                 key={'delete-control'}
                 view={view}
                 size={size}
-                title={i18n('label_delete')}
+                title={this.props.t('label_delete')}
                 pin={isOnlyOneItem ? 'round-round' : 'brick-round'}
                 onClick={this.onRemoveItem}
                 qa="dashkit-overlay-control-menu"
@@ -346,7 +350,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
 
                   memo.push({
                       // @ts-expect-error
-                      text: item.title || i18n(item.id),
+                      text: item.title || this.props.t(item.id),
                       icon: item.icon,
                       /**
                        * if the logic of creating the 'onClick' field is changed, it is necessary to update the logic of the method shallowEqualDropdownMenu
@@ -378,7 +382,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                         view={view}
                         size={size}
                         pin={isOnlyOneItem ? 'round-round' : 'brick-round'}
-                        aria-label={i18n('label_more-options')}
+                        aria-label={this.props.t('label_more-options')}
                         qa="dashkit-overlay-control-menu"
                     >
                         <Icon data={Ellipsis} size={OVERLAY_ICON_SIZE} />
@@ -544,6 +548,16 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
 
         return result;
     }
+}
+
+// The texts follow the language of the uikit Provider, `configure` without one
+function OverlayControls(
+    props: Partial<OverlayControlsDefaultProps> &
+        Omit<OverlayControlsProps, keyof OverlayControlsDefaultProps>,
+) {
+    const {t} = i18n.useTranslation();
+
+    return <OverlayControlsInner {...props} t={t} />;
 }
 
 export default OverlayControls;

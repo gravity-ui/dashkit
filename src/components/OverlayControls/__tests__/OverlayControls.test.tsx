@@ -25,9 +25,13 @@ const createContext = (
     ...overrides,
 });
 
-const renderControls = (context: OverlayControlsCtxShape, onItemClick?: () => void) =>
+const renderControls = (
+    context: OverlayControlsCtxShape,
+    onItemClick?: () => void,
+    lang?: string,
+) =>
     render(
-        <Provider theme="light">
+        <Provider theme="light" lang={lang}>
             <DashkitOverlayControlsContext.Provider value={context}>
                 <OverlayControls configItem={configItem} onItemClick={onItemClick} />
             </DashkitOverlayControlsContext.Provider>
@@ -61,6 +65,16 @@ describe('OverlayControls menu', () => {
         await openMenu();
 
         expect(getMenuItemTexts()).toEqual(['Copy', 'Delete']);
+    });
+
+    it('takes the texts in the language of the uikit Provider', async () => {
+        renderControls(createContext(), undefined, 'ru');
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', {name: 'Дополнительные опции'}));
+        });
+
+        expect(getMenuItemTexts()).toEqual(['Копировать', 'Удалить']);
     });
 
     it('cancels dragging inside the menu popup', async () => {

@@ -97,14 +97,18 @@ export class PluginText extends React.PureComponent<PluginTextProps, PluginTextS
 
     private renderError() {
         return (
-            <div className={b({error: true})}>
-                <div className={b('error')}>{i18n('label_render-markdown-error')}</div>
-                <br />
-                <Button view="action" size="m" onClick={this.onRetryClick}>
-                    {i18n('button_retry')}
-                </Button>
-                <br />
-            </div>
+            <i18n.Translation>
+                {({t}) => (
+                    <div className={b({error: true})}>
+                        <div className={b('error')}>{t('label_render-markdown-error')}</div>
+                        <br />
+                        <Button view="action" size="m" onClick={this.onRetryClick}>
+                            {t('button_retry')}
+                        </Button>
+                        <br />
+                    </div>
+                )}
+            </i18n.Translation>
         );
     }
 
