@@ -1,8 +1,7 @@
 import type {DragOverEvent} from 'react-grid-layout';
 
-import type {ReactGridLayoutProps} from 'src/typings';
-
 import type {ConfigItem, ConfigLayout, ItemDragProps} from '../../shared';
+import type {ReactGridLayoutProps} from '../../typings';
 
 export type GridLayoutProps = {
     ref?: React.ForwardedRef<unknown>;

@@ -96,7 +96,7 @@ type GridItemState = {
 
 export class GridItem extends React.PureComponent<GridItemProps, GridItemState> {
     static contextType = DashKitContext;
-    context!: React.ContextType<typeof DashKitContext>;
+    declare context: React.ContextType<typeof DashKitContext>;
 
     _isAsyncItem = false;
     _isMounted = false;

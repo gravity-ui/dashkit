@@ -2,10 +2,9 @@ import React from 'react';
 
 import groupBy from 'es-toolkit/compat/groupBy';
 
-import type {PluginRef} from 'src/typings';
-
 import {DEFAULT_GROUP} from '../../constants';
 import {DashKitContext} from '../../context';
+import type {PluginRef} from '../../typings';
 import {cn} from '../../utils/cn';
 import Item from '../Item/Item';
 
@@ -26,12 +25,13 @@ export default class MobileLayout extends React.PureComponent<
     MobileLayoutState
 > {
     static contextType = DashKitContext;
-    context!: React.ContextType<typeof DashKitContext>;
+    declare context: React.ContextType<typeof DashKitContext>;
 
     pluginsRefs: PluginRef[] = [];
     sortedLayoutItems: Record<string, ReturnType<typeof getSortedConfigItems>> | null = null;
 
-    _memoLayout = this.context.layout;
+    // Compared only once sortedLayoutItems is set, so it needs no value from the context yet.
+    _memoLayout: React.ContextType<typeof DashKitContext>['layout'] | null = null;
     _memoForwardedPluginRef: Array<(refObject: PluginRef) => void> = [];
     _memoAdjustWidgetLayout: Record<string, (props: {needSetDefault?: boolean}) => void> = {};
 

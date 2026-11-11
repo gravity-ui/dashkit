@@ -105,7 +105,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         view: 'flat',
         size: 'm',
     };
-    context!: React.ContextType<OverlayControlsCtx>;
+    declare context: React.ContextType<OverlayControlsCtx>;
 
     state = {
         dropdownMenuItems: [] as DropdownMenuItem[],
