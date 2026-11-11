@@ -10,6 +10,9 @@
 npm i @gravity-ui/dashkit @gravity-ui/uikit
 ```
 
+DashKit 11 требует `@gravity-ui/uikit` 8 и React 18 или 19. Переход с DashKit 10 описан в
+[гайде по миграции](./docs/migration-to-v11.md).
+
 ## Описание
 
 Библиотека позволяет выстраивать виджеты в сетку, изменять их размеры, добавлять новые и удалять их.
@@ -108,6 +111,8 @@ interface DashKitProps {
 
   configure({lang: Lang.En});
   ```
+
+  Внутри `Provider` из uikit с пропом `lang` DashKit использует его язык.
 
 - `DashKit.setSettings`
 
