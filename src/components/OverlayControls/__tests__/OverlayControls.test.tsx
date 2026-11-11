@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-import {Provider} from '@gravity-ui/uikit';
+import {Provider, configure} from '@gravity-ui/uikit';
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 
 import {DRAGGABLE_CANCEL_CLASS_NAME} from '../../../constants';
@@ -77,6 +77,22 @@ describe('OverlayControls menu', () => {
         expect(getMenuItemTexts()).toEqual(['Копировать', 'Удалить']);
     });
 
+    it('follows configure when the Provider sets no language', async () => {
+        configure({lang: 'ru'});
+
+        try {
+            renderControls(createContext());
+
+            await act(async () => {
+                fireEvent.click(screen.getByRole('button', {name: 'Дополнительные опции'}));
+            });
+
+            expect(getMenuItemTexts()).toEqual(['Копировать', 'Удалить']);
+        } finally {
+            configure({lang: 'en'});
+        }
+    });
+
     it('cancels dragging inside the menu popup', async () => {
         renderControls(createContext());
         await openMenu();
@@ -125,6 +141,25 @@ describe('OverlayControls menu', () => {
         expect(inspect.classList.contains('custom-item')).toBe(true);
         expect(inspect.getAttribute('data-qa')).toBe('inspect-item');
         expect(inspect.querySelector('[data-qa="inspect-icon"]')).not.toBeNull();
+    });
+
+    it('renders no icon slot for an empty icon', async () => {
+        renderControls(createContext({menu: [{id: 'inspect', title: 'Inspect', icon: ''}]}));
+        await openMenu();
+
+        expect(screen.getByRole('menuitem', {name: 'Inspect'}).children).toHaveLength(0);
+    });
+
+    it('gives a default item of a custom menu its default action', async () => {
+        const context = createContext({menu: [{id: 'settings', title: 'Edit'}]});
+        renderControls(context);
+        await openMenu();
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('menuitem', {name: 'Edit'}));
+        });
+
+        expect(context.editItem).toHaveBeenCalledWith(configItem);
     });
 
     it('calls the custom handler with the item, its params and state', async () => {

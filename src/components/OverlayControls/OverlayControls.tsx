@@ -410,9 +410,8 @@ class OverlayControlsInner extends React.Component<OverlayControlsInnerProps> {
         if (React.isValidElement(icon)) {
             return icon;
         }
-        return icon === undefined || icon === null || typeof icon === 'boolean' ? undefined : (
-            <span>{icon}</span>
-        );
+        // falsy values rendered nothing in the legacy menu as well
+        return icon ? <span>{icon}</span> : undefined;
     }
     private getCustomLeftOverlayControls = () => {
         // выбираем только items-ы у которых проставлено поле `allWidgetsControls:true`
