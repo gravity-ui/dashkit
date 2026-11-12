@@ -189,7 +189,9 @@ describe('Layout passive resize', () => {
     });
 
     test('cancels settled width commit on unmount', () => {
-        jest.useFakeTimers();
+        // react-draggable requests an animation frame on unmount to clear its selection styles:
+        // only the timers are counted here
+        jest.useFakeTimers({doNotFake: ['requestAnimationFrame', 'cancelAnimationFrame']});
         const renderSpy = jest.spyOn(ReactGridLayout.prototype, 'render');
         const {unmount} = render(
             <Layout

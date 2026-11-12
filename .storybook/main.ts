@@ -3,17 +3,13 @@ import type {StorybookConfig} from '@storybook/react-webpack5';
 const config: StorybookConfig = {
     framework: {
         name: '@storybook/react-webpack5',
-        options: {fastRefresh: true, legacyRootApi: false},
+        options: {},
     },
     stories: ['../src/**/*.stories.@(ts|tsx)'],
-    docs: {
-        autodocs: false,
+    features: {
+        backgrounds: false,
     },
-    addons: [
-        '@storybook/preset-scss',
-        {name: '@storybook/addon-essentials', options: {backgrounds: false}},
-        './theme-addon/register.tsx',
-    ],
+    addons: ['@storybook/addon-webpack5-compiler-babel', '@storybook/preset-scss'],
 };
 
 export default config;

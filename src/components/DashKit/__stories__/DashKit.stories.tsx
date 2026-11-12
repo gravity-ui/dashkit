@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {Meta, Story} from '@storybook/react';
+import {Meta, StoryFn} from '@storybook/react';
 
 import pluginText, {PluginTextProps} from '../../../plugins/Text/Text';
 import pluginTitle from '../../../plugins/Title/Title';
@@ -83,17 +83,17 @@ if (!getInitialized()) {
     setInitialized(true);
 }
 
-const DefaultTemplate: Story<DashKitProps> = (args) => <DashKit {...args} />;
+const DefaultTemplate: StoryFn<DashKitProps> = (args) => <DashKit {...args} />;
 export const Default = DefaultTemplate.bind({});
 
-const ShowcaseTemplate: Story = () => <DashKitShowcase />;
+const ShowcaseTemplate: StoryFn = () => <DashKitShowcase />;
 export const Showcase = ShowcaseTemplate.bind({});
 
-const CustomizationTemplate: Story<DashKitProps> = () => <CssApiShowcase />;
+const CustomizationTemplate: StoryFn<DashKitProps> = () => <CssApiShowcase />;
 export const Customization = CustomizationTemplate.bind({});
 
-const DndShowcaseTemplate: Story<DashKitProps> = () => <DashKitDnDShowcase />;
+const DndShowcaseTemplate: StoryFn<DashKitProps> = () => <DashKitDnDShowcase />;
 export const DragNDrop = DndShowcaseTemplate.bind({});
 
-const GroupsShowcaseTemplate: Story<DashKitProps> = () => <DashKitGroupsShowcase />;
+const GroupsShowcaseTemplate: StoryFn<DashKitProps> = () => <DashKitGroupsShowcase />;
 export const Groups = GroupsShowcaseTemplate.bind({});
