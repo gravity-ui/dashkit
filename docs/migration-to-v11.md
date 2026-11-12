@@ -8,6 +8,7 @@ and what to do about each change.
 | Package              | DashKit 10                           | DashKit 11             |
 | :------------------- | :----------------------------------- | :--------------------- |
 | `@gravity-ui/uikit`  | `^7.0.0`                             | `^8.0.0`               |
+| `@gravity-ui/icons`  | `^2.13.0`                            | `^2.20.0`              |
 | `react`, `react-dom` | `^16.8.0 \|\| ^17 \|\| ^18 \|\| ^19` | `^18.0.0 \|\| ^19.0.0` |
 
 Upgrade the application to uikit 8 first: see the
