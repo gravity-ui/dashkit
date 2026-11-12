@@ -10,9 +10,6 @@ A dashboard grid rendering library.
 npm i @gravity-ui/dashkit @gravity-ui/uikit
 ```
 
-DashKit 11 requires `@gravity-ui/uikit` 8 and React 18 or 19. Upgrading from DashKit 10: see the
-[migration guide](./docs/migration-to-v11.md).
-
 Render `DashKit` inside the uikit `Provider` (or `ThemeProvider`): its components need the theme.
 
 ```tsx

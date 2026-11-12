@@ -10,9 +10,6 @@
 npm i @gravity-ui/dashkit @gravity-ui/uikit
 ```
 
-DashKit 11 требует `@gravity-ui/uikit` 8 и React 18 или 19. Переход с DashKit 10 описан в
-[гайде по миграции](./docs/migration-to-v11.md).
-
 `DashKit` нужно рендерить внутри `Provider` (или `ThemeProvider`) из uikit: его компонентам нужна тема.
 
 ```tsx
