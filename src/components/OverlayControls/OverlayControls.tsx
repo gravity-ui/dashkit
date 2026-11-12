@@ -403,7 +403,7 @@ class OverlayControlsInner extends React.Component<OverlayControlsInnerProps> {
             return icon;
         }
         // falsy values rendered nothing in the legacy menu as well
-        return icon ? <span>{icon}</span> : undefined;
+        return icon ? <React.Fragment>{icon}</React.Fragment> : undefined;
     }
     private getCustomLeftOverlayControls = () => {
         // выбираем только items-ы у которых проставлено поле `allWidgetsControls:true`
