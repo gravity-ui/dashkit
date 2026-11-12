@@ -10,7 +10,7 @@ jest.mock('@gravity-ui/uikit', () => {
     return {
         Button: ({children}: {children?: unknown}) =>
             ReactMock.createElement('button', null, children),
-        DropdownMenu: () => null,
+        Menu: Object.assign(() => null, {Item: () => null}),
         Icon: () => null,
     };
 });

@@ -19,7 +19,7 @@ const defaultDataParams = {showInTOC: true};
 
 export const PresetSizes: Story = {
     render: ({data: _, ...args}) => (
-        <Flex direction="column" gap={6}>
+        <Flex direction="column" gap="spacing-6">
             {sizes.map((size) => (
                 <Card key={size}>
                     <PluginTitle
@@ -34,7 +34,7 @@ export const PresetSizes: Story = {
 
 export const CustomSize: Story = {
     render: ({data: _, ...args}) => (
-        <Flex direction="column" gap={6}>
+        <Flex direction="column" gap="spacing-6">
             <Card>
                 <PluginTitle
                     data={{

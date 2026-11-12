@@ -1,16 +1,7 @@
 import React from 'react';
 
 import {Ellipsis, Gear, Xmark} from '@gravity-ui/icons';
-import {
-    Button,
-    ButtonSize,
-    ButtonView,
-    DropdownMenu,
-    DropdownMenuItem,
-    Icon,
-    IconProps,
-    MenuItemProps,
-} from '@gravity-ui/uikit';
+import {Button, ButtonSize, ButtonView, Icon, IconProps, Menu} from '@gravity-ui/uikit';
 import noop from 'es-toolkit/compat/noop';
 
 import {
@@ -61,7 +52,7 @@ export interface OverlayControlItem {
 export interface OverlayCustomControlItem {
     id: string;
     title?: string;
-    icon?: MenuItemProps['iconStart'];
+    icon?: React.ReactNode;
     iconSize?: number | string;
     handler?: (item: ConfigItem, params: ItemParams, state: ItemState) => void;
     visible?: (item: ConfigItem) => boolean;
@@ -80,6 +71,10 @@ interface OverlayControlsProps extends OverlayControlsDefaultProps {
     onItemClick?: () => void;
 }
 
+interface OverlayControlsInnerProps extends OverlayControlsProps {
+    t: ReturnType<typeof i18n.useTranslation>['t'];
+}
+
 type PreparedCopyItemOptionsArg = Pick<ConfigItem, 'data' | 'type' | 'defaults' | 'namespace'> & {
     timestamp: number;
     layout: {
@@ -96,9 +91,17 @@ export type PreparedCopyItemOptions<C extends object = {}> = PreparedCopyItemOpt
 
 type OverlayControlsCtx = React.Context<OverlayControlsCtxShape>;
 
+interface OverlayMenuItem {
+    text: string;
+    onClick: () => void;
+    icon?: React.ReactNode;
+    className?: string;
+    qa?: string;
+}
+
 const DEFAULT_DROPDOWN_MENU = [MenuItems.Copy, MenuItems.Delete];
 
-class OverlayControls extends React.Component<OverlayControlsProps> {
+class OverlayControlsInner extends React.Component<OverlayControlsInnerProps> {
     static contextType = DashkitOverlayControlsContext;
     static defaultProps: OverlayControlsDefaultProps = {
         position: OverlayControlsPosition.TopRight,
@@ -108,7 +111,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
     declare context: React.ContextType<OverlayControlsCtx>;
 
     state = {
-        dropdownMenuItems: [] as DropdownMenuItem[],
+        dropdownMenuItems: [] as OverlayMenuItem[],
     };
 
     componentDidMount() {
@@ -131,7 +134,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         return <div className={b({position}, [DRAGGABLE_CANCEL_CLASS_NAME])}>{controls}</div>;
     }
 
-    private shallowEqualDropdownMenu(menuA: DropdownMenuItem[], menuB: DropdownMenuItem[]) {
+    private shallowEqualDropdownMenu(menuA: OverlayMenuItem[], menuB: OverlayMenuItem[]) {
         return (
             menuA.length === menuB.length &&
             menuA.every((itemA, index) => {
@@ -144,10 +147,10 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                 return Object.entries(itemA).every(
                     ([key, value]) =>
                         /**
-                         * field 'action' is new every time
+                         * field 'onClick' is new every time
                          * @see {@link https://github.com/gravity-ui/dashkit/pull/267/commits/c6378b67c5fea07902a49ccce8118760a4ad2df0#diff-aa6a22e5a09a09ccc3f8f937d4ef6aaff97afc57da1b370f0120f0e225f7b061L297}
                          */
-                        key === 'action' || itemB[key as keyof DropdownMenuItem] === value,
+                        key === 'onClick' || itemB[key as keyof OverlayMenuItem] === value,
                 );
             })
         );
@@ -198,13 +201,13 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
             case MenuItems.Copy: {
                 return {
                     action: this.onCopyItem,
-                    text: i18n('label_copy'),
+                    text: this.props.t('label_copy'),
                 };
             }
             case MenuItems.Delete: {
                 return {
                     action: this.onRemoveItem,
-                    text: i18n('label_delete'),
+                    text: this.props.t('label_delete'),
                 };
             }
             case MenuItems.Settings: {
@@ -214,7 +217,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                 }
                 return {
                     action: this.onEditItem,
-                    text: i18n('label_settings'),
+                    text: this.props.t('label_settings'),
                 };
             }
         }
@@ -233,7 +236,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                 key={'control_default'}
                 view={view}
                 size={size}
-                title={i18n('label_settings')}
+                title={this.props.t('label_settings')}
                 pin="round-brick"
                 onClick={this.onEditItem}
                 qa="dashkit-overlay-control-settings"
@@ -281,7 +284,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
                 key={'delete-control'}
                 view={view}
                 size={size}
-                title={i18n('label_delete')}
+                title={this.props.t('label_delete')}
                 pin={isOnlyOneItem ? 'round-round' : 'brick-round'}
                 onClick={this.onRemoveItem}
                 qa="dashkit-overlay-control-menu"
@@ -296,7 +299,7 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
             (Object.values(MenuItems) as Array<string>).includes(String(item)),
         );
     }
-    private getDropdownMenuItems(): DropdownMenuItem[] {
+    private getDropdownMenuItems(): OverlayMenuItem[] {
         const {onItemClick} = this.props;
         const {menu: contextMenu, itemsParams, itemsState} = this.context;
 
@@ -309,15 +312,15 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         const isDefaultMenu = this.isDefaultMenu(menu);
 
         return isDefaultMenu
-            ? ((menu || []) as string[]).reduce<DropdownMenuItem[]>((memo, name: string) => {
+            ? ((menu || []) as string[]).reduce<OverlayMenuItem[]>((memo, name: string) => {
                   const item = this.getDropDownMenuItemConfig(name, true);
                   if (item) {
-                      memo.push(item);
+                      memo.push({text: item.text, onClick: item.action});
                   }
 
                   return memo;
               }, [])
-            : menu.reduce<DropdownMenuItem[]>((memo, item: MenuItem) => {
+            : menu.reduce<OverlayMenuItem[]>((memo, item: MenuItem) => {
                   if (typeof item === 'string') {
                       return memo;
                   }
@@ -339,13 +342,13 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
 
                   memo.push({
                       // @ts-expect-error
-                      text: item.title || i18n(item.id),
-                      iconStart: item.icon,
+                      text: item.title || this.props.t(item.id),
+                      icon: item.icon,
                       /**
-                       * if the logic of creating the 'action' field is changed, it is necessary to update the logic of the method shallowEqualDropdownMenu
+                       * if the logic of creating the 'onClick' field is changed, it is necessary to update the logic of the method shallowEqualDropdownMenu
                        * @see {@link https://github.com/gravity-ui/dashkit/pull/267/commits/c6378b67c5fea07902a49ccce8118760a4ad2df0#diff-aa6a22e5a09a09ccc3f8f937d4ef6aaff97afc57da1b370f0120f0e225f7b061R143}
                        */
-                      action: itemAction,
+                      onClick: itemAction,
                       className: item.className,
                       qa: item.qa,
                   });
@@ -364,27 +367,43 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
         }
 
         return (
-            <DropdownMenu
+            <Menu
                 key={'controls_dropdown'}
-                items={items}
-                renderSwitcher={(props) => (
+                trigger={
                     <Button
-                        {...props}
                         view={view}
                         size={size}
                         pin={isOnlyOneItem ? 'round-round' : 'brick-round'}
-                        extraProps={{'aria-label': i18n('label_more-options')}}
+                        aria-label={this.props.t('label_more-options')}
                         qa="dashkit-overlay-control-menu"
                     >
                         <Icon data={Ellipsis} size={OVERLAY_ICON_SIZE} />
                     </Button>
-                )}
-                onOpenToggle={this.updateDropdownMenuItems}
-                popupProps={{
-                    className: DRAGGABLE_CANCEL_CLASS_NAME,
-                }}
-            />
+                }
+                onOpenChange={this.updateDropdownMenuItems}
+                className={DRAGGABLE_CANCEL_CLASS_NAME}
+            >
+                {items.map(({text, onClick, icon, className, qa}, index) => (
+                    <Menu.Item
+                        key={index}
+                        icon={this.renderMenuItemIcon(icon)}
+                        className={className}
+                        qa={qa}
+                        onClick={onClick}
+                    >
+                        {text}
+                    </Menu.Item>
+                ))}
+            </Menu>
         );
+    }
+    // MenuItem takes an element, while `icon` of a custom item is any node
+    private renderMenuItemIcon(icon: React.ReactNode) {
+        if (React.isValidElement(icon)) {
+            return icon;
+        }
+        // falsy values rendered nothing in the legacy menu as well
+        return icon ? <React.Fragment>{icon}</React.Fragment> : undefined;
     }
     private getCustomLeftOverlayControls = () => {
         // выбираем только items-ы у которых проставлено поле `allWidgetsControls:true`
@@ -520,6 +539,16 @@ class OverlayControls extends React.Component<OverlayControlsProps> {
 
         return result;
     }
+}
+
+// The texts follow the language of the uikit Provider, `configure` without one
+function OverlayControls(
+    props: Partial<OverlayControlsDefaultProps> &
+        Omit<OverlayControlsProps, keyof OverlayControlsDefaultProps>,
+) {
+    const {t} = i18n.useTranslation();
+
+    return <OverlayControlsInner {...props} t={t} />;
 }
 
 export default OverlayControls;

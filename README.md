@@ -10,6 +10,16 @@ A dashboard grid rendering library.
 npm i @gravity-ui/dashkit @gravity-ui/uikit
 ```
 
+Render `DashKit` inside the uikit `Provider` (or `ThemeProvider`): its components need the theme.
+
+```tsx
+import {Provider} from '@gravity-ui/uikit';
+
+<Provider theme="light">
+  <DashKit {...props} />
+</Provider>;
+```
+
 ## Description
 
 The library is used to line up widgets in a grid, resize them, add new ones, and delete them.
@@ -108,6 +118,8 @@ Before using `DashKit` as a react component, it must be configured.
 
   configure({lang: Lang.En});
   ```
+
+  Under the uikit `Provider` with the `lang` prop, DashKit follows that language instead.
 
 - DashKit.setSettings
 

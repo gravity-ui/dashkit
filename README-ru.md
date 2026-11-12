@@ -10,6 +10,16 @@
 npm i @gravity-ui/dashkit @gravity-ui/uikit
 ```
 
+`DashKit` нужно рендерить внутри `Provider` (или `ThemeProvider`) из uikit: его компонентам нужна тема.
+
+```tsx
+import {Provider} from '@gravity-ui/uikit';
+
+<Provider theme="light">
+  <DashKit {...props} />
+</Provider>;
+```
+
 ## Описание
 
 Библиотека позволяет выстраивать виджеты в сетку, изменять их размеры, добавлять новые и удалять их.
@@ -108,6 +118,8 @@ interface DashKitProps {
 
   configure({lang: Lang.En});
   ```
+
+  Внутри `Provider` из uikit с пропом `lang` DashKit использует его язык.
 
 - `DashKit.setSettings`
 

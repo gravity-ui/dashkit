@@ -98,7 +98,15 @@ task('copy-docs', (done) => {
     buildDocs({
         rootDir: __dirname,
         outDir: path.join(__dirname, 'build', 'docs'),
-        sources: [],
+        sources: [
+            {
+                title: 'Guides',
+                kind: 'markdown',
+                baseDir: 'docs',
+                outPrefix: 'guides',
+                nameFromTitle: true,
+            },
+        ],
     });
     done();
 });

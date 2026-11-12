@@ -171,9 +171,11 @@ export class GridItem extends React.PureComponent<GridItemProps, GridItemState> 
     };
 
     onFocusHandler = () => {
+        // Focus moving inside the item, e.g. between the rows of the overlay menu, is not a new focus
+        const wasFocused = this.state.isFocused;
         this.setState({isFocused: true});
 
-        if (this.props.onItemFocus) {
+        if (this.props.onItemFocus && !wasFocused) {
             // Sync focus and blur handlers
             windowFocusObserver.getFocusedState().then(() => {
                 this.props.onItemFocus?.(this.props.item);
@@ -186,15 +188,19 @@ export class GridItem extends React.PureComponent<GridItemProps, GridItemState> 
     };
 
     onBlurHandler = () => {
-        this.controller = new AbortController();
+        // A later blur replaces `this.controller`: each blur checks its own one
+        const controller = new AbortController();
+        this.controller = controller;
 
         windowFocusObserver.getFocusedState().then((isWindowFocused) => {
-            if (!this.controller?.signal.aborted && isWindowFocused) {
+            if (!controller.signal.aborted && isWindowFocused) {
                 this.setState({isFocused: false});
                 this.props.onItemBlur?.(this.props.item);
             }
 
-            this.controller = null;
+            if (this.controller === controller) {
+                this.controller = null;
+            }
         });
     };
 

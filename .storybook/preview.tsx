@@ -3,7 +3,7 @@ import {MINIMAL_VIEWPORTS} from '@storybook/addon-viewport';
 import type {Decorator} from '@storybook/react';
 import {withMobile} from './decorators/withMobile';
 import {withLang} from './decorators/withLang';
-import {ThemeProvider, MobileProvider, configure, Lang} from '@gravity-ui/uikit';
+import {Provider, configure, Lang} from '@gravity-ui/uikit';
 
 import '@gravity-ui/uikit/styles/styles.scss';
 
@@ -14,11 +14,9 @@ configure({
 const withContextProvider: Decorator = (Story, context) => {
     return (
         <React.StrictMode>
-            <ThemeProvider theme={context.globals.theme}>
-                <MobileProvider>
-                    <Story {...context} />
-                </MobileProvider>
-            </ThemeProvider>
+            <Provider theme={context.globals.theme}>
+                <Story {...context} />
+            </Provider>
         </React.StrictMode>
     );
 };
