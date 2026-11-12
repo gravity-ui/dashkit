@@ -25,18 +25,19 @@ const createContext = (
     ...overrides,
 });
 
+const renderTree = (context: OverlayControlsCtxShape, onItemClick?: () => void, lang?: string) => (
+    <Provider theme="light" lang={lang}>
+        <DashkitOverlayControlsContext.Provider value={context}>
+            <OverlayControls configItem={configItem} onItemClick={onItemClick} />
+        </DashkitOverlayControlsContext.Provider>
+    </Provider>
+);
+
 const renderControls = (
     context: OverlayControlsCtxShape,
     onItemClick?: () => void,
     lang?: string,
-) =>
-    render(
-        <Provider theme="light" lang={lang}>
-            <DashkitOverlayControlsContext.Provider value={context}>
-                <OverlayControls configItem={configItem} onItemClick={onItemClick} />
-            </DashkitOverlayControlsContext.Provider>
-        </Provider>,
-    );
+) => render(renderTree(context, onItemClick, lang));
 
 const getTrigger = () => screen.getByRole('button', {name: 'Additional options'});
 
@@ -182,13 +183,22 @@ describe('OverlayControls menu', () => {
 
     it('does not loop on updates when custom items have handlers', async () => {
         const visible = jest.fn(() => true);
-        renderControls(
-            createContext({menu: [{id: 'inspect', title: 'Inspect', handler: jest.fn(), visible}]}),
-        );
+        const menu = [{id: 'inspect', title: 'Inspect', handler: jest.fn(), visible}];
+        const {rerender} = renderControls(createContext({menu}));
         await openMenu();
 
-        // Each render and each componentDidMount/componentDidUpdate builds the items once;
-        // an update loop would call this without bound.
-        expect(visible.mock.calls.length).toBeLessThan(20);
+        expect(getMenuItemTexts()).toEqual(['Inspect']);
+        const callsAfterOpen = visible.mock.calls.length;
+        expect(callsAfterOpen).toBeGreaterThan(0);
+
+        // The handler closures are new on every build of the items. If they counted as a change,
+        // componentDidUpdate would set the state again and again.
+        await act(async () => {
+            rerender(renderTree(createContext({menu})));
+        });
+
+        // one build in render and one in componentDidUpdate, with no further update
+        expect(visible.mock.calls.length).toBe(callsAfterOpen + 2);
+        expect(getMenuItemTexts()).toEqual(['Inspect']);
     });
 });
