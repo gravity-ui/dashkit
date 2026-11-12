@@ -1,4 +1,4 @@
-import {create} from '@storybook/theming';
+import {create} from 'storybook/theming';
 
 export const CloudThemeLight = create({
     base: 'light',
@@ -27,8 +27,10 @@ export const CloudThemeLight = create({
     inputBorderRadius: 4,
 
     brandUrl: 'https://github.com/gravity-ui/dashkit',
-    brandTitle: `<div style="font-size: 18px; color: #027bf3; font-weight: 600; margin-top: -6px; margin-bottom: 2px;">DashKit</div>
-                <div style="font-size: 14px;color: #7d7d7d;font-weight: 400;">Dashkit Component</div>`,
+    brandTitle: `<div>
+                    <div style="font-size: 18px; color: #027bf3; font-weight: 600; margin-top: -6px; margin-bottom: 2px;">DashKit</div>
+                    <div style="font-size: 14px;color: #7d7d7d;font-weight: 400;">Dashkit Component</div>
+                </div>`,
 });
 
 export const CloudThemeDark = create({

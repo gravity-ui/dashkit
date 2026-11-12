@@ -1,5 +1,5 @@
 import React from 'react';
-import {MINIMAL_VIEWPORTS} from '@storybook/addon-viewport';
+import {MINIMAL_VIEWPORTS} from 'storybook/viewport';
 import type {Decorator} from '@storybook/react';
 import {withMobile} from './decorators/withMobile';
 import {withLang} from './decorators/withLang';
@@ -24,9 +24,8 @@ const withContextProvider: Decorator = (Story, context) => {
 export const decorators = [withMobile, withLang, withContextProvider];
 
 export const parameters = {
-    jsx: {showFunctions: true}, // To show functions in sources
     viewport: {
-        viewports: MINIMAL_VIEWPORTS,
+        options: MINIMAL_VIEWPORTS,
     },
     options: {
         storySort: {
@@ -36,10 +35,15 @@ export const parameters = {
     },
 };
 
+export const initialGlobals = {
+    theme: 'light',
+    lang: 'en',
+    platform: 'desktop',
+};
+
 export const globalTypes = {
     theme: {
         name: 'Theme',
-        defaultValue: 'light',
         toolbar: {
             icon: 'mirror',
             items: [
@@ -52,7 +56,6 @@ export const globalTypes = {
     },
     lang: {
         name: 'Language',
-        defaultValue: 'en',
         toolbar: {
             icon: 'globe',
             items: [
@@ -63,7 +66,6 @@ export const globalTypes = {
     },
     platform: {
         name: 'Platform',
-        defaultValue: 'desktop',
         toolbar: {
             items: [
                 {value: 'desktop', title: 'Desktop', icon: 'browser'},

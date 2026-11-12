@@ -6,12 +6,10 @@ const config: StorybookConfig = {
         options: {},
     },
     stories: ['../src/**/*.stories.@(ts|tsx)'],
-    addons: [
-        '@storybook/addon-webpack5-compiler-babel',
-        '@storybook/preset-scss',
-        {name: '@storybook/addon-essentials', options: {backgrounds: false}},
-        './theme-addon/register.tsx',
-    ],
+    features: {
+        backgrounds: false,
+    },
+    addons: ['@storybook/addon-webpack5-compiler-babel', '@storybook/preset-scss'],
 };
 
 export default config;

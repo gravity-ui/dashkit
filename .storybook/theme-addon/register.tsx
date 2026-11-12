@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {addons, types, useGlobals} from '@storybook/manager-api';
+import {addons, types, useGlobals} from 'storybook/manager-api';
 import {FORCE_RE_RENDER} from 'storybook/internal/core-events';
 import {getThemeType} from '@gravity-ui/uikit';
 import {themes} from '../theme';
