@@ -1,15 +1,7 @@
 import React from 'react';
 
 import {Ellipsis, Gear, Xmark} from '@gravity-ui/icons';
-import {
-    Button,
-    ButtonSize,
-    ButtonView,
-    Icon,
-    IconProps,
-    Menu,
-    MenuItem as UikitMenuItem,
-} from '@gravity-ui/uikit';
+import {Button, ButtonSize, ButtonView, Icon, IconProps, Menu} from '@gravity-ui/uikit';
 import noop from 'es-toolkit/compat/noop';
 
 import {
@@ -392,7 +384,7 @@ class OverlayControlsInner extends React.Component<OverlayControlsInnerProps> {
                 className={DRAGGABLE_CANCEL_CLASS_NAME}
             >
                 {items.map(({text, onClick, icon, className, qa}, index) => (
-                    <UikitMenuItem
+                    <Menu.Item
                         key={index}
                         icon={this.renderMenuItemIcon(icon)}
                         className={className}
@@ -400,7 +392,7 @@ class OverlayControlsInner extends React.Component<OverlayControlsInnerProps> {
                         onClick={onClick}
                     >
                         {text}
-                    </UikitMenuItem>
+                    </Menu.Item>
                 ))}
             </Menu>
         );
