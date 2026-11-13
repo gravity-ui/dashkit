@@ -28,14 +28,6 @@ The menu behind the "…" button of a widget is the uikit 8 `Menu` instead of th
 DashKit did not change: `overlayMenuItems`, `Settings.menu`, and the `title`, `handler`, `visible`, `className` and
 `qa` of a custom item work as before.
 
-Two old problems of custom menus are fixed:
-
-- A default item (`copy`, `delete`, `settings`, see `MenuItems`) given as an object without `title` shows its
-  default text instead of its id.
-- `copy` and `delete` given as strings next to custom items are kept. Before, every string was dropped as soon as
-  the menu had one custom item. `settings` as a string is still not shown, as in a menu of strings only: the gear
-  button opens the settings. To show it in the menu, give it as an object.
-
 `iconSize` of a menu item is deprecated: the menu never applied it. Set the size on the icon element. `iconSize`
 of an `overlayControls` button still works.
 
