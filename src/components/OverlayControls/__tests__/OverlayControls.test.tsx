@@ -184,13 +184,29 @@ describe('OverlayControls menu', () => {
         renderControls(context);
         await openMenu();
 
-        expect(getMenuItemTexts()).toEqual(['Copy', 'Inspect', 'Delete', 'Settings']);
+        // settings as a string is left to the gear button, as in a menu of ids only
+        expect(getMenuItemTexts()).toEqual(['Copy', 'Inspect', 'Delete']);
 
         await act(async () => {
             fireEvent.click(screen.getByRole('menuitem', {name: 'Delete'}));
         });
 
         expect(context.removeItem).toHaveBeenCalledWith('item1');
+    });
+
+    it('leaves settings to the gear button in a menu of ids only', async () => {
+        renderControls(createContext({menu: [MenuItems.Copy, MenuItems.Settings]}));
+        await openMenu();
+
+        expect(getMenuItemTexts()).toEqual(['Copy']);
+        expect(screen.getByRole('button', {name: 'Settings'})).toBeTruthy();
+    });
+
+    it('shows the id of a custom item without a title', async () => {
+        renderControls(createContext({menu: [{id: 'inspect'}]}));
+        await openMenu();
+
+        expect(getMenuItemTexts()).toEqual(['inspect']);
     });
 
     it('gives a default item of a custom menu its default action', async () => {

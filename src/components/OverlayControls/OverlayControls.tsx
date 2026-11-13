@@ -325,9 +325,9 @@ class OverlayControlsInner extends React.Component<OverlayControlsInnerProps> {
                   return memo;
               }, [])
             : menu.reduce<OverlayMenuItem[]>((memo, item: MenuItem) => {
-                  // a default item given by its id next to custom items
+                  // a default item given by its id next to custom items: as in a menu of ids only
                   if (typeof item === 'string') {
-                      const defaultItem = this.getDropDownMenuItemConfig(item);
+                      const defaultItem = this.getDropDownMenuItemConfig(item, true);
                       if (defaultItem) {
                           memo.push({text: defaultItem.text, onClick: defaultItem.action});
                       }

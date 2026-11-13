@@ -475,8 +475,12 @@ type MenuItem = {
 DashKit.setSettings({menu: [] as Array<MenuItem>});
 ```
 
-Default items are `copy`, `delete` and `settings` (`MenuItems`). Give one by its id, as a string or as an item
-without `title`, to get its default text and action; custom items can stand next to them in any order.
+Default items are `copy`, `delete` and `settings` (`MenuItems`):
+
+- given as a string, `copy` and `delete` keep their default text and action, also next to custom items in any
+  order; `settings` as a string is not shown, because the gear button opens the settings;
+- given as an object without `title`, a default item gets its default text, and without `handler` its default
+  action; this way `settings` is shown too.
 
 ### Draggable items from ActionPanel
 
