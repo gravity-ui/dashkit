@@ -21,14 +21,16 @@
 //
 // Scan: every emitted `.js` for ESM syntax (CommonJS build), extensionless relative specifiers
 // (ESM build) and relative imports of missing files; every `.js` and `.d.ts` for bare specifiers
-// that are neither dependencies nor peer dependencies. A dependency that a `.d.ts` names and that
-// ships no types of its own needs its `@types` package in dependencies too: devDependencies are
-// not installed for consumers. Types of peer dependencies come from the consumer.
+// that are neither dependencies nor peer dependencies. A dependency that a `.d.ts` names and whose
+// types TypeScript finds in an `@types` package needs that package in dependencies too:
+// devDependencies are not installed for consumers. Types of peer dependencies come from the
+// consumer. A `.d.ts` must not spell out types of `@types/react` 19 (`bigint`, `AwaitedReactNode`,
+// e.g. from an inferred `ReactNode`): they do not fit a consumer on `@types/react` 18.
 //
-// Types: the public `.d.ts` of both builds compile with `skipLibCheck: false`, as in a consumer
-// that checks library types. Errors outside build/ (other packages' types) are not dashkit's and
-// only counted. The check runs with the `@types/react` of this repository, so a type that depends
-// on its version is not checked against the other supported one.
+// Types: the public `.d.ts` compile with `skipLibCheck: false`, as in a consumer that checks library
+// types, under `bundler`, `nodenext` and `node10` module resolution. Errors outside build/ (other
+// packages' types) are not dashkit's and only counted. The compile uses the `@types/react` of this
+// repository; the scan above covers the known way to break `@types/react` 18.
 //
 // Misses: render-time failures, styles and bundler-specific behaviour beyond the rules above.
 import {existsSync, readFileSync, readdirSync, statSync} from 'node:fs';
@@ -428,31 +430,41 @@ function typesPackage(name) {
 }
 
 const DEPENDENCIES = new Set(Object.keys(pkg.dependencies ?? {}));
-const shipsTypesCache = new Map();
+const typesResolutionCache = new Map();
 
-// A package ships types when its manifest names them (`types`, `typings`, or a `types` condition
-// in `exports`) or it has an `index.d.ts` at its root.
-function shipsTypes(name) {
-    if (!shipsTypesCache.has(name)) {
-        // Not through `require.resolve`: an `exports` map may not expose package.json.
-        const manifestPath = join(ROOT, 'node_modules', name, 'package.json');
-        const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-        shipsTypesCache.set(
-            name,
-            Boolean(manifest.types || manifest.typings) ||
-                JSON.stringify(manifest.exports ?? {}).includes('"types"') ||
-                existsSync(join(dirname(manifestPath), 'index.d.ts')),
-        );
+// The `@types` package that TypeScript takes the types of `name` from, seen from `file`, if any.
+function typesFromAtTypes(name, file) {
+    const format = relative(BUILD, file).split(sep)[0];
+    const key = `${format}:${name}`;
+    if (!typesResolutionCache.has(key)) {
+        const options =
+            format === 'cjs'
+                ? {
+                      module: ts.ModuleKind.NodeNext,
+                      moduleResolution: ts.ModuleResolutionKind.NodeNext,
+                  }
+                : {module: ts.ModuleKind.ESNext, moduleResolution: ts.ModuleResolutionKind.Bundler};
+        const resolvedFile = ts.resolveModuleName(name, file, options, ts.sys).resolvedModule
+            ?.resolvedFileName;
+        const match =
+            resolvedFile && /[\\/]node_modules[\\/](@types[\\/][^\\/]+)[\\/]/.exec(resolvedFile);
+        typesResolutionCache.set(key, match ? match[1].replace('\\', '/') : undefined);
     }
-    return shipsTypesCache.get(name);
+    return typesResolutionCache.get(key);
 }
 
-function dependenciesWithoutTypes(names) {
+// A dependency whose types come from an `@types` package needs that package in dependencies too.
+// Types of peer dependencies come from the consumer.
+function dependenciesWithoutTypes(names, file) {
     return names
-        .filter((name) => DEPENDENCIES.has(name) && !shipsTypes(name))
-        .map(typesPackage)
-        .filter((name) => !DEPENDENCIES.has(name));
+        .filter((name) => DEPENDENCIES.has(name))
+        .map((name) => typesFromAtTypes(name, file))
+        .filter((name) => name && !DEPENDENCIES.has(name));
 }
+
+// The types of `react` 19 spelled out in a declaration, e.g. an inferred `ReactNode`, do not fit a
+// consumer on `@types/react` 18.
+const REACT_19_TYPES = /\bbigint\b|\bAwaitedReactNode\b/;
 
 function undeclaredPackages(code, file) {
     const isDeclaration = file.endsWith('.d.ts');
@@ -468,9 +480,12 @@ function undeclaredPackages(code, file) {
     if (undeclared.length) {
         return `not in dependencies or peerDependencies: ${undeclared.join(', ')}`;
     }
-    const missingTypes = isDeclaration ? dependenciesWithoutTypes([...new Set(names)]) : [];
-    return missingTypes.length
-        ? `types of a dependency are not in dependencies: ${missingTypes.join(', ')}`
+    const missingTypes = isDeclaration ? dependenciesWithoutTypes([...new Set(names)], file) : [];
+    if (missingTypes.length) {
+        return `types of a dependency are not in dependencies: ${missingTypes.join(', ')}`;
+    }
+    return isDeclaration && REACT_19_TYPES.test(withoutComments(code))
+        ? 'a type spelled out from @types/react 19 (bigint, AwaitedReactNode): annotate it'
         : undefined;
 }
 
@@ -518,7 +533,7 @@ scanBuild('esm', (code) => {
 });
 
 // The `.d.ts` of every entry, compiled the way a consumer that checks library types compiles them.
-function checkDeclarations(format, options) {
+function checkDeclarations(label, format, options) {
     const rootNames = entries.map((entry) =>
         join(BUILD, format, `${entry === '.' ? 'index' : entry.slice(2)}.d.ts`),
     );
@@ -533,7 +548,9 @@ function checkDeclarations(format, options) {
     });
     const diagnostics = ts.getPreEmitDiagnostics(program);
     const own = diagnostics.filter(
-        (diagnostic) => !diagnostic.file || diagnostic.file.fileName.startsWith(`${BUILD}${sep}`),
+        // TypeScript writes paths with `/` on every platform
+        (diagnostic) =>
+            !diagnostic.file || resolve(diagnostic.file.fileName).startsWith(`${BUILD}${sep}`),
     );
     const others = diagnostics.length - own.length;
     if (own.length) {
@@ -542,22 +559,34 @@ function checkDeclarations(format, options) {
             getCurrentDirectory: () => ROOT,
             getNewLine: () => '\n',
         });
-        fail(`build/${format} declarations do not compile with skipLibCheck: false:\n${text}`);
+        fail(`${label}: declarations do not compile with skipLibCheck: false:\n${text}`);
     } else {
         stdout.write(
-            `build/${format}: declarations compile with skipLibCheck: false` +
+            `${label}: declarations compile with skipLibCheck: false` +
                 (others ? ` (${others} error(s) in the types of other packages)\n` : '\n'),
         );
     }
 }
 
-checkDeclarations('esm', {
+checkDeclarations('build/esm, bundler', 'esm', {
     module: ts.ModuleKind.ESNext,
     moduleResolution: ts.ModuleResolutionKind.Bundler,
 });
-checkDeclarations('cjs', {
+checkDeclarations('build/esm, nodenext', 'esm', {
     module: ts.ModuleKind.NodeNext,
     moduleResolution: ts.ModuleResolutionKind.NodeNext,
+});
+checkDeclarations('build/cjs, nodenext', 'cjs', {
+    module: ts.ModuleKind.NodeNext,
+    moduleResolution: ts.ModuleResolutionKind.NodeNext,
+});
+// `moduleResolution: node10` reads build/esm through `typesVersions`. The types default-import
+// `react` and `react-grid-layout`, so such a consumer needs `esModuleInterop` (or
+// `allowSyntheticDefaultImports`); the other setups imply it.
+checkDeclarations('build/esm, node10', 'esm', {
+    module: ts.ModuleKind.CommonJS,
+    moduleResolution: ts.ModuleResolutionKind.Node10,
+    esModuleInterop: true,
 });
 
 domWindow?.close();
