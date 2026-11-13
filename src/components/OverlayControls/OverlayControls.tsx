@@ -53,6 +53,10 @@ export interface OverlayCustomControlItem {
     id: string;
     title?: string;
     icon?: React.ReactNode;
+    /**
+     * @deprecated Not applied: the overlay menu sizes item icons by its own size. Set the size on
+     * the icon element.
+     */
     iconSize?: number | string;
     handler?: (item: ConfigItem, params: ItemParams, state: ItemState) => void;
     visible?: (item: ConfigItem) => boolean;
@@ -321,7 +325,12 @@ class OverlayControlsInner extends React.Component<OverlayControlsInnerProps> {
                   return memo;
               }, [])
             : menu.reduce<OverlayMenuItem[]>((memo, item: MenuItem) => {
+                  // a default item given by its id next to custom items
                   if (typeof item === 'string') {
+                      const defaultItem = this.getDropDownMenuItemConfig(item);
+                      if (defaultItem) {
+                          memo.push({text: defaultItem.text, onClick: defaultItem.action});
+                      }
                       return memo;
                   }
                   // custom menu dropdown item filter
@@ -341,8 +350,12 @@ class OverlayControlsInner extends React.Component<OverlayControlsInnerProps> {
                           : this.getDropDownMenuItemConfig(item.id)?.action || (() => {});
 
                   memo.push({
-                      // @ts-expect-error
-                      text: item.title || this.props.t(item.id),
+                      text:
+                          item.title ||
+                          // a default item without a title keeps its default text
+                          this.getDropDownMenuItemConfig(item.id)?.text ||
+                          // @ts-expect-error the id of a custom item is not a key of the keyset
+                          this.props.t(item.id),
                       icon: item.icon,
                       /**
                        * if the logic of creating the 'onClick' field is changed, it is necessary to update the logic of the method shallowEqualDropdownMenu

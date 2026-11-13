@@ -5,7 +5,7 @@ import React from 'react';
 import {Provider, configure} from '@gravity-ui/uikit';
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 
-import {DRAGGABLE_CANCEL_CLASS_NAME} from '../../../constants';
+import {DRAGGABLE_CANCEL_CLASS_NAME, MenuItems} from '../../../constants';
 import {DashkitOverlayControlsContext} from '../../../context';
 import type {OverlayControlsCtxShape} from '../../../context';
 import type {ConfigItem} from '../../../shared';
@@ -149,6 +149,48 @@ describe('OverlayControls menu', () => {
         await openMenu();
 
         expect(screen.getByRole('menuitem', {name: 'Inspect'}).children).toHaveLength(0);
+    });
+
+    it('gives default items of a custom menu without a title their default texts', async () => {
+        renderControls(
+            createContext({
+                menu: [
+                    {id: MenuItems.Settings},
+                    {id: 'inspect', title: 'Inspect'},
+                    {id: MenuItems.Copy},
+                    {id: MenuItems.Delete},
+                ],
+            }),
+            undefined,
+            'ru',
+        );
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', {name: 'Дополнительные опции'}));
+        });
+
+        expect(getMenuItemTexts()).toEqual(['Настройки', 'Inspect', 'Копировать', 'Удалить']);
+    });
+
+    it('keeps default items given as strings next to custom items', async () => {
+        const context = createContext({
+            menu: [
+                MenuItems.Copy,
+                {id: 'inspect', title: 'Inspect'},
+                MenuItems.Delete,
+                MenuItems.Settings,
+            ],
+        });
+        renderControls(context);
+        await openMenu();
+
+        expect(getMenuItemTexts()).toEqual(['Copy', 'Inspect', 'Delete', 'Settings']);
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('menuitem', {name: 'Delete'}));
+        });
+
+        expect(context.removeItem).toHaveBeenCalledWith('item1');
     });
 
     it('gives a default item of a custom menu its default action', async () => {
