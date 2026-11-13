@@ -21,17 +21,24 @@
 //
 // Scan: every emitted `.js` for ESM syntax (CommonJS build), extensionless relative specifiers
 // (ESM build) and relative imports of missing files; every `.js` and `.d.ts` for bare specifiers
-// that are neither dependencies nor peer dependencies.
+// that are neither dependencies nor peer dependencies. A dependency that a `.d.ts` names and that
+// ships no types of its own needs its `@types` package in dependencies too: devDependencies are
+// not installed for consumers. Types of peer dependencies come from the consumer.
 //
-// Misses: render-time failures, styles, bundler-specific behaviour beyond the rules above, and
-// type packages that live only in devDependencies (`@types/react-grid-layout`:
-// `react-grid-layout` itself is a dependency).
+// Types: the public `.d.ts` of both builds compile with `skipLibCheck: false`, as in a consumer
+// that checks library types. Errors outside build/ (other packages' types) are not dashkit's and
+// only counted. The check runs with the `@types/react` of this repository, so a type that depends
+// on its version is not checked against the other supported one.
+//
+// Misses: render-time failures, styles and bundler-specific behaviour beyond the rules above.
 import {existsSync, readFileSync, readdirSync, statSync} from 'node:fs';
 import * as nodeModule from 'node:module';
 import {dirname, join, relative, resolve, sep} from 'node:path';
 import {exit, stderr, stdout} from 'node:process';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {compileFunction} from 'node:vm';
+
+import ts from 'typescript';
 
 const {builtinModules, createRequire, registerHooks} = nodeModule;
 
@@ -420,6 +427,33 @@ function typesPackage(name) {
     return `@types/${name.startsWith('@') ? name.slice(1).replace('/', '__') : name}`;
 }
 
+const DEPENDENCIES = new Set(Object.keys(pkg.dependencies ?? {}));
+const shipsTypesCache = new Map();
+
+// A package ships types when its manifest names them (`types`, `typings`, or a `types` condition
+// in `exports`) or it has an `index.d.ts` at its root.
+function shipsTypes(name) {
+    if (!shipsTypesCache.has(name)) {
+        // Not through `require.resolve`: an `exports` map may not expose package.json.
+        const manifestPath = join(ROOT, 'node_modules', name, 'package.json');
+        const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+        shipsTypesCache.set(
+            name,
+            Boolean(manifest.types || manifest.typings) ||
+                JSON.stringify(manifest.exports ?? {}).includes('"types"') ||
+                existsSync(join(dirname(manifestPath), 'index.d.ts')),
+        );
+    }
+    return shipsTypesCache.get(name);
+}
+
+function dependenciesWithoutTypes(names) {
+    return names
+        .filter((name) => DEPENDENCIES.has(name) && !shipsTypes(name))
+        .map(typesPackage)
+        .filter((name) => !DEPENDENCIES.has(name));
+}
+
 function undeclaredPackages(code, file) {
     const isDeclaration = file.endsWith('.d.ts');
     const names = specifiers(code)
@@ -431,8 +465,12 @@ function undeclaredPackages(code, file) {
     const undeclared = [...new Set([...names, ...referenced])].filter(
         (name) => !DECLARED.has(name) && !(isDeclaration && TYPES_THROUGH_UIKIT.has(name)),
     );
-    return undeclared.length
-        ? `not in dependencies or peerDependencies: ${undeclared.join(', ')}`
+    if (undeclared.length) {
+        return `not in dependencies or peerDependencies: ${undeclared.join(', ')}`;
+    }
+    const missingTypes = isDeclaration ? dependenciesWithoutTypes([...new Set(names)]) : [];
+    return missingTypes.length
+        ? `types of a dependency are not in dependencies: ${missingTypes.join(', ')}`
         : undefined;
 }
 
@@ -477,6 +515,49 @@ scanBuild('esm', (code) => {
         (specifier) => !RESOLVED_EXTENSIONS.some((extension) => specifier.endsWith(extension)),
     );
     return bad.length ? `relative import without an extension: ${bad.join(', ')}` : undefined;
+});
+
+// The `.d.ts` of every entry, compiled the way a consumer that checks library types compiles them.
+function checkDeclarations(format, options) {
+    const rootNames = entries.map((entry) =>
+        join(BUILD, format, `${entry === '.' ? 'index' : entry.slice(2)}.d.ts`),
+    );
+    const program = ts.createProgram(rootNames, {
+        noEmit: true,
+        strict: true,
+        skipLibCheck: false,
+        jsx: ts.JsxEmit.ReactJSX,
+        lib: ['lib.es2022.d.ts', 'lib.dom.d.ts'],
+        types: [],
+        ...options,
+    });
+    const diagnostics = ts.getPreEmitDiagnostics(program);
+    const own = diagnostics.filter(
+        (diagnostic) => !diagnostic.file || diagnostic.file.fileName.startsWith(`${BUILD}${sep}`),
+    );
+    const others = diagnostics.length - own.length;
+    if (own.length) {
+        const text = ts.formatDiagnostics(own, {
+            getCanonicalFileName: (fileName) => fileName,
+            getCurrentDirectory: () => ROOT,
+            getNewLine: () => '\n',
+        });
+        fail(`build/${format} declarations do not compile with skipLibCheck: false:\n${text}`);
+    } else {
+        stdout.write(
+            `build/${format}: declarations compile with skipLibCheck: false` +
+                (others ? ` (${others} error(s) in the types of other packages)\n` : '\n'),
+        );
+    }
+}
+
+checkDeclarations('esm', {
+    module: ts.ModuleKind.ESNext,
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
+});
+checkDeclarations('cjs', {
+    module: ts.ModuleKind.NodeNext,
+    moduleResolution: ts.ModuleResolutionKind.NodeNext,
 });
 
 domWindow?.close();
