@@ -88,8 +88,8 @@ const registerManager = new RegisterManager();
 
 /**
  * @internal Not part of the public API. Do not use in production code.
- * Module-scoped symbol — not accessible to external consumers holding a ref,
- * preventing synthetic event injection via instance._emit.
+ * A symbol instead of a method name, so that a ref to DashKit does not offer `_emit`. It is exported
+ * for tests and left out of the types, but the package root still exports it at runtime.
  */
 export const _emitSymbol = Symbol('DashKit._emit');
 
@@ -266,6 +266,12 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
         return () => this._off(eventName, handler);
     }
 
+    /**
+     * @internal
+     * @param eventName the event to emit
+     * @param event the object passed to its handlers
+     * @returns nothing
+     */
     [_emitSymbol] = <T extends DashKitEventName>(eventName: T, event: DashKitEventMap[T]): void => {
         const handlers = this._handlers.get(eventName);
         if (!handlers) {

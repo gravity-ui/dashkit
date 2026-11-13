@@ -1,37 +1,18 @@
 #!/usr/bin/env node
 // Checks the built package (run `npm run build` first). Adapted from gravity-ui/chartkit#957.
-//
-// Load: `require` of build/cjs and `import` of build/esm for every entry point of the `exports`
-// map, through the package's own name. Node resolves dashkit's files strictly, so a missing
-// extension, a directory import or a CommonJS file with ESM syntax fails here. CSS and JSON are
-// handled the way bundlers handle them: Node cannot load CSS, and imports JSON only with an import
-// attribute (build/esm/i18n and uikit import it without one). `module.registerHooks` hooks run for
-// both `import` and `require`, so `require.extensions` is not needed.
-// Dependencies are resolved the way bundlers resolve them: an `import` of a package without an
-// `exports` map follows its `module` field, and a specifier may omit `.js` or name a directory
-// (the uikit 7 ESM build and its dependencies rely on all three). dashkit's own imports get none
-// of this, except the packages in OWN_IMPORTS_THROUGH_MODULE_FIELD. Every run prints what needed
-// these rules.
-// ES modules that the CommonJS build reaches through `require` are printed too: CommonJS
-// consumers need require(esm) for them (Node 20.19+ / 22.12+). One of dashkit's own files among
-// them is an error. The list is best effort; `node --no-experimental-require-module
-// scripts/check-build.mjs` gives the exact answer.
-// `./helpers` must load without a DOM. `.` creates a window focus observer at module level, so it
-// loads under jsdom globals, after the DOM-free entries. Both builds must export the same names.
-//
-// Scan: every emitted `.js` for ESM syntax (CommonJS build), extensionless relative specifiers
-// (ESM build) and relative imports of missing files; every `.js` and `.d.ts` for bare specifiers
-// that are neither dependencies nor peer dependencies.
-//
-// Misses: render-time failures, styles, bundler-specific behaviour beyond the rules above, and
-// type packages that live only in devDependencies (`@types/react-grid-layout`:
-// `react-grid-layout` itself is a dependency).
+// - Load: every `exports` entry of both builds through the package name; CSS is stubbed, JSON loads
+//   without import attributes, dependencies resolve as in bundlers, `.` loads under jsdom.
+// - Scan: ESM syntax in build/cjs, extensionless imports in build/esm, missing files, undeclared
+//   packages and `@types`, types spelled out from `@types/react` 19.
+// - Types: the `.d.ts` compile with `skipLibCheck: false` under bundler, nodenext and node10.
 import {existsSync, readFileSync, readdirSync, statSync} from 'node:fs';
 import * as nodeModule from 'node:module';
 import {dirname, join, relative, resolve, sep} from 'node:path';
 import {exit, stderr, stdout} from 'node:process';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {compileFunction} from 'node:vm';
+
+import ts from 'typescript';
 
 const {builtinModules, createRequire, registerHooks} = nodeModule;
 
@@ -49,15 +30,13 @@ const DECLARED = new Set([
     ...Object.keys(pkg.peerDependencies ?? {}),
 ]);
 
-// Entry points whose modules touch `window` or `document` at load time.
+// Entries whose modules touch `window` or `document` at load time.
 const DOM_ENTRIES = new Set(['.']);
 
-// Packages the `.d.ts` files may name without declaring them: types that consumers get through
-// the `@gravity-ui/uikit` peer. Add one only with the reason it is safe.
+// Packages the `.d.ts` may name undeclared: types that come with the uikit peer.
 const TYPES_THROUGH_UIKIT = new Map();
 
-// dashkit's own imports that may follow the `module` field, as bundlers do. Without a bundler
-// they fail for the reason given; the run says when an entry is no longer needed.
+// dashkit's own imports allowed to follow the `module` field; the run reports stale entries.
 const OWN_IMPORTS_THROUGH_MODULE_FIELD = new Map();
 
 for (const format of ['cjs', 'esm']) {
@@ -68,8 +47,7 @@ for (const format of ['cjs', 'esm']) {
 }
 
 const require = createRequire(import.meta.url);
-// Loaded before the hooks are registered, so that jsdom's own modules do not go through them.
-// jsdom comes with jest-environment-jsdom, a devDependency.
+// jsdom (from jest-environment-jsdom) loads before the hooks, so its modules skip them.
 const {JSDOM} = createRequire(require.resolve('jest-environment-jsdom'))('jsdom');
 
 let failed = false;
@@ -104,8 +82,7 @@ function isFile(path) {
     return existsSync(path) && statSync(path).isFile();
 }
 
-// A path the way bundlers resolve it: the file, the file with `.js`, or a directory through its
-// own `package.json` (`module` before `main`) or its `index.js`.
+// Resolve like a bundler: the file, + `.js`, or a directory (`module`, `main`, `index.js`).
 function resolvePath(path) {
     if (isFile(path)) {
         return path;
@@ -127,8 +104,7 @@ function resolvePath(path) {
     return isFile(join(path, 'index.js')) ? join(path, 'index.js') : undefined;
 }
 
-// The directory and manifest of an installed package without an `exports` map, as seen from
-// `parentURL`; packages with `exports` are left to Node.
+// Directory and manifest of an installed package without `exports`; the rest is left to Node.
 function packageWithoutExports(name, parentURL) {
     try {
         const manifestPath = createRequire(parentURL).resolve(`${name}/package.json`);
@@ -195,9 +171,7 @@ function resolveLikeBundlers(specifier, context, nextResolve) {
     }
 }
 
-// The loader passes a `.js` file of a package without `type` on without a format and detects
-// ESM syntax only after the hooks. The same test as Node's: it does not compile as CommonJS
-// because of ESM syntax.
+// Node detects ESM syntax in a `.js` without `type` only after the hooks: test it the same way.
 const ESM_SYNTAX_ERRORS = [
     'Cannot use import statement outside a module',
     "Unexpected token 'export'",
@@ -253,8 +227,7 @@ function installDom() {
         pretendToBeVisual: true,
         url: 'http://localhost/',
     });
-    // Only what Node lacks (`window`, `document`, `self`, `HTMLElement`, `requestAnimationFrame`…):
-    // Node's own `Event`, `URL`, timers and the rest stay.
+    // Only what Node lacks; Node's own `Event`, `URL` and timers stay.
     for (const key of Object.getOwnPropertyNames(window)) {
         if (!(key in globalThis)) {
             Object.defineProperty(globalThis, key, {configurable: true, get: () => window[key]});
@@ -263,8 +236,7 @@ function installDom() {
     return window;
 }
 
-// The names, with `default` only when the module has a default export: the CommonJS build has
-// the key only when TypeScript emitted one, like the ESM build.
+// Export names; `default` only when the module has a default export.
 function exportNames(module) {
     return Object.keys(module)
         .filter((key) => key !== '__esModule')
@@ -401,8 +373,7 @@ function relativeSpecifiers(code) {
     return specifiers(code).filter((specifier) => specifier.startsWith('.'));
 }
 
-// A relative specifier must point to a file that exists (a `.js` one, in a `.d.ts`, to its
-// declaration): a failed `.scss` compile leaves a `.css` import without its file.
+// A relative import must point to an existing file (to its `.d.ts` in a declaration).
 function missingFiles(code, file) {
     const isDeclaration = file.endsWith('.d.ts');
     const missing = [...new Set(relativeSpecifiers(code))].filter((specifier) => {
@@ -420,6 +391,41 @@ function typesPackage(name) {
     return `@types/${name.startsWith('@') ? name.slice(1).replace('/', '__') : name}`;
 }
 
+const DEPENDENCIES = new Set(Object.keys(pkg.dependencies ?? {}));
+const typesResolutionCache = new Map();
+
+// The `@types` package TypeScript takes the types of `name` from, if any.
+function typesFromAtTypes(name, file) {
+    const format = relative(BUILD, file).split(sep)[0];
+    const key = `${format}:${name}`;
+    if (!typesResolutionCache.has(key)) {
+        const options =
+            format === 'cjs'
+                ? {
+                      module: ts.ModuleKind.NodeNext,
+                      moduleResolution: ts.ModuleResolutionKind.NodeNext,
+                  }
+                : {module: ts.ModuleKind.ESNext, moduleResolution: ts.ModuleResolutionKind.Bundler};
+        const resolvedFile = ts.resolveModuleName(name, file, options, ts.sys).resolvedModule
+            ?.resolvedFileName;
+        const match =
+            resolvedFile && /[\\/]node_modules[\\/](@types[\\/][^\\/]+)[\\/]/.exec(resolvedFile);
+        typesResolutionCache.set(key, match ? match[1].replace('\\', '/') : undefined);
+    }
+    return typesResolutionCache.get(key);
+}
+
+// A dependency typed by an `@types` package needs it in dependencies (peers: the consumer's).
+function dependenciesWithoutTypes(names, file) {
+    return names
+        .filter((name) => DEPENDENCIES.has(name))
+        .map((name) => typesFromAtTypes(name, file))
+        .filter((name) => name && !DEPENDENCIES.has(name));
+}
+
+// Types of `@types/react` 19 spelled out in a `.d.ts` break consumers on `@types/react` 18.
+const REACT_19_TYPES = /\bbigint\b|\bAwaitedReactNode\b/;
+
 function undeclaredPackages(code, file) {
     const isDeclaration = file.endsWith('.d.ts');
     const names = specifiers(code)
@@ -431,8 +437,15 @@ function undeclaredPackages(code, file) {
     const undeclared = [...new Set([...names, ...referenced])].filter(
         (name) => !DECLARED.has(name) && !(isDeclaration && TYPES_THROUGH_UIKIT.has(name)),
     );
-    return undeclared.length
-        ? `not in dependencies or peerDependencies: ${undeclared.join(', ')}`
+    if (undeclared.length) {
+        return `not in dependencies or peerDependencies: ${undeclared.join(', ')}`;
+    }
+    const missingTypes = isDeclaration ? dependenciesWithoutTypes([...new Set(names)], file) : [];
+    if (missingTypes.length) {
+        return `types of a dependency are not in dependencies: ${missingTypes.join(', ')}`;
+    }
+    return isDeclaration && REACT_19_TYPES.test(withoutComments(code))
+        ? 'a type spelled out from @types/react 19 (bigint, AwaitedReactNode): annotate it'
         : undefined;
 }
 
@@ -479,11 +492,66 @@ scanBuild('esm', (code) => {
     return bad.length ? `relative import without an extension: ${bad.join(', ')}` : undefined;
 });
 
+// The `.d.ts` of the entries, compiled as a consumer with `skipLibCheck: false` does.
+function checkDeclarations(label, format, options) {
+    const rootNames = entries.map((entry) =>
+        join(BUILD, format, `${entry === '.' ? 'index' : entry.slice(2)}.d.ts`),
+    );
+    const program = ts.createProgram(rootNames, {
+        noEmit: true,
+        strict: true,
+        skipLibCheck: false,
+        jsx: ts.JsxEmit.ReactJSX,
+        lib: ['lib.es2022.d.ts', 'lib.dom.d.ts'],
+        types: [],
+        ...options,
+    });
+    const diagnostics = ts.getPreEmitDiagnostics(program);
+    const own = diagnostics.filter(
+        // TypeScript paths use `/` on every platform
+        (diagnostic) =>
+            !diagnostic.file || resolve(diagnostic.file.fileName).startsWith(`${BUILD}${sep}`),
+    );
+    const others = diagnostics.length - own.length;
+    if (own.length) {
+        const text = ts.formatDiagnostics(own, {
+            getCanonicalFileName: (fileName) => fileName,
+            getCurrentDirectory: () => ROOT,
+            getNewLine: () => '\n',
+        });
+        fail(`${label}: declarations do not compile with skipLibCheck: false:\n${text}`);
+    } else {
+        stdout.write(
+            `${label}: declarations compile with skipLibCheck: false` +
+                (others ? ` (${others} error(s) in the types of other packages)\n` : '\n'),
+        );
+    }
+}
+
+checkDeclarations('build/esm, bundler', 'esm', {
+    module: ts.ModuleKind.ESNext,
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
+});
+checkDeclarations('build/esm, nodenext', 'esm', {
+    module: ts.ModuleKind.NodeNext,
+    moduleResolution: ts.ModuleResolutionKind.NodeNext,
+});
+checkDeclarations('build/cjs, nodenext', 'cjs', {
+    module: ts.ModuleKind.NodeNext,
+    moduleResolution: ts.ModuleResolutionKind.NodeNext,
+});
+// node10 reads build/esm through `typesVersions` and needs `esModuleInterop` for default imports.
+checkDeclarations('build/esm, node10', 'esm', {
+    module: ts.ModuleKind.CommonJS,
+    moduleResolution: ts.ModuleResolutionKind.Node10,
+    esModuleInterop: true,
+});
+
 domWindow?.close();
 
 if (failed) {
     exit(1);
 }
 stdout.write('Both builds load through the package exports and export the same names.\n');
-// jsdom or a dependency may leave handles open, which would keep the process alive.
+// Open handles of jsdom or dependencies would keep the process alive.
 exit(0);

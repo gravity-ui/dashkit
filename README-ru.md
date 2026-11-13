@@ -387,7 +387,7 @@ type MenuItem = {
   id: string; // uniq id
   title?: string; // string title
   icon?: ReactNode; // node of icon
-  iconSize?: number | string; // icon size in px as number or as string with units
+  iconSize?: number | string; // deprecated: not applied, set the size on the icon element
   handler?: (item: ConfigItem) => void; // custom item action handler
   visible?: (item: ConfigItem) => boolean; // optional visibility handler for filtering menu items
   className?: string; // custom class property
@@ -400,6 +400,13 @@ type MenuItem = {
 // overlayMenuItems property has greater priority over setSettings menu
 DashKit.setSettings({menu: [] as Array<MenuItem>});
 ```
+
+Встроенные пункты — `copy`, `delete` и `settings` (`MenuItems`):
+
+- строкой `copy` и `delete` получают текст и действие по умолчанию, в том числе рядом с пользовательскими
+  пунктами в любом порядке; `settings` строкой не показывается, потому что настройки открывает кнопка с шестерёнкой;
+- объектом без `title` встроенный пункт получает текст по умолчанию, а без `handler` — и действие по умолчанию;
+  так показывается и `settings`.
 
 ### Перетаскиваемые элементы из `ActionPanel`
 
