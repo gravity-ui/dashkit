@@ -32,8 +32,9 @@ Two old problems of custom menus are fixed:
 
 - A default item (`copy`, `delete`, `settings`, see `MenuItems`) given as an object without `title` shows its
   default text instead of its id.
-- Default items given as strings next to custom items are kept. Before, they were dropped as soon as the menu had
-  one custom item.
+- `copy` and `delete` given as strings next to custom items are kept. Before, every string was dropped as soon as
+  the menu had one custom item. `settings` as a string is still not shown, as in a menu of strings only: the gear
+  button opens the settings. To show it in the menu, give it as an object.
 
 `iconSize` of a menu item is deprecated: the menu never applied it. Set the size on the icon element. `iconSize`
 of an `overlayControls` button still works.
@@ -70,7 +71,9 @@ Without `lang` on a `Provider` they follow `configure({lang})`, as before. An ap
 `configure` needs no change.
 
 The texts now re-render when the language changes, from either source. A DashKit 10 application had to remount
-DashKit or pass it a new `context` to see the new language; that workaround can be removed.
+DashKit or pass it a new `context` to see the new language; for the texts of DashKit itself that workaround can be
+removed. The texts of the application, such as the titles of its menu items or plugins that take the language from
+`context`, stay its own.
 
 ## ActionPanel
 
@@ -85,28 +88,37 @@ The default hover background of an item is `--g-color-base-contrast-light-simple
 - `lodash` is replaced with `es-toolkit`. `es-toolkit`, `tslib` and `@gravity-ui/i18n` are dependencies of DashKit,
   so nothing has to be installed next to it.
 - Unit tests are no longer published in the package.
-- `@types/react-grid-layout` is a dependency: the public types import `react-grid-layout`. The types of DashKit
-  compile with `skipLibCheck: false`, with `@types/react` 18 and 19; DashKit 10 needed `skipLibCheck: true`.
+- The types of DashKit compile with `skipLibCheck: false`; DashKit 10 needed `skipLibCheck: true`. They need
+  `@types/react` 18.2.6 or later (they use `React.JSX`), and with `moduleResolution: node10` also
+  `esModuleInterop` or `allowSyntheticDefaultImports`, because they default-import `react` and
+  `react-grid-layout`; `bundler`, `node16` and `nodenext` work as they are.
+- `@types/react-grid-layout` is a dependency: the public types import `react-grid-layout`. It accepts any
+  `@types/react`; if the package manager installs a second copy of `@types/react` for it next to the application's
+  one, dedupe it (`overrides` in npm, `resolutions` in yarn).
 - uikit 8 brings two dependencies that ship only ES modules, `colors-named` and `colors-named-hex`, and they load
   with any import of `@gravity-ui/uikit`. Bundlers are not affected.
 
   - In Jest, a test that imports `@gravity-ui/uikit` or DashKit without mocking uikit fails to load them: Jest 29
     reports "SyntaxError: Unexpected token 'export'", Jest 30 "Must use import to load ES Module". Take the two
     packages out of `transformIgnorePatterns` and let a transformer that turns ES modules into CommonJS handle
-    their `.js` files:
+    their `.js` files. Keep the rest of the configuration, such as the CSS stub and jsdom. Transformers that do it:
 
-    - `ts-jest` 29.3 or later, with a tsconfig that sets `"isolatedModules": true` and `"module": "commonjs"`.
-      Older `ts-jest`, or `isolatedModules` off, leaves the files as they are;
-    - or `babel-jest` with `@babel/plugin-transform-modules-commonjs` 7.x in the Babel config (8.x needs Babel 8,
-      while Jest uses Babel 7). `babel-jest` without such a plugin leaves the files as they are.
+    - `ts-jest` 29.3.2 or later, by itself; 29.3.0 and 29.3.1 only with `"isolatedModules": true`; older versions
+      leave the files as they are;
+    - `babel-jest` with `@babel/preset-env` or `@babel/plugin-transform-modules-commonjs` 7.x in a project-wide
+      `babel.config.js`: a `.babelrc` does not apply to files in `node_modules`;
+    - a small transformer for these two packages only, which works with any `ts-jest`; `jest/esmTransform.js` in
+      the DashKit repository is one (it calls `typescript.transpileModule`).
 
     ```js
-    // jest.config.js, the ts-jest variant
+    // jest.config.js (jest.config.cjs in a package with "type": "module"), with ts-jest 29.3.2 or later
     module.exports = {
       transform: {
-        '^.+\\.[jt]sx?$': ['ts-jest', {tsconfig: 'tsconfig.jest.json'}],
+        '^.+\\.[jt]sx?$': 'ts-jest',
       },
       transformIgnorePatterns: ['/node_modules/(?!(colors-named|colors-named-hex)/)'],
+      // with pnpm, whose packages live in node_modules/.pnpm:
+      // transformIgnorePatterns: ['/node_modules/\\.pnpm/(?!(colors-named|colors-named-hex)@)'],
     };
     ```
 
