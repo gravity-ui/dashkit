@@ -266,7 +266,12 @@ export class DashKit extends React.PureComponent<DashKitInnerProps> {
         return () => this._off(eventName, handler);
     }
 
-    /** @internal */
+    /**
+     * @internal
+     * @param eventName the event to emit
+     * @param event the object passed to its handlers
+     * @returns nothing
+     */
     [_emitSymbol] = <T extends DashKitEventName>(eventName: T, event: DashKitEventMap[T]): void => {
         const handlers = this._handlers.get(eventName);
         if (!handlers) {
