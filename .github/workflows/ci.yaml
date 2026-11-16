@@ -62,6 +62,12 @@ jobs:
       run: npm run build
     - name: Check Build
       run: npm run test:build
+    # The same build, its types checked against @types/react 18: not rebuilt, so the published
+    # declarations are what is checked
+    - name: Check Build Types with React 18
+      run: |
+        npm install --no-save @types/react@^18 @types/react-dom@^18
+        npm run test:build
 
   # Validate the lower edge of the React peer range. Runs only on
   # release-please PRs so regular PR CI stays fast; failure here blocks
