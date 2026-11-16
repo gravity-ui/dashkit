@@ -865,7 +865,8 @@ export default class GridLayout extends React.PureComponent<GridLayoutProps, Gri
         );
     }
 
-    render() {
+    // An explicit type: the inferred one spells out ReactNode of the @types/react the package is built with
+    render(): React.ReactNode {
         const {config, groups, editMode, context} = this.context;
 
         this.pluginsRefs.length = this.context.configItems.length;

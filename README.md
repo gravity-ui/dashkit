@@ -461,7 +461,7 @@ type MenuItem = {
   id: string; // uniq id
   title?: string; // string title
   icon?: ReactNode; // node of icon
-  iconSize?: number | string; // icon size in px as number or as string with units
+  iconSize?: number | string; // deprecated: not applied, set the size on the icon element
   handler?: (item: ConfigItem) => void; // custom item action handler
   visible?: (item: ConfigItem) => boolean; // optional visibility handler for filtering menu items
   className?: string; // custom class property
@@ -474,6 +474,13 @@ type MenuItem = {
 // overlayMenuItems property has greater priority over setSettings menu
 DashKit.setSettings({menu: [] as Array<MenuItem>});
 ```
+
+Default items are `copy`, `delete` and `settings` (`MenuItems`):
+
+- given as a string, `copy` and `delete` keep their default text and action, also next to custom items in any
+  order; `settings` as a string is not shown, because the gear button opens the settings;
+- given as an object without `title`, a default item gets its default text, and without `handler` its default
+  action; this way `settings` is shown too.
 
 ### Draggable items from ActionPanel
 
