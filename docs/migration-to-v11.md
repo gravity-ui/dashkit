@@ -83,7 +83,10 @@ The default hover background of an item is `--g-color-base-contrast-light-simple
 - The types of DashKit compile with `skipLibCheck: false`; DashKit 10 needed `skipLibCheck: true`. They need
   `@types/react` 18.2.6 or later (they use `React.JSX`), and with `moduleResolution: node10` also
   `esModuleInterop` or `allowSyntheticDefaultImports`, because they default-import `react` and
-  `react-grid-layout`; `bundler`, `node16` and `nodenext` work as they are.
+  `react-grid-layout`; `bundler`, `node16` and `nodenext` work as they are. This is about the types of DashKit
+  itself: in an ES module project with `node16` or `nodenext`, the types of uikit 8.0.0 do not compile with
+  `skipLibCheck: false` (relative imports without extensions in `Menu.d.ts`, a deep `rc-slider` import in
+  `Slider/types.d.ts`), so such a project still needs `skipLibCheck: true`.
 - `@types/react-grid-layout` is a dependency: the public types import `react-grid-layout`. It accepts any
   `@types/react`; if the package manager installs a second copy of `@types/react` for it next to the application's
   one, dedupe it (`overrides` in npm, `resolutions` in yarn).
