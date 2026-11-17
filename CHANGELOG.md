@@ -1,5 +1,28 @@
 # Changelog
 
+## [11.0.0](https://github.com/gravity-ui/dashkit/compare/v10.5.2...v11.0.0) (2026-11-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* the @gravity-ui/uikit peer dependency is now ^8.0.0. the widget overlay menu is the uikit 8 Menu: g-menu / g-menu-item buttons instead of g-dropdown-menu, no switcher wrapper element, and it does not close on ancestor scroll.
+* the build is compiled to ES2022.
+
+### Features
+
+* compile to ES2022 like uikit 8 ([#341](https://github.com/gravity-ui/dashkit/issues/341)) ([9070260](https://github.com/gravity-ui/dashkit/commit/90702605120130dee95b9298161372f2748b710a))
+* update to uikit 8 ([#342](https://github.com/gravity-ui/dashkit/issues/342)) ([42e649b](https://github.com/gravity-ui/dashkit/commit/42e649b3926674de80a4df5857528806cc528a47))
+
+
+### Bug Fixes
+
+* make the public types and the overlay menu work for DashKit 11 consumers ([#345](https://github.com/gravity-ui/dashkit/issues/345)) ([2290147](https://github.com/gravity-ui/dashkit/commit/22901470ea49472a091604e48762238b1eeeb1af))
+
+
+### Performance Improvements
+
+* replace lodash with es-toolkit ([#340](https://github.com/gravity-ui/dashkit/issues/340)) ([31c0422](https://github.com/gravity-ui/dashkit/commit/31c0422587f2afeabe353b33f786e89d094a54cb))
+
 ## [10.5.2](https://github.com/gravity-ui/dashkit/compare/v10.5.1...v10.5.2) (2026-10-06)
 
 
