@@ -13,3 +13,6 @@ jobs:
         github-token: ${{ secrets.GRAVITY_UI_BOT_GITHUB_TOKEN }}
         npm-token: ${{ secrets.GRAVITY_UI_BOT_NPM_TOKEN }}
         node-version: 22
+        # `latest` is released from release/v11 while GridStack matures here. Not `v10`: npm rejects
+        # tags that read as semver ranges, https://docs.npmjs.com/cli/commands/npm-dist-tag#caveats
+        npm-dist-tag: latest-10
