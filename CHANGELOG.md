@@ -5,7 +5,10 @@
 
 ### ⚠ BREAKING CHANGES
 
-* the @gravity-ui/uikit peer dependency is now ^8.0.0. the widget overlay menu is the uikit 8 Menu: g-menu / g-menu-item buttons instead of g-dropdown-menu, no switcher wrapper element, and it does not close on ancestor scroll.
+* the @gravity-ui/uikit peer dependency is now ^8.0.0.
+* the widget overlay menu is the uikit 8 Menu: g-menu / g-menu-item buttons instead of g-dropdown-menu, no switcher wrapper element, and it does not close on ancestor scroll.
+* React 16 and 17 are no longer supported: the react and react-dom peers are ^18.0.0 || ^19.0.0, as uikit 8 requires.
+* the @gravity-ui/icons peer dependency is now ^2.20.0.
 * the build is compiled to ES2022.
 
 ### Features
